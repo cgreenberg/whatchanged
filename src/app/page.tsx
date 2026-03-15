@@ -5,6 +5,8 @@ import { LocationBanner } from '@/components/LocationBanner'
 import { StatCard } from '@/components/StatCard'
 import { StatCardSkeleton } from '@/components/StatCardSkeleton'
 import { ChartsSection } from '@/components/charts/ChartsSection'
+import { TariffWidget } from '@/components/TariffWidget'
+import { DigDeeper } from '@/components/DigDeeper'
 import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -102,7 +104,13 @@ export default function Home() {
       )}
 
       {state === 'loaded' && snapshot && (
-        <ChartsSection snapshot={snapshot} />
+        <>
+          <ChartsSection snapshot={snapshot} />
+          {snapshot.census.data && (
+            <TariffWidget medianIncome={snapshot.census.data.medianIncome} />
+          )}
+          <DigDeeper snapshot={snapshot} />
+        </>
       )}
 
       {state === 'error' && (
