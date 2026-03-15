@@ -1,0 +1,47 @@
+{
+  "limit": 25,
+  "offset": 0,
+  "total": 3,
+  "results": [
+    {
+      "Award ID": "CONT-2025-0042",
+      "Recipient Name": "Pacific Northwest Research Institute",
+      "Award Type": "Contract",
+      "Award Amount": 2100000,
+      "Awarding Agency": "Department of Health and Human Services",
+      "Place of Performance": "Vancouver, WA",
+      "County FIPS": "53011",
+      "Action Date": "2025-03-01",
+      "Description": "Health research services contract - TERMINATED"
+    },
+    {
+      "Award ID": "GRANT-2025-0017",
+      "Recipient Name": "Clark County Community Services",
+      "Award Type": "Grant",
+      "Award Amount": 1450000,
+      "Awarding Agency": "Department of Housing and Urban Development",
+      "Place of Performance": "Vancouver, WA",
+      "County FIPS": "53011",
+      "Action Date": "2025-02-15",
+      "Description": "Community development block grant - CANCELLED"
+    },
+    {
+      "Award ID": "GRANT-2025-0031",
+      "Recipient Name": "Columbia River Education District",
+      "Award Type": "Grant",
+      "Award Amount": 650000,
+      "Awarding Agency": "Department of Education",
+      "Place of Performance": "Vancouver, WA",
+      "County FIPS": "53011",
+      "Action Date": "2025-02-28",
+      "Description": "Title I school improvement grant - REDUCED"
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "count": 3,
+    "total": 3,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}

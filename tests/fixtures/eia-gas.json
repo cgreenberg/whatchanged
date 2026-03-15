@@ -1,0 +1,79 @@
+{
+  "response": {
+    "total": 10,
+    "dateFormat": "YYYY-MM-DD",
+    "frequency": "weekly",
+    "data": [
+      {
+        "period": "2025-02-24",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.752",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-02-17",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.698",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-02-10",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.714",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-01-27",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.521",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-01-20",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.489",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-01-13",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.512",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2025-01-06",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.498",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2024-12-30",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.456",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2024-12-23",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.423",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2024-12-16",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.398",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      }
+    ]
+  }
+}

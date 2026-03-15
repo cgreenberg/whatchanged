@@ -1,0 +1,128 @@
+{
+  "status": "REQUEST_SUCCEEDED",
+  "responseTime": 188,
+  "Results": {
+    "series": [
+      {
+        "seriesID": "CUUR0000SAF11",
+        "data": [
+          {
+            "year": "2025",
+            "period": "M02",
+            "periodName": "February",
+            "value": "311.456",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2025",
+            "period": "M01",
+            "periodName": "January",
+            "value": "308.123",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M12",
+            "periodName": "December",
+            "value": "306.789",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M11",
+            "periodName": "November",
+            "value": "304.512",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M10",
+            "periodName": "October",
+            "value": "302.345",
+            "footnotes": [{}]
+          }
+        ]
+      },
+      {
+        "seriesID": "CUUR0000SAH1",
+        "data": [
+          {
+            "year": "2025",
+            "period": "M02",
+            "periodName": "February",
+            "value": "428.912",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2025",
+            "period": "M01",
+            "periodName": "January",
+            "value": "425.678",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M12",
+            "periodName": "December",
+            "value": "422.345",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M11",
+            "periodName": "November",
+            "value": "419.123",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M10",
+            "periodName": "October",
+            "value": "415.890",
+            "footnotes": [{}]
+          }
+        ]
+      },
+      {
+        "seriesID": "CUUR0000SA0E",
+        "data": [
+          {
+            "year": "2025",
+            "period": "M02",
+            "periodName": "February",
+            "value": "259.034",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2025",
+            "period": "M01",
+            "periodName": "January",
+            "value": "255.789",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M12",
+            "periodName": "December",
+            "value": "252.456",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M11",
+            "periodName": "November",
+            "value": "248.123",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M10",
+            "periodName": "October",
+            "value": "244.890",
+            "footnotes": [{}]
+          }
+        ]
+      }
+    ]
+  }
+}

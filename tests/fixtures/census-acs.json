@@ -1,0 +1,11 @@
+{
+  "variables": ["NAME", "B19013_001E", "B25064_001E"],
+  "data": [
+    ["NAME", "B19013_001E", "B25064_001E", "zip code tabulation area"],
+    ["ZCTA5 98683", "83821", "1450", "98683"]
+  ],
+  "zip": "98683",
+  "year": 2022,
+  "medianIncome": 83821,
+  "medianRent": 1450
+}

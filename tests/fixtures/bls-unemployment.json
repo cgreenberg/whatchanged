@@ -1,0 +1,48 @@
+{
+  "status": "REQUEST_SUCCEEDED",
+  "responseTime": 142,
+  "Results": {
+    "series": [
+      {
+        "seriesID": "LAUCN530110000000003",
+        "data": [
+          {
+            "year": "2025",
+            "period": "M02",
+            "periodName": "February",
+            "value": "5.0",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2025",
+            "period": "M01",
+            "periodName": "January",
+            "value": "4.1",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M12",
+            "periodName": "December",
+            "value": "4.3",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M11",
+            "periodName": "November",
+            "value": "4.2",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M10",
+            "periodName": "October",
+            "value": "4.0",
+            "footnotes": [{}]
+          }
+        ]
+      }
+    ]
+  }
+}
