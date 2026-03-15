@@ -6,15 +6,18 @@ const bebasNeue = Bebas_Neue({
   weight: '400',
   variable: '--font-bebas',
   subsets: ['latin'],
+  display: 'swap',
 })
 
 const inter = Inter({
   weight: ['400', '500', '600'],
   variable: '--font-inter',
   subsets: ['latin'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://whatchanged.us'),
   title: 'What Changed | See how your town has changed since January 2025',
   description: 'Enter your zip code to see local unemployment, prices, and federal funding changes since January 20, 2025.',
   openGraph: {

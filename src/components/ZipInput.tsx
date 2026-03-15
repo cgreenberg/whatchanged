@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface ZipInputProps {
   onSubmit: (zip: string) => void
@@ -9,6 +9,15 @@ interface ZipInputProps {
 export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  const prefetchedRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (value.length >= 5 && !prefetchedRef.current.has(value)) {
+      prefetchedRef.current.add(value)
+      // Prefetch in background — don't await
+      fetch(`/api/data/${value}`).catch(() => {})
+    }
+  }, [value])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value.replace(/\D/g, '').slice(0, 5)

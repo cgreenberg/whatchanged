@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ZipInput } from '@/components/ZipInput'
 import { LocationBanner } from '@/components/LocationBanner'
 import { StatCard } from '@/components/StatCard'
@@ -9,6 +9,7 @@ import { TariffWidget } from '@/components/TariffWidget'
 import { DigDeeper } from '@/components/DigDeeper'
 import { ShareButton } from '@/components/ShareButton'
 import { MapSection } from '@/components/map/MapSection'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { geocodeZip } from '@/lib/data/zip-coords'
 import type { EconomicSnapshot } from '@/types'
 
@@ -30,6 +31,7 @@ export default function Home() {
       const data: EconomicSnapshot = await res.json()
       setSnapshot(data)
       setState('loaded')
+      window.history.replaceState({}, '', `/?zip=${zip}`)
       const coords = await geocodeZip(zip)
       if (coords) setMarkerPosition(coords)
     } catch (err) {
@@ -37,6 +39,14 @@ export default function Home() {
       setState('error')
     }
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const zip = params.get('zip')
+    if (zip && /^\d{5}$/.test(zip)) {
+      handleZipSubmit(zip)
+    }
+  }, [])
 
   return (
     <main className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
@@ -111,17 +121,21 @@ export default function Home() {
 
       {state === 'loaded' && snapshot && (
         <>
-          <ChartsSection snapshot={snapshot} />
+          <ErrorBoundary>
+            <ChartsSection snapshot={snapshot} />
+          </ErrorBoundary>
           {snapshot.census.data && (
             <TariffWidget medianIncome={snapshot.census.data.medianIncome} />
           )}
           <DigDeeper snapshot={snapshot} />
           <ShareButton snapshot={snapshot} />
-          <MapSection
-            currentZip={snapshot.zip}
-            markerPosition={markerPosition}
-            onZipChange={handleZipSubmit}
-          />
+          <ErrorBoundary>
+            <MapSection
+              currentZip={snapshot.zip}
+              markerPosition={markerPosition}
+              onZipChange={handleZipSubmit}
+            />
+          </ErrorBoundary>
         </>
       )}
 

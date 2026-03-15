@@ -39,23 +39,17 @@ function getChartData(
 export function ChartsSection({ snapshot }: ChartsSectionProps) {
   const sortedCharts = [...chartConfigs].sort((a, b) => a.order - b.order)
 
-  // Filter out charts with no data
-  const chartsWithData = sortedCharts.filter(
-    c => getChartData(c.id, snapshot).length > 0
-  )
-
-  if (chartsWithData.length === 0) return null
-
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
       className="mt-12"
+      data-testid="charts-section"
     >
       <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="charts-section">
-        {chartsWithData.map(config => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {sortedCharts.map(config => (
           <EraChart
             key={config.id}
             config={config}

@@ -57,7 +57,28 @@ export function EraChart({ config, data }: EraChartProps) {
     return filteredData.map((d, i) => ({ ...d, trend: trendData[i]?.trend }))
   }, [filteredData, config.trendline, config.series])
 
-  if (!chartData.length) return null
+  if (!chartData.length) {
+    return (
+      <div
+        className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${
+          config.size === 'large'
+            ? 'col-span-full'
+            : config.size === 'medium'
+              ? 'col-span-full sm:col-span-2'
+              : ''
+        }`}
+        data-testid={`chart-${config.id}`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-inter font-medium text-zinc-300">{config.title}</h3>
+          <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
+        </div>
+        <div className="h-64 flex items-center justify-center">
+          <p className="text-zinc-600 text-sm font-inter">Data unavailable</p>
+        </div>
+      </div>
+    )
+  }
 
   // Determine date range for era shading
   const firstDate = chartData[0]?.date ?? ''
