@@ -8,6 +8,8 @@ import { ChartsSection } from '@/components/charts/ChartsSection'
 import { TariffWidget } from '@/components/TariffWidget'
 import { DigDeeper } from '@/components/DigDeeper'
 import { ShareButton } from '@/components/ShareButton'
+import { MapSection } from '@/components/map/MapSection'
+import { geocodeZip } from '@/lib/data/zip-coords'
 import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -16,6 +18,7 @@ export default function Home() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [markerPosition, setMarkerPosition] = useState<[number, number] | undefined>()
 
   async function handleZipSubmit(zip: string) {
     setState('loading')
@@ -27,6 +30,8 @@ export default function Home() {
       const data: EconomicSnapshot = await res.json()
       setSnapshot(data)
       setState('loaded')
+      const coords = await geocodeZip(zip)
+      if (coords) setMarkerPosition(coords)
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong')
       setState('error')
@@ -112,6 +117,11 @@ export default function Home() {
           )}
           <DigDeeper snapshot={snapshot} />
           <ShareButton snapshot={snapshot} />
+          <MapSection
+            currentZip={snapshot.zip}
+            markerPosition={markerPosition}
+            onZipChange={handleZipSubmit}
+          />
         </>
       )}
 
