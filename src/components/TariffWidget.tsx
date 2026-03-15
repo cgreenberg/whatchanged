@@ -29,14 +29,17 @@ export function TariffWidget({ medianIncome }: TariffWidgetProps) {
         </span>{' '}
         this year.
       </p>
-      <div className="mt-4 pt-3 border-t border-zinc-800">
+      <div className="mt-4 pt-3 border-t border-zinc-800 space-y-1">
         <p className="text-xs text-zinc-500 font-inter">
-          ⚠️ Estimated — not measured · Based on{' '}
-          <a href="https://budgetlab.yale.edu/" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
-            Yale Budget Lab
+          ⚠️ Rough estimate — not a precise local calculation. We apply the{' '}
+          <a href="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+            Yale Budget Lab&apos;s national tariff cost estimate
           </a>{' '}
-          projections applied to local income data ·
-          Actual costs may vary
+          (~2% of income) to your area&apos;s{' '}
+          <a href="https://www.census.gov/programs-surveys/acs" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+            Census median income
+          </a>.
+          Actual impact varies by household spending patterns.
         </p>
       </div>
     </motion.div>

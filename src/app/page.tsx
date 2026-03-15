@@ -87,7 +87,7 @@ export default function Home() {
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     geoLevel="county-level"
                     isNegative
-                    sourceUrl="https://www.bls.gov/lau/"
+                    sourceUrl={`https://data.bls.gov/timeseries/LAUCN${snapshot.location.countyFips.padStart(5, '0')}0000000003`}
                   />
                 )}
                 {snapshot.cpi.data && (
@@ -98,9 +98,9 @@ export default function Home() {
                     direction={snapshot.cpi.data.groceriesChange > 0 ? 'up' : 'down'}
                     sourceLabel="BLS CPI"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel="national"
+                    geoLevel="national (not local)"
                     isNegative
-                    sourceUrl="https://www.bls.gov/cpi/"
+                    sourceUrl="https://data.bls.gov/timeseries/CUUR0000SAF11"
                   />
                 )}
                 {snapshot.federal.data && (

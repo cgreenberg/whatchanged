@@ -22,6 +22,9 @@ export interface ChartConfig {
   yAxisLabel?: string
   yAxisDomain?: [number | 'auto', number | 'auto']
   formatValue?: (value: number) => string
+  sourceLabel?: string
+  sourceUrl?: string
+  geoLevel?: string
 }
 
 export const chartConfigs: ChartConfig[] = [
@@ -38,6 +41,9 @@ export const chartConfigs: ChartConfig[] = [
     eraShading: true,
     yAxisLabel: '%',
     formatValue: (v) => `${v.toFixed(1)}%`,
+    sourceLabel: 'BLS Local Area Unemployment Statistics',
+    sourceUrl: 'https://data.bls.gov/lausmap/',
+    geoLevel: 'County-level',
   },
   {
     id: 'cpi',
@@ -53,6 +59,9 @@ export const chartConfigs: ChartConfig[] = [
     defaultTimeframe: '5Y',
     eraShading: true,
     yAxisLabel: 'Index',
+    sourceLabel: 'BLS Consumer Price Index',
+    sourceUrl: 'https://data.bls.gov/timeseries/CUUR0000SAF11',
+    geoLevel: 'National (not local)',
   },
   {
     id: 'gas',
@@ -67,5 +76,8 @@ export const chartConfigs: ChartConfig[] = [
     eraShading: true,
     yAxisLabel: '$/gal',
     formatValue: (v) => `$${v.toFixed(2)}`,
+    sourceLabel: 'EIA Weekly Retail Gasoline Prices',
+    sourceUrl: 'https://www.eia.gov/petroleum/gasdiesel/',
+    geoLevel: 'State-level',
   },
 ]

@@ -91,7 +91,7 @@ export function EraChart({ config, data }: EraChartProps) {
         <ReferenceArea
           x1={firstDate > BIDEN_START ? firstDate : BIDEN_START}
           x2={lastDate < BIDEN_END ? lastDate : BIDEN_END}
-          fill="rgba(59, 130, 246, 0.07)"
+          fill="rgba(59, 130, 246, 0.15)"
           strokeOpacity={0}
         />
       )}
@@ -99,7 +99,7 @@ export function EraChart({ config, data }: EraChartProps) {
         <ReferenceArea
           x1={firstDate > TRUMP2_START ? firstDate : TRUMP2_START}
           x2={lastDate}
-          fill="rgba(239, 68, 68, 0.07)"
+          fill="rgba(239, 68, 68, 0.15)"
           strokeOpacity={0}
         />
       )}
@@ -246,6 +246,16 @@ export function EraChart({ config, data }: EraChartProps) {
           </ChartComponent>
         </ResponsiveContainer>
       </div>
+      {(config.sourceLabel || config.geoLevel) && (
+        <div className="mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-500">
+          {config.sourceUrl ? (
+            <a href={config.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+              {config.sourceLabel}
+            </a>
+          ) : config.sourceLabel}
+          {config.geoLevel && <span> · {config.geoLevel}</span>}
+        </div>
+      )}
     </div>
   )
 }
