@@ -17,6 +17,27 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'What Changed | See how your town has changed since January 2025',
   description: 'Enter your zip code to see local unemployment, prices, and federal funding changes since January 20, 2025.',
+  openGraph: {
+    title: 'What Changed In Your Town?',
+    description: 'Enter your zip code. See what changed since January 2025.',
+    url: 'https://whatchanged.us',
+    siteName: 'What Changed',
+    images: [
+      {
+        url: '/api/og',
+        width: 1200,
+        height: 630,
+        alt: 'What Changed - Local Economic Snapshot',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'What Changed In Your Town?',
+    description: 'Enter your zip code. See what changed since January 2025.',
+    images: ['/api/og'],
+  },
 }
 
 export default function RootLayout({

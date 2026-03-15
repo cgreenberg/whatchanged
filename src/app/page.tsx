@@ -7,6 +7,7 @@ import { StatCardSkeleton } from '@/components/StatCardSkeleton'
 import { ChartsSection } from '@/components/charts/ChartsSection'
 import { TariffWidget } from '@/components/TariffWidget'
 import { DigDeeper } from '@/components/DigDeeper'
+import { ShareButton } from '@/components/ShareButton'
 import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -110,6 +111,7 @@ export default function Home() {
             <TariffWidget medianIncome={snapshot.census.data.medianIncome} />
           )}
           <DigDeeper snapshot={snapshot} />
+          <ShareButton snapshot={snapshot} />
         </>
       )}
 
