@@ -7,7 +7,8 @@ const createJestConfig = nextJest({
 
 const config: Config = {
   coverageProvider: 'v8',
-  testEnvironment: 'jsdom',
+  testEnvironment: '<rootDir>/jest.environment.ts',
+  setupFiles: ['<rootDir>/jest.polyfills.ts'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -19,6 +20,8 @@ const config: Config = {
     '<rootDir>/tests/integration/**/*.test.ts',
     '<rootDir>/tests/integration/**/*.test.tsx',
   ],
+  // Transform ESM-only packages that MSW depends on
+  transformIgnorePatterns: ['/node_modules/(?!(until-async)/)'],
 }
 
 export default createJestConfig(config)
