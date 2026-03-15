@@ -1,19 +1,22 @@
 import type { CpiData, CpiPoint } from '@/types'
+import { getMetroCpiAreaForCounty } from '@/lib/data/county-metro-cpi'
 
 const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
-
-const GROCERIES_SERIES = 'CUUR0000SAF11'
-const SHELTER_SERIES = 'CUUR0000SAH1'
-const ENERGY_SERIES = 'CUUR0000SA0E'
 
 const BASELINE_YEAR = '2025'
 const BASELINE_PERIOD = 'M01'
 
-export async function fetchCpi(): Promise<CpiData> {
+export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<CpiData> {
+  const { areaCode, areaName } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
+
+  const groceriesSeries = `CUUR${areaCode}SAF11`
+  const shelterSeries = `CUUR${areaCode}SAH1`
+  const energySeries = `CUUR${areaCode}SA0E`
+
   const currentYear = new Date().getFullYear().toString()
 
   const body: Record<string, unknown> = {
-    seriesid: [GROCERIES_SERIES, SHELTER_SERIES, ENERGY_SERIES],
+    seriesid: [groceriesSeries, shelterSeries, energySeries],
     startyear: '2020',
     endyear: currentYear,
   }
@@ -49,9 +52,9 @@ export async function fetchCpi(): Promise<CpiData> {
     seriesMap[s.seriesID] = s.data ?? []
   }
 
-  const groceriesData = seriesMap[GROCERIES_SERIES] ?? []
-  const shelterData = seriesMap[SHELTER_SERIES] ?? []
-  const energyData = seriesMap[ENERGY_SERIES] ?? []
+  const groceriesData = seriesMap[groceriesSeries] ?? []
+  const shelterData = seriesMap[shelterSeries] ?? []
+  const energyData = seriesMap[energySeries] ?? []
 
   if (!groceriesData.length) {
     throw new Error('No groceries CPI data returned')
@@ -99,6 +102,6 @@ export async function fetchCpi(): Promise<CpiData> {
     groceriesBaseline,
     groceriesChange: parseFloat((groceriesCurrent - groceriesBaseline).toFixed(3)),
     series,
-    metro: 'National',
+    metro: areaName,
   }
 }

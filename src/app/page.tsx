@@ -98,9 +98,9 @@ export default function Home() {
                     direction={snapshot.cpi.data.groceriesChange > 0 ? 'up' : 'down'}
                     sourceLabel="BLS CPI"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel="national (not local)"
+                    geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
                     isNegative
-                    sourceUrl="https://data.bls.gov/timeseries/CUUR0000SAF11"
+                    sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
                   />
                 )}
                 {snapshot.federal.data && (

@@ -26,8 +26,11 @@ export async function GET(
     return NextResponse.json({ error: 'Zip code not found' }, { status: 404 })
   }
 
-  // Cache if at least unemployment succeeded
-  if (snapshot.unemployment.data) {
+  // Cache only if at least 3 of 4 external sources succeeded
+  const successCount = [snapshot.unemployment, snapshot.cpi, snapshot.gas, snapshot.federal]
+    .filter(s => s.data !== null).length
+
+  if (successCount >= 3) {
     await setCached(cacheKey, snapshot, CACHE_TTL)
   }
 

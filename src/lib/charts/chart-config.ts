@@ -61,7 +61,7 @@ export const chartConfigs: ChartConfig[] = [
     yAxisLabel: 'Index',
     sourceLabel: 'BLS Consumer Price Index',
     sourceUrl: 'https://data.bls.gov/timeseries/CUUR0000SAF11',
-    geoLevel: 'National (not local)',
+    geoLevel: 'Metro area (when available)',
   },
   {
     id: 'gas',

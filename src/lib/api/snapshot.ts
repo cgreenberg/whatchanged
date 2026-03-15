@@ -13,7 +13,7 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
   // Run all external fetches in parallel
   const [unemployment, cpi, gas, federal] = await Promise.all([
     safelyFetch(blsSource, [location.countyFips]),
-    safelyFetch(blsCpiSource, []),
+    safelyFetch(blsCpiSource, [location.countyFips, location.stateAbbr]),
     safelyFetch(eiaSource, [location.stateAbbr]),
     safelyFetch(usaSpendingSource, [location.countyFips, location.stateAbbr]),
   ])

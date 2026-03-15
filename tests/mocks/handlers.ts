@@ -9,9 +9,15 @@ export const handlers = [
   http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
     const body = await request.json() as { seriesid?: string[] }
     const seriesIds: string[] = body?.seriesid ?? []
-    // If any series ID starts with CUUR, return CPI fixture
+    // If any series ID starts with CUUR, return CPI fixture with remapped series IDs
     if (seriesIds.some((id: string) => id.startsWith('CUUR'))) {
-      return HttpResponse.json(blsCpi)
+      // Remap fixture series IDs to match requested IDs (supports metro-specific series)
+      const itemSuffixes = ['SAF11', 'SAH1', 'SA0E']
+      const remappedSeries = blsCpi.Results.series.map((s: { seriesID: string; data: unknown[] }, i: number) => ({
+        ...s,
+        seriesID: seriesIds.find((id: string) => id.endsWith(itemSuffixes[i])) ?? s.seriesID,
+      }))
+      return HttpResponse.json({ ...blsCpi, Results: { series: remappedSeries } })
     }
     return HttpResponse.json(blsUnemployment)
   }),
