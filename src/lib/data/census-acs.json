@@ -1,0 +1,5 @@
+{
+  "98683": { "medianIncome": 83821, "medianRent": 1450, "year": 2023 },
+  "10001": { "medianIncome": 94000, "medianRent": 2200, "year": 2023 },
+  "90210": { "medianIncome": 152000, "medianRent": 3500, "year": 2023 }
+}
