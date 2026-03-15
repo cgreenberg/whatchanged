@@ -4,6 +4,7 @@ import { ZipInput } from '@/components/ZipInput'
 import { LocationBanner } from '@/components/LocationBanner'
 import { StatCard } from '@/components/StatCard'
 import { StatCardSkeleton } from '@/components/StatCardSkeleton'
+import { ChartsSection } from '@/components/charts/ChartsSection'
 import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -98,6 +99,10 @@ export default function Home() {
             )}
           </div>
         </section>
+      )}
+
+      {state === 'loaded' && snapshot && (
+        <ChartsSection snapshot={snapshot} />
       )}
 
       {state === 'error' && (
