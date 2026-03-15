@@ -22,7 +22,7 @@ export const blsCpiSource: DataSource<CpiData> = {
 export const eiaSource: DataSource<GasPriceData> = {
   id: 'eia-gas',
   name: 'EIA Weekly Retail Gasoline Prices',
-  docsUrl: 'https://www.eia.gov/petroleum/gasdiesel/',
+  docsUrl: 'https://www.eia.gov/opendata/documentation.php',
   fetch: fetchGasPrice,
 }
 

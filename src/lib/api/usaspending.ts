@@ -32,7 +32,7 @@ export async function fetchFederalFunding(
   const body = {
     filters: {
       time_period: [{ start_date: '2025-01-20', end_date: '2025-12-31' }],
-      place_of_performance_locations: [{ county: countyCode, state }],
+      place_of_performance_locations: [{ country: 'USA', state, county: countyCode }],
       award_type_codes: ['A', 'B', 'C', 'D'],
     },
     fields: ['Award ID', 'Recipient Name', 'Award Amount', 'Award Type'],
@@ -57,25 +57,16 @@ export async function fetchFederalFunding(
   const results: any[] = json?.results ?? []
 
   let amountCut = 0
-  let contractsCut = 0
-  let grantsCut = 0
 
   for (const award of results) {
     const amount = typeof award['Award Amount'] === 'number' ? award['Award Amount'] : 0
     amountCut += amount
-
-    const type = award['Award Type'] ?? ''
-    if (type === 'Contract') {
-      contractsCut++
-    } else if (type === 'Grant') {
-      grantsCut++
-    }
   }
 
   return {
     amountCut,
-    contractsCut,
-    grantsCut,
+    contractsCut: results.length,
+    grantsCut: 0,
     countyFips,
   }
 }

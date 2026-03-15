@@ -17,20 +17,23 @@ export function DigDeeper({ snapshot }: DigDeeperProps) {
       value: `$${snapshot.gas.data.current.toFixed(2)}/gal`,
       change: `${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)} since Jan 2025`,
       source: 'EIA Weekly',
+      sourceUrl: 'https://www.eia.gov/petroleum/gasdiesel/',
     },
     snapshot.federal.data && {
       label: 'Federal Contracts Cut',
       value: `${snapshot.federal.data.contractsCut} contracts`,
       change: `${formatDollars(snapshot.federal.data.amountCut)} total`,
       source: 'USASpending.gov',
+      sourceUrl: 'https://www.usaspending.gov/',
     },
     snapshot.census.data && {
       label: 'Median Rent',
       value: `${formatDollars(snapshot.census.data.medianRent)}/mo`,
       change: `Median income: ${formatDollars(snapshot.census.data.medianIncome)}`,
       source: `Census ACS ${snapshot.census.data.year}`,
+      sourceUrl: 'https://www.census.gov/programs-surveys/acs',
     },
-  ].filter(Boolean) as Array<{ label: string; value: string; change: string; source: string }>
+  ].filter(Boolean) as Array<{ label: string; value: string; change: string; source: string; sourceUrl: string }>
 
   if (items.length === 0) return null
 
@@ -63,7 +66,9 @@ export function DigDeeper({ snapshot }: DigDeeperProps) {
                   <p className="text-xs font-inter text-muted uppercase tracking-widest">{item.label}</p>
                   <p className="text-2xl font-bebas text-white mt-1">{item.value}</p>
                   <p className="text-sm font-inter text-zinc-400 mt-1">{item.change}</p>
-                  <p className="text-xs text-zinc-500 mt-2">{item.source}</p>
+                  <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-500 mt-2 underline hover:text-zinc-300">
+                    {item.source}
+                  </a>
                 </div>
               ))}
             </div>

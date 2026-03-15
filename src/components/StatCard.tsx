@@ -11,10 +11,11 @@ interface StatCardProps {
   sourceDate: string     // e.g. "Feb 2025"
   geoLevel: string       // e.g. "county-level"
   isNegative?: boolean   // true = up is bad (unemployment, prices)
+  sourceUrl?: string
 }
 
 export function StatCard({
-  label, value, change, direction, sourceLabel, sourceDate, geoLevel, isNegative
+  label, value, change, direction, sourceLabel, sourceDate, geoLevel, isNegative, sourceUrl
 }: StatCardProps) {
   const isWorrying = isNegative && direction === 'up'
   const changeColor = isWorrying ? 'text-danger-red' : 'text-electric-amber'
@@ -32,7 +33,11 @@ export function StatCard({
         {direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''} {change} since Jan 2025
       </p>
       <p className="text-xs text-zinc-500 mt-auto pt-2 border-t border-zinc-800">
-        {sourceLabel} · {sourceDate} · {geoLevel}
+        {sourceUrl ? (
+          <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+            {sourceLabel}
+          </a>
+        ) : sourceLabel} · {sourceDate} · {geoLevel}
       </p>
     </motion.div>
   )

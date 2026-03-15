@@ -87,6 +87,7 @@ export default function Home() {
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     geoLevel="county-level"
                     isNegative
+                    sourceUrl="https://www.bls.gov/lau/"
                   />
                 )}
                 {snapshot.cpi.data && (
@@ -99,6 +100,7 @@ export default function Home() {
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     geoLevel="national"
                     isNegative
+                    sourceUrl="https://www.bls.gov/cpi/"
                   />
                 )}
                 {snapshot.federal.data && (
@@ -111,6 +113,7 @@ export default function Home() {
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     geoLevel="county-level"
                     isNegative
+                    sourceUrl="https://www.usaspending.gov/"
                   />
                 )}
               </>

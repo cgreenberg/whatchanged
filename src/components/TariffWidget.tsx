@@ -31,7 +31,11 @@ export function TariffWidget({ medianIncome }: TariffWidgetProps) {
       </p>
       <div className="mt-4 pt-3 border-t border-zinc-800">
         <p className="text-xs text-zinc-500 font-inter">
-          ⚠️ Estimated — not measured · Based on Yale Budget Lab projections applied to local income data ·
+          ⚠️ Estimated — not measured · Based on{' '}
+          <a href="https://budgetlab.yale.edu/" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+            Yale Budget Lab
+          </a>{' '}
+          projections applied to local income data ·
           Actual costs may vary
         </p>
       </div>
