@@ -1,5 +1,5 @@
 export type ChartType = 'area' | 'line' | 'bar'
-export type Timeframe = '1Y' | '3Y' | '5Y' | '10Y'
+export type Timeframe = 'Jan 2025' | '1Y' | '3Y' | '5Y' | '10Y'
 export type ChartSize = 'small' | 'medium' | 'large'
 
 export interface SeriesConfig {
@@ -39,7 +39,7 @@ export const chartConfigs: ChartConfig[] = [
     ],
     size: 'large',
     order: 1,
-    defaultTimeframe: '5Y',
+    defaultTimeframe: 'Jan 2025',
     eraShading: true,
     yAxisLabel: '%',
     formatValue: (v) => `${v.toFixed(1)}%`,
@@ -57,7 +57,7 @@ export const chartConfigs: ChartConfig[] = [
     ],
     size: 'medium',
     order: 2,
-    defaultTimeframe: '5Y',
+    defaultTimeframe: 'Jan 2025',
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
@@ -76,7 +76,7 @@ export const chartConfigs: ChartConfig[] = [
     ],
     size: 'medium',
     order: 3,
-    defaultTimeframe: '5Y',
+    defaultTimeframe: 'Jan 2025',
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
@@ -94,7 +94,7 @@ export const chartConfigs: ChartConfig[] = [
     ],
     size: 'medium',
     order: 4,
-    defaultTimeframe: '5Y',
+    defaultTimeframe: 'Jan 2025',
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
@@ -112,7 +112,7 @@ export const chartConfigs: ChartConfig[] = [
     ],
     size: 'medium',
     order: 5,
-    defaultTimeframe: '5Y',
+    defaultTimeframe: 'Jan 2025',
     eraShading: true,
     yAxisLabel: '$/gal',
     formatValue: (v) => `$${v.toFixed(2)}`,
