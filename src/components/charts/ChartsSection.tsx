@@ -36,11 +36,19 @@ function getChartData(
           : {},
       }
     }
-    case 'cpi': {
+    case 'cpi-groceries':
+    case 'cpi-shelter':
+    case 'cpi-energy': {
       const cpiData = snapshot.cpi.data
       const metro = cpiData?.metro
       const seriesIds = cpiData?.seriesIds
       const isNational = metro === 'National'
+      // Each chart gets the same CPI data — the chart config's series[0].dataKey picks the right field
+      const seriesIdMap: Record<string, string | undefined> = {
+        'cpi-groceries': seriesIds?.groceries,
+        'cpi-shelter': seriesIds?.shelter,
+        'cpi-energy': seriesIds?.energy,
+      }
       return {
         data: cpiData?.series.map(p => ({
           date: p.date,
@@ -56,7 +64,7 @@ function getChartData(
         })) ?? [],
         configOverrides: {
           ...(metro ? { sourceLabel: `BLS CPI — ${metro}`, geoLevel: isNational ? 'National' : `Metro: ${metro}` } : {}),
-          ...(seriesIds ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesIds.groceries}` } : {}),
+          ...(seriesIdMap[id] ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesIdMap[id]}` } : {}),
         },
       }
     }

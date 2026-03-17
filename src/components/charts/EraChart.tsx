@@ -74,7 +74,27 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
     })
   }, [chartData, showNational, nationalData])
 
-  if (!mergedData.length) {
+  // Normalize to percentage change from first visible data point
+  const displayData = useMemo((): Array<{ date: string; [key: string]: unknown }> => {
+    if (!config.normalizeToBaseline || !mergedData.length) return mergedData
+    const first = mergedData[0]
+    return mergedData.map(d => {
+      const normalized: { date: string; [key: string]: unknown } = { date: d.date }
+      for (const key of Object.keys(d)) {
+        if (key === 'date') continue
+        const val = d[key]
+        const baseVal = first[key]
+        if (typeof val === 'number' && typeof baseVal === 'number' && baseVal !== 0) {
+          normalized[key] = ((val - baseVal) / baseVal) * 100
+        } else {
+          normalized[key] = val
+        }
+      }
+      return normalized
+    })
+  }, [mergedData, config.normalizeToBaseline])
+
+  if (!displayData.length) {
     return (
       <div
         className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${
@@ -98,8 +118,8 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   }
 
   // Determine date range for era shading
-  const firstDate = mergedData[0]?.date ?? ''
-  const lastDate = mergedData[mergedData.length - 1]?.date ?? ''
+  const firstDate = displayData[0]?.date ?? ''
+  const lastDate = displayData[displayData.length - 1]?.date ?? ''
 
   // Era shading using date strings directly as x1/x2 (XAxis dataKey="date")
   const eraElements = config.eraShading ? (
@@ -289,7 +309,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent data={mergedData}>
+          <ChartComponent data={displayData}>
             {commonElements}
           </ChartComponent>
         </ResponsiveContainer>

@@ -22,6 +22,7 @@ const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   'S48B': { code: 'S48B', name: 'San Diego-Carlsbad' },
   'S49A': { code: 'S49A', name: 'San Francisco-Oakland-Hayward' },
   'S49B': { code: 'S49B', name: 'Urban Hawaii' },
+  'S49G': { code: 'S49G', name: 'Portland-Vancouver-Hillsboro' },
 }
 
 // Map state abbreviation to closest BLS CPI area code
@@ -61,8 +62,8 @@ const STATE_TO_CPI_AREA: Record<string, string> = {
   CO: 'S35D', // Denver
   UT: 'S35D',
   CA: 'S37A', // Los Angeles (default for CA)
-  WA: 'S48A', // Seattle
-  OR: 'S48A',
+  WA: 'S48A', // Seattle (default — Portland-area counties override below)
+  OR: 'S49G', // Portland (default for OR)
   HI: 'S49B', // Urban Hawaii
   // States that fall back to national
   // AK, WY, MT, ND, SD, NE, KS, AR, LA, MS, WV, VA, ID, NV not covered
@@ -77,6 +78,12 @@ const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   '06013': 'S49A', // Contra Costa County → SF metro
   '06041': 'S49A', // Marin County → SF metro
   '06073': 'S48B', // San Diego County → San Diego metro
+  // Portland-Vancouver-Hillsboro metro (crosses OR/WA border)
+  '53011': 'S49G', // Clark County, WA → Portland metro
+  '53015': 'S49G', // Cowlitz County, WA → Portland metro (closest)
+  '41005': 'S49G', // Clackamas County, OR → Portland metro
+  '41051': 'S49G', // Multnomah County, OR → Portland metro
+  '41067': 'S49G', // Washington County, OR → Portland metro
 }
 
 export function getMetroCpiArea(stateAbbr: string): { areaCode: string; areaName: string } {

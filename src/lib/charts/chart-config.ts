@@ -26,6 +26,7 @@ export interface ChartConfig {
   sourceUrl?: string
   geoLevel?: string
   showNationalToggle?: boolean
+  normalizeToBaseline?: boolean  // normalize first visible point to 100 (percentage change view)
 }
 
 export const chartConfigs: ChartConfig[] = [
@@ -48,21 +49,57 @@ export const chartConfigs: ChartConfig[] = [
     showNationalToggle: true,
   },
   {
-    id: 'cpi',
-    title: 'Consumer Prices (Index)',
+    id: 'cpi-groceries',
+    title: 'Grocery Prices',
     chartType: 'line',
     series: [
       { dataKey: 'groceries', label: 'Groceries', color: '#EF4444', type: 'monotone' },
-      { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
-      { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
     ],
-    size: 'large',
+    size: 'medium',
     order: 2,
     defaultTimeframe: '5Y',
     eraShading: true,
-    yAxisLabel: 'Index',
+    yAxisLabel: '% change',
+    normalizeToBaseline: true,
+    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
     sourceLabel: 'BLS Consumer Price Index',
     sourceUrl: 'https://data.bls.gov/timeseries/CUUR0000SAF11',
+    geoLevel: 'Metro area (when available)',
+    showNationalToggle: true,
+  },
+  {
+    id: 'cpi-shelter',
+    title: 'Shelter Costs',
+    chartType: 'line',
+    series: [
+      { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
+    ],
+    size: 'medium',
+    order: 3,
+    defaultTimeframe: '5Y',
+    eraShading: true,
+    yAxisLabel: '% change',
+    normalizeToBaseline: true,
+    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
+    sourceLabel: 'BLS Consumer Price Index',
+    geoLevel: 'Metro area (when available)',
+    showNationalToggle: true,
+  },
+  {
+    id: 'cpi-energy',
+    title: 'Energy Costs',
+    chartType: 'line',
+    series: [
+      { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
+    ],
+    size: 'medium',
+    order: 4,
+    defaultTimeframe: '5Y',
+    eraShading: true,
+    yAxisLabel: '% change',
+    normalizeToBaseline: true,
+    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
+    sourceLabel: 'BLS Consumer Price Index',
     geoLevel: 'Metro area (when available)',
     showNationalToggle: true,
   },
@@ -74,7 +111,7 @@ export const chartConfigs: ChartConfig[] = [
       { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
     ],
     size: 'medium',
-    order: 3,
+    order: 5,
     defaultTimeframe: '5Y',
     eraShading: true,
     yAxisLabel: '$/gal',
