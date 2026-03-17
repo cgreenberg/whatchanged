@@ -46,7 +46,7 @@ function filterByTimeframe(
     return data.filter(d => d.date >= '2025-01')
   }
   const now = new Date()
-  const yearsBack = tf === '1Y' ? 1 : tf === '3Y' ? 3 : tf === '5Y' ? 5 : 10
+  const yearsBack = tf === '3Y' ? 3 : tf === '5Y' ? 5 : 10
   const cutoff = new Date(now.getFullYear() - yearsBack, now.getMonth(), 1)
   const cutoffStr = cutoff.toISOString().slice(0, 7)
   return data.filter(d => d.date >= cutoffStr)

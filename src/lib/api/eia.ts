@@ -64,11 +64,39 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
   // Region name from area-name field if available
   const regionName = data[0]['area-name'] ?? duoarea
 
+  // Fetch national gas prices for comparison
+  let nationalSeries: Array<{ date: string; price: number }> | undefined
+  try {
+    const nationalParams = new URLSearchParams({
+      api_key: apiKey,
+      frequency: 'weekly',
+      'data[0]': 'value',
+      'facets[product][]': 'EPM0',
+      'facets[duoarea][]': 'NUS',
+      'sort[0][column]': 'period',
+      'sort[0][direction]': 'desc',
+      length: '260',
+    })
+    const nationalRes = await fetch(`${EIA_API_BASE}?${nationalParams.toString()}`)
+    if (nationalRes.ok) {
+      const nationalJson = await nationalRes.json()
+      const nationalData: any[] = nationalJson?.response?.data ?? []
+      if (nationalData.length) {
+        nationalSeries = [...nationalData]
+          .sort((a, b) => a.period.localeCompare(b.period))
+          .map(d => ({ date: d.period, price: parseFloat(d.value) }))
+      }
+    }
+  } catch {
+    // Silently skip national data if it fails
+  }
+
   return {
     current,
     baseline,
     change: parseFloat((current - baseline).toFixed(3)),
     region: regionName,
     series,
+    ...(nationalSeries ? { nationalSeries } : {}),
   }
 }

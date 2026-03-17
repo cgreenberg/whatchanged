@@ -74,7 +74,10 @@ function getChartData(
           date: p.date,
           price: p.price,
         })) ?? [],
-        nationalData: [],
+        nationalData: snapshot.gas.data?.nationalSeries?.map(p => ({
+          date: p.date,
+          price: p.price,
+        })) ?? [],
         configOverrides: {},
       }
     default:

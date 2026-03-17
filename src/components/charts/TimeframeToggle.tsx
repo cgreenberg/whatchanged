@@ -6,7 +6,7 @@ interface TimeframeToggleProps {
   onChange: (tf: Timeframe) => void
 }
 
-const timeframes: Timeframe[] = ['Jan 2025', '1Y', '3Y', '5Y', '10Y']
+const timeframes: Timeframe[] = ['Jan 2025', '3Y', '5Y', '10Y']
 
 export function TimeframeToggle({ selected, onChange }: TimeframeToggleProps) {
   return (

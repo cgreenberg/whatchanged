@@ -77,24 +77,24 @@ export default function Home() {
               </>
             ) : snapshot && (
               <>
-                {snapshot.unemployment.data && (
+                {snapshot.gas.data && (
                   <StatCard
-                    label="Unemployment"
-                    value={`${snapshot.unemployment.data.current}%`}
-                    change={`${snapshot.unemployment.data.change > 0 ? '+' : ''}${snapshot.unemployment.data.change} pts`}
-                    direction={snapshot.unemployment.data.change > 0 ? 'up' : 'down'}
-                    sourceLabel="BLS LAUS"
+                    label="Gas Prices"
+                    value={`$${snapshot.gas.data.current.toFixed(2)}/gal`}
+                    change={`${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)} since Jan 2025`}
+                    direction={snapshot.gas.data.change > 0 ? 'up' : 'down'}
+                    sourceLabel="EIA"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel="county-level"
+                    geoLevel="state-level"
                     isNegative
-                    sourceUrl={`https://data.bls.gov/timeseries/LAUCN${snapshot.location.countyFips.padStart(5, '0')}0000000003`}
+                    sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
                   />
                 )}
                 {snapshot.cpi.data && (
                   <StatCard
                     label="Grocery Prices"
-                    value={`+${snapshot.cpi.data.groceriesChange.toFixed(1)}%`}
-                    change={`${snapshot.cpi.data.groceriesChange.toFixed(1)}%`}
+                    value={`${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`}
+                    change={`${snapshot.cpi.data.groceriesChange.toFixed(1)}% since Jan 2025`}
                     direction={snapshot.cpi.data.groceriesChange > 0 ? 'up' : 'down'}
                     sourceLabel="BLS CPI"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -103,17 +103,17 @@ export default function Home() {
                     sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
                   />
                 )}
-                {snapshot.federal.data && (
+                {snapshot.unemployment.data && (
                   <StatCard
-                    label="Federal $ Cut Locally"
-                    value={`$${(snapshot.federal.data.amountCut / 1_000_000).toFixed(1)}M`}
-                    change={`$${(snapshot.federal.data.amountCut / 1_000_000).toFixed(1)}M since Jan 20`}
-                    direction="down"
-                    sourceLabel="USASpending"
+                    label="Unemployment"
+                    value={`${snapshot.unemployment.data.current}%`}
+                    change={`${snapshot.unemployment.data.change > 0 ? '+' : ''}${snapshot.unemployment.data.change} pts since Jan 2025`}
+                    direction={snapshot.unemployment.data.change > 0 ? 'up' : 'down'}
+                    sourceLabel="BLS LAUS"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     geoLevel="county-level"
                     isNegative
-                    sourceUrl="https://www.usaspending.gov/"
+                    sourceUrl={`https://data.bls.gov/timeseries/LAUCN${snapshot.location.countyFips.padStart(5, '0')}0000000003`}
                   />
                 )}
               </>

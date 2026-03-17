@@ -52,6 +52,7 @@ export interface GasPriceData {
   change: number
   region: string
   series: Array<{ date: string; price: number }>
+  nationalSeries?: Array<{ date: string; price: number }>
 }
 
 export interface FederalFundingData {

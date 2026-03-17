@@ -1,5 +1,5 @@
 export type ChartType = 'area' | 'line' | 'bar'
-export type Timeframe = 'Jan 2025' | '1Y' | '3Y' | '5Y' | '10Y'
+export type Timeframe = 'Jan 2025' | '3Y' | '5Y' | '10Y'
 export type ChartSize = 'small' | 'medium' | 'large'
 
 export interface SeriesConfig {
@@ -29,23 +29,29 @@ export interface ChartConfig {
   normalizeToBaseline?: boolean  // normalize first visible point to 100 (percentage change view)
 }
 
+// ORDER KEY:
+// Row 1: gas (1) + groceries (2) — side by side (medium)
+// Row 2: shelter (3) — full width (large)
+// Row 3: energy (4) + unemployment (5) — side by side (medium)
+// Mobile: stacked in same order
+
 export const chartConfigs: ChartConfig[] = [
   {
-    id: 'unemployment',
-    title: 'Unemployment Rate',
-    chartType: 'area',
+    id: 'gas',
+    title: 'Gas Prices',
+    chartType: 'line',
     series: [
-      { dataKey: 'rate', label: 'Unemployment Rate', color: '#F59E0B', type: 'monotone' },
+      { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
     ],
-    size: 'large',
+    size: 'medium',
     order: 1,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
-    yAxisLabel: '%',
-    formatValue: (v) => `${v.toFixed(1)}%`,
-    sourceLabel: 'BLS Local Area Unemployment Statistics',
-    sourceUrl: 'https://data.bls.gov/lausmap/',
-    geoLevel: 'County-level',
+    yAxisLabel: '$/gal',
+    formatValue: (v) => `$${v.toFixed(2)}`,
+    sourceLabel: 'EIA Weekly Retail Gasoline Prices',
+    sourceUrl: 'https://www.eia.gov/petroleum/gasdiesel/',
+    geoLevel: 'State-level',
     showNationalToggle: true,
   },
   {
@@ -74,7 +80,7 @@ export const chartConfigs: ChartConfig[] = [
     series: [
       { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
     ],
-    size: 'medium',
+    size: 'large',
     order: 3,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
@@ -104,20 +110,21 @@ export const chartConfigs: ChartConfig[] = [
     showNationalToggle: true,
   },
   {
-    id: 'gas',
-    title: 'Gas Prices',
-    chartType: 'line',
+    id: 'unemployment',
+    title: 'Unemployment Rate',
+    chartType: 'area',
     series: [
-      { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
+      { dataKey: 'rate', label: 'Unemployment Rate', color: '#F59E0B', type: 'monotone' },
     ],
     size: 'medium',
     order: 5,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
-    yAxisLabel: '$/gal',
-    formatValue: (v) => `$${v.toFixed(2)}`,
-    sourceLabel: 'EIA Weekly Retail Gasoline Prices',
-    sourceUrl: 'https://www.eia.gov/petroleum/gasdiesel/',
-    geoLevel: 'State-level',
+    yAxisLabel: '%',
+    formatValue: (v) => `${v.toFixed(1)}%`,
+    sourceLabel: 'BLS Local Area Unemployment Statistics',
+    sourceUrl: 'https://data.bls.gov/lausmap/',
+    geoLevel: 'County-level',
+    showNationalToggle: true,
   },
 ]
