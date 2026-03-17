@@ -13,10 +13,24 @@ import type { ChartConfig, Timeframe } from '@/lib/charts/chart-config'
 import { TimeframeToggle } from './TimeframeToggle'
 import { computeTrendline } from '@/lib/charts/trendline'
 
-// Political era boundaries
+// Political era boundaries (use full date prefix for correct string comparison with any format)
+const TRUMP1_START = '2017-01'
+const TRUMP1_END = '2021-01'
 const BIDEN_START = '2021-01'
 const BIDEN_END = '2025-01'
 const TRUMP2_START = '2025-01'
+
+// Find the closest data point date at or after a boundary
+function findClosestDate(dates: string[], boundary: string, direction: 'atOrAfter' | 'atOrBefore'): string | null {
+  if (direction === 'atOrAfter') {
+    return dates.find(d => d >= boundary) ?? null
+  }
+  // atOrBefore: last date that is <= boundary
+  for (let i = dates.length - 1; i >= 0; i--) {
+    if (dates[i] <= boundary + '\uffff') return dates[i]
+  }
+  return null
+}
 
 interface EraChartProps {
   config: ChartConfig
@@ -101,7 +115,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           config.size === 'large'
             ? 'col-span-full'
             : config.size === 'medium'
-              ? 'col-span-full sm:col-span-2'
+              ? 'sm:col-span-1'
               : ''
         }`}
         data-testid={`chart-${config.id}`}
@@ -121,41 +135,49 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   const firstDate = displayData[0]?.date ?? ''
   const lastDate = displayData[displayData.length - 1]?.date ?? ''
 
-  // Era shading using date strings directly as x1/x2 (XAxis dataKey="date")
+  // Build era shading using actual data point dates (handles both monthly and weekly formats)
+  const allDates = displayData.map(d => d.date)
+
   const eraElements = config.eraShading ? (
     <>
-      {firstDate <= BIDEN_END && lastDate >= BIDEN_START && (
-        <ReferenceArea
-          x1={firstDate > BIDEN_START ? firstDate : BIDEN_START}
-          x2={lastDate < BIDEN_END ? lastDate : BIDEN_END}
-          fill="rgba(59, 130, 246, 0.15)"
-          strokeOpacity={0}
-        />
-      )}
-      {lastDate >= TRUMP2_START && (
-        <ReferenceArea
-          x1={firstDate > TRUMP2_START ? firstDate : TRUMP2_START}
-          x2={lastDate}
-          fill="rgba(239, 68, 68, 0.15)"
-          strokeOpacity={0}
-        />
-      )}
-      {firstDate <= '2021-01' && lastDate >= '2021-01' && (
-        <ReferenceLine
-          x="2021-01"
-          stroke="#6B7280"
-          strokeDasharray="3 3"
-          label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }}
-        />
-      )}
-      {firstDate <= '2025-01' && lastDate >= '2025-01' && (
-        <ReferenceLine
-          x="2025-01"
-          stroke="#6B7280"
-          strokeDasharray="3 3"
-          label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }}
-        />
-      )}
+      {/* Trump I: Jan 2017 – Jan 2021 (red) */}
+      {firstDate < TRUMP1_END + '\uffff' && lastDate >= TRUMP1_START && (() => {
+        const x1 = findClosestDate(allDates, TRUMP1_START, 'atOrAfter') ?? allDates[0]
+        const x2 = findClosestDate(allDates, TRUMP1_END, 'atOrBefore') ?? allDates[allDates.length - 1]
+        return x1 && x2 ? (
+          <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
+        ) : null
+      })()}
+      {/* Biden: Jan 2021 – Jan 2025 (blue) */}
+      {firstDate < BIDEN_END + '\uffff' && lastDate >= BIDEN_START && (() => {
+        const x1 = findClosestDate(allDates, BIDEN_START, 'atOrAfter') ?? allDates[0]
+        const x2 = findClosestDate(allDates, BIDEN_END, 'atOrBefore') ?? allDates[allDates.length - 1]
+        return x1 && x2 ? (
+          <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
+        ) : null
+      })()}
+      {/* Trump II: Jan 2025 – present (red) */}
+      {lastDate >= TRUMP2_START && (() => {
+        const x1 = findClosestDate(allDates, TRUMP2_START, 'atOrAfter')
+        return x1 ? (
+          <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
+        ) : null
+      })()}
+      {/* Reference lines at transitions */}
+      {(() => {
+        const jan2021 = findClosestDate(allDates, '2021-01', 'atOrAfter')
+        return jan2021 && firstDate <= '2021-01\uffff' && lastDate >= '2021-01' ? (
+          <ReferenceLine x={jan2021} stroke="#6B7280" strokeDasharray="3 3"
+            label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />
+        ) : null
+      })()}
+      {(() => {
+        const jan2025 = findClosestDate(allDates, '2025-01', 'atOrAfter')
+        return jan2025 && firstDate <= '2025-01\uffff' && lastDate >= '2025-01' ? (
+          <ReferenceLine x={jan2025} stroke="#6B7280" strokeDasharray="3 3"
+            label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />
+        ) : null
+      })()}
     </>
   ) : null
 
@@ -285,7 +307,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         config.size === 'large'
           ? 'col-span-full'
           : config.size === 'medium'
-            ? 'col-span-full sm:col-span-2'
+            ? 'sm:col-span-1'
             : ''
       }`}
       data-testid={`chart-${config.id}`}
