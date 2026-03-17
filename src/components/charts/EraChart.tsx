@@ -21,6 +21,7 @@ const TRUMP2_START = '2025-01'
 interface EraChartProps {
   config: ChartConfig
   data: Array<{ date: string; [key: string]: unknown }>
+  nationalData?: Array<{ date: string; [key: string]: unknown }>
 }
 
 function filterByTimeframe(
@@ -42,8 +43,9 @@ function formatDateLabel(dateStr: string): string {
   return `${months[m] ?? month} '${year.slice(2)}`
 }
 
-export function EraChart({ config, data }: EraChartProps) {
+export function EraChart({ config, data, nationalData }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
+  const [showNational, setShowNational] = useState(false)
 
   const filteredData = useMemo(() => filterByTimeframe(data, timeframe), [data, timeframe])
 
@@ -57,7 +59,22 @@ export function EraChart({ config, data }: EraChartProps) {
     return filteredData.map((d, i) => ({ ...d, trend: trendData[i]?.trend }))
   }, [filteredData, config.trendline, config.series])
 
-  if (!chartData.length) {
+  // Merge national data into chartData when showNational is enabled
+  const mergedData = useMemo((): Array<{ date: string; [key: string]: unknown }> => {
+    if (!showNational || !nationalData?.length) return chartData
+    const nationalMap = new Map(nationalData.map(d => [d.date, d]))
+    return chartData.map(d => {
+      const nd = nationalMap.get(d.date as string)
+      if (!nd) return d
+      const merged: { date: string; [key: string]: unknown } = { ...d }
+      for (const key of Object.keys(nd)) {
+        if (key !== 'date') merged[`national_${key}`] = nd[key]
+      }
+      return merged
+    })
+  }, [chartData, showNational, nationalData])
+
+  if (!mergedData.length) {
     return (
       <div
         className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${
@@ -81,8 +98,8 @@ export function EraChart({ config, data }: EraChartProps) {
   }
 
   // Determine date range for era shading
-  const firstDate = chartData[0]?.date ?? ''
-  const lastDate = chartData[chartData.length - 1]?.date ?? ''
+  const firstDate = mergedData[0]?.date ?? ''
+  const lastDate = mergedData[mergedData.length - 1]?.date ?? ''
 
   // Era shading using date strings directly as x1/x2 (XAxis dataKey="date")
   const eraElements = config.eraShading ? (
@@ -163,6 +180,21 @@ export function EraChart({ config, data }: EraChartProps) {
     })
   }
 
+  // National overlay lines (dotted) when showNational is enabled
+  const nationalLines = showNational ? config.series.map(s => (
+    <Line
+      key={`national_${s.dataKey}`}
+      type={s.type ?? 'monotone'}
+      dataKey={`national_${s.dataKey}`}
+      stroke={s.color}
+      strokeWidth={1}
+      strokeDasharray="6 3"
+      strokeOpacity={0.5}
+      name={`${s.label} (National)`}
+      dot={false}
+    />
+  )) : null
+
   // Add trendline if enabled
   const trendlineElement = config.trendline ? (
     <Line
@@ -215,6 +247,7 @@ export function EraChart({ config, data }: EraChartProps) {
       <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
       {eraElements}
       {renderSeries()}
+      {nationalLines}
       {trendlineElement}
     </>
   )
@@ -223,6 +256,8 @@ export function EraChart({ config, data }: EraChartProps) {
     config.chartType === 'area' ? AreaChart
     : config.chartType === 'bar' ? BarChart
     : LineChart
+
+  const hasNationalData = (nationalData?.length ?? 0) > 0
 
   return (
     <div
@@ -237,11 +272,24 @@ export function EraChart({ config, data }: EraChartProps) {
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-inter font-medium text-zinc-300">{config.title}</h3>
-        <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
+        <div className="flex items-center gap-3">
+          {config.showNationalToggle && hasNationalData && (
+            <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showNational}
+                onChange={e => setShowNational(e.target.checked)}
+                className="rounded border-zinc-600"
+              />
+              Show national
+            </label>
+          )}
+          <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
+        </div>
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent data={chartData}>
+          <ChartComponent data={mergedData}>
             {commonElements}
           </ChartComponent>
         </ResponsiveContainer>

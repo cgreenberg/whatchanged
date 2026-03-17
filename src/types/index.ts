@@ -25,6 +25,8 @@ export interface UnemploymentData {
   change: number // current - baseline
   series: UnemploymentPoint[]
   countyFips: string
+  seriesId?: string
+  nationalSeries?: UnemploymentPoint[]
 }
 
 export interface CpiPoint {
@@ -40,6 +42,8 @@ export interface CpiData {
   groceriesChange: number
   series: CpiPoint[]
   metro: string
+  seriesIds?: { groceries: string; shelter: string; energy: string }
+  nationalSeries?: CpiPoint[]
 }
 
 export interface GasPriceData {

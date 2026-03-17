@@ -25,6 +25,7 @@ export interface ChartConfig {
   sourceLabel?: string
   sourceUrl?: string
   geoLevel?: string
+  showNationalToggle?: boolean
 }
 
 export const chartConfigs: ChartConfig[] = [
@@ -44,6 +45,7 @@ export const chartConfigs: ChartConfig[] = [
     sourceLabel: 'BLS Local Area Unemployment Statistics',
     sourceUrl: 'https://data.bls.gov/lausmap/',
     geoLevel: 'County-level',
+    showNationalToggle: true,
   },
   {
     id: 'cpi',
@@ -62,6 +64,7 @@ export const chartConfigs: ChartConfig[] = [
     sourceLabel: 'BLS Consumer Price Index',
     sourceUrl: 'https://data.bls.gov/timeseries/CUUR0000SAF11',
     geoLevel: 'Metro area (when available)',
+    showNationalToggle: true,
   },
   {
     id: 'gas',

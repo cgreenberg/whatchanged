@@ -1,6 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import { chartConfigs } from '@/lib/charts/chart-config'
+import type { ChartConfig } from '@/lib/charts/chart-config'
 import { EraChart } from './EraChart'
 import type { EconomicSnapshot } from '@/types'
 
@@ -12,27 +13,64 @@ interface ChartsSectionProps {
 function getChartData(
   id: string,
   snapshot: EconomicSnapshot
-): Array<{ date: string; [key: string]: unknown }> {
+): {
+  data: Array<{ date: string; [key: string]: unknown }>
+  nationalData: Array<{ date: string; [key: string]: unknown }>
+  configOverrides: Partial<ChartConfig>
+} {
   switch (id) {
-    case 'unemployment':
-      return snapshot.unemployment.data?.series.map(p => ({
-        date: p.date,
-        rate: p.rate,
-      })) ?? []
-    case 'cpi':
-      return snapshot.cpi.data?.series.map(p => ({
-        date: p.date,
-        groceries: p.groceries,
-        shelter: p.shelter,
-        energy: p.energy,
-      })) ?? []
+    case 'unemployment': {
+      const unemploymentData = snapshot.unemployment.data
+      const seriesId = unemploymentData?.seriesId
+      return {
+        data: unemploymentData?.series.map(p => ({
+          date: p.date,
+          rate: p.rate,
+        })) ?? [],
+        nationalData: unemploymentData?.nationalSeries?.map(p => ({
+          date: p.date,
+          rate: p.rate,
+        })) ?? [],
+        configOverrides: seriesId
+          ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesId}` }
+          : {},
+      }
+    }
+    case 'cpi': {
+      const cpiData = snapshot.cpi.data
+      const metro = cpiData?.metro
+      const seriesIds = cpiData?.seriesIds
+      const isNational = metro === 'National'
+      return {
+        data: cpiData?.series.map(p => ({
+          date: p.date,
+          groceries: p.groceries,
+          shelter: p.shelter,
+          energy: p.energy,
+        })) ?? [],
+        nationalData: cpiData?.nationalSeries?.map(p => ({
+          date: p.date,
+          groceries: p.groceries,
+          shelter: p.shelter,
+          energy: p.energy,
+        })) ?? [],
+        configOverrides: {
+          ...(metro ? { sourceLabel: `BLS CPI — ${metro}`, geoLevel: isNational ? 'National' : `Metro: ${metro}` } : {}),
+          ...(seriesIds ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesIds.groceries}` } : {}),
+        },
+      }
+    }
     case 'gas':
-      return snapshot.gas.data?.series.map(p => ({
-        date: p.date,
-        price: p.price,
-      })) ?? []
+      return {
+        data: snapshot.gas.data?.series.map(p => ({
+          date: p.date,
+          price: p.price,
+        })) ?? [],
+        nationalData: [],
+        configOverrides: {},
+      }
     default:
-      return []
+      return { data: [], nationalData: [], configOverrides: {} }
   }
 }
 
@@ -49,13 +87,18 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
     >
       <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {sortedCharts.map(config => (
-          <EraChart
-            key={config.id}
-            config={config}
-            data={getChartData(config.id, snapshot)}
-          />
-        ))}
+        {sortedCharts.map(config => {
+          const { data, nationalData, configOverrides } = getChartData(config.id, snapshot)
+          const mergedConfig: ChartConfig = { ...config, ...configOverrides }
+          return (
+            <EraChart
+              key={config.id}
+              config={mergedConfig}
+              data={data}
+              nationalData={nationalData}
+            />
+          )
+        })}
       </div>
     </motion.section>
   )

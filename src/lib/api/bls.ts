@@ -13,6 +13,9 @@ function buildSeriesId(countyFips: string): string {
 const BASELINE_YEAR = '2025'
 const BASELINE_PERIOD = 'M01'
 
+// National unemployment rate series
+const NATIONAL_UNEMPLOYMENT_SERIES = 'LNS14000000'
+
 export async function fetchUnemployment(
   countyFips: string,
   options: { startYear?: string; endYear?: string } = {}
@@ -24,7 +27,7 @@ export async function fetchUnemployment(
   const seriesId = buildSeriesId(countyFips)
 
   const body: Record<string, unknown> = {
-    seriesid: [seriesId],
+    seriesid: [seriesId, NATIONAL_UNEMPLOYMENT_SERIES],
     startyear: startYear,
     endyear: endYear,
   }
@@ -50,20 +53,35 @@ export async function fetchUnemployment(
     throw new Error(`BLS API failed: ${json.message?.join(', ') ?? 'unknown error'}`)
   }
 
-  const series = json.Results?.series?.[0]
-  if (!series?.data?.length) {
+  // Index series by seriesID
+  const seriesResultMap: Record<string, any[]> = {}
+  for (const s of (json.Results?.series ?? [])) {
+    seriesResultMap[s.seriesID] = s.data ?? []
+  }
+
+  const countyRawData = seriesResultMap[seriesId]
+  if (!countyRawData?.length) {
     throw new Error(`No BLS data returned for county FIPS ${countyFips}`)
   }
 
+  // Filter out null/"-" values before processing
+  const validData = countyRawData.filter(
+    (d: any) => d.value !== '-' && d.value !== null && !isNaN(parseFloat(d.value))
+  )
+
+  if (!validData.length) {
+    throw new Error(`No valid BLS data returned for county FIPS ${countyFips}`)
+  }
+
   // Sort chronologically (BLS returns newest first)
-  const sorted = [...series.data].sort((a: any, b: any) => {
+  const sorted = [...validData].sort((a: any, b: any) => {
     const aDate = `${a.year}-${a.period}`
     const bDate = `${b.year}-${b.period}`
     return aDate.localeCompare(bDate)
   })
 
   // Find the Jan 2025 baseline value
-  const baselineEntry = series.data.find(
+  const baselineEntry = validData.find(
     (d: any) => d.year === BASELINE_YEAR && d.period === BASELINE_PERIOD
   )
   const baseline = baselineEntry ? parseFloat(baselineEntry.value) : 0
@@ -72,10 +90,30 @@ export async function fetchUnemployment(
   const latestEntry = sorted[sorted.length - 1]
   const current = parseFloat(latestEntry.value)
 
-  const points: UnemploymentPoint[] = sorted.map((d: any) => ({
-    date: `${d.year}-${d.period.replace('M', '')}`,
-    rate: parseFloat(d.value),
-  }))
+  const points: UnemploymentPoint[] = sorted
+    .filter((d: any) => d.value !== '-' && d.value !== null && !isNaN(parseFloat(d.value)))
+    .map((d: any) => ({
+      date: `${d.year}-${d.period.replace('M', '')}`,
+      rate: parseFloat(d.value),
+    }))
+
+  // Build national series if available
+  let nationalSeries: UnemploymentPoint[] | undefined
+  const nationalRawData = seriesResultMap[NATIONAL_UNEMPLOYMENT_SERIES]
+  if (nationalRawData?.length) {
+    const validNational = nationalRawData.filter(
+      (d: any) => d.value !== '-' && d.value !== null && !isNaN(parseFloat(d.value))
+    )
+    const sortedNational = [...validNational].sort((a: any, b: any) => {
+      const aDate = `${a.year}-${a.period}`
+      const bDate = `${b.year}-${b.period}`
+      return aDate.localeCompare(bDate)
+    })
+    nationalSeries = sortedNational.map((d: any) => ({
+      date: `${d.year}-${d.period.replace('M', '')}`,
+      rate: parseFloat(d.value),
+    }))
+  }
 
   return {
     current,
@@ -83,5 +121,7 @@ export async function fetchUnemployment(
     change: parseFloat((current - baseline).toFixed(1)),
     series: points,
     countyFips,
+    seriesId,
+    ...(nationalSeries ? { nationalSeries } : {}),
   }
 }

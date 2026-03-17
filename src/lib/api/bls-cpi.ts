@@ -6,6 +6,11 @@ const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 const BASELINE_YEAR = '2025'
 const BASELINE_PERIOD = 'M01'
 
+// National CPI series
+const NATIONAL_GROCERIES_SERIES = 'CUUR0000SAF11'
+const NATIONAL_SHELTER_SERIES = 'CUUR0000SAH1'
+const NATIONAL_ENERGY_SERIES = 'CUUR0000SA0E'
+
 export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<CpiData> {
   const { areaCode, areaName } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
 
@@ -15,8 +20,14 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
 
   const currentYear = new Date().getFullYear().toString()
 
+  // Collect all 6 series (3 metro + 3 national); deduplicate if metro == national
+  const allSeriesIds = [...new Set([
+    groceriesSeries, shelterSeries, energySeries,
+    NATIONAL_GROCERIES_SERIES, NATIONAL_SHELTER_SERIES, NATIONAL_ENERGY_SERIES,
+  ])]
+
   const body: Record<string, unknown> = {
-    seriesid: [groceriesSeries, shelterSeries, energySeries],
+    seriesid: allSeriesIds,
     startyear: '2020',
     endyear: currentYear,
   }
@@ -60,12 +71,15 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
     throw new Error('No groceries CPI data returned')
   }
 
-  // Build a map of period -> value for each series (keyed by "YYYY-MM")
+  // Build a map of period -> value for each series (keyed by "YYYY-Period")
+  // Skip entries where value is "-" or not parseable
   function buildPeriodMap(data: any[]): Map<string, number> {
     const map = new Map<string, number>()
     for (const d of data) {
+      const val = parseFloat(d.value)
+      if (isNaN(val) || d.value === '-') continue
       const key = `${d.year}-${d.period}`
-      map.set(key, parseFloat(d.value))
+      map.set(key, val)
     }
     return map
   }
@@ -74,20 +88,27 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
   const shelterMap = buildPeriodMap(shelterData)
   const energyMap = buildPeriodMap(energyData)
 
-  // Collect all unique period keys from groceries (primary series)
+  // Collect all unique period keys from groceries (primary series), sorted chronologically
   const allPeriods = [...groceriesMap.keys()].sort()
 
-  // Build series points
-  const series: CpiPoint[] = allPeriods.map((key) => {
-    const [year, period] = key.split('-')
-    const month = period.replace('M', '').padStart(2, '0')
-    return {
-      date: `${year}-${month}`,
-      groceries: groceriesMap.get(key) ?? 0,
-      shelter: shelterMap.get(key) ?? 0,
-      energy: energyMap.get(key) ?? 0,
-    }
-  })
+  // Build series points, skipping any point where the primary value is missing/null
+  const series: CpiPoint[] = allPeriods
+    .map((key) => {
+      const [year, period] = key.split('-')
+      const month = period.replace('M', '').padStart(2, '0')
+      const g = groceriesMap.get(key)
+      const s = shelterMap.get(key)
+      const e = energyMap.get(key)
+      // Skip if primary (groceries) value is missing
+      if (g === undefined || g === null || isNaN(g)) return null
+      return {
+        date: `${year}-${month}`,
+        groceries: g,
+        shelter: s ?? 0,
+        energy: e ?? 0,
+      }
+    })
+    .filter((p): p is CpiPoint => p !== null)
 
   // Most recent is current
   const latestKey = allPeriods[allPeriods.length - 1]
@@ -97,11 +118,55 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
   const baselineKey = `${BASELINE_YEAR}-${BASELINE_PERIOD}`
   const groceriesBaseline = groceriesMap.get(baselineKey) ?? 0
 
+  // Bug 1 fix: calculate as PERCENTAGE change, not raw index difference
+  const groceriesChange = groceriesBaseline > 0
+    ? parseFloat(((groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100).toFixed(1))
+    : 0
+
+  // Build national series (only if it's different from metro series)
+  let nationalSeries: CpiPoint[] | undefined
+  const isNational = areaCode === '0000'
+
+  if (!isNational) {
+    const natGroceriesData = seriesMap[NATIONAL_GROCERIES_SERIES] ?? []
+    const natShelterData = seriesMap[NATIONAL_SHELTER_SERIES] ?? []
+    const natEnergyData = seriesMap[NATIONAL_ENERGY_SERIES] ?? []
+
+    const natGroceriesMap = buildPeriodMap(natGroceriesData)
+    const natShelterMap = buildPeriodMap(natShelterData)
+    const natEnergyMap = buildPeriodMap(natEnergyData)
+
+    const natPeriods = [...natGroceriesMap.keys()].sort()
+
+    nationalSeries = natPeriods
+      .map((key) => {
+        const [year, period] = key.split('-')
+        const month = period.replace('M', '').padStart(2, '0')
+        const g = natGroceriesMap.get(key)
+        const s = natShelterMap.get(key)
+        const e = natEnergyMap.get(key)
+        if (g === undefined || g === null || isNaN(g)) return null
+        return {
+          date: `${year}-${month}`,
+          groceries: g,
+          shelter: s ?? 0,
+          energy: e ?? 0,
+        }
+      })
+      .filter((p): p is CpiPoint => p !== null)
+  }
+
   return {
     groceriesCurrent,
     groceriesBaseline,
-    groceriesChange: parseFloat((groceriesCurrent - groceriesBaseline).toFixed(3)),
+    groceriesChange,
     series,
     metro: areaName,
+    seriesIds: {
+      groceries: groceriesSeries,
+      shelter: shelterSeries,
+      energy: energySeries,
+    },
+    ...(nationalSeries ? { nationalSeries } : {}),
   }
 }
