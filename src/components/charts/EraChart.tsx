@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -205,54 +205,43 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
 
   // Bug 1 fix: Use findDateAtOrAfter for era END boundaries so adjacent eras share
   // the boundary data point, eliminating black gaps between eras.
-  const eraElements = config.eraShading ? (
-    <>
-      {/* Trump I: 2017-01 to 2021-01 (red) */}
-      {(() => {
-        const x1 = firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)
-        // End at the first data point in Biden era (shared boundary point)
-        const x2 = findDateAtOrAfter(allDates, BIDEN_START)
-        return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea key="trump1" x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
-        ) : null
-      })()}
-      {/* Biden: 2021-01 to 2025-01 (blue) */}
-      {(() => {
-        const x1 = firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)
-        // End at the first data point in Trump II era (shared boundary point)
-        const x2 = findDateAtOrAfter(allDates, TRUMP2_START)
-        if (!x2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START) {
-          // All data is within Biden era
-          return x1 ? <ReferenceArea key="biden" x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} /> : null
-        }
-        return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea key="biden" x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />
-        ) : null
-      })()}
-      {/* Trump II: 2025-01 to present (red) */}
-      {(() => {
-        const x1 = findDateAtOrAfter(allDates, TRUMP2_START)
-        return x1 ? (
-          <ReferenceArea key="trump2" x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
-        ) : null
-      })()}
-      {/* Reference lines at transitions */}
-      {(() => {
-        const line = findDateAtOrAfter(allDates, BIDEN_START)
-        return line && firstDate < BIDEN_START ? (
-          <ReferenceLine x={line} stroke="#6B7280" strokeDasharray="3 3"
-            label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />
-        ) : null
-      })()}
-      {(() => {
-        const line = findDateAtOrAfter(allDates, TRUMP2_START)
-        return line && firstDate < TRUMP2_START ? (
-          <ReferenceLine x={line} stroke="#6B7280" strokeDasharray="3 3"
-            label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />
-        ) : null
-      })()}
-    </>
-  ) : null
+  // Use array (not Fragment) so Recharts can see children directly via React.Children
+  const eraElements: React.ReactNode[] = []
+  if (config.eraShading) {
+    // Trump I: 2017-01 to 2021-01 (red)
+    const t1x1 = firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)
+    const t1x2 = findDateAtOrAfter(allDates, BIDEN_START)
+    if (t1x1 && t1x2 && t1x1 <= t1x2) {
+      eraElements.push(<ReferenceArea key="trump1" x1={t1x1} x2={t1x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />)
+    }
+
+    // Biden: 2021-01 to 2025-01 (blue)
+    const bx1 = firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)
+    const bx2 = findDateAtOrAfter(allDates, TRUMP2_START)
+    if (!bx2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START && bx1) {
+      eraElements.push(<ReferenceArea key="biden" x1={bx1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />)
+    } else if (bx1 && bx2 && bx1 <= bx2) {
+      eraElements.push(<ReferenceArea key="biden" x1={bx1} x2={bx2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />)
+    }
+
+    // Trump II: 2025-01 to present (red)
+    const t2x1 = findDateAtOrAfter(allDates, TRUMP2_START)
+    if (t2x1) {
+      eraElements.push(<ReferenceArea key="trump2" x1={t2x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />)
+    }
+
+    // Reference lines at transitions
+    const jan2021 = findDateAtOrAfter(allDates, BIDEN_START)
+    if (jan2021 && firstDate < BIDEN_START) {
+      eraElements.push(<ReferenceLine key="line-2021" x={jan2021} stroke="#6B7280" strokeDasharray="3 3"
+        label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />)
+    }
+    const jan2025 = findDateAtOrAfter(allDates, TRUMP2_START)
+    if (jan2025 && firstDate < TRUMP2_START) {
+      eraElements.push(<ReferenceLine key="line-2025" x={jan2025} stroke="#6B7280" strokeDasharray="3 3"
+        label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />)
+    }
+  }
 
   const renderSeries = () => {
     return config.series.map(s => {
@@ -329,50 +318,6 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   const computedTicks = generateTicks(firstDate, lastDate)
   const snappedTicks = snapTicksToData(computedTicks, allDates)
 
-  // Common axis/tooltip/grid elements
-  const commonElements = (
-    <>
-      <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-      <XAxis
-        dataKey="date"
-        ticks={snappedTicks}
-        tickFormatter={(d: string) => formatTickLabel(d.slice(0, 7), rangeMonths)}
-        tick={{ fontSize: 11, fill: '#6B7280' }}
-        stroke="#27272A"
-      />
-      <YAxis
-        tick={{ fontSize: 11, fill: '#6B7280' }}
-        width={45}
-        stroke="#27272A"
-        domain={config.yAxisDomain ?? ['auto', 'auto']}
-        tickFormatter={config.formatValue}
-      />
-      <Tooltip
-        animationDuration={0}
-        contentStyle={{
-          backgroundColor: '#18181B',
-          border: '1px solid #3F3F46',
-          borderRadius: '8px',
-          fontSize: 12,
-        }}
-        labelFormatter={(label: unknown) =>
-          typeof label === 'string' ? formatTickLabel(label.slice(0, 7), rangeMonths) : String(label)
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter={(value: any) =>
-          typeof value === 'number' && config.formatValue
-            ? config.formatValue(value)
-            : String(value ?? '')
-        }
-      />
-      <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
-      {eraElements}
-      {renderSeries()}
-      {nationalLines}
-      {trendlineElement}
-    </>
-  )
-
   const ChartComponent =
     config.chartType === 'area' ? AreaChart
     : config.chartType === 'bar' ? BarChart
@@ -414,7 +359,44 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
-            {commonElements}
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+            <XAxis
+              dataKey="date"
+              ticks={snappedTicks}
+              tickFormatter={(d: string) => formatTickLabel(d.slice(0, 7), rangeMonths)}
+              tick={{ fontSize: 11, fill: '#6B7280' }}
+              stroke="#27272A"
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6B7280' }}
+              width={45}
+              stroke="#27272A"
+              domain={config.yAxisDomain ?? ['auto', 'auto']}
+              tickFormatter={config.formatValue}
+            />
+            <Tooltip
+              animationDuration={0}
+              contentStyle={{
+                backgroundColor: '#18181B',
+                border: '1px solid #3F3F46',
+                borderRadius: '8px',
+                fontSize: 12,
+              }}
+              labelFormatter={(label: unknown) =>
+                typeof label === 'string' ? formatTickLabel(label.slice(0, 7), rangeMonths) : String(label)
+              }
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(value: any) =>
+                typeof value === 'number' && config.formatValue
+                  ? config.formatValue(value)
+                  : String(value ?? '')
+              }
+            />
+            <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
+            {eraElements}
+            {renderSeries()}
+            {nationalLines}
+            {trendlineElement}
           </ChartComponent>
         </ResponsiveContainer>
       </div>
