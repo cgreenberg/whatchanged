@@ -89,7 +89,7 @@ async function fetchEiaData(duoarea: string, apiKey: string): Promise<any[]> {
   })
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000)
+  const timeout = setTimeout(() => controller.abort(), 45000)
   try {
     const response = await fetch(`${EIA_API_BASE}?${params.toString()}`, { signal: controller.signal })
 
