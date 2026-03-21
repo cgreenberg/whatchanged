@@ -1,26 +1,36 @@
-// Cache adapter: uses Vercel KV in production, in-memory Map in test/dev
-// This means tests never need a real Redis connection
+// Cache adapter: uses Redis when REDIS_URL is set, in-memory Map otherwise
+// Tests and local dev without Redis get the in-memory fallback
 
-let kvClient: typeof import('@vercel/kv').kv | null = null
+import { createClient, type RedisClientType } from 'redis'
 
-async function getKv() {
-  if (process.env.NODE_ENV === 'test' || !process.env.KV_REST_API_URL) {
-    return null  // signals: use in-memory fallback
+let redisClient: RedisClientType | null = null
+let redisReady = false
+
+async function getRedis(): Promise<RedisClientType | null> {
+  if (process.env.NODE_ENV === 'test' || !process.env.REDIS_URL) {
+    return null
   }
-  if (!kvClient) {
-    const { kv } = await import('@vercel/kv')
-    kvClient = kv
+  if (redisClient && redisReady) {
+    return redisClient
   }
-  return kvClient
+  if (!redisClient) {
+    redisClient = createClient({ url: process.env.REDIS_URL })
+    redisClient.on('error', (err) => console.error('Redis error:', err))
+    await redisClient.connect()
+    redisReady = true
+  }
+  return redisClient
 }
 
-// In-memory fallback for test/local dev
+// In-memory fallback for test/local dev without Redis
 const memCache = new Map<string, { value: unknown; expiresAt: number }>()
 
 export async function getCached<T>(key: string): Promise<T | null> {
-  const kv = await getKv()
-  if (kv) {
-    return kv.get<T>(key)
+  const redis = await getRedis()
+  if (redis) {
+    const raw = await redis.get(key)
+    if (raw === null) return null
+    return JSON.parse(raw) as T
   }
   const entry = memCache.get(key)
   if (!entry || Date.now() > entry.expiresAt) return null
@@ -28,9 +38,9 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 export async function setCached<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
-  const kv = await getKv()
-  if (kv) {
-    await kv.set(key, value, { ex: ttlSeconds })
+  const redis = await getRedis()
+  if (redis) {
+    await redis.set(key, JSON.stringify(value), { EX: ttlSeconds })
     return
   }
   memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })
