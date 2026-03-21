@@ -225,7 +225,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       if (config.chartType === 'area') {
         return (
           <Area
-            key={s.dataKey}
+            key={`${s.dataKey}-${timeframe}`}
             type={s.type ?? 'monotone'}
             dataKey={s.dataKey}
             stroke={s.color}
@@ -234,7 +234,8 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
             strokeWidth={2}
             name={s.label}
             dot={false}
-            isAnimationActive={false}
+            animationDuration={600}
+            animationEasing="ease-out"
           />
         )
       } else if (config.chartType === 'bar') {
@@ -249,14 +250,15 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       } else {
         return (
           <Line
-            key={s.dataKey}
+            key={`${s.dataKey}-${timeframe}`}
             type={s.type ?? 'monotone'}
             dataKey={s.dataKey}
             stroke={s.color}
             strokeWidth={2}
             name={s.label}
             dot={false}
-            isAnimationActive={false}
+            animationDuration={600}
+            animationEasing="ease-out"
           />
         )
       }
@@ -266,7 +268,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   // National overlay lines (dotted) when showNational is enabled
   const nationalLines = showNational ? config.series.map(s => (
     <Line
-      key={`national_${s.dataKey}`}
+      key={`national_${s.dataKey}-${timeframe}`}
       type={s.type ?? 'monotone'}
       dataKey={`national_${s.dataKey}`}
       stroke={s.color}
@@ -275,7 +277,8 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       strokeOpacity={0.5}
       name={`${s.label} (National)`}
       dot={false}
-      isAnimationActive={false}
+      animationDuration={600}
+      animationEasing="ease-out"
     />
   )) : null
 
@@ -336,7 +339,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
       </div>
-      <div key={timeframe} className="h-64 animate-reveal-left" style={{ clipPath: 'inset(0 0 0 0)' }}>
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
