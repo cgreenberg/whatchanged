@@ -234,6 +234,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
             strokeWidth={2}
             name={s.label}
             dot={false}
+            isAnimationActive={false}
           />
         )
       } else if (config.chartType === 'bar') {
@@ -255,6 +256,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
             strokeWidth={2}
             name={s.label}
             dot={false}
+            isAnimationActive={false}
           />
         )
       }
@@ -273,6 +275,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       strokeOpacity={0.5}
       name={`${s.label} (National)`}
       dot={false}
+      isAnimationActive={false}
     />
   )) : null
 
@@ -333,7 +336,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
       </div>
-      <div className="h-64">
+      <div className="h-64 animate-reveal-left" style={{ clipPath: 'inset(0 0 0 0)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
