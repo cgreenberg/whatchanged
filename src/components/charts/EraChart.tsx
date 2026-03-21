@@ -24,20 +24,79 @@ const TRUMP2_START = '2025-01'
 function findDateAtOrAfter(dates: string[], boundary: string): string | null {
   return dates.find(d => d >= boundary) ?? null
 }
-// Find last data point date strictly < boundary
-function findDateBefore(dates: string[], boundary: string): string | null {
-  for (let i = dates.length - 1; i >= 0; i--) {
-    if (dates[i] < boundary) return dates[i]
-  }
-  return null
+
+// Compute the date range in months between two date strings
+function computeDateRangeMonths(firstDate: string, lastDate: string): number {
+  const [y1, m1] = firstDate.split('-').map(Number)
+  const [y2, m2] = lastDate.split('-').map(Number)
+  return (y2 - y1) * 12 + (m2 - m1)
 }
 
-// Compute tick interval to show ~6-10 evenly spaced labels
-function computeTickInterval(dataLength: number): number {
-  if (dataLength <= 12) return 1
-  if (dataLength <= 24) return 2
-  if (dataLength <= 60) return Math.floor(dataLength / 8)
-  return Math.floor(dataLength / 7)
+// Generate tick dates snapped to Jan/Jul boundaries
+function generateTicks(firstDate: string, lastDate: string): string[] {
+  const rangeMonths = computeDateRangeMonths(firstDate, lastDate)
+  const [startYear, startMonth] = firstDate.split('-').map(Number)
+  const [endYear, endMonth] = lastDate.split('-').map(Number)
+
+  const ticks: string[] = []
+
+  if (rangeMonths < 6) {
+    // Monthly ticks
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 1
+      const mEnd = y === endYear ? endMonth : 12
+      for (let m = mStart; m <= mEnd; m++) {
+        ticks.push(`${y}-${String(m).padStart(2, '0')}`)
+      }
+    }
+  } else if (rangeMonths <= 36) {
+    // 6-month ticks (Jan + Jul)
+    for (let y = startYear; y <= endYear + 1; y++) {
+      ticks.push(`${y}-01`)
+      ticks.push(`${y}-07`)
+    }
+  } else if (rangeMonths <= 72) {
+    // 6-month ticks (Jan + Jul)
+    for (let y = startYear; y <= endYear + 1; y++) {
+      ticks.push(`${y}-01`)
+      ticks.push(`${y}-07`)
+    }
+  } else {
+    // Yearly ticks (Jan only)
+    for (let y = startYear; y <= endYear + 1; y++) {
+      ticks.push(`${y}-01`)
+    }
+  }
+
+  // Filter to only ticks within the data range
+  return ticks.filter(t => t >= firstDate.slice(0, 7) && t <= lastDate.slice(0, 7))
+}
+
+// Format tick label based on range
+function formatTickLabel(dateStr: string, rangeMonths: number): string {
+  const [yearStr, monthStr] = dateStr.split('-')
+  const month = parseInt(monthStr, 10)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  if (rangeMonths < 6) {
+    return `${months[month - 1]} '${yearStr.slice(2)}`
+  } else if (rangeMonths <= 36) {
+    return `${months[month - 1]} '${yearStr.slice(2)}`
+  } else if (rangeMonths <= 72) {
+    // Jan shows year, Jul shows "Jul"
+    return month === 1 ? `'${yearStr.slice(2)}` : months[month - 1]
+  } else {
+    return `'${yearStr.slice(2)}`
+  }
+}
+
+// For each computed tick date, find the closest actual data point date
+function snapTicksToData(computedTicks: string[], dataDates: string[]): string[] {
+  return computedTicks.map(tick => {
+    // Find first data date that starts with the tick's YYYY-MM, or the closest one after
+    const match = dataDates.find(d => d.startsWith(tick) || d >= tick)
+    return match ?? dataDates[dataDates.length - 1]
+  }).filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
 }
 
 interface EraChartProps {
@@ -58,14 +117,6 @@ function filterByTimeframe(
   const cutoff = new Date(now.getFullYear() - yearsBack, now.getMonth(), 1)
   const cutoffStr = cutoff.toISOString().slice(0, 7)
   return data.filter(d => d.date >= cutoffStr)
-}
-
-function formatDateLabel(dateStr: string): string {
-  // "2025-01" → "Jan '25"
-  const [year, month] = dateStr.split('-')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const m = parseInt(month, 10) - 1
-  return `${months[m] ?? month} '${year.slice(2)}`
 }
 
 export function EraChart({ config, data, nationalData }: EraChartProps) {
@@ -152,35 +203,37 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   // Build era shading using actual data point dates (handles both monthly and weekly formats)
   const allDates = displayData.map(d => d.date)
 
+  // Bug 1 fix: Use findDateAtOrAfter for era END boundaries so adjacent eras share
+  // the boundary data point, eliminating black gaps between eras.
   const eraElements = config.eraShading ? (
     <>
       {/* Trump I: 2017-01 to 2021-01 (red) */}
       {(() => {
-        // x1: first data point in Trump I era (or start of chart if chart starts during Trump I)
         const x1 = firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)
-        const x2 = findDateBefore(allDates, BIDEN_START)
+        // End at the first data point in Biden era (shared boundary point)
+        const x2 = findDateAtOrAfter(allDates, BIDEN_START)
         return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
+          <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Biden: 2021-01 to 2025-01 (blue) */}
       {(() => {
-        // x1: first data point in Biden era (or start of chart if chart starts during Biden)
         const x1 = firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)
-        const x2 = findDateBefore(allDates, TRUMP2_START)
+        // End at the first data point in Trump II era (shared boundary point)
+        const x2 = findDateAtOrAfter(allDates, TRUMP2_START)
         if (!x2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START) {
           // All data is within Biden era
-          return x1 ? <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} /> : null
+          return x1 ? <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} /> : null
         }
         return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
+          <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Trump II: 2025-01 to present (red) */}
       {(() => {
         const x1 = findDateAtOrAfter(allDates, TRUMP2_START)
         return x1 ? (
-          <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
+          <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Reference lines at transitions */}
@@ -271,15 +324,20 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
     />
   ) : null
 
+  // Bug 4 fix: Custom tick system snapped to Jan/Jul boundaries
+  const rangeMonths = computeDateRangeMonths(firstDate, lastDate)
+  const computedTicks = generateTicks(firstDate, lastDate)
+  const snappedTicks = snapTicksToData(computedTicks, allDates)
+
   // Common axis/tooltip/grid elements
   const commonElements = (
     <>
       <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
       <XAxis
         dataKey="date"
-        tickFormatter={formatDateLabel}
+        ticks={snappedTicks}
+        tickFormatter={(d: string) => formatTickLabel(d.slice(0, 7), rangeMonths)}
         tick={{ fontSize: 11, fill: '#6B7280' }}
-        interval={computeTickInterval(displayData.length)}
         stroke="#27272A"
       />
       <YAxis
@@ -297,7 +355,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           fontSize: 12,
         }}
         labelFormatter={(label: unknown) =>
-          typeof label === 'string' ? formatDateLabel(label) : String(label)
+          typeof label === 'string' ? formatTickLabel(label.slice(0, 7), rangeMonths) : String(label)
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         formatter={(value: any) =>
