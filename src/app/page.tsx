@@ -97,6 +97,7 @@ export default function Home() {
                     geoLevel="state-level"
                     isNegative
                     sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
+                    accentColor="#F59E0B"
                   />
                 )}
                 {snapshot.cpi.data && (() => {
@@ -115,6 +116,7 @@ export default function Home() {
                       geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
                       isNegative
                       sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                      accentColor="#EF4444"
                     />
                   )
                 })()}
@@ -133,6 +135,7 @@ export default function Home() {
                       geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
                       isNegative
                       sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                      accentColor="#3B82F6"
                     />
                   )
                 })()}

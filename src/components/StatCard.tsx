@@ -12,14 +12,12 @@ interface StatCardProps {
   geoLevel: string       // e.g. "county-level"
   isNegative?: boolean   // true = up is bad (unemployment, prices)
   sourceUrl?: string
+  accentColor?: string   // hex color to match chart series (e.g. '#F59E0B')
 }
 
 export function StatCard({
-  label, value, change, direction, sourceLabel, sourceDate, geoLevel, isNegative, sourceUrl
+  label, value, change, direction, sourceLabel, sourceDate, geoLevel, isNegative, sourceUrl, accentColor
 }: StatCardProps) {
-  const isWorrying = isNegative && direction === 'up'
-  const changeColor = isWorrying ? 'text-danger-red' : 'text-electric-amber'
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -28,8 +26,8 @@ export function StatCard({
       className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col gap-2"
     >
       <p className="text-xs font-medium text-muted uppercase tracking-widest" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>{label}</p>
-      <p className="text-4xl text-white leading-none" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}>{value}</p>
-      <p className={`text-sm font-medium ${changeColor}`} style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
+      <p className="text-4xl leading-none" style={{ fontFamily: 'var(--font-bebas, sans-serif)', color: accentColor ?? 'white' }}>{value}</p>
+      <p className="text-sm font-medium" style={{ fontFamily: 'var(--font-inter, sans-serif)', color: accentColor ?? '#F59E0B' }}>
         {direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''} {change}
       </p>
       <p className="text-xs text-zinc-500 mt-auto pt-2 border-t border-zinc-800">
