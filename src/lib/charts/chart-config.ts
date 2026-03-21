@@ -78,7 +78,7 @@ export const chartConfigs: ChartConfig[] = [
   },
   {
     id: 'cpi-shelter',
-    title: 'Shelter Costs',
+    title: 'Housing Costs',
     description: 'BLS index tracking rent, homeowner costs, and lodging. Covers what people pay for housing.',
     chartType: 'line',
     series: [

@@ -126,7 +126,7 @@ export default function Home() {
                   )
                   return (
                     <StatCard
-                      label="Shelter Costs"
+                      label="Housing Costs"
                       value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
                       change="since Jan 2025"
                       direction="neutral"
