@@ -15,6 +15,15 @@ import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
 
+function computeCpiPctChange(series: Array<Record<string, unknown>>, key: string): number {
+  const baseline = series.find(p => (p.date as string) >= '2025-01')
+  const latest = series[series.length - 1]
+  const bVal = Number(baseline?.[key])
+  const lVal = Number(latest?.[key])
+  if (!bVal || !lVal) return 0
+  return ((lVal - bVal) / bVal) * 100
+}
+
 export default function Home() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
@@ -53,7 +62,7 @@ export default function Home() {
       {/* Hero */}
       <section className="text-center mb-12">
         <h1 className="text-5xl md:text-7xl text-white leading-none mb-4" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}>
-          Enter your zip code.
+          Enter your zip code
         </h1>
         <p className="text-lg md:text-xl text-zinc-400 mb-8" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
           See what changed in your town since January 2025.
@@ -103,19 +112,24 @@ export default function Home() {
                     sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
                   />
                 )}
-                {snapshot.unemployment.data && (
-                  <StatCard
-                    label="Unemployment"
-                    value={`${snapshot.unemployment.data.current}%`}
-                    change={`${snapshot.unemployment.data.change > 0 ? '+' : ''}${snapshot.unemployment.data.change} pts since Jan 2025`}
-                    direction={snapshot.unemployment.data.change > 0 ? 'up' : 'down'}
-                    sourceLabel="BLS LAUS"
-                    sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel="county-level"
-                    isNegative
-                    sourceUrl={`https://data.bls.gov/timeseries/LAUCN${snapshot.location.countyFips.padStart(5, '0')}0000000003`}
-                  />
-                )}
+                {snapshot.cpi.data && (() => {
+                  const shelterChange = computeCpiPctChange(
+                    snapshot.cpi.data!.series as unknown as Record<string, unknown>[], 'shelter'
+                  )
+                  return (
+                    <StatCard
+                      label="Shelter Costs"
+                      value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
+                      change="since Jan 2025"
+                      direction={shelterChange > 0 ? 'up' : 'down'}
+                      sourceLabel="BLS CPI"
+                      sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                      isNegative
+                      sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                    />
+                  )
+                })()}
               </>
             )}
           </div>
@@ -130,7 +144,7 @@ export default function Home() {
           {snapshot.census.data && (
             <TariffWidget medianIncome={snapshot.census.data.medianIncome} />
           )}
-          <DigDeeper snapshot={snapshot} />
+          {/* <DigDeeper snapshot={snapshot} /> */}
           <ShareButton snapshot={snapshot} />
           <ErrorBoundary>
             <MapSection

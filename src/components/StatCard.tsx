@@ -30,7 +30,7 @@ export function StatCard({
       <p className="text-xs font-medium text-muted uppercase tracking-widest" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>{label}</p>
       <p className="text-4xl text-white leading-none" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}>{value}</p>
       <p className={`text-sm font-medium ${changeColor}`} style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
-        {direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''} {change} since Jan 2025
+        {direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''} {change}
       </p>
       <p className="text-xs text-zinc-500 mt-auto pt-2 border-t border-zinc-800">
         {sourceUrl ? (

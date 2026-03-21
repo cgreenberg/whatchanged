@@ -13,21 +13,20 @@ import type { ChartConfig, Timeframe } from '@/lib/charts/chart-config'
 import { TimeframeToggle } from './TimeframeToggle'
 import { computeTrendline } from '@/lib/charts/trendline'
 
-// Political era boundaries (use full date prefix for correct string comparison with any format)
-const TRUMP1_START = '2017-01'
-const TRUMP1_END = '2021-01'
-const BIDEN_START = '2021-01'
-const BIDEN_END = '2025-01'
-const TRUMP2_START = '2025-01'
+// Precise inauguration dates — works for both monthly ('2025-01') and weekly ('2025-01-20') data
+// Monthly: '2025-01' < '2025-01-20' so Jan lands in previous era (mostly correct, 19/31 days)
+// Weekly: '2025-01-13' < '2025-01-20' (previous era), '2025-01-20' >= (new era). Clean split.
+const TRUMP1_START = '2017-01-20'
+const BIDEN_START = '2021-01-20'
+const TRUMP2_START = '2025-01-20'
 
-// Find the closest data point date at or after a boundary
-function findClosestDate(dates: string[], boundary: string, direction: 'atOrAfter' | 'atOrBefore'): string | null {
-  if (direction === 'atOrAfter') {
-    return dates.find(d => d >= boundary) ?? null
-  }
-  // atOrBefore: last date that is <= boundary
+// Find the closest data point date at or after / strictly before a boundary
+function findDateAtOrAfter(dates: string[], boundary: string): string | null {
+  return dates.find(d => d >= boundary) ?? null
+}
+function findDateBefore(dates: string[], boundary: string): string | null {
   for (let i = dates.length - 1; i >= 0; i--) {
-    if (dates[i] <= boundary + '\uffff') return dates[i]
+    if (dates[i] < boundary) return dates[i]
   }
   return null
 }
@@ -124,7 +123,10 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         data-testid={`chart-${config.id}`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-inter font-medium text-zinc-300">{config.title}</h3>
+          <h3 className="text-sm font-inter font-medium text-zinc-300" title={config.description}>
+            {config.title}
+            {config.description && <span className="ml-1 text-zinc-500 cursor-help" title={config.description}>&#9432;</span>}
+          </h3>
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
         <div className="h-64 flex items-center justify-center">
@@ -143,41 +145,45 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
 
   const eraElements = config.eraShading ? (
     <>
-      {/* Trump I: Jan 2017 – Jan 2021 (red) */}
-      {firstDate < TRUMP1_END + '\uffff' && lastDate >= TRUMP1_START && (() => {
-        const x1 = findClosestDate(allDates, TRUMP1_START, 'atOrAfter') ?? allDates[0]
-        const x2 = findClosestDate(allDates, TRUMP1_END, 'atOrBefore') ?? allDates[allDates.length - 1]
-        return x1 && x2 ? (
+      {/* Trump I: Jan 20 2017 – Jan 20 2021 (red) */}
+      {(() => {
+        const x1 = findDateAtOrAfter(allDates, TRUMP1_START) ?? (firstDate < BIDEN_START ? allDates[0] : null)
+        const x2 = findDateBefore(allDates, BIDEN_START)
+        return x1 && x2 && x1 <= x2 ? (
           <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
         ) : null
       })()}
-      {/* Biden: Jan 2021 – Jan 2025 (blue) */}
-      {firstDate < BIDEN_END + '\uffff' && lastDate >= BIDEN_START && (() => {
-        const x1 = findClosestDate(allDates, BIDEN_START, 'atOrAfter') ?? allDates[0]
-        const x2 = findClosestDate(allDates, BIDEN_END, 'atOrBefore') ?? allDates[allDates.length - 1]
-        return x1 && x2 ? (
+      {/* Biden: Jan 20 2021 – Jan 20 2025 (blue) */}
+      {(() => {
+        const x1 = findDateAtOrAfter(allDates, BIDEN_START) ?? (firstDate < TRUMP2_START ? allDates[0] : null)
+        const x2 = findDateBefore(allDates, TRUMP2_START)
+        // If all data is within Biden era and starts before Trump2
+        if (!x1 && firstDate < TRUMP2_START) {
+          return <ReferenceArea x1={allDates[0]} x2={x2 ?? allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
+        }
+        return x1 && x2 && x1 <= x2 ? (
           <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
         ) : null
       })()}
-      {/* Trump II: Jan 2025 – present (red) */}
-      {lastDate >= TRUMP2_START && (() => {
-        const x1 = findClosestDate(allDates, TRUMP2_START, 'atOrAfter')
+      {/* Trump II: Jan 20 2025 – present (red) */}
+      {(() => {
+        const x1 = findDateAtOrAfter(allDates, TRUMP2_START)
         return x1 ? (
           <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Reference lines at transitions */}
       {(() => {
-        const jan2021 = findClosestDate(allDates, '2021-01', 'atOrAfter')
-        return jan2021 && firstDate <= '2021-01\uffff' && lastDate >= '2021-01' ? (
-          <ReferenceLine x={jan2021} stroke="#6B7280" strokeDasharray="3 3"
+        const line = findDateAtOrAfter(allDates, BIDEN_START)
+        return line && firstDate < BIDEN_START ? (
+          <ReferenceLine x={line} stroke="#6B7280" strokeDasharray="3 3"
             label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />
         ) : null
       })()}
       {(() => {
-        const jan2025 = findClosestDate(allDates, '2025-01', 'atOrAfter')
-        return jan2025 && firstDate <= '2025-01\uffff' && lastDate >= '2025-01' ? (
-          <ReferenceLine x={jan2025} stroke="#6B7280" strokeDasharray="3 3"
+        const line = findDateAtOrAfter(allDates, TRUMP2_START)
+        return line && firstDate < TRUMP2_START ? (
+          <ReferenceLine x={line} stroke="#6B7280" strokeDasharray="3 3"
             label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />
         ) : null
       })()}
@@ -316,7 +322,10 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       data-testid={`chart-${config.id}`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-inter font-medium text-zinc-300">{config.title}</h3>
+        <h3 className="text-sm font-inter font-medium text-zinc-300" title={config.description}>
+            {config.title}
+            {config.description && <span className="ml-1 text-zinc-500 cursor-help" title={config.description}>&#9432;</span>}
+          </h3>
         <div className="flex items-center gap-3">
           {config.showNationalToggle && hasNationalData && (
             <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer">

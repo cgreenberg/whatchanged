@@ -45,19 +45,23 @@ export function MapSection({ currentZip, markerPosition, onZipChange }: MapSecti
 
   async function handleMapClick(lat: number, lng: number) {
     // Reverse geocode to get zip code using Nominatim (free, no key)
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
-        { headers: { 'Accept-Language': 'en' } }
-      )
-      if (!res.ok) return
-      const data = await res.json()
-      const zip = data.address?.postcode
-      if (zip && /^\d{5}/.test(zip)) {
-        onZipChange(zip.slice(0, 5))
+    // Try zoom=18 first (most precise), fall back to zoom=10
+    for (const zoom of [18, 14, 10]) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=${zoom}&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'whatchanged.us' } }
+        )
+        if (!res.ok) continue
+        const data = await res.json()
+        const zip = data.address?.postcode
+        if (zip && /^\d{5}/.test(zip)) {
+          onZipChange(zip.slice(0, 5))
+          return
+        }
+      } catch {
+        continue
       }
-    } catch {
-      // Silently fail — user can still type zip manually
     }
   }
 

@@ -12,6 +12,7 @@ export interface SeriesConfig {
 export interface ChartConfig {
   id: string
   title: string
+  description?: string  // tooltip explaining what this metric is
   chartType: ChartType
   series: SeriesConfig[]
   trendline?: boolean
@@ -39,6 +40,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'gas',
     title: 'Gas Prices',
+    description: 'Average retail price per gallon for regular gasoline in your state, updated weekly.',
     chartType: 'line',
     series: [
       { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
@@ -57,6 +59,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'cpi-groceries',
     title: 'Grocery Prices',
+    description: 'BLS Consumer Price Index for food purchased at grocery stores and supermarkets (food at home).',
     chartType: 'line',
     series: [
       { dataKey: 'groceries', label: 'Groceries', color: '#EF4444', type: 'monotone' },
@@ -76,6 +79,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'cpi-shelter',
     title: 'Shelter Costs',
+    description: 'BLS index tracking rent, homeowner costs, and lodging. Covers what people pay for housing.',
     chartType: 'line',
     series: [
       { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
@@ -94,6 +98,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'cpi-energy',
     title: 'Energy Costs',
+    description: 'BLS index tracking electricity, natural gas, and fuel oil prices for households.',
     chartType: 'line',
     series: [
       { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
@@ -112,6 +117,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'unemployment',
     title: 'Unemployment Rate',
+    description: 'Percentage of the labor force that is jobless and actively seeking work, measured at the county level.',
     chartType: 'area',
     series: [
       { dataKey: 'rate', label: 'Unemployment Rate', color: '#F59E0B', type: 'monotone' },
