@@ -370,10 +370,10 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
               }
             />
             <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
-            {showTrump1 && <ReferenceArea x1={t1x1!} x2={t1x2!} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />}
-            {showBiden && <ReferenceArea x1={bx1!} x2={bx2!} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />}
-            {showBidenFull && <ReferenceArea x1={bx1!} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />}
-            {showTrump2 && <ReferenceArea x1={t2x1!} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />}
+            {showTrump1 && <ReferenceArea x1={t1x1!} x2={t1x2!} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
+            {showBiden && <ReferenceArea x1={bx1!} x2={bx2!} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
+            {showBidenFull && <ReferenceArea x1={bx1!} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
+            {showTrump2 && <ReferenceArea x1={t2x1!} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
             {jan2021Line && firstDate < BIDEN_START && <ReferenceLine x={jan2021Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
             {jan2025Line && firstDate < TRUMP2_START && <ReferenceLine x={jan2025Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
             {renderSeries()}
