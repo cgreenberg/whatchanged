@@ -336,7 +336,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
       </div>
-      <div className="h-64 animate-reveal-left" style={{ clipPath: 'inset(0 0 0 0)' }}>
+      <div key={timeframe} className="h-64 animate-reveal-left" style={{ clipPath: 'inset(0 0 0 0)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
