@@ -208,6 +208,7 @@ clipboard copy on desktop.
 ## What NOT To Build
 
 - No user accounts or login
+- No ads (kills credibility and Facebook reach)
 - No comment sections
 - No explicit partisan framing — data only, all sources cited
 - No zip code comparison feature (possible v2)
@@ -240,6 +241,95 @@ User requests zip 98683
 
 Pre-warming: /api/warm-cache endpoint pre-fetches top 200 zips by population.
 Triggered daily by cron-job.org (external free cron) pointing at that endpoint.
+
+---
+
+## Testing & Validation
+
+### Before Every Deploy — Run These Zip Codes
+
+Always test this specific set before pushing. They cover the main edge cases:
+
+| Zip     | Why                                                                           |
+| ------- | ----------------------------------------------------------------------------- |
+| `98683` | Vancouver WA — primary dev test case, all data should populate                |
+| `10001` | Manhattan NYC — large metro, high rent, good CPI coverage                     |
+| `60601` | Chicago IL — large metro, manufacturing jobs exposure                         |
+| `73301` | Austin TX — fast-growing, above-average electricity = energy card should show |
+| `90210` | Beverly Hills CA — high income, tests tariff estimate scaling                 |
+| `04101` | Portland ME — small metro, tests sparse/missing data handling                 |
+| `00601` | Aguadilla PR — Puerto Rico, no BLS county data, must fail gracefully          |
+| `99999` | Invalid zip — must show a clean error, never crash or show empty cards        |
+
+### Data Validation Rules
+
+Every API response must be validated before display:
+
+- **Sanity check all numbers** — unemployment rate must be between 0–25%,
+  CPI changes must be between -20% and +50%, gas price between $1–$10/gal.
+  If outside these ranges, show "Data unavailable" rather than a nonsense number.
+- **Never show stale data without labeling it** — if cached data is >30 days old,
+  show a warning badge on the affected card
+- **Never show a blank card** — always show either real data, a skeleton loader,
+  or an explicit "Data not available for this area" message
+- **Verify Jan 2025 baseline exists** — if BLS data doesn't go back to Jan 2025
+  for a given series, don't show a change figure, show "Baseline unavailable"
+
+### Hero Card Number Checks
+
+Before displaying any hero card number, verify:
+
+- The % change is calculated from Jan 2025 baseline, NOT latest monthly delta
+- Dollar translation uses local median income/spend, NOT national averages
+- Source date shown is the date of the actual data, NOT today's date
+- Geographic level label is accurate (county vs metro vs state vs national)
+
+### Chart Validation
+
+- Era shading ReferenceArea x1/x2 timestamps must match data format exactly
+- Jan 2025 marker line must appear on ALL timeframe views, not just Jan 2025 view
+- "Show national" toggle must work on all charts, not just some
+- 10Y toggle should gracefully handle series that don't go back 10 years
+
+### API Failure Handling
+
+Every API call must have explicit error handling:
+
+- BLS rate limit hit (429) → serve cached data if available, show warning badge
+- API timeout (>5s) → show skeleton with "Taking longer than usual..." message
+- Malformed response → log error, show "Data unavailable" card, never crash
+- Missing county FIPS mapping → show state-level fallback where possible,
+  otherwise show "Detailed local data not available for this zip"
+
+### Mobile Testing
+
+Always check these on mobile viewport (375px width) before deploying:
+
+- Hero cards stack vertically and are readable
+- Chart time toggles are tap-friendly (min 44px touch targets)
+- Share button is prominent and works on iOS and Android
+- Zip code input triggers numeric keyboard on mobile (use `inputMode="numeric"`)
+
+### Performance Checks
+
+Run after any significant change:
+
+```bash
+npx lighthouse https://whatchangedus.vercel.app --only-categories=performance
+```
+
+Target: 90+ mobile score. If below 90, fix before deploying.
+
+### Playwright Tests
+
+Run the test suite before any deploy:
+
+```bash
+npx playwright test
+```
+
+Tests cover: zip entry flow, card rendering, chart toggling,
+share button, invalid zip handling, mobile viewport.
 
 ---
 

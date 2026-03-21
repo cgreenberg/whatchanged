@@ -53,6 +53,8 @@ export interface GasPriceData {
   region: string
   series: Array<{ date: string; price: number }>
   nationalSeries?: Array<{ date: string; price: number }>
+  isNationalFallback?: boolean
+  geoLevel?: string
 }
 
 export interface FederalFundingData {

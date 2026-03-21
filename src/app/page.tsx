@@ -94,7 +94,7 @@ export default function Home() {
                     direction={snapshot.gas.data.change > 0 ? 'up' : 'down'}
                     sourceLabel="EIA"
                     sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel="state-level"
+                    geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
                     isNegative
                     sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
                     accentColor="#F59E0B"

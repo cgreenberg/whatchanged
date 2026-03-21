@@ -42,17 +42,25 @@ export async function fetchFederalFunding(
     order: 'desc',
   }
 
-  const response = await fetch(USASPENDING_API_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
+  let json: any
+  try {
+    const response = await fetch(USASPENDING_API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
 
-  if (!response.ok) {
-    throw new Error(`USASpending API error: ${response.status} ${response.statusText}`)
+    if (!response.ok) {
+      throw new Error(`USASpending API error: ${response.status} ${response.statusText}`)
+    }
+
+    json = await response.json()
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const json = await response.json()
 
   const results: any[] = json?.results ?? []
 
