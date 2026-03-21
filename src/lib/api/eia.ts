@@ -4,15 +4,52 @@ const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
 
 const BASELINE_DATE = '2025-01-20'
 
+// --- Tier 1: CPI metro area → EIA city duoarea ---
+
+const CPI_TO_EIA_CITY: Record<string, { duoarea: string; label: string }> = {
+  'S48A': { duoarea: 'Y48SE', label: 'Seattle area avg' },
+  'S37A': { duoarea: 'Y05LA', label: 'Los Angeles area avg' },
+  'S49A': { duoarea: 'Y05SF', label: 'San Francisco area avg' },
+  'S12A': { duoarea: 'Y35NY', label: 'New York City area avg' },
+  'S11A': { duoarea: 'YBOS', label: 'Boston area avg' },
+  'S24A': { duoarea: 'YORD', label: 'Chicago area avg' },
+  'S35D': { duoarea: 'YDEN', label: 'Denver area avg' },
+  'S35B': { duoarea: 'Y44HO', label: 'Houston area avg' },
+  'S23B': { duoarea: 'YMIA', label: 'Miami area avg' },
+}
+
+const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label: string }> = {
+  '39035': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Cuyahoga County
+  '39093': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Lorain County
+  '39085': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Lake County
+  '39055': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Geauga County
+  '39103': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Medina County
+}
+
+// --- Tier 2: State-level EIA data (8 states) ---
+
+const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string }> = {
+  WA: { duoarea: 'SWA', label: 'Washington state avg' },
+  CA: { duoarea: 'SCA', label: 'California state avg' },
+  CO: { duoarea: 'SCO', label: 'Colorado state avg' },
+  FL: { duoarea: 'SFL', label: 'Florida state avg' },
+  MN: { duoarea: 'SMN', label: 'Minnesota state avg' },
+  NY: { duoarea: 'SNY', label: 'New York state avg' },
+  OH: { duoarea: 'SOH', label: 'Ohio state avg' },
+  TX: { duoarea: 'STX', label: 'Texas state avg' },
+}
+
+// --- Tier 3: PAD District (fallback) ---
+
 const STATE_TO_PAD: Record<string, number> = {
   // PAD 1 — East Coast
   ME: 1, NH: 1, VT: 1, MA: 1, RI: 1, CT: 1, NY: 1, NJ: 1, PA: 1,
   DE: 1, MD: 1, DC: 1, VA: 1, WV: 1, NC: 1, SC: 1, GA: 1, FL: 1,
   // PAD 2 — Midwest
   OH: 2, MI: 2, IN: 2, IL: 2, WI: 2, MN: 2, IA: 2, MO: 2, ND: 2,
-  SD: 2, NE: 2, KS: 2, KY: 2,
+  SD: 2, NE: 2, KS: 2, KY: 2, TN: 2, OK: 2,
   // PAD 3 — Gulf Coast
-  TX: 3, LA: 3, MS: 3, AL: 3, AR: 3, TN: 3, NM: 3, OK: 3,
+  TX: 3, LA: 3, MS: 3, AL: 3, AR: 3, NM: 3,
   // PAD 4 — Rocky Mountain
   MT: 4, ID: 4, WY: 4, CO: 4, UT: 4,
   // PAD 5 — West Coast
@@ -27,25 +64,79 @@ const PAD_NAMES: Record<number, string> = {
   5: 'West Coast',
 }
 
-interface DuoareaInfo {
+// --- Exported lookup function ---
+
+export interface GasLookupResult {
   duoarea: string
   geoLevel: string
-  padDistrict: number
+  tier: 1 | 2 | 3
+  cacheKey: string
 }
 
-export function stateToEiaDuoarea(stateAbbr: string): DuoareaInfo {
-  const upper = stateAbbr.toUpperCase()
-  const pad = STATE_TO_PAD[upper]
-
-  if (pad !== undefined) {
-    const duoarea = `R${pad}0`
-    const geoLevel = `PAD District ${pad} (${PAD_NAMES[pad]})`
-    return { duoarea, geoLevel, padDistrict: pad }
+export function getGasLookup(
+  stateAbbr: string,
+  cpiAreaCode?: string,
+  countyFips?: string
+): GasLookupResult {
+  // Tier 1: check county FIPS overrides first
+  if (countyFips) {
+    const cityOverride = COUNTY_EIA_CITY_OVERRIDES[countyFips]
+    if (cityOverride) {
+      return {
+        duoarea: cityOverride.duoarea,
+        geoLevel: cityOverride.label,
+        tier: 1,
+        cacheKey: `eia:gas:city:${cityOverride.duoarea}`,
+      }
+    }
   }
 
-  // National fallback for unmapped states/territories
-  return { duoarea: 'NUS', geoLevel: 'National avg', padDistrict: 0 }
+  // Tier 1: check CPI area → city mapping
+  if (cpiAreaCode) {
+    const city = CPI_TO_EIA_CITY[cpiAreaCode]
+    if (city) {
+      return {
+        duoarea: city.duoarea,
+        geoLevel: city.label,
+        tier: 1,
+        cacheKey: `eia:gas:city:${city.duoarea}`,
+      }
+    }
+  }
+
+  // Tier 2: state-level
+  const upper = stateAbbr.toUpperCase()
+  const state = STATE_LEVEL_CODES[upper]
+  if (state) {
+    return {
+      duoarea: state.duoarea,
+      geoLevel: state.label,
+      tier: 2,
+      cacheKey: `eia:gas:state:${upper}`,
+    }
+  }
+
+  // Tier 3: PAD district
+  const pad = STATE_TO_PAD[upper]
+  if (pad !== undefined) {
+    return {
+      duoarea: `R${pad}0`,
+      geoLevel: `${PAD_NAMES[pad]} avg`,
+      tier: 3,
+      cacheKey: `eia:gas:pad:${pad}`,
+    }
+  }
+
+  // National fallback
+  return {
+    duoarea: 'NUS',
+    geoLevel: 'National avg',
+    tier: 3,
+    cacheKey: 'eia:gas:national',
+  }
 }
+
+// --- Internal helpers ---
 
 function buildSeriesFromData(data: any[]): {
   series: Array<{ date: string; price: number }>
@@ -55,21 +146,23 @@ function buildSeriesFromData(data: any[]): {
 } {
   const sorted = [...data].sort((a, b) => a.period.localeCompare(b.period))
 
-  const series = sorted.map((d) => ({
-    date: d.period,
-    price: parseFloat(d.value),
-  }))
+  const series = sorted
+    .filter((d) => d.value !== null && d.value !== '--' && !isNaN(parseFloat(d.value)))
+    .map((d) => ({
+      date: d.period,
+      price: parseFloat(d.value),
+    }))
 
-  const current = parseFloat(data[0].value)
+  if (!series.length) {
+    throw new Error('No valid price data after filtering')
+  }
 
-  const baselineEntry = sorted.reduce((closest, d) => {
-    const diff = Math.abs(new Date(d.period).getTime() - new Date(BASELINE_DATE).getTime())
-    const closestDiff = Math.abs(
-      new Date(closest.period).getTime() - new Date(BASELINE_DATE).getTime()
-    )
-    return diff < closestDiff ? d : closest
-  })
-  const baseline = parseFloat(baselineEntry.value)
+  const current = series[series.length - 1].price
+
+  const baselineTime = new Date(BASELINE_DATE).getTime()
+  const onOrBefore = series.filter((d) => new Date(d.date).getTime() <= baselineTime)
+  const baselinePoint = onOrBefore.length > 0 ? onOrBefore[onOrBefore.length - 1] : series[0]
+  const baseline = baselinePoint.price
 
   const regionName = data[0]['area-name'] ?? data[0].duoarea ?? 'Unknown'
 
@@ -110,11 +203,17 @@ async function fetchEiaData(duoarea: string, apiKey: string): Promise<any[]> {
   }
 }
 
-export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
-  const { duoarea, geoLevel } = stateToEiaDuoarea(stateAbbr)
+// --- Main fetch function ---
+
+export async function fetchGasPrice(
+  stateAbbr: string,
+  cpiAreaCode?: string,
+  countyFips?: string
+): Promise<GasPriceData> {
+  const lookup = getGasLookup(stateAbbr, cpiAreaCode, countyFips)
   const apiKey = process.env.EIA_API_KEY ?? 'DEMO_KEY'
 
-  const isPrimaryNational = duoarea === 'NUS'
+  const isPrimaryNational = lookup.duoarea === 'NUS'
 
   if (isPrimaryNational) {
     // Already mapped to national — just fetch once
@@ -131,9 +230,9 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
     }
   }
 
-  // Fetch regional + national in parallel
+  // Fetch primary + national in parallel
   const [primaryResult, nationalResult] = await Promise.allSettled([
-    fetchEiaData(duoarea, apiKey),
+    fetchEiaData(lookup.duoarea, apiKey),
     fetchEiaData('NUS', apiKey),
   ])
 
@@ -152,14 +251,14 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
       baseline,
       change: parseFloat((current - baseline).toFixed(3)),
       region: regionName,
-      geoLevel,
+      geoLevel: lookup.geoLevel,
       isNationalFallback: false,
       series,
       ...(nationalSeries ? { nationalSeries } : {}),
     }
   }
 
-  // Regional failed — try national fallback
+  // Primary failed — try national fallback
   if (nationalResult.status === 'fulfilled') {
     const { series, current, baseline, regionName } = buildSeriesFromData(nationalResult.value)
     return {
@@ -175,6 +274,6 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
 
   // Both failed
   throw new Error(
-    `EIA gas price fetch failed for ${stateAbbr} (${duoarea}): ${(primaryResult as PromiseRejectedResult).reason}`
+    `EIA gas price fetch failed for ${stateAbbr} (${lookup.duoarea}): ${(primaryResult as PromiseRejectedResult).reason}`
   )
 }

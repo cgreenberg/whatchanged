@@ -13,7 +13,7 @@ import type {
   FederalFundingData,
 } from '@/types'
 import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from './source-registry'
-import { stateToEiaDuoarea } from './eia'
+import { getGasLookup } from './eia'
 import { getMetroCpiAreaForCounty } from '@/lib/data/county-metro-cpi'
 
 const TTL_7_DAYS = 604800
@@ -27,11 +27,11 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
 
   // Compute per-source cache keys
   const { areaCode: cpiAreaCode } = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
-  const { padDistrict } = stateToEiaDuoarea(location.stateAbbr)
+  const gasLookup = getGasLookup(location.stateAbbr, cpiAreaCode, location.countyFips)
 
   const unemploymentKey = `bls:unemployment:${location.countyFips}`
   const cpiKey = `bls:cpi:${cpiAreaCode}:all`
-  const gasKey = `eia:gas:pad:${padDistrict}`
+  const gasKey = gasLookup.cacheKey
   const federalKey = `usaspending:cuts:${location.countyFips}`
 
   // Fetch all 4 external sources in parallel, each with per-source caching
@@ -57,7 +57,7 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
     getCachedOrFetch<GasPriceData>(
       gasKey, TTL_24_HOURS,
       async () => {
-        const result = await safelyFetch(eiaSource, [location.stateAbbr])
+        const result = await safelyFetch(eiaSource, [location.stateAbbr, cpiAreaCode, location.countyFips])
         if (result.data === null) throw new Error(result.error ?? 'fetch failed')
         return result.data
       }
@@ -106,7 +106,7 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
   const censusData = getCensusData(zip)
   const census: DataResult<CensusData> = {
     data: censusData,
-    error: null,
+    error: censusData ? null : 'Census data unavailable for this zip',
     fetchedAt,
     sourceId: 'census-acs',
   }

@@ -17,6 +17,18 @@ Designed to go viral on Facebook via auto-generated shareable image cards.
 
 ---
 
+## Rules Files
+
+Read these files at session start before doing any work:
+
+- `.claude/rules/orchestration.md` — how to orchestrate tasks,
+  use sub-agents, manage context, select models
+  - `.claude/rules/orchestration.md` — how to orchestrate tasks,
+    use sub-agents, manage context, select models
+- .claude/rules/code-review.md — when and how to run review agents
+
+---
+
 ## Tech Stack
 
 - **Next.js** (React) — framework
@@ -353,18 +365,38 @@ share button, invalid zip handling, mobile viewport.
 
 ---
 
+## Code Review
+
+Before committing any non-trivial change, spawn review agents
+as defined in .claude/rules/code-review.md.
+
+Trigger reviews after changes to:
+
+- Any API route or data fetch
+- Any caching logic
+- Any calculation (%, $, baseline)
+- Any chart data transformation
+- Before every deploy
+
+Run all three review agents in parallel.
+All three must PASS before committing.
+On any FAIL — fix and re-run. Never weaken the test to pass.
+
+---
+
+## Shell Commands
+
+- Never use `node -e` with inline multiline strings
+- Write utility scripts to /scripts/ and run as files
+- This avoids false-positive permission prompts on multiline commands
+
+---
+
 ## MCP Servers Available
 
 - **Context7** — real-time docs for Next.js, Recharts, Leaflet, Tailwind
 - **GitHub MCP** — repo management
 - **Playwright MCP** — visual testing across mobile/desktop
-
-## Rules Files
-
-Read these files at session start before doing any work:
-
-- `.claude/rules/orchestration.md` — how to orchestrate tasks,
-  use sub-agents, manage context, select models
 
 ## Build & Dev
 
