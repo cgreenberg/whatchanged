@@ -71,6 +71,14 @@ export interface CensusData {
   year: number
 }
 
+export interface CacheStatus {
+  unemployment: 'hit' | 'miss'
+  cpi: 'hit' | 'miss'
+  gas: 'hit' | 'miss'
+  federal: 'hit' | 'miss'
+  census: 'hit' | 'miss'
+}
+
 export interface EconomicSnapshot {
   zip: string
   location: ZipInfo
@@ -80,4 +88,5 @@ export interface EconomicSnapshot {
   federal: DataResult<FederalFundingData>
   census: DataResult<CensusData>
   fetchedAt: string
+  cacheStatus?: CacheStatus
 }

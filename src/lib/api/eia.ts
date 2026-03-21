@@ -2,58 +2,50 @@ import type { GasPriceData } from '@/types'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
 
+const BASELINE_DATE = '2025-01-20'
+
+const STATE_TO_PAD: Record<string, number> = {
+  // PAD 1 — East Coast
+  ME: 1, NH: 1, VT: 1, MA: 1, RI: 1, CT: 1, NY: 1, NJ: 1, PA: 1,
+  DE: 1, MD: 1, DC: 1, VA: 1, WV: 1, NC: 1, SC: 1, GA: 1, FL: 1,
+  // PAD 2 — Midwest
+  OH: 2, MI: 2, IN: 2, IL: 2, WI: 2, MN: 2, IA: 2, MO: 2, ND: 2,
+  SD: 2, NE: 2, KS: 2, KY: 2,
+  // PAD 3 — Gulf Coast
+  TX: 3, LA: 3, MS: 3, AL: 3, AR: 3, TN: 3, NM: 3, OK: 3,
+  // PAD 4 — Rocky Mountain
+  MT: 4, ID: 4, WY: 4, CO: 4, UT: 4,
+  // PAD 5 — West Coast
+  WA: 5, OR: 5, CA: 5, NV: 5, AZ: 5, AK: 5, HI: 5,
+}
+
+const PAD_NAMES: Record<number, string> = {
+  1: 'East Coast',
+  2: 'Midwest',
+  3: 'Gulf Coast',
+  4: 'Rocky Mountain',
+  5: 'West Coast',
+}
+
 interface DuoareaInfo {
   duoarea: string
   geoLevel: string
+  padDistrict: number
 }
-
-// States with direct EIA state-level series
-const STATE_LEVEL_CODES: Record<string, string> = {
-  WA: 'SWA',
-  NY: 'SNY',
-  OH: 'SOH',
-  CA: 'SCA',
-  FL: 'SFL',
-  MN: 'SMN',
-  CO: 'SCO',
-  TX: 'STX',
-}
-
-// PADD region membership
-const PADD_REGIONS: Array<{ code: string; name: string; states: string[] }> = [
-  { code: 'R1X', name: 'New England', states: ['CT', 'ME', 'MA', 'NH', 'RI', 'VT'] },
-  { code: 'R1Y', name: 'Central Atlantic', states: ['DE', 'DC', 'MD', 'NJ', 'PA'] },
-  { code: 'R1Z', name: 'Lower Atlantic', states: ['GA', 'NC', 'SC', 'VA', 'WV'] },
-  {
-    code: 'R20',
-    name: 'Midwest',
-    states: ['IL', 'IN', 'IA', 'KS', 'KY', 'MI', 'MO', 'NE', 'ND', 'SD', 'OK', 'TN', 'WI'],
-  },
-  { code: 'R30', name: 'Gulf Coast', states: ['AL', 'AR', 'LA', 'MS', 'NM'] },
-  { code: 'R40', name: 'Rocky Mountain', states: ['ID', 'MT', 'UT', 'WY'] },
-  { code: 'R50', name: 'West Coast', states: ['AK', 'AZ', 'HI', 'NV', 'OR'] },
-]
 
 export function stateToEiaDuoarea(stateAbbr: string): DuoareaInfo {
   const upper = stateAbbr.toUpperCase()
+  const pad = STATE_TO_PAD[upper]
 
-  // Check state-level first
-  if (STATE_LEVEL_CODES[upper]) {
-    return { duoarea: STATE_LEVEL_CODES[upper], geoLevel: 'State-level' }
+  if (pad !== undefined) {
+    const duoarea = `R${pad}0`
+    const geoLevel = `PAD District ${pad} (${PAD_NAMES[pad]})`
+    return { duoarea, geoLevel, padDistrict: pad }
   }
 
-  // Check PADD regions
-  for (const region of PADD_REGIONS) {
-    if (region.states.includes(upper)) {
-      return { duoarea: region.code, geoLevel: `Regional (${region.name})` }
-    }
-  }
-
-  // National fallback
-  return { duoarea: 'NUS', geoLevel: 'National avg' }
+  // National fallback for unmapped states/territories
+  return { duoarea: 'NUS', geoLevel: 'National avg', padDistrict: 0 }
 }
-
-const BASELINE_DATE = '2025-01-20'
 
 function buildSeriesFromData(data: any[]): {
   series: Array<{ date: string; price: number }>
@@ -139,7 +131,7 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
     }
   }
 
-  // Fetch primary + national in parallel
+  // Fetch regional + national in parallel
   const [primaryResult, nationalResult] = await Promise.allSettled([
     fetchEiaData(duoarea, apiKey),
     fetchEiaData('NUS', apiKey),
@@ -167,7 +159,7 @@ export async function fetchGasPrice(stateAbbr: string): Promise<GasPriceData> {
     }
   }
 
-  // Primary failed — try national fallback
+  // Regional failed — try national fallback
   if (nationalResult.status === 'fulfilled') {
     const { series, current, baseline, regionName } = buildSeriesFromData(nationalResult.value)
     return {

@@ -39,3 +39,41 @@ export async function setCached<T>(key: string, value: T, ttlSeconds: number): P
 export function clearMemCache() {
   memCache.clear()
 }
+
+export async function getCachedOrFetch<T>(
+  key: string,
+  ttlSeconds: number,
+  fetchFn: () => Promise<T>,
+  negativeTtl = 300 // cache failures for 5 min to avoid hammering broken APIs
+): Promise<{ data: T; cacheHit: boolean }> {
+  try {
+    const cached = await getCached<T>(key)
+    if (cached !== null) {
+      return { data: cached, cacheHit: true }
+    }
+    // Check negative cache — if this key recently failed, don't retry
+    const failed = await getCached<boolean>(`${key}:failed`)
+    if (failed) {
+      throw new Error(`Negative cache hit for ${key}`)
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('Negative cache hit')) throw e
+    console.error(`KV read failed for ${key}:`, e)
+  }
+
+  try {
+    const data = await fetchFn()
+    try {
+      await setCached(key, data, ttlSeconds)
+    } catch (e) {
+      console.error(`KV write failed for ${key}:`, e)
+    }
+    return { data, cacheHit: false }
+  } catch (fetchErr) {
+    // Cache the failure so we don't retry for negativeTtl seconds
+    try {
+      await setCached(`${key}:failed`, true, negativeTtl)
+    } catch {}
+    throw fetchErr
+  }
+}
