@@ -13,22 +13,31 @@ import type { ChartConfig, Timeframe } from '@/lib/charts/chart-config'
 import { TimeframeToggle } from './TimeframeToggle'
 import { computeTrendline } from '@/lib/charts/trendline'
 
-// Precise inauguration dates — works for both monthly ('2025-01') and weekly ('2025-01-20') data
-// Monthly: '2025-01' < '2025-01-20' so Jan lands in previous era (mostly correct, 19/31 days)
-// Weekly: '2025-01-13' < '2025-01-20' (previous era), '2025-01-20' >= (new era). Clean split.
-const TRUMP1_START = '2017-01-20'
-const BIDEN_START = '2021-01-20'
-const TRUMP2_START = '2025-01-20'
+// Era boundaries at month level — works for both monthly ('2025-01') and weekly ('2025-01-06') data
+// Monthly: '2025-01' >= '2025-01' → Trump II. Clean.
+// Weekly: '2025-01-06' >= '2025-01' → Trump II. Jan 1-19 technically Biden but ~clean enough.
+const TRUMP1_START = '2017-01'
+const BIDEN_START = '2021-01'
+const TRUMP2_START = '2025-01'
 
-// Find the closest data point date at or after / strictly before a boundary
+// Find first data point date >= boundary
 function findDateAtOrAfter(dates: string[], boundary: string): string | null {
   return dates.find(d => d >= boundary) ?? null
 }
+// Find last data point date strictly < boundary
 function findDateBefore(dates: string[], boundary: string): string | null {
   for (let i = dates.length - 1; i >= 0; i--) {
     if (dates[i] < boundary) return dates[i]
   }
   return null
+}
+
+// Compute tick interval to show ~6-10 evenly spaced labels
+function computeTickInterval(dataLength: number): number {
+  if (dataLength <= 12) return 1
+  if (dataLength <= 24) return 2
+  if (dataLength <= 60) return Math.floor(dataLength / 8)
+  return Math.floor(dataLength / 7)
 }
 
 interface EraChartProps {
@@ -145,27 +154,29 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
 
   const eraElements = config.eraShading ? (
     <>
-      {/* Trump I: Jan 20 2017 – Jan 20 2021 (red) */}
+      {/* Trump I: 2017-01 to 2021-01 (red) */}
       {(() => {
-        const x1 = findDateAtOrAfter(allDates, TRUMP1_START) ?? (firstDate < BIDEN_START ? allDates[0] : null)
+        // x1: first data point in Trump I era (or start of chart if chart starts during Trump I)
+        const x1 = firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)
         const x2 = findDateBefore(allDates, BIDEN_START)
         return x1 && x2 && x1 <= x2 ? (
           <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.15)" strokeOpacity={0} />
         ) : null
       })()}
-      {/* Biden: Jan 20 2021 – Jan 20 2025 (blue) */}
+      {/* Biden: 2021-01 to 2025-01 (blue) */}
       {(() => {
-        const x1 = findDateAtOrAfter(allDates, BIDEN_START) ?? (firstDate < TRUMP2_START ? allDates[0] : null)
+        // x1: first data point in Biden era (or start of chart if chart starts during Biden)
+        const x1 = firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)
         const x2 = findDateBefore(allDates, TRUMP2_START)
-        // If all data is within Biden era and starts before Trump2
-        if (!x1 && firstDate < TRUMP2_START) {
-          return <ReferenceArea x1={allDates[0]} x2={x2 ?? allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
+        if (!x2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START) {
+          // All data is within Biden era
+          return x1 ? <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} /> : null
         }
         return x1 && x2 && x1 <= x2 ? (
           <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.15)" strokeOpacity={0} />
         ) : null
       })()}
-      {/* Trump II: Jan 20 2025 – present (red) */}
+      {/* Trump II: 2025-01 to present (red) */}
       {(() => {
         const x1 = findDateAtOrAfter(allDates, TRUMP2_START)
         return x1 ? (
@@ -268,7 +279,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         dataKey="date"
         tickFormatter={formatDateLabel}
         tick={{ fontSize: 11, fill: '#6B7280' }}
-        interval="preserveStartEnd"
+        interval={computeTickInterval(displayData.length)}
         stroke="#27272A"
       />
       <YAxis
