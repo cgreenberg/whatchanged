@@ -10,7 +10,7 @@ export function LocationBanner({ location }: { location: ZipInfo }) {
       className="text-center py-4"
     >
       <p className="text-lg text-zinc-300" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
-        📍 {location.cityName || location.countyName}, {location.stateAbbr} — {location.countyName}
+        📍 {location.cityName ? `${location.cityName}, ${location.stateAbbr} — ${location.countyName}` : `${location.countyName}, ${location.stateAbbr}`}
       </p>
     </motion.div>
   )
