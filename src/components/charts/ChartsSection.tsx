@@ -68,18 +68,22 @@ function getChartData(
         },
       }
     }
-    case 'gas':
+    case 'gas': {
+      const gasData = snapshot.gas.data
       return {
-        data: snapshot.gas.data?.series.map(p => ({
+        data: gasData?.series.map(p => ({
           date: p.date,
           price: p.price,
         })) ?? [],
-        nationalData: snapshot.gas.data?.nationalSeries?.map(p => ({
+        nationalData: gasData?.nationalSeries?.map(p => ({
           date: p.date,
           price: p.price,
         })) ?? [],
-        configOverrides: {},
+        configOverrides: gasData?.geoLevel
+          ? { geoLevel: gasData.geoLevel }
+          : {},
       }
+    }
     default:
       return { data: [], nationalData: [], configOverrides: {} }
   }
