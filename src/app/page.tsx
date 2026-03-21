@@ -99,19 +99,25 @@ export default function Home() {
                     sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
                   />
                 )}
-                {snapshot.cpi.data && (
-                  <StatCard
-                    label="Grocery Prices"
-                    value={`${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`}
-                    change={`${snapshot.cpi.data.groceriesChange.toFixed(1)}% since Jan 2025`}
-                    direction={snapshot.cpi.data.groceriesChange > 0 ? 'up' : 'down'}
-                    sourceLabel="BLS CPI"
-                    sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
-                    isNegative
-                    sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
-                  />
-                )}
+                {snapshot.cpi.data && (() => {
+                  const pctChange = snapshot.cpi.data.groceriesChange
+                  const localIncome = snapshot.census.data?.medianIncome ?? 74580
+                  const grocerySpend = 6000 * (localIncome / 74580)
+                  const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
+                  return (
+                    <StatCard
+                      label="Grocery Prices"
+                      value={`${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%`}
+                      change={`~$${dollarImpact}/yr more since Jan 2025`}
+                      direction={pctChange > 0 ? 'up' : 'down'}
+                      sourceLabel="BLS CPI"
+                      sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                      isNegative
+                      sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                    />
+                  )
+                })()}
                 {snapshot.cpi.data && (() => {
                   const shelterChange = computeCpiPctChange(
                     snapshot.cpi.data!.series as unknown as Record<string, unknown>[], 'shelter'
@@ -121,7 +127,7 @@ export default function Home() {
                       label="Shelter Costs"
                       value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
                       change="since Jan 2025"
-                      direction={shelterChange > 0 ? 'up' : 'down'}
+                      direction="neutral"
                       sourceLabel="BLS CPI"
                       sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}

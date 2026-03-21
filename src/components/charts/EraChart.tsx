@@ -197,11 +197,11 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   }
 
   // Determine date range for era shading
-  const firstDate = displayData[0]?.date ?? ''
-  const lastDate = displayData[displayData.length - 1]?.date ?? ''
+  const firstDate = (displayData[0]?.date ?? '') as string
+  const lastDate = (displayData[displayData.length - 1]?.date ?? '') as string
 
   // Build era shading using actual data point dates (handles both monthly and weekly formats)
-  const allDates = displayData.map(d => d.date)
+  const allDates = displayData.map(d => d.date as string)
 
   // Bug 1 fix: Use findDateAtOrAfter for era END boundaries so adjacent eras share
   // the boundary data point, eliminating black gaps between eras.
@@ -213,7 +213,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         // End at the first data point in Biden era (shared boundary point)
         const x2 = findDateAtOrAfter(allDates, BIDEN_START)
         return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
+          <ReferenceArea key="trump1" x1={x1} x2={x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Biden: 2021-01 to 2025-01 (blue) */}
@@ -223,17 +223,17 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         const x2 = findDateAtOrAfter(allDates, TRUMP2_START)
         if (!x2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START) {
           // All data is within Biden era
-          return x1 ? <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} /> : null
+          return x1 ? <ReferenceArea key="biden" x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} /> : null
         }
         return x1 && x2 && x1 <= x2 ? (
-          <ReferenceArea x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />
+          <ReferenceArea key="biden" x1={x1} x2={x2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Trump II: 2025-01 to present (red) */}
       {(() => {
         const x1 = findDateAtOrAfter(allDates, TRUMP2_START)
         return x1 ? (
-          <ReferenceArea x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
+          <ReferenceArea key="trump2" x1={x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />
         ) : null
       })()}
       {/* Reference lines at transitions */}
@@ -348,6 +348,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         tickFormatter={config.formatValue}
       />
       <Tooltip
+        animationDuration={0}
         contentStyle={{
           backgroundColor: '#18181B',
           border: '1px solid #3F3F46',
