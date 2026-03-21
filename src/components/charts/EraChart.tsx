@@ -203,45 +203,22 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   // Build era shading using actual data point dates (handles both monthly and weekly formats)
   const allDates = displayData.map(d => d.date as string)
 
-  // Bug 1 fix: Use findDateAtOrAfter for era END boundaries so adjacent eras share
-  // the boundary data point, eliminating black gaps between eras.
-  // Use array (not Fragment) so Recharts can see children directly via React.Children
-  const eraElements: React.ReactNode[] = []
-  if (config.eraShading) {
-    // Trump I: 2017-01 to 2021-01 (red)
-    const t1x1 = firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)
-    const t1x2 = findDateAtOrAfter(allDates, BIDEN_START)
-    if (t1x1 && t1x2 && t1x1 <= t1x2) {
-      eraElements.push(<ReferenceArea key="trump1" x1={t1x1} x2={t1x2} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />)
-    }
+  // Compute era boundary data points (used for both ReferenceArea and ReferenceLine)
+  // Rendered as direct JSX children of ChartComponent (not array/fragment — Recharts v3 compatibility)
+  const t1x1 = config.eraShading ? (firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)) : null
+  const t1x2 = config.eraShading ? findDateAtOrAfter(allDates, BIDEN_START) : null
+  const showTrump1 = !!(t1x1 && t1x2 && t1x1 < t1x2)  // strict < to skip zero-width
 
-    // Biden: 2021-01 to 2025-01 (blue)
-    const bx1 = firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)
-    const bx2 = findDateAtOrAfter(allDates, TRUMP2_START)
-    if (!bx2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START && bx1) {
-      eraElements.push(<ReferenceArea key="biden" x1={bx1} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />)
-    } else if (bx1 && bx2 && bx1 <= bx2) {
-      eraElements.push(<ReferenceArea key="biden" x1={bx1} x2={bx2} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />)
-    }
+  const bx1 = config.eraShading ? (firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)) : null
+  const bx2 = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
+  const showBiden = !!(bx1 && bx2 && bx1 < bx2)  // strict <
+  const showBidenFull = !!(bx1 && !bx2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START)
 
-    // Trump II: 2025-01 to present (red)
-    const t2x1 = findDateAtOrAfter(allDates, TRUMP2_START)
-    if (t2x1) {
-      eraElements.push(<ReferenceArea key="trump2" x1={t2x1} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />)
-    }
+  const t2x1 = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
+  const showTrump2 = !!t2x1
 
-    // Reference lines at transitions
-    const jan2021 = findDateAtOrAfter(allDates, BIDEN_START)
-    if (jan2021 && firstDate < BIDEN_START) {
-      eraElements.push(<ReferenceLine key="line-2021" x={jan2021} stroke="#6B7280" strokeDasharray="3 3"
-        label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />)
-    }
-    const jan2025 = findDateAtOrAfter(allDates, TRUMP2_START)
-    if (jan2025 && firstDate < TRUMP2_START) {
-      eraElements.push(<ReferenceLine key="line-2025" x={jan2025} stroke="#6B7280" strokeDasharray="3 3"
-        label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />)
-    }
-  }
+  const jan2021Line = config.eraShading ? findDateAtOrAfter(allDates, BIDEN_START) : null
+  const jan2025Line = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
 
   const renderSeries = () => {
     return config.series.map(s => {
@@ -393,7 +370,12 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
               }
             />
             <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
-            {eraElements}
+            {showTrump1 && <ReferenceArea x1={t1x1!} x2={t1x2!} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />}
+            {showBiden && <ReferenceArea x1={bx1!} x2={bx2!} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />}
+            {showBidenFull && <ReferenceArea x1={bx1!} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} />}
+            {showTrump2 && <ReferenceArea x1={t2x1!} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} />}
+            {jan2021Line && firstDate < BIDEN_START && <ReferenceLine x={jan2021Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
+            {jan2025Line && firstDate < TRUMP2_START && <ReferenceLine x={jan2025Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
             {renderSeries()}
             {nationalLines}
             {trendlineElement}
