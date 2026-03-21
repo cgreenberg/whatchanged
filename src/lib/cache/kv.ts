@@ -1,23 +1,19 @@
-// Cache adapter: uses Redis when REDIS_URL is set, in-memory Map otherwise
-// Tests and local dev without Redis get the in-memory fallback
+// Cache adapter: uses Upstash Redis when env vars are set, in-memory Map otherwise
+// Tests and local dev without Upstash get the in-memory fallback
 
-import { createClient, type RedisClientType } from 'redis'
+import { Redis } from '@upstash/redis'
 
-let redisClient: RedisClientType | null = null
-let redisReady = false
+let redisClient: Redis | null = null
 
-async function getRedis(): Promise<RedisClientType | null> {
-  if (process.env.NODE_ENV === 'test' || !process.env.REDIS_URL) {
+function getRedis(): Redis | null {
+  if (process.env.NODE_ENV === 'test' || !process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
     return null
   }
-  if (redisClient && redisReady) {
-    return redisClient
-  }
   if (!redisClient) {
-    redisClient = createClient({ url: process.env.REDIS_URL })
-    redisClient.on('error', (err) => console.error('Redis error:', err))
-    await redisClient.connect()
-    redisReady = true
+    redisClient = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN!,
+    })
   }
   return redisClient
 }
@@ -26,11 +22,10 @@ async function getRedis(): Promise<RedisClientType | null> {
 const memCache = new Map<string, { value: unknown; expiresAt: number }>()
 
 export async function getCached<T>(key: string): Promise<T | null> {
-  const redis = await getRedis()
+  const redis = getRedis()
   if (redis) {
-    const raw = await redis.get(key)
-    if (raw === null) return null
-    return JSON.parse(raw) as T
+    const val = await redis.get<T>(key)
+    return val ?? null
   }
   const entry = memCache.get(key)
   if (!entry || Date.now() > entry.expiresAt) return null
@@ -38,9 +33,9 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 export async function setCached<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
-  const redis = await getRedis()
+  const redis = getRedis()
   if (redis) {
-    await redis.set(key, JSON.stringify(value), { EX: ttlSeconds })
+    await redis.set(key, value, { ex: ttlSeconds })
     return
   }
   memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })

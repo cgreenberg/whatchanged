@@ -1,3 +1,11 @@
+// Cron schedule (configured externally at cron-job.org):
+//   - Monday 7:00 AM ET — gas prices update weekly on Monday mornings
+//   - 15th of each month — BLS data updates mid-month
+//
+// This endpoint is also used by /scripts/preload-cache.ts for initial bulk loading.
+// The preload script covers all 25 gas series + top 50 counties directly.
+// This warm-cache endpoint covers the most common zips via snapshot fetching.
+
 import { NextResponse } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 
@@ -13,6 +21,7 @@ const WARM_ZIPS = [
   '60601',  // Chicago, IL (CPI: Chicago metro)
   '48201',  // Detroit, MI (CPI: Detroit metro)
   '55401',  // Minneapolis, MN (CPI: Minneapolis metro)
+  '43215',  // Columbus, OH (covers Ohio state gas prices)
   // PAD 3 — Gulf Coast
   '77001',  // Houston, TX (CPI: Houston metro)
   '75201',  // Dallas, TX (CPI: Dallas metro)
