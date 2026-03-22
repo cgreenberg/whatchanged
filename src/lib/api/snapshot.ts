@@ -6,12 +6,15 @@ import type {
   EconomicSnapshot,
   DataResult,
   CensusData,
+  TariffData,
   CacheStatus,
   UnemploymentData,
   CpiData,
   GasPriceData,
   FederalFundingData,
 } from '@/types'
+import { estimateTariffCost } from '@/lib/tariff'
+import censusJson from '@/lib/data/census-acs.json'
 import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from './source-registry'
 import { getGasLookup } from './eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
@@ -106,12 +109,30 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
   }
 
   // Census is synchronous (bundled static data)
+  const censusIsFallback = !((censusJson as Record<string, any>)[zip])
   const censusData = getCensusData(zip)
   const census: DataResult<CensusData> = {
     data: censusData,
     error: censusData ? null : 'Census data unavailable for this zip',
     fetchedAt,
     sourceId: 'census-acs',
+  }
+
+  // Tariff estimate (derived from Census income + Yale Budget Lab rate)
+  const tariffData: TariffData | null = censusData ? {
+    medianIncome: censusData.medianIncome,
+    tariffRate: 0.0205,
+    estimatedCost: estimateTariffCost(censusData.medianIncome),
+    source: 'Yale Budget Lab',
+    incomeSource: censusIsFallback ? 'national-average' : `census-acs-${censusData.year}`,
+    isFallback: censusIsFallback,
+  } : null
+
+  const tariff: DataResult<TariffData> = {
+    data: tariffData,
+    error: tariffData ? null : 'Tariff estimate unavailable',
+    fetchedAt,
+    sourceId: 'yale-budget-lab',
   }
 
   // Build cache status
@@ -131,6 +152,7 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
     gas,
     federal,
     census,
+    tariff,
     fetchedAt,
     cacheStatus,
   }

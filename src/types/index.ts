@@ -56,6 +56,7 @@ export interface GasPriceData {
   nationalSeries?: Array<{ date: string; price: number }>
   isNationalFallback?: boolean
   geoLevel?: string
+  duoarea?: string  // EIA area code used for the API query
 }
 
 export interface FederalFundingData {
@@ -70,6 +71,16 @@ export interface CensusData {
   medianRent: number
   zip: string
   year: number
+  isFallback?: boolean
+}
+
+export interface TariffData {
+  medianIncome: number
+  tariffRate: number
+  estimatedCost: number
+  source: string
+  incomeSource: string
+  isFallback: boolean
 }
 
 export interface CacheStatus {
@@ -88,6 +99,7 @@ export interface EconomicSnapshot {
   gas: DataResult<GasPriceData>
   federal: DataResult<FederalFundingData>
   census: DataResult<CensusData>
+  tariff: DataResult<TariffData>
   fetchedAt: string
   cacheStatus?: CacheStatus
 }

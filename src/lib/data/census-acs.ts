@@ -9,7 +9,7 @@ const NATIONAL_FALLBACK: Omit<CensusData, 'zip' | 'year'> = {
 export function getCensusData(zip: string): CensusData {
   const entry = (censusData as Record<string, any>)[zip]
   if (entry) {
-    return { zip, ...entry }
+    return { zip, ...entry, isFallback: false }
   }
-  return { zip, year: 2023, ...NATIONAL_FALLBACK }
+  return { zip, year: 2023, ...NATIONAL_FALLBACK, isFallback: true }
 }
