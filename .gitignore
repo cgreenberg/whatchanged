@@ -39,8 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env.local
 
 # Local tool configs
 .playwright-mcp/
-.env*.local
+
+# Test output
+playwright-report/
+test-results/
+
+# Claude Code
+skills-lock.json
