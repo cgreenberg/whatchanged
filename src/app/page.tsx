@@ -14,6 +14,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       title: 'What Changed in Your Town Since January 2025?',
       description: 'Enter your zip code. See what changed.',
       openGraph: {
+        type: 'website',
         title: 'What Changed in Your Town Since January 2025?',
         description: 'Enter your zip code. See what changed.',
         images: [{ url: '/api/og', width: 1200, height: 630 }],
@@ -61,6 +62,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title,
     openGraph: {
+      type: 'website',
       title: ogTitle,
       description,
       url: `https://whatchanged.us/?zip=${zip}`,
