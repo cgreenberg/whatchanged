@@ -90,6 +90,14 @@ function formatTickLabel(dateStr: string, rangeMonths: number): string {
   }
 }
 
+// Tooltip always shows full "Mon YYYY" regardless of timeframe
+function formatTooltipLabel(dateStr: string): string {
+  const [yearStr, monthStr] = dateStr.split('-')
+  const month = parseInt(monthStr, 10)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[month - 1]} ${yearStr}`
+}
+
 // For each computed tick date, find the closest actual data point date
 function snapTicksToData(computedTicks: string[], dataDates: string[]): string[] {
   return computedTicks.map(tick => {
@@ -366,7 +374,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
                 fontSize: 12,
               }}
               labelFormatter={(label: unknown) =>
-                typeof label === 'string' ? formatTickLabel(label.slice(0, 7), rangeMonths) : String(label)
+                typeof label === 'string' ? formatTooltipLabel(label.slice(0, 7)) : String(label)
               }
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(value: any) =>

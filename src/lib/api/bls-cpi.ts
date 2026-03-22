@@ -112,8 +112,8 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
       return {
         date: `${year}-${month}`,
         groceries: g,
-        shelter: s ?? 0,
-        energy: e ?? 0,
+        shelter: s ?? null,
+        energy: e ?? null,
       }
     })
     .filter((p): p is CpiPoint => p !== null)
@@ -157,8 +157,8 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
         return {
           date: `${year}-${month}`,
           groceries: g,
-          shelter: s ?? 0,
-          energy: e ?? 0,
+          shelter: s ?? null,
+          energy: e ?? null,
         }
       })
       .filter((p): p is CpiPoint => p !== null)

@@ -78,6 +78,15 @@ const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   '06013': 'S49A', // Contra Costa County → SF metro
   '06041': 'S49A', // Marin County → SF metro
   '06073': 'S48B', // San Diego County → San Diego metro
+  // Houston-The Woodlands-Sugar Land metro (TX default is Dallas)
+  '48201': 'S35B', // Harris County → Houston metro
+  '48039': 'S35B', // Brazoria County → Houston metro
+  '48157': 'S35B', // Fort Bend County → Houston metro
+  '48167': 'S35B', // Galveston County → Houston metro
+  '48071': 'S35B', // Chambers County → Houston metro
+  '48291': 'S35B', // Liberty County → Houston metro
+  '48339': 'S35B', // Montgomery County → Houston metro
+  '48473': 'S35B', // Waller County → Houston metro
   // Portland-Vancouver-Hillsboro metro (crosses OR/WA border)
   '53011': 'S49G', // Clark County, WA → Portland metro
   '53015': 'S49G', // Cowlitz County, WA → Portland metro (closest)

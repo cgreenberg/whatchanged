@@ -32,8 +32,8 @@ export interface UnemploymentData {
 export interface CpiPoint {
   date: string
   groceries: number
-  shelter: number
-  energy: number
+  shelter: number | null
+  energy: number | null
 }
 
 export interface CpiData {
