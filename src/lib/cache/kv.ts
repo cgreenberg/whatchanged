@@ -49,11 +49,12 @@ export async function getCachedOrFetch<T>(
   key: string,
   ttlSeconds: number,
   fetchFn: () => Promise<T>,
-  negativeTtl = 300 // cache failures for 5 min to avoid hammering broken APIs
+  negativeTtl = 300, // cache failures for 5 min to avoid hammering broken APIs
+  validate?: (cached: T) => boolean // optional validator — return false to treat as cache miss
 ): Promise<{ data: T; cacheHit: boolean }> {
   try {
     const cached = await getCached<T>(key)
-    if (cached !== null) {
+    if (cached !== null && (!validate || validate(cached))) {
       return { data: cached, cacheHit: true }
     }
     // Check negative cache — if this key recently failed, don't retry

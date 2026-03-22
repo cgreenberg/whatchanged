@@ -51,7 +51,10 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
         const result = await safelyFetch(blsCpiSource, [location.countyFips, location.stateAbbr])
         if (result.data === null) throw new Error(result.error ?? 'fetch failed')
         return result.data
-      }
+      },
+      300,
+      // Invalidate stale cache entries missing shelterChange field
+      (cached) => cached.shelterChange !== undefined
     ).catch(() => ({ data: null as CpiData | null, cacheHit: false })),
 
     getCachedOrFetch<GasPriceData>(

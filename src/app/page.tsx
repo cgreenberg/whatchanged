@@ -5,7 +5,7 @@ import { LocationBanner } from '@/components/LocationBanner'
 import { StatCard } from '@/components/StatCard'
 import { StatCardSkeleton } from '@/components/StatCardSkeleton'
 import { ChartsSection } from '@/components/charts/ChartsSection'
-import { TariffWidget } from '@/components/TariffWidget'
+import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 import { DigDeeper } from '@/components/DigDeeper'
 import { ShareButton } from '@/components/ShareButton'
 import { MapSection } from '@/components/map/MapSection'
@@ -68,9 +68,10 @@ export default function Home() {
             <LocationBanner location={snapshot.location} />
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6" data-testid="stat-cards">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6" data-testid="stat-cards">
             {state === 'loading' ? (
               <>
+                <StatCardSkeleton />
                 <StatCardSkeleton />
                 <StatCardSkeleton />
                 <StatCardSkeleton />
@@ -91,23 +92,20 @@ export default function Home() {
                     accentColor="#F59E0B"
                   />
                 )}
-                {snapshot.cpi.data && (() => {
-                  const pctChange = snapshot.cpi.data.groceriesChange
-                  const localIncome = snapshot.census.data?.medianIncome ?? 74580
-                  const grocerySpend = 6000 * (localIncome / 74580)
-                  const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
+                {snapshot.census.data && (() => {
+                  const cost = estimateTariffCost(snapshot.census.data!.medianIncome)
                   return (
                     <StatCard
-                      label="Grocery Prices"
-                      value={`${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%`}
-                      change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
-                      direction={pctChange > 0 ? 'up' : 'down'}
-                      sourceLabel="BLS CPI"
-                      sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                      geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                      label="Tariff Impact"
+                      value={`~${formatDollars(cost)}/yr`}
+                      change={`based on ${formatDollars(snapshot.census.data!.medianIncome)} local income`}
+                      direction="up"
+                      sourceLabel="Yale Budget Lab"
+                      sourceDate="2025 est."
+                      geoLevel="zip-level income"
                       isNegative
-                      sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
-                      accentColor="#EF4444"
+                      sourceUrl="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
+                      accentColor="#A855F7"
                     />
                   )
                 })()}
@@ -128,6 +126,26 @@ export default function Home() {
                     />
                   )
                 })()}
+                {snapshot.cpi.data && (() => {
+                  const pctChange = snapshot.cpi.data.groceriesChange
+                  const localIncome = snapshot.census.data?.medianIncome ?? 74580
+                  const grocerySpend = 6000 * (localIncome / 74580)
+                  const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
+                  return (
+                    <StatCard
+                      label="Grocery Prices"
+                      value={`${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%`}
+                      change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
+                      direction={pctChange > 0 ? 'up' : 'down'}
+                      sourceLabel="BLS CPI"
+                      sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                      isNegative
+                      sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                      accentColor="#EF4444"
+                    />
+                  )
+                })()}
               </>
             )}
           </div>
@@ -139,9 +157,6 @@ export default function Home() {
           <ErrorBoundary>
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
-          {snapshot.census.data && (
-            <TariffWidget medianIncome={snapshot.census.data.medianIncome} />
-          )}
           {/* <DigDeeper snapshot={snapshot} /> */}
           <ShareButton snapshot={snapshot} />
           <ErrorBoundary>
