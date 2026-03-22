@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { ZipInput } from '@/components/ZipInput'
 import { LocationBanner } from '@/components/LocationBanner'
 import { StatCard } from '@/components/StatCard'
@@ -180,6 +181,17 @@ export default function HomeContent() {
           </button>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="mt-16 mb-4 text-center">
+        <Link
+          href="/about"
+          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+          style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+        >
+          About the data
+        </Link>
+      </footer>
     </main>
   )
 }
