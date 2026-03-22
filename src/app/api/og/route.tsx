@@ -11,8 +11,6 @@ export async function GET(req: NextRequest) {
 
   // Try to fetch live data when zip is provided
   let location = searchParams.get('location') ?? ''
-  let unemployment = searchParams.get('unemployment') ?? ''
-  let unemploymentChange = searchParams.get('unemploymentChange') ?? ''
   let groceries = searchParams.get('groceries') ?? ''
   let shelter = ''
   let federal = searchParams.get('federal') ?? ''
@@ -26,10 +24,6 @@ export async function GET(req: NextRequest) {
         if (!location) {
           const city = snapshot.location.cityName || snapshot.location.countyName
           location = `${city}, ${snapshot.location.stateAbbr}`
-        }
-        if (!unemployment && snapshot.unemployment.data) {
-          unemployment = `${snapshot.unemployment.data.current}%`
-          unemploymentChange = `${snapshot.unemployment.data.change > 0 ? '+' : ''}${snapshot.unemployment.data.change} pts`
         }
         if (!groceries && snapshot.cpi.data) {
           groceries = `${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`
@@ -71,19 +65,14 @@ export async function GET(req: NextRequest) {
           fontFamily: 'Inter, sans-serif',
         }}
       >
-        {/* Location */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
           <span style={{ fontSize: '48px', color: '#F5F5F5', fontWeight: 'bold' }}>
-            What Changed in {location}?
-          </span>
-        </div>
-        <div style={{ display: 'flex', marginBottom: '36px' }}>
-          <span style={{ fontSize: '26px', color: '#A1A1AA' }}>
-            Since January 2025 · Zip {zip}
+            What changed in {location} since Jan 2025?
           </span>
         </div>
 
-        {/* Stats grid - 2 rows of 3 */}
+        {/* Stats - row 1 */}
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {gasPrice && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -119,6 +108,7 @@ export async function GET(req: NextRequest) {
           )}
         </div>
 
+        {/* Stats - row 2 */}
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {groceries && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -128,22 +118,6 @@ export async function GET(req: NextRequest) {
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
                 {groceries}
               </span>
-            </div>
-          )}
-
-          {unemployment && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
-                Unemployment
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#F59E0B' }}>
-                {unemployment}
-              </span>
-              {unemploymentChange && (
-                <span style={{ fontSize: '22px', color: '#A1A1AA' }}>
-                  {unemploymentChange} since Jan 2025
-                </span>
-              )}
             </div>
           )}
 
