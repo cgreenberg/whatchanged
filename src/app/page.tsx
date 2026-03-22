@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { fetchSnapshot } from '@/lib/api/snapshot'
+import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 import HomeContent from '@/components/HomeContent'
 
 type Props = {
@@ -46,6 +47,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
   if (snapshot.cpi.data?.shelterChange !== undefined) {
     parts.push(`Shelter: ${snapshot.cpi.data.shelterChange > 0 ? '+' : ''}${snapshot.cpi.data.shelterChange.toFixed(1)}%`)
+  }
+  if (snapshot.census.data) {
+    const cost = estimateTariffCost(snapshot.census.data.medianIncome)
+    parts.push(`Tariff impact: ~${formatDollars(cost)}/yr`)
   }
   if (snapshot.federal.data) {
     const amt = snapshot.federal.data.amountCut

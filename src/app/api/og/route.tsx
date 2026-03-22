@@ -73,12 +73,12 @@ export async function GET(req: NextRequest) {
       >
         {/* Location */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-          <span style={{ fontSize: '44px', color: '#F5F5F5', fontWeight: 'bold' }}>
+          <span style={{ fontSize: '48px', color: '#F5F5F5', fontWeight: 'bold' }}>
             What Changed in {location}?
           </span>
         </div>
         <div style={{ display: 'flex', marginBottom: '36px' }}>
-          <span style={{ fontSize: '24px', color: '#A1A1AA' }}>
+          <span style={{ fontSize: '26px', color: '#A1A1AA' }}>
             Since January 2025 · Zip {zip}
           </span>
         </div>
@@ -87,10 +87,10 @@ export async function GET(req: NextRequest) {
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {gasPrice && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Gas Prices
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#F59E0B' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#F59E0B' }}>
                 {gasPrice}
               </span>
             </div>
@@ -98,10 +98,10 @@ export async function GET(req: NextRequest) {
 
           {tariff && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Tariff Impact
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#A855F7' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#A855F7' }}>
                 {tariff}
               </span>
             </div>
@@ -109,10 +109,10 @@ export async function GET(req: NextRequest) {
 
           {shelter && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Housing Costs
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#3B82F6' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#3B82F6' }}>
                 {shelter}
               </span>
             </div>
@@ -122,10 +122,10 @@ export async function GET(req: NextRequest) {
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {groceries && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Grocery Prices
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#EF4444' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
                 {groceries}
               </span>
             </div>
@@ -133,14 +133,14 @@ export async function GET(req: NextRequest) {
 
           {unemployment && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Unemployment
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#F59E0B' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#F59E0B' }}>
                 {unemployment}
               </span>
               {unemploymentChange && (
-                <span style={{ fontSize: '20px', color: '#A1A1AA' }}>
+                <span style={{ fontSize: '22px', color: '#A1A1AA' }}>
                   {unemploymentChange} since Jan 2025
                 </span>
               )}
@@ -149,10 +149,10 @@ export async function GET(req: NextRequest) {
 
           {federal && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '20px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 Federal $ Cut
               </span>
-              <span style={{ fontSize: '56px', fontWeight: 'bold', color: '#EF4444' }}>
+              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
                 {federal}
               </span>
             </div>
