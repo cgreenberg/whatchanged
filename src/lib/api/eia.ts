@@ -6,7 +6,7 @@ const BASELINE_DATE = '2025-01-20'
 
 // --- Tier 1: CPI metro area → EIA city duoarea ---
 
-const CPI_TO_EIA_CITY: Record<string, { duoarea: string; label: string }> = {
+export const CPI_TO_EIA_CITY: Record<string, { duoarea: string; label: string }> = {
   'S48A': { duoarea: 'Y48SE', label: 'Seattle area avg' },
   'S37A': { duoarea: 'Y05LA', label: 'Los Angeles area avg' },
   'S49A': { duoarea: 'Y05SF', label: 'San Francisco area avg' },
@@ -18,7 +18,7 @@ const CPI_TO_EIA_CITY: Record<string, { duoarea: string; label: string }> = {
   'S23B': { duoarea: 'YMIA', label: 'Miami area avg' },
 }
 
-const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label: string }> = {
+export const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label: string }> = {
   '39035': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Cuyahoga County
   '39093': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Lorain County
   '39085': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Lake County
@@ -28,7 +28,7 @@ const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label: string
 
 // --- Tier 2: State-level EIA data (8 states) ---
 
-const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string }> = {
+export const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string }> = {
   WA: { duoarea: 'SWA', label: 'Washington state avg' },
   CA: { duoarea: 'SCA', label: 'California state avg' },
   CO: { duoarea: 'SCO', label: 'Colorado state avg' },
@@ -41,7 +41,7 @@ const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string }> = {
 
 // --- Tier 3: PAD District (fallback) ---
 
-const STATE_TO_PAD: Record<string, number> = {
+export const STATE_TO_PAD: Record<string, number> = {
   // PAD 1 — East Coast
   ME: 1, NH: 1, VT: 1, MA: 1, RI: 1, CT: 1, NY: 1, NJ: 1, PA: 1,
   DE: 1, MD: 1, DC: 1, VA: 1, WV: 1, NC: 1, SC: 1, GA: 1, FL: 1,
@@ -56,7 +56,7 @@ const STATE_TO_PAD: Record<string, number> = {
   WA: 5, OR: 5, CA: 5, NV: 5, AZ: 5, AK: 5, HI: 5,
 }
 
-const PAD_NAMES: Record<number, string> = {
+export const PAD_NAMES: Record<number, string> = {
   1: 'East Coast',
   2: 'Midwest',
   3: 'Gulf Coast',

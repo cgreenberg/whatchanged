@@ -1,4 +1,4 @@
-const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
+export const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   // Northeast
   'S11A': { code: 'S11A', name: 'Boston-Cambridge-Newton' },
   'S12A': { code: 'S12A', name: 'New York-Newark-Jersey City' },
@@ -26,7 +26,7 @@ const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
 }
 
 // Map state abbreviation to closest BLS CPI area code
-const STATE_TO_CPI_AREA: Record<string, string> = {
+export const STATE_TO_CPI_AREA: Record<string, string> = {
   // States with direct metro CPI coverage
   MA: 'S11A', // Boston
   CT: 'S11A', // Boston (closest)
@@ -65,12 +65,26 @@ const STATE_TO_CPI_AREA: Record<string, string> = {
   WA: 'S48A', // Seattle (default — Portland-area counties override below)
   OR: 'S49G', // Portland (default for OR)
   HI: 'S49B', // Urban Hawaii
-  // States that fall back to national
-  // AK, WY, MT, ND, SD, NE, KS, AR, LA, MS, WV, VA, ID, NV not covered
+  // States mapped to closest regional CPI metro
+  VA: 'S12B', // Philadelphia (DC/NoVA corridor — closest large CPI metro)
+  WV: 'S12B', // Philadelphia (closest)
+  LA: 'S35B', // Houston (closest Gulf Coast CPI metro)
+  AR: 'S35A', // Dallas (closest)
+  MS: 'S23A', // Atlanta (closest)
+  KS: 'S24D', // St. Louis (closest)
+  NE: 'S24C', // Minneapolis (closest)
+  ND: 'S24C', // Minneapolis (closest)
+  SD: 'S24C', // Minneapolis (closest)
+  MT: 'S35D', // Denver (closest)
+  WY: 'S35D', // Denver (closest)
+  ID: 'S48A', // Seattle (closest)
+  NV: 'S37A', // Los Angeles (closest — Las Vegas has no BLS CPI metro)
+  AK: 'S48A', // Seattle (closest)
+  // PR and VI have no nearby BLS CPI metro — remain national
 }
 
 // County FIPS overrides for metros that don't match the state default
-const COUNTY_CPI_OVERRIDES: Record<string, string> = {
+export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   '06075': 'S49A', // San Francisco County → SF metro
   '06081': 'S49A', // San Mateo County → SF metro
   '06085': 'S49A', // Santa Clara County → SF metro
