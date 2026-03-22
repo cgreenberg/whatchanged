@@ -21,13 +21,13 @@ import {
   COUNTY_CPI_OVERRIDES,
 } from '../src/lib/mappings/county-metro-cpi'
 
+import { getGasLookup } from '../src/lib/api/eia'
 import {
-  getGasLookup,
   CPI_TO_EIA_CITY,
   COUNTY_EIA_CITY_OVERRIDES,
   STATE_TO_PAD,
   PAD_NAMES,
-} from '../src/lib/api/eia'
+} from '../src/lib/mappings/eia-gas'
 
 // ---------------------------------------------------------------------------
 // Load static zip-county data (relative path from scripts/ to src/lib/data/)

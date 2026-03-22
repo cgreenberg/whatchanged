@@ -1,11 +1,11 @@
+import { getGasLookup } from '@/lib/api/eia'
 import {
-  getGasLookup,
   CPI_TO_EIA_CITY,
   COUNTY_EIA_CITY_OVERRIDES,
   STATE_LEVEL_CODES,
   STATE_TO_PAD,
   PAD_NAMES,
-} from '@/lib/api/eia'
+} from '@/lib/mappings/eia-gas'
 
 describe('getGasLookup — Tier 1: county FIPS override', () => {
   test('Cuyahoga County (Cleveland) maps to YCLE at tier 1', () => {
