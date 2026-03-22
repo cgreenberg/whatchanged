@@ -112,7 +112,7 @@ export default function Home() {
                   )
                 })()}
                 {snapshot.cpi.data && (() => {
-                  const shelterChange = snapshot.cpi.data!.shelterChange
+                  const shelterChange = snapshot.cpi.data!.shelterChange ?? 0
                   return (
                     <StatCard
                       label="Housing Costs"
