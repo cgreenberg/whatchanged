@@ -162,11 +162,11 @@ describe('generateMetadata — valid zip with snapshot', () => {
     expect(ogTitle).toContain('Since January 2025?')
   })
 
-  test('description includes unemployment part', async () => {
+  test('description includes tariff impact part', async () => {
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('Unemployment:')
-    expect(desc).toContain('5%')
+    expect(desc).toContain('Tariff impact:')
+    expect(desc).toContain('/yr')
   })
 
   test('description includes groceries part', async () => {
@@ -216,19 +216,19 @@ describe('generateMetadata — valid zip with snapshot', () => {
 })
 
 describe('generateMetadata — description with missing data', () => {
-  test('no unemployment data → description omits unemployment part', async () => {
+  test('no census data → description omits tariff part', async () => {
     const snapshot = makeSnapshot()
-    snapshot.unemployment = {
+    snapshot.census = {
       data: null,
-      error: 'No data',
+      error: 'No census data',
       fetchedAt: '2025-03-01T00:00:00.000Z',
-      sourceId: 'bls',
+      sourceId: 'census',
     }
     mockFetchSnapshot.mockResolvedValue(snapshot)
 
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).not.toContain('Unemployment:')
+    expect(desc).not.toContain('Tariff')
   })
 
   test('no CPI data → description omits groceries and shelter parts', async () => {

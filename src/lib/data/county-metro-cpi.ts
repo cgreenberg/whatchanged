@@ -1,28 +1,33 @@
+// BLS CPI area codes — verified against https://data.bls.gov/timeseries/CUUR{code}SAF11
+// on 2026-03-22. Each code was checked by loading the series page and reading the Area field.
 export const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   // Northeast
   'S11A': { code: 'S11A', name: 'Boston-Cambridge-Newton' },
   'S12A': { code: 'S12A', name: 'New York-Newark-Jersey City' },
   'S12B': { code: 'S12B', name: 'Philadelphia-Camden-Wilmington' },
-  // South
-  'S23A': { code: 'S23A', name: 'Atlanta-Sandy Springs-Roswell' },
-  'S23B': { code: 'S23B', name: 'Miami-Fort Lauderdale-West Palm Beach' },
-  'S23C': { code: 'S23C', name: 'Tampa-St. Petersburg-Clearwater' },
-  'S35A': { code: 'S35A', name: 'Dallas-Fort Worth-Arlington' },
-  'S35B': { code: 'S35B', name: 'Houston-The Woodlands-Sugar Land' },
   // Midwest
-  'S24A': { code: 'S24A', name: 'Chicago-Naperville-Elgin' },
-  'S24B': { code: 'S24B', name: 'Detroit-Warren-Dearborn' },
-  'S24C': { code: 'S24C', name: 'Minneapolis-St. Paul-Bloomington' },
-  'S24D': { code: 'S24D', name: 'St. Louis' },
+  'S23A': { code: 'S23A', name: 'Chicago-Naperville-Elgin' },
+  'S23B': { code: 'S23B', name: 'Detroit-Warren-Dearborn' },
+  'S24A': { code: 'S24A', name: 'Minneapolis-St. Paul-Bloomington' },
+  'S24B': { code: 'S24B', name: 'St. Louis' },
+  // South
+  'S35A': { code: 'S35A', name: 'Washington-Arlington-Alexandria' },
+  'S35B': { code: 'S35B', name: 'Miami-Fort Lauderdale-West Palm Beach' },
+  'S35C': { code: 'S35C', name: 'Atlanta-Sandy Springs-Roswell' },
+  'S35D': { code: 'S35D', name: 'Tampa-St. Petersburg-Clearwater' },
+  'S35E': { code: 'S35E', name: 'Baltimore-Columbia-Towson' },
+  'S37A': { code: 'S37A', name: 'Dallas-Fort Worth-Arlington' },
+  'S37B': { code: 'S37B', name: 'Houston-The Woodlands-Sugar Land' },
   // West
-  'S35C': { code: 'S35C', name: 'Phoenix-Mesa-Scottsdale' },
-  'S35D': { code: 'S35D', name: 'Denver-Aurora-Lakewood' },
-  'S37A': { code: 'S37A', name: 'Los Angeles-Long Beach-Anaheim' },
-  'S48A': { code: 'S48A', name: 'Seattle-Tacoma-Bellevue' },
-  'S48B': { code: 'S48B', name: 'San Diego-Carlsbad' },
-  'S49A': { code: 'S49A', name: 'San Francisco-Oakland-Hayward' },
-  'S49B': { code: 'S49B', name: 'Urban Hawaii' },
-  'S49G': { code: 'S49G', name: 'Portland-Vancouver-Hillsboro' },
+  'S48A': { code: 'S48A', name: 'Phoenix-Mesa-Scottsdale' },
+  'S48B': { code: 'S48B', name: 'Denver-Aurora-Lakewood' },
+  'S49A': { code: 'S49A', name: 'Los Angeles-Long Beach-Anaheim' },
+  'S49B': { code: 'S49B', name: 'San Francisco-Oakland-Hayward' },
+  'S49C': { code: 'S49C', name: 'Riverside-San Bernardino-Ontario' },
+  'S49D': { code: 'S49D', name: 'Seattle-Tacoma-Bellevue' },
+  'S49E': { code: 'S49E', name: 'San Diego-Carlsbad' },
+  'S49F': { code: 'S49F', name: 'Urban Hawaii' },
+  'S49G': { code: 'S49G', name: 'Urban Alaska' },
 }
 
 // Map state abbreviation to closest BLS CPI area code
@@ -38,75 +43,81 @@ export const STATE_TO_CPI_AREA: Record<string, string> = {
   NJ: 'S12A',
   PA: 'S12B', // Philadelphia
   DE: 'S12B',
-  MD: 'S12B', // closest
-  DC: 'S12B',
-  GA: 'S23A', // Atlanta
-  FL: 'S23B', // Miami
-  AL: 'S23A', // Atlanta (closest)
-  SC: 'S23A',
-  NC: 'S23A',
-  TN: 'S23A',
-  TX: 'S35A', // Dallas
-  OK: 'S35A',
-  IL: 'S24A', // Chicago
-  IN: 'S24A',
-  WI: 'S24A',
-  MI: 'S24B', // Detroit
-  OH: 'S24B',
-  MN: 'S24C', // Minneapolis
-  IA: 'S24C',
-  MO: 'S24D', // St. Louis
-  KY: 'S24D',
-  AZ: 'S35C', // Phoenix
-  NM: 'S35C',
-  CO: 'S35D', // Denver
-  UT: 'S35D',
-  CA: 'S37A', // Los Angeles (default for CA)
-  WA: 'S48A', // Seattle (default — Portland-area counties override below)
-  OR: 'S49G', // Portland (default for OR)
-  HI: 'S49B', // Urban Hawaii
-  // States mapped to closest regional CPI metro
-  VA: 'S12B', // Philadelphia (DC/NoVA corridor — closest large CPI metro)
-  WV: 'S12B', // Philadelphia (closest)
-  LA: 'S35B', // Houston (closest Gulf Coast CPI metro)
-  AR: 'S35A', // Dallas (closest)
-  MS: 'S23A', // Atlanta (closest)
-  KS: 'S24D', // St. Louis (closest)
-  NE: 'S24C', // Minneapolis (closest)
-  ND: 'S24C', // Minneapolis (closest)
-  SD: 'S24C', // Minneapolis (closest)
-  MT: 'S35D', // Denver (closest)
-  WY: 'S35D', // Denver (closest)
-  ID: 'S48A', // Seattle (closest)
-  NV: 'S37A', // Los Angeles (closest — Las Vegas has no BLS CPI metro)
-  AK: 'S48A', // Seattle (closest)
+  MD: 'S35E', // Baltimore
+  DC: 'S35A', // Washington
+  VA: 'S35A', // Washington (DC/NoVA corridor)
+  WV: 'S35A', // Washington (closest)
+  GA: 'S35C', // Atlanta
+  FL: 'S35B', // Miami
+  AL: 'S35C', // Atlanta (closest)
+  SC: 'S35C', // Atlanta (closest)
+  NC: 'S35C', // Atlanta (closest)
+  TN: 'S35C', // Atlanta (closest)
+  MS: 'S35C', // Atlanta (closest)
+  TX: 'S37A', // Dallas
+  OK: 'S37A', // Dallas (closest)
+  AR: 'S37A', // Dallas (closest)
+  LA: 'S37B', // Houston (closest Gulf Coast CPI metro)
+  IL: 'S23A', // Chicago
+  IN: 'S23A', // Chicago (closest)
+  WI: 'S23A', // Chicago (closest)
+  MI: 'S23B', // Detroit
+  OH: 'S23B', // Detroit (closest)
+  MN: 'S24A', // Minneapolis
+  IA: 'S24A', // Minneapolis (closest)
+  ND: 'S24A', // Minneapolis (closest)
+  SD: 'S24A', // Minneapolis (closest)
+  NE: 'S24A', // Minneapolis (closest)
+  MO: 'S24B', // St. Louis
+  KY: 'S24B', // St. Louis (closest)
+  KS: 'S24B', // St. Louis (closest)
+  AZ: 'S48A', // Phoenix
+  NM: 'S48A', // Phoenix (closest)
+  CO: 'S48B', // Denver
+  UT: 'S48B', // Denver (closest)
+  WY: 'S48B', // Denver (closest)
+  MT: 'S48B', // Denver (closest)
+  CA: 'S49A', // Los Angeles (default for CA)
+  NV: 'S49A', // Los Angeles (closest — Las Vegas has no BLS CPI metro)
+  WA: 'S49D', // Seattle
+  OR: 'S49D', // Seattle (closest — Portland has no BLS CPI metro)
+  ID: 'S49D', // Seattle (closest)
+  HI: 'S49F', // Urban Hawaii
+  AK: 'S49G', // Urban Alaska
   // PR and VI have no nearby BLS CPI metro — remain national
 }
 
 // County FIPS overrides for metros that don't match the state default
 export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
-  '06075': 'S49A', // San Francisco County → SF metro
-  '06081': 'S49A', // San Mateo County → SF metro
-  '06085': 'S49A', // Santa Clara County → SF metro
-  '06001': 'S49A', // Alameda County → SF metro
-  '06013': 'S49A', // Contra Costa County → SF metro
-  '06041': 'S49A', // Marin County → SF metro
-  '06073': 'S48B', // San Diego County → San Diego metro
+  // San Francisco-Oakland-Hayward metro (CA default is Los Angeles)
+  '06075': 'S49B', // San Francisco County → SF metro
+  '06081': 'S49B', // San Mateo County → SF metro
+  '06085': 'S49B', // Santa Clara County → SF metro
+  '06001': 'S49B', // Alameda County → SF metro
+  '06013': 'S49B', // Contra Costa County → SF metro
+  '06041': 'S49B', // Marin County → SF metro
+  // San Diego-Carlsbad metro
+  '06073': 'S49E', // San Diego County → San Diego metro
+  // Riverside-San Bernardino-Ontario metro
+  '06065': 'S49C', // Riverside County → Riverside metro
+  '06071': 'S49C', // San Bernardino County → Riverside metro
   // Houston-The Woodlands-Sugar Land metro (TX default is Dallas)
-  '48201': 'S35B', // Harris County → Houston metro
-  '48039': 'S35B', // Brazoria County → Houston metro
-  '48157': 'S35B', // Fort Bend County → Houston metro
-  '48167': 'S35B', // Galveston County → Houston metro
-  '48071': 'S35B', // Chambers County → Houston metro
-  '48291': 'S35B', // Liberty County → Houston metro
-  '48339': 'S35B', // Montgomery County → Houston metro
-  '48473': 'S35B', // Waller County → Houston metro
-  // Portland-Vancouver-Hillsboro metro (crosses OR/WA border)
-  '53011': 'S49G', // Clark County, WA → Portland metro
-  '53015': 'S49G', // Cowlitz County, WA → Portland metro (closest)
-  '41005': 'S49G', // Clackamas County, OR → Portland metro
-  '41051': 'S49G', // Multnomah County, OR → Portland metro
-  '41067': 'S49G', // Washington County, OR → Portland metro
+  '48201': 'S37B', // Harris County → Houston metro
+  '48039': 'S37B', // Brazoria County → Houston metro
+  '48157': 'S37B', // Fort Bend County → Houston metro
+  '48167': 'S37B', // Galveston County → Houston metro
+  '48071': 'S37B', // Chambers County → Houston metro
+  '48291': 'S37B', // Liberty County → Houston metro
+  '48339': 'S37B', // Montgomery County → Houston metro
+  '48473': 'S37B', // Waller County → Houston metro
+  // Tampa metro (FL default is Miami)
+  '12057': 'S35D', // Hillsborough County → Tampa metro
+  '12103': 'S35D', // Pinellas County → Tampa metro
+  // Atlanta metro (GA is already Atlanta default, but include for clarity)
+  // Baltimore metro (MD default is now Baltimore)
+  // Washington DC metro counties in MD (override MD's Baltimore default)
+  '24031': 'S35A', // Montgomery County, MD → Washington metro
+  '24033': 'S35A', // Prince George's County, MD → Washington metro
 }
 
 export function getMetroCpiArea(stateAbbr: string): { areaCode: string; areaName: string } {

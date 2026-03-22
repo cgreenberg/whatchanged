@@ -7,15 +7,15 @@ import {
 } from '@/lib/data/county-metro-cpi'
 
 describe('getMetroCpiArea — state defaults', () => {
-  test('WA maps to Seattle (S48A)', () => {
+  test('WA maps to Seattle (S49D)', () => {
     const result = getMetroCpiArea('WA')
-    expect(result.areaCode).toBe('S48A')
+    expect(result.areaCode).toBe('S49D')
     expect(result.areaName).toBe('Seattle-Tacoma-Bellevue')
   })
 
-  test('CA maps to Los Angeles (S37A) by default', () => {
+  test('CA maps to Los Angeles (S49A) by default', () => {
     const result = getMetroCpiArea('CA')
-    expect(result.areaCode).toBe('S37A')
+    expect(result.areaCode).toBe('S49A')
     expect(result.areaName).toBe('Los Angeles-Long Beach-Anaheim')
   })
 
@@ -25,28 +25,52 @@ describe('getMetroCpiArea — state defaults', () => {
     expect(result.areaName).toBe('New York-Newark-Jersey City')
   })
 
-  test('TX maps to Dallas (S35A) by default', () => {
+  test('TX maps to Dallas (S37A) by default', () => {
     const result = getMetroCpiArea('TX')
-    expect(result.areaCode).toBe('S35A')
+    expect(result.areaCode).toBe('S37A')
     expect(result.areaName).toBe('Dallas-Fort Worth-Arlington')
   })
 
-  test('IL maps to Chicago (S24A)', () => {
+  test('IL maps to Chicago (S23A)', () => {
     const result = getMetroCpiArea('IL')
-    expect(result.areaCode).toBe('S24A')
+    expect(result.areaCode).toBe('S23A')
     expect(result.areaName).toBe('Chicago-Naperville-Elgin')
   })
 
-  test('OR maps to Portland (S49G)', () => {
+  test('OR maps to Seattle (S49D) — Portland has no BLS CPI metro', () => {
     const result = getMetroCpiArea('OR')
-    expect(result.areaCode).toBe('S49G')
-    expect(result.areaName).toBe('Portland-Vancouver-Hillsboro')
+    expect(result.areaCode).toBe('S49D')
+    expect(result.areaName).toBe('Seattle-Tacoma-Bellevue')
   })
 
-  test('FL maps to Miami (S23B)', () => {
+  test('FL maps to Miami (S35B)', () => {
     const result = getMetroCpiArea('FL')
-    expect(result.areaCode).toBe('S23B')
+    expect(result.areaCode).toBe('S35B')
     expect(result.areaName).toBe('Miami-Fort Lauderdale-West Palm Beach')
+  })
+
+  test('DC maps to Washington (S35A)', () => {
+    const result = getMetroCpiArea('DC')
+    expect(result.areaCode).toBe('S35A')
+    expect(result.areaName).toBe('Washington-Arlington-Alexandria')
+  })
+
+  test('MD maps to Baltimore (S35E)', () => {
+    const result = getMetroCpiArea('MD')
+    expect(result.areaCode).toBe('S35E')
+    expect(result.areaName).toBe('Baltimore-Columbia-Towson')
+  })
+
+  test('AK maps to Urban Alaska (S49G)', () => {
+    const result = getMetroCpiArea('AK')
+    expect(result.areaCode).toBe('S49G')
+    expect(result.areaName).toBe('Urban Alaska')
+  })
+
+  test('HI maps to Urban Hawaii (S49F)', () => {
+    const result = getMetroCpiArea('HI')
+    expect(result.areaCode).toBe('S49F')
+    expect(result.areaName).toBe('Urban Hawaii')
   })
 
   test('state abbreviation is case-insensitive', () => {
@@ -69,7 +93,6 @@ describe('getMetroCpiArea — state defaults', () => {
   })
 
   test('PR has no CPI area — falls back to national', () => {
-    // Puerto Rico is explicitly not mapped
     const result = getMetroCpiArea('PR')
     expect(result.areaCode).toBe('0000')
     expect(result.areaName).toBe('National')
@@ -77,50 +100,51 @@ describe('getMetroCpiArea — state defaults', () => {
 })
 
 describe('getMetroCpiAreaForCounty — county overrides', () => {
-  test('San Francisco County (06075) overrides CA default to SF metro', () => {
+  test('San Francisco County (06075) overrides CA default to SF metro (S49B)', () => {
     const result = getMetroCpiAreaForCounty('06075', 'CA')
-    expect(result.areaCode).toBe('S49A')
+    expect(result.areaCode).toBe('S49B')
     expect(result.areaName).toBe('San Francisco-Oakland-Hayward')
   })
 
   test('Santa Clara County (06085) → SF metro, not LA default', () => {
     const result = getMetroCpiAreaForCounty('06085', 'CA')
-    expect(result.areaCode).toBe('S49A')
+    expect(result.areaCode).toBe('S49B')
   })
 
-  test('San Diego County (06073) → San Diego metro (S48B)', () => {
+  test('San Diego County (06073) → San Diego metro (S49E)', () => {
     const result = getMetroCpiAreaForCounty('06073', 'CA')
-    expect(result.areaCode).toBe('S48B')
+    expect(result.areaCode).toBe('S49E')
     expect(result.areaName).toBe('San Diego-Carlsbad')
+  })
+
+  test('Riverside County (06065) → Riverside metro (S49C)', () => {
+    const result = getMetroCpiAreaForCounty('06065', 'CA')
+    expect(result.areaCode).toBe('S49C')
+    expect(result.areaName).toBe('Riverside-San Bernardino-Ontario')
   })
 
   test('Harris County TX (48201) → Houston metro, not TX default Dallas', () => {
     const result = getMetroCpiAreaForCounty('48201', 'TX')
-    expect(result.areaCode).toBe('S35B')
+    expect(result.areaCode).toBe('S37B')
     expect(result.areaName).toBe('Houston-The Woodlands-Sugar Land')
   })
 
-  test('Clark County WA (53011) → Portland metro, not WA default Seattle', () => {
-    const result = getMetroCpiAreaForCounty('53011', 'WA')
-    expect(result.areaCode).toBe('S49G')
-    expect(result.areaName).toBe('Portland-Vancouver-Hillsboro')
-  })
-
-  test('Multnomah County OR (41051) → Portland metro', () => {
-    const result = getMetroCpiAreaForCounty('41051', 'OR')
-    expect(result.areaCode).toBe('S49G')
+  test('Montgomery County MD (24031) → Washington metro, not MD default Baltimore', () => {
+    const result = getMetroCpiAreaForCounty('24031', 'MD')
+    expect(result.areaCode).toBe('S35A')
+    expect(result.areaName).toBe('Washington-Arlington-Alexandria')
   })
 
   test('county without override uses state default', () => {
     // King County, WA (53033) — no override, should get WA default (Seattle)
     const result = getMetroCpiAreaForCounty('53033', 'WA')
-    expect(result.areaCode).toBe('S48A')
+    expect(result.areaCode).toBe('S49D')
     expect(result.areaName).toBe('Seattle-Tacoma-Bellevue')
   })
 
   test('unknown county FIPS uses state default', () => {
     const result = getMetroCpiAreaForCounty('99999', 'IL')
-    expect(result.areaCode).toBe('S24A') // IL default = Chicago
+    expect(result.areaCode).toBe('S23A') // IL default = Chicago
   })
 })
 

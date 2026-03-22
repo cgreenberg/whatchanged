@@ -7,15 +7,15 @@ const BASELINE_DATE = '2025-01-20'
 // --- Tier 1: CPI metro area → EIA city duoarea ---
 
 export const CPI_TO_EIA_CITY: Record<string, { duoarea: string; label: string }> = {
-  'S48A': { duoarea: 'Y48SE', label: 'Seattle area avg' },
-  'S37A': { duoarea: 'Y05LA', label: 'Los Angeles area avg' },
-  'S49A': { duoarea: 'Y05SF', label: 'San Francisco area avg' },
+  'S49D': { duoarea: 'Y48SE', label: 'Seattle area avg' },
+  'S49A': { duoarea: 'Y05LA', label: 'Los Angeles area avg' },
+  'S49B': { duoarea: 'Y05SF', label: 'San Francisco area avg' },
   'S12A': { duoarea: 'Y35NY', label: 'New York City area avg' },
   'S11A': { duoarea: 'YBOS', label: 'Boston area avg' },
-  'S24A': { duoarea: 'YORD', label: 'Chicago area avg' },
-  'S35D': { duoarea: 'YDEN', label: 'Denver area avg' },
-  'S35B': { duoarea: 'Y44HO', label: 'Houston area avg' },
-  'S23B': { duoarea: 'YMIA', label: 'Miami area avg' },
+  'S23A': { duoarea: 'YORD', label: 'Chicago area avg' },
+  'S48B': { duoarea: 'YDEN', label: 'Denver area avg' },
+  'S37B': { duoarea: 'Y44HO', label: 'Houston area avg' },
+  'S35B': { duoarea: 'YMIA', label: 'Miami area avg' },
 }
 
 export const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label: string }> = {

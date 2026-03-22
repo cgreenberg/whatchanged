@@ -9,7 +9,7 @@ import {
 
 describe('getGasLookup — Tier 1: county FIPS override', () => {
   test('Cuyahoga County (Cleveland) maps to YCLE at tier 1', () => {
-    const result = getGasLookup('OH', 'S24B', '39035')
+    const result = getGasLookup('OH', 'S23B', '39035')
     expect(result.duoarea).toBe('YCLE')
     expect(result.tier).toBe(1)
     expect(result.geoLevel).toBe('Cleveland area avg')
@@ -17,37 +17,35 @@ describe('getGasLookup — Tier 1: county FIPS override', () => {
   })
 
   test('Lorain County (Cleveland suburb) also maps to YCLE', () => {
-    const result = getGasLookup('OH', 'S24B', '39093')
+    const result = getGasLookup('OH', 'S23B', '39093')
     expect(result.duoarea).toBe('YCLE')
     expect(result.tier).toBe(1)
   })
 
   test('county FIPS override takes priority over CPI area mapping', () => {
-    // 39035 = Cuyahoga (Cleveland), CPI area S24B would give Detroit/OH state but
-    // county override should still win
-    const result = getGasLookup('OH', 'S24B', '39035')
+    const result = getGasLookup('OH', 'S23B', '39035')
     expect(result.tier).toBe(1)
     expect(result.duoarea).toBe('YCLE')
   })
 })
 
 describe('getGasLookup — Tier 1: CPI area → EIA city', () => {
-  test('Seattle CPI area (S48A) maps to Y48SE', () => {
-    const result = getGasLookup('WA', 'S48A')
+  test('Seattle CPI area (S49D) maps to Y48SE', () => {
+    const result = getGasLookup('WA', 'S49D')
     expect(result.duoarea).toBe('Y48SE')
     expect(result.tier).toBe(1)
     expect(result.geoLevel).toBe('Seattle area avg')
     expect(result.cacheKey).toBe('eia:gas:city:Y48SE')
   })
 
-  test('Los Angeles CPI area (S37A) maps to Y05LA', () => {
-    const result = getGasLookup('CA', 'S37A')
+  test('Los Angeles CPI area (S49A) maps to Y05LA', () => {
+    const result = getGasLookup('CA', 'S49A')
     expect(result.duoarea).toBe('Y05LA')
     expect(result.tier).toBe(1)
   })
 
-  test('San Francisco CPI area (S49A) maps to Y05SF', () => {
-    const result = getGasLookup('CA', 'S49A')
+  test('San Francisco CPI area (S49B) maps to Y05SF', () => {
+    const result = getGasLookup('CA', 'S49B')
     expect(result.duoarea).toBe('Y05SF')
     expect(result.tier).toBe(1)
   })
@@ -64,28 +62,33 @@ describe('getGasLookup — Tier 1: CPI area → EIA city', () => {
     expect(result.tier).toBe(1)
   })
 
-  test('Chicago CPI area (S24A) maps to YORD', () => {
-    const result = getGasLookup('IL', 'S24A')
+  test('Chicago CPI area (S23A) maps to YORD', () => {
+    const result = getGasLookup('IL', 'S23A')
     expect(result.duoarea).toBe('YORD')
     expect(result.tier).toBe(1)
   })
 
-  test('Houston CPI area (S35B) maps to Y44HO', () => {
-    const result = getGasLookup('TX', 'S35B')
+  test('Houston CPI area (S37B) maps to Y44HO', () => {
+    const result = getGasLookup('TX', 'S37B')
     expect(result.duoarea).toBe('Y44HO')
     expect(result.tier).toBe(1)
   })
 
-  test('Miami CPI area (S23B) maps to YMIA', () => {
-    const result = getGasLookup('FL', 'S23B')
+  test('Miami CPI area (S35B) maps to YMIA', () => {
+    const result = getGasLookup('FL', 'S35B')
     expect(result.duoarea).toBe('YMIA')
+    expect(result.tier).toBe(1)
+  })
+
+  test('Denver CPI area (S48B) maps to YDEN', () => {
+    const result = getGasLookup('CO', 'S48B')
+    expect(result.duoarea).toBe('YDEN')
     expect(result.tier).toBe(1)
   })
 })
 
 describe('getGasLookup — Tier 2: state-level fallback', () => {
   test('WA with unknown CPI area falls back to state tier 2', () => {
-    // Use a CPI area code not in CPI_TO_EIA_CITY
     const result = getGasLookup('WA', 'S49G')
     expect(result.duoarea).toBe('SWA')
     expect(result.tier).toBe(2)
@@ -175,7 +178,7 @@ describe('getGasLookup — national fallback', () => {
 
 describe('getGasLookup — cache key format', () => {
   test('city-tier cache key uses eia:gas:city: prefix', () => {
-    const result = getGasLookup('WA', 'S48A')
+    const result = getGasLookup('WA', 'S49D')
     expect(result.cacheKey).toMatch(/^eia:gas:city:/)
   })
 
