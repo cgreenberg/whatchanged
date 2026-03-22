@@ -37,7 +37,7 @@ Read these files at session start before doing any work:
 - **Recharts** — all charts (area, line)
 - **Leaflet.js + OpenStreetMap** — zip code map, lazy loaded
 - **Vercel** — hosting, serverless API routes
-- **Vercel KV** — Redis caching layer (see caching section)
+- **Upstash Redis** — REST-based Redis cache (256MB free tier, see caching section)
 
 ---
 
@@ -211,9 +211,26 @@ clipboard copy on desktop.
 
 - "Clark County, WA — Clark County" location banner is redundant
   → should be "Vancouver, WA — Clark County" using city name from zip lookup
-- Grocery hero card showing negative % may be latest monthly delta, not
-  cumulative since Jan 2025 — verify BLS series calculation
-- Gas price ($4.88/gal) seems high for WA state — verify EIA regional series ID
+
+### Zip/City Mapping Issues (recurring)
+
+When a zip code shows wrong data (e.g. state-level gas instead of city-level,
+or CPI from the wrong metro), the root cause is usually a mapping gap in the
+lookup chain: `zip → county FIPS → CPI area → gas tier`.
+
+**How to diagnose and fix:**
+
+1. Run `npx tsx scripts/audit-zip-mappings.ts` — audits all 33,780 zips and
+   flags mapping gaps (missing CPI overrides, gas tier downgrades, etc.)
+2. The two key mapping files:
+   - `src/lib/data/county-metro-cpi.ts` — `STATE_TO_CPI_AREA` (state defaults)
+     and `COUNTY_CPI_OVERRIDES` (per-county overrides for metros that cross
+     state lines or differ from the state default, e.g. Houston vs Dallas in TX)
+   - `src/lib/api/eia.ts` — `CPI_TO_EIA_CITY` (CPI area → EIA city gas data),
+     `COUNTY_EIA_CITY_OVERRIDES` (per-county gas overrides, e.g. Cleveland OH),
+     `STATE_LEVEL_CODES` (state-level gas fallback)
+3. Fix: add the county FIPS to `COUNTY_CPI_OVERRIDES` or `COUNTY_EIA_CITY_OVERRIDES`
+4. Re-run the audit script to verify the fix
 
 ---
 
@@ -240,19 +257,32 @@ The blue/red era shading is informational context, not editorializing.
 
 ## Caching Architecture
 
+**Backend: Upstash Redis** (256MB free tier, REST API via `@upstash/redis`)
+
 ```
 User requests zip 98683
   → zip-to-FIPS lookup (instant, static JSON)
-  → Check Vercel KV for cached county data (TTL: 7 days)
+  → Check Upstash Redis for cached data (per-source cache keys)
   → Cache miss: fetch BLS + EIA + USASpending IN PARALLEL (Promise.all)
-  → Cache hit on national CPI (shared, rarely misses after first request)
-  → Store results in KV
+  → Cache hit on national data (shared keys, rarely misses)
+  → Store results in Redis with per-source TTLs
   → Return to client
   → Census ACS data served from bundled static JSON (instant, no API call)
 ```
 
-Pre-warming: /api/warm-cache endpoint pre-fetches top 200 zips by population.
-Triggered daily by cron-job.org (external free cron) pointing at that endpoint.
+**Cache client:** `src/lib/cache/kv.ts` — uses `@upstash/redis` with
+`KV_REST_API_URL` and `KV_REST_API_TOKEN` env vars (Vercel-injected).
+Falls back to in-memory Map for tests/local dev without Redis.
+
+**Preload script:** `scripts/preload-cache.ts` — bulk-loads gas prices
+(24 city/state/PAD series), BLS national data, and top 50 county
+unemployment into Redis. Run with `npx tsx scripts/preload-cache.ts`.
+
+**Warm-cache cron:** `/api/warm-cache` endpoint fetches snapshots for
+19 representative zips (covering all PAD districts and major CPI metros).
+Triggered by cron-job.org:
+- Monday 7am ET — gas prices update weekly
+- 15th of month — BLS data updates mid-month
 
 ---
 
