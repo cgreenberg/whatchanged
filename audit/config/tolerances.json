@@ -1,0 +1,42 @@
+{
+  "gas_price_eia": {
+    "tolerance": 0.05,
+    "unit": "$/gal",
+    "description": "EIA primary source - weekly timing differences"
+  },
+  "gas_price_aaa": {
+    "tolerance": 0.15,
+    "unit": "$/gal",
+    "description": "AAA cross-check - different methodology, best-effort"
+  },
+  "cpi_index": {
+    "tolerance": 0.01,
+    "unit": "index points",
+    "description": "BLS CPI index value - should be near-exact match"
+  },
+  "cpi_pct_change": {
+    "tolerance": 0.1,
+    "unit": "percentage points",
+    "description": "CPI percentage change - rounding differences"
+  },
+  "unemployment_rate": {
+    "tolerance": 0.0,
+    "unit": "percentage points",
+    "description": "BLS LAUS - should be exact match"
+  },
+  "median_income": {
+    "tolerance": 2000,
+    "unit": "dollars",
+    "description": "Census ACS - margin of error in survey data"
+  },
+  "tariff_estimate": {
+    "tolerance": 200,
+    "unit": "dollars",
+    "description": "Yale Budget Lab methodology - estimate uncertainty"
+  },
+  "metro_area_name": {
+    "tolerance": "EXACT",
+    "unit": "string",
+    "description": "BLS series metadata - must match precisely"
+  }
+}

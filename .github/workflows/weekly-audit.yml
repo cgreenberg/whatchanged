@@ -1,0 +1,72 @@
+name: Weekly Data Audit
+
+on:
+  schedule:
+    # Wednesday 2pm UTC (9am ET) — avoids Monday BLS/EIA release windows
+    - cron: '0 14 * * 3'
+  workflow_dispatch:
+    inputs:
+      zips:
+        description: 'Specific zip codes to audit (space-separated, e.g., "98683 10001")'
+        required: false
+        type: string
+      num_zips:
+        description: 'Number of random zips to audit'
+        required: false
+        default: '10'
+        type: string
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        working-directory: audit
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        working-directory: audit
+        run: playwright install chromium --with-deps
+
+      - name: Run audit
+        working-directory: audit
+        env:
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          if [ -n "${{ inputs.zips }}" ]; then
+            python src/main.py --zips ${{ inputs.zips }}
+          else
+            python src/main.py --num-zips ${{ inputs.num_zips || '10' }}
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_id }}
+          path: audit/reports/
+          retention-days: 90
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-screenshots-${{ github.run_id }}
+          path: audit/screenshots/
+          retention-days: 90
+          if-no-files-found: ignore

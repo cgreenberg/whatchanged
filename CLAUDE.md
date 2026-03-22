@@ -441,3 +441,30 @@ On any FAIL — fix and re-run. Never weaken the test to pass.
 - Functional React components with hooks
 - 2-space indentation
 - Format with Prettier, lint with ESLint
+
+---
+
+## Audit System
+
+The `audit/` directory contains an independent data verification system.
+**Read `audit/AUDIT_RULES.md` before touching any audit code.**
+
+### Strict Isolation Rule
+
+The audit MUST NOT import, reference, or read any code from the main codebase.
+It verifies data exclusively via the public API (`whatchanged.us/api/data/{zip}`)
+and independent government API calls. This prevents circular verification.
+
+Allowed: shared environment variables for API keys (`BLS_API_KEY`, `EIA_API_KEY`, etc.).
+
+### Running the Audit
+
+```bash
+cd audit
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+playwright install chromium
+python src/main.py
+```
+
+Reports are saved to `audit/reports/` (gitignored).
