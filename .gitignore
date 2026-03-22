@@ -49,3 +49,8 @@ test-results/
 
 # Claude Code
 skills-lock.json
+.claude/*
+!.claude/settings.json
+
+# IDE
+.vscode/
