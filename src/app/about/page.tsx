@@ -61,28 +61,28 @@ export default function AboutPage() {
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Unemployment Rate</td>
                 <td className="py-3 pr-4 text-zinc-300">BLS Local Area Unemployment Statistics</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro Portland-Vancouver-Hillsboro</td>
+                <td className="py-3 pr-4 whitespace-nowrap">County</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Seasonally adjusted</td>
+                <td className="py-3">Not seasonally adjusted</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Grocery Prices</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS CPI — Portland-Vancouver-Hillsboro</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
                 <td className="py-3">Food at home category</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Shelter Costs</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS CPI — Portland-Vancouver-Hillsboro</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
                 <td className="py-3">Shelter sub-index</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Energy Costs</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS CPI — Portland-Vancouver-Hillsboro</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
                 <td className="py-3">Energy sub-index</td>
               </tr>
@@ -132,9 +132,7 @@ export default function AboutPage() {
         >
           Charts include subtle background shading to mark presidential terms. Vertical lines and
           shaded bands indicate inauguration dates: January 20, 2017, January 20, 2021, and
-          January 20, 2025. This shading provides temporal context and is not intended as
-          editorial commentary. The color coding — blue for Democratic administrations, red for
-          Republican — follows standard convention used in data journalism.
+          January 20, 2025.
         </p>
       </div>
 
