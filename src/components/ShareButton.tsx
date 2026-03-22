@@ -34,15 +34,12 @@ export function ShareButton({ snapshot }: ShareButtonProps) {
     ? `${window.location.origin}/?zip=${snapshot.zip}`
     : ''
 
-  const shareText = `See what changed in ${snapshot.location.cityName || snapshot.location.countyName}, ${snapshot.location.stateAbbr} since January 2025.`
-
   async function handleShare() {
     // Try native Web Share API first (mobile)
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'What Changed In Your Town?',
-          text: shareText,
           url: shareUrl,
         })
         return
