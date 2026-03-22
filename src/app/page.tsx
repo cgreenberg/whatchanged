@@ -38,10 +38,6 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   // Build description from available data
   const parts: string[] = []
-  if (snapshot.unemployment.data) {
-    const dir = snapshot.unemployment.data.change > 0 ? '↑' : '↓'
-    parts.push(`Unemployment: ${snapshot.unemployment.data.current}% ${dir}`)
-  }
   if (snapshot.cpi.data) {
     parts.push(`Groceries: ${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`)
   }

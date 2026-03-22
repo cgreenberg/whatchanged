@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {gasPrice && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '26px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
                 Gas Prices
               </span>
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#F59E0B' }}>
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
 
           {tariff && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '26px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
                 Tariff Impact
               </span>
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#A855F7' }}>
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
 
           {shelter && (
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+              <span style={{ fontSize: '26px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
                 Housing Costs
               </span>
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#3B82F6' }}>
@@ -111,8 +111,8 @@ export async function GET(req: NextRequest) {
         {/* Stats - row 2 */}
         <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
           {groceries && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
+              <span style={{ fontSize: '26px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
                 Grocery Prices
               </span>
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
@@ -122,8 +122,8 @@ export async function GET(req: NextRequest) {
           )}
 
           {federal && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '22px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
+              <span style={{ fontSize: '26px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
                 Federal $ Cut
               </span>
               <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
