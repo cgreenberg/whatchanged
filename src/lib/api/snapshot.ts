@@ -14,7 +14,7 @@ import type {
 } from '@/types'
 import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from './source-registry'
 import { getGasLookup } from './eia'
-import { getMetroCpiAreaForCounty } from '@/lib/data/county-metro-cpi'
+import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 
 const TTL_7_DAYS = 604800
 const TTL_24_HOURS = 86400

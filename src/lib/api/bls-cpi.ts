@@ -1,5 +1,5 @@
 import type { CpiData, CpiPoint } from '@/types'
-import { getMetroCpiAreaForCounty } from '@/lib/data/county-metro-cpi'
+import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 
 const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 

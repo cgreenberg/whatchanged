@@ -4,7 +4,7 @@ import {
   STATE_TO_CPI_AREA,
   COUNTY_CPI_OVERRIDES,
   BLS_CPI_AREAS,
-} from '@/lib/data/county-metro-cpi'
+} from '@/lib/mappings/county-metro-cpi'
 
 describe('getMetroCpiArea — state defaults', () => {
   test('WA maps to Seattle (S49D)', () => {
