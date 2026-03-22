@@ -131,6 +131,12 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
     ? parseFloat(((groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100).toFixed(1))
     : 0
 
+  const shelterBaseline = shelterMap.get(baselineKey) ?? 0
+  const shelterCurrent = shelterMap.get(latestKey) ?? 0
+  const shelterChange = shelterBaseline > 0
+    ? parseFloat(((shelterCurrent - shelterBaseline) / shelterBaseline * 100).toFixed(1))
+    : 0
+
   // Build national series (only if it's different from metro series)
   let nationalSeries: CpiPoint[] | undefined
   const isNational = areaCode === '0000'
@@ -168,6 +174,7 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
     groceriesCurrent,
     groceriesBaseline,
     groceriesChange,
+    shelterChange,
     series,
     metro: areaName,
     seriesIds: {

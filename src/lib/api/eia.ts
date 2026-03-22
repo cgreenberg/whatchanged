@@ -242,6 +242,7 @@ export async function fetchGasPrice(
     let nationalSeries: Array<{ date: string; price: number }> | undefined
     if (nationalResult.status === 'fulfilled') {
       nationalSeries = [...nationalResult.value]
+        .filter((d) => d.value !== null && d.value !== '--' && !isNaN(parseFloat(d.value)))
         .sort((a, b) => a.period.localeCompare(b.period))
         .map((d) => ({ date: d.period, price: parseFloat(d.value) }))
     }

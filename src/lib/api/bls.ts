@@ -2,7 +2,7 @@ import type { UnemploymentData, UnemploymentPoint } from '@/types'
 
 const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 
-// BLS series ID format for county unemployment rate: LAUCN{FIPS}0000000000003
+// BLS series ID format for county unemployment rate: LAUCN{FIPS}0000000003
 // FIPS must be exactly 5 digits (state 2 + county 3)
 function buildSeriesId(countyFips: string): string {
   const padded = countyFips.padStart(5, '0')

@@ -40,6 +40,7 @@ export interface CpiData {
   groceriesCurrent: number
   groceriesBaseline: number
   groceriesChange: number
+  shelterChange: number
   series: CpiPoint[]
   metro: string
   seriesIds?: { groceries: string; shelter: string; energy: string }

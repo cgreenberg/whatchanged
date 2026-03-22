@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
               </span>
               {unemploymentChange && (
                 <span style={{ fontSize: '18px', color: '#EF4444' }}>
-                  ↑ {unemploymentChange} since Jan 2025
+                  {unemploymentChange.startsWith('-') ? '↓' : '↑'} {unemploymentChange} since Jan 2025
                 </span>
               )}
             </div>

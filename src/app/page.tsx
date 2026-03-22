@@ -15,15 +15,6 @@ import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
 
-function computeCpiPctChange(series: Array<Record<string, unknown>>, key: string): number {
-  const baseline = series.find(p => (p.date as string) >= '2025-01')
-  const latest = series[series.length - 1]
-  const bVal = Number(baseline?.[key])
-  const lVal = Number(latest?.[key])
-  if (!bVal || !lVal) return 0
-  return ((lVal - bVal) / bVal) * 100
-}
-
 export default function Home() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
@@ -121,15 +112,13 @@ export default function Home() {
                   )
                 })()}
                 {snapshot.cpi.data && (() => {
-                  const shelterChange = computeCpiPctChange(
-                    snapshot.cpi.data!.series as unknown as Record<string, unknown>[], 'shelter'
-                  )
+                  const shelterChange = snapshot.cpi.data!.shelterChange
                   return (
                     <StatCard
                       label="Housing Costs"
                       value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
                       change="since Jan 2025"
-                      direction="neutral"
+                      direction={shelterChange > 0 ? 'up' : 'down'}
                       sourceLabel="BLS CPI"
                       sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}

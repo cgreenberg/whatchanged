@@ -18,7 +18,7 @@ export async function GET() {
     },
     {
       source: blsCpiSource,
-      args: [],
+      args: ['53011', 'WA'],
     },
     {
       source: eiaSource,

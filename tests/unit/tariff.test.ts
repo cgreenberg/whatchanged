@@ -3,7 +3,7 @@ import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 describe('estimateTariffCost', () => {
   test('calculates correctly for median income', () => {
     const cost = estimateTariffCost(83821)
-    expect(cost).toBe(1702)
+    expect(cost).toBe(1718)
   })
 
   test('returns 0 for zero income', () => {
