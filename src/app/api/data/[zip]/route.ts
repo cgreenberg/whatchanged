@@ -54,6 +54,36 @@ export async function GET(
             cpiShelter: snapshot.cpi?.data?.seriesIds?.shelter ?? null,
             cpiEnergy: snapshot.cpi?.data?.seriesIds?.energy ?? null,
           },
+          computations: {
+            gasChange: snapshot.gas?.data ? {
+              formula: 'current - baseline',
+              current: snapshot.gas.data.current,
+              baseline: snapshot.gas.data.baseline,
+              result: snapshot.gas.data.change,
+            } : null,
+            groceriesChange: snapshot.cpi?.data ? {
+              formula: '(groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100',
+              current: snapshot.cpi.data.groceriesCurrent,
+              baseline: snapshot.cpi.data.groceriesBaseline,
+              result: snapshot.cpi.data.groceriesChange,
+            } : null,
+            shelterChange: snapshot.cpi?.data ? {
+              formula: 'shelter % change from Jan 2025 baseline',
+              result: snapshot.cpi.data.shelterChange,
+            } : null,
+            unemploymentChange: snapshot.unemployment?.data ? {
+              formula: 'current - baseline',
+              current: snapshot.unemployment.data.current,
+              baseline: snapshot.unemployment.data.baseline,
+              result: snapshot.unemployment.data.change,
+            } : null,
+            tariffEstimate: snapshot.tariff?.data ? {
+              formula: 'Math.round(medianIncome * tariffRate)',
+              medianIncome: snapshot.tariff.data.medianIncome,
+              tariffRate: snapshot.tariff.data.tariffRate,
+              result: snapshot.tariff.data.estimatedCost,
+            } : null,
+          },
           apiVersion: '1.0',
         },
       }
