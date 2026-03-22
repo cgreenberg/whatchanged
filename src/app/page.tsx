@@ -109,7 +109,7 @@ export default function Home() {
                     <StatCard
                       label="Grocery Prices"
                       value={`${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%`}
-                      change={`~$${dollarImpact}/yr more since Jan 2025`}
+                      change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                       direction={pctChange > 0 ? 'up' : 'down'}
                       sourceLabel="BLS CPI"
                       sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
