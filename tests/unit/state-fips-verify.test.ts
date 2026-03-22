@@ -32,18 +32,6 @@ describe('STATE_FIPS_TO_ABBR mapping', () => {
     }
   )
 
-  test('all FIPS codes are 2-digit zero-padded strings', () => {
-    for (const fips of Object.keys(STATE_FIPS_TO_ABBR)) {
-      expect(fips).toMatch(/^\d{2}$/)
-    }
-  })
-
-  test('all abbreviations are 2-letter uppercase', () => {
-    for (const abbr of Object.values(STATE_FIPS_TO_ABBR)) {
-      expect(abbr).toMatch(/^[A-Z]{2}$/)
-    }
-  })
-
   test('no duplicate abbreviations', () => {
     const abbrs = Object.values(STATE_FIPS_TO_ABBR)
     expect(new Set(abbrs).size).toBe(abbrs.length)

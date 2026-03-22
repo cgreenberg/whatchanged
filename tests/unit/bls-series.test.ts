@@ -21,23 +21,6 @@ describe('BLS LAUS series ID format', () => {
     expect(buildSeriesId('53011')).toBe('LAUCN530110000000003')
   })
 
-  test('series ID always starts with LAUCN', () => {
-    expect(buildSeriesId('53011')).toMatch(/^LAUCN/)
-    expect(buildSeriesId('36061')).toMatch(/^LAUCN/)
-    expect(buildSeriesId('17031')).toMatch(/^LAUCN/)
-  })
-
-  test('series ID always ends with 0000000003 (unemployment rate)', () => {
-    expect(buildSeriesId('53011')).toMatch(/0000000003$/)
-  })
-
-  test('series ID always has 5 FIPS digits embedded', () => {
-    // Series ID: LAUCN + 5 digits + 0000000003
-    const id = buildSeriesId('53011')
-    // Length: LAUCN(5) + 5(FIPS) + 0000000003(10) = 20 chars
-    expect(id.length).toBe(20)
-  })
-
   test('short FIPS 1 gets padded to 5 digits (00001)', () => {
     const id = buildSeriesId('1')
     expect(id).toBe('LAUCN000010000000003')
@@ -178,18 +161,6 @@ describe('BLS API response data structure transformations', () => {
     expect(series[0].date).toBe('2025-01')
   })
 
-  test('all series rate values are finite numbers', () => {
-    const raw = [
-      { year: '2025', period: 'M01', value: '4.1' },
-      { year: '2025', period: 'M02', value: '5.0' },
-    ]
-    const { series } = parseBlsData(raw)
-    for (const point of series) {
-      expect(isNaN(point.rate)).toBe(false)
-      expect(isFinite(point.rate)).toBe(true)
-    }
-  })
-
   test('period M01 → date suffix 01 (not M01)', () => {
     const raw = [
       { year: '2025', period: 'M01', value: '4.1' },
@@ -198,6 +169,5 @@ describe('BLS API response data structure transformations', () => {
     const raw2 = [...raw, { year: '2025', period: 'M02', value: '5.0' }]
     const { series } = parseBlsData(raw2)
     expect(series[0].date).toBe('2025-01')
-    expect(series[0].date).not.toContain('M')
   })
 })

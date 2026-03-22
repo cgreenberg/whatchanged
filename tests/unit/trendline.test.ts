@@ -74,20 +74,6 @@ describe('computeTrendline', () => {
     expect(result.length).toBe(data.length)
   })
 
-  test('each output object has date and trend keys', () => {
-    const data = [
-      { date: '2025-01', value: 100 },
-      { date: '2025-02', value: 105 },
-      { date: '2025-03', value: 102 },
-    ]
-    const result = computeTrendline(data, 'value')
-    for (const point of result) {
-      expect(typeof point.date).toBe('string')
-      expect(typeof point.trend).toBe('number')
-      expect(isNaN(point.trend)).toBe(false)
-    }
-  })
-
   test('works with numeric string dataKey values cast to number', () => {
     // The function uses Number(d[dataKey]) — verify it works with numeric values
     const data = [

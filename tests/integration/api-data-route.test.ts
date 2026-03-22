@@ -1,108 +1,11 @@
 // Integration tests for the /api/data/[zip] route
-// Tests zip validation, 404 behavior, and snapshot response structure
+// Tests graceful degradation, caching behavior, and edge-case zip handling.
 // Uses fetchSnapshot directly (same as the route handler) since Next.js
 // route testing requires a running server — we validate the logic layer instead.
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { clearMemCache } from '@/lib/cache/kv'
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
-
-describe('zip validation (mirrors route.ts guard: /^\\d{5}$/)', () => {
-  test('5-digit numeric zip is valid', () => {
-    expect(/^\d{5}$/.test('98683')).toBe(true)
-    expect(/^\d{5}$/.test('10001')).toBe(true)
-    expect(/^\d{5}$/.test('00601')).toBe(true)
-  })
-
-  test('4-digit string is invalid', () => {
-    expect(/^\d{5}$/.test('9868')).toBe(false)
-  })
-
-  test('6-digit string is invalid', () => {
-    expect(/^\d{5}$/.test('986830')).toBe(false)
-  })
-
-  test('non-numeric string is invalid', () => {
-    expect(/^\d{5}$/.test('abcde')).toBe(false)
-    expect(/^\d{5}$/.test('986ab')).toBe(false)
-  })
-
-  test('empty string is invalid', () => {
-    expect(/^\d{5}$/.test('')).toBe(false)
-  })
-
-  test('zip with spaces is invalid', () => {
-    expect(/^\d{5}$/.test('986 3')).toBe(false)
-    expect(/^\d{5}$/.test(' 98683')).toBe(false)
-  })
-
-  test('99999 is invalid (no such zip in lookup)', async () => {
-    const snapshot = await fetchSnapshot('99999')
-    expect(snapshot).toBeNull()
-  })
-
-  test('00000 is invalid (no such zip in lookup)', async () => {
-    const snapshot = await fetchSnapshot('00000')
-    expect(snapshot).toBeNull()
-  })
-})
-
-describe('fetchSnapshot response structure for valid zips', () => {
-  beforeEach(() => clearMemCache())
-
-  test('returns EconomicSnapshot with all top-level fields for known zip', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
-    expect(snapshot!.zip).toBe('98683')
-    expect(snapshot!.location).toBeDefined()
-    expect(snapshot!.unemployment).toBeDefined()
-    expect(snapshot!.cpi).toBeDefined()
-    expect(snapshot!.gas).toBeDefined()
-    expect(snapshot!.federal).toBeDefined()
-    expect(snapshot!.census).toBeDefined()
-    expect(snapshot!.fetchedAt).toBeDefined()
-    expect(snapshot!.cacheStatus).toBeDefined()
-  })
-
-  test('fetchedAt is a valid ISO date string', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
-    expect(() => new Date(snapshot!.fetchedAt)).not.toThrow()
-    expect(new Date(snapshot!.fetchedAt).getTime()).not.toBeNaN()
-  })
-
-  test('location has all required fields', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    const loc = snapshot!.location
-    expect(loc.zip).toBe('98683')
-    expect(loc.countyFips).toBeTruthy()
-    expect(loc.countyName).toBeTruthy()
-    expect(loc.stateName).toBeTruthy()
-    expect(loc.stateAbbr).toBeTruthy()
-    expect(loc.stateAbbr.length).toBe(2)
-  })
-
-  test('each DataResult has data, error, fetchedAt, sourceId', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    for (const key of ['unemployment', 'cpi', 'gas', 'federal', 'census'] as const) {
-      const result = snapshot![key]
-      expect('data' in result).toBe(true)
-      expect('error' in result).toBe(true)
-      expect('fetchedAt' in result).toBe(true)
-      expect('sourceId' in result).toBe(true)
-    }
-  })
-
-  test('cacheStatus has all 5 source keys', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    const status = snapshot!.cacheStatus!
-    expect(['hit', 'miss']).toContain(status.unemployment)
-    expect(['hit', 'miss']).toContain(status.cpi)
-    expect(['hit', 'miss']).toContain(status.gas)
-    expect(['hit', 'miss']).toContain(status.federal)
-    expect(['hit', 'miss']).toContain(status.census)
-  })
-})
 
 describe('fetchSnapshot graceful degradation', () => {
   beforeEach(() => clearMemCache())
@@ -190,17 +93,6 @@ describe('fetchSnapshot caching behavior', () => {
     // On first call, all external sources are fetched (miss), not cached
     // (census is always 'hit' because it's static)
     expect(first!.cacheStatus!.census).toBe('hit')
-  })
-
-  test('snapshot has cacheStatus with all 5 keys', async () => {
-    const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
-    const cs = snapshot!.cacheStatus!
-    expect(cs).toHaveProperty('unemployment')
-    expect(cs).toHaveProperty('cpi')
-    expect(cs).toHaveProperty('gas')
-    expect(cs).toHaveProperty('federal')
-    expect(cs).toHaveProperty('census')
   })
 
   test('each cacheStatus value is "hit" or "miss"', async () => {

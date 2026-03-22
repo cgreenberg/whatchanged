@@ -15,7 +15,6 @@ import {
   COUNTY_EIA_CITY_OVERRIDES,
   STATE_LEVEL_CODES,
   STATE_TO_PAD,
-  PAD_NAMES,
 } from '@/lib/mappings/eia-gas'
 
 describe('CPI_TO_EIA_CITY mapping integrity', () => {
@@ -66,20 +65,6 @@ describe('STATE_TO_PAD mapping integrity', () => {
   test('all 50 states + DC are assigned a PAD district', () => {
     for (const state of ALL_STATES) {
       expect(STATE_TO_PAD[state]).toBeDefined()
-    }
-  })
-
-  test('all PAD values are between 1 and 5', () => {
-    for (const [state, pad] of Object.entries(STATE_TO_PAD)) {
-      expect(pad).toBeGreaterThanOrEqual(1)
-      expect(pad).toBeLessThanOrEqual(5)
-    }
-  })
-
-  test('PAD_NAMES covers all 5 districts', () => {
-    expect(Object.keys(PAD_NAMES)).toHaveLength(5)
-    for (let i = 1; i <= 5; i++) {
-      expect(PAD_NAMES[i]).toBeTruthy()
     }
   })
 

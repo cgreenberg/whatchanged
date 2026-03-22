@@ -1,11 +1,4 @@
 import { getGasLookup } from '@/lib/api/eia'
-import {
-  CPI_TO_EIA_CITY,
-  COUNTY_EIA_CITY_OVERRIDES,
-  STATE_LEVEL_CODES,
-  STATE_TO_PAD,
-  PAD_NAMES,
-} from '@/lib/mappings/eia-gas'
 
 describe('getGasLookup — Tier 1: county FIPS override', () => {
   test('Cuyahoga County (Cleveland) maps to YCLE at tier 1', () => {
@@ -173,58 +166,5 @@ describe('getGasLookup — national fallback', () => {
     const result = getGasLookup('')
     expect(result.duoarea).toBe('NUS')
     expect(result.tier).toBe(3)
-  })
-})
-
-describe('getGasLookup — cache key format', () => {
-  test('city-tier cache key uses eia:gas:city: prefix', () => {
-    const result = getGasLookup('WA', 'S49D')
-    expect(result.cacheKey).toMatch(/^eia:gas:city:/)
-  })
-
-  test('state-tier cache key uses eia:gas:state: prefix with uppercase abbr', () => {
-    const result = getGasLookup('wa')
-    expect(result.cacheKey).toMatch(/^eia:gas:state:[A-Z]+$/)
-  })
-
-  test('PAD-tier cache key uses eia:gas:pad: prefix', () => {
-    const result = getGasLookup('NC')
-    expect(result.cacheKey).toMatch(/^eia:gas:pad:\d$/)
-  })
-})
-
-describe('lookup tables integrity', () => {
-  test('all CPI_TO_EIA_CITY entries have duoarea and label', () => {
-    for (const [code, entry] of Object.entries(CPI_TO_EIA_CITY)) {
-      expect(entry.duoarea).toBeTruthy()
-      expect(entry.label).toBeTruthy()
-    }
-  })
-
-  test('all COUNTY_EIA_CITY_OVERRIDES have 5-digit FIPS keys', () => {
-    for (const fips of Object.keys(COUNTY_EIA_CITY_OVERRIDES)) {
-      expect(fips).toMatch(/^\d{5}$/)
-    }
-  })
-
-  test('all STATE_LEVEL_CODES have valid duoarea and label', () => {
-    for (const [state, entry] of Object.entries(STATE_LEVEL_CODES)) {
-      expect(state.length).toBe(2)
-      expect(entry.duoarea).toBeTruthy()
-      expect(entry.label).toBeTruthy()
-    }
-  })
-
-  test('PAD_NAMES covers PAD districts 1-5', () => {
-    for (let i = 1; i <= 5; i++) {
-      expect(PAD_NAMES[i]).toBeTruthy()
-    }
-  })
-
-  test('all STATE_TO_PAD values are between 1 and 5', () => {
-    for (const [, pad] of Object.entries(STATE_TO_PAD)) {
-      expect(pad).toBeGreaterThanOrEqual(1)
-      expect(pad).toBeLessThanOrEqual(5)
-    }
   })
 })

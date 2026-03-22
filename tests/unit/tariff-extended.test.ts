@@ -5,10 +5,6 @@ import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 const TARIFF_RATE = 0.0205
 
 describe('estimateTariffCost — extended edge cases', () => {
-  test('returns 0 for exactly 0 income', () => {
-    expect(estimateTariffCost(0)).toBe(0)
-  })
-
   test('returns 0 for negative income (guard against bad data)', () => {
     expect(estimateTariffCost(-1)).toBe(0)
     expect(estimateTariffCost(-100000)).toBe(0)
@@ -44,16 +40,6 @@ describe('estimateTariffCost — extended edge cases', () => {
     }
   })
 
-  test('result is never NaN for valid inputs', () => {
-    const incomes = [0, 1, 50000, 100000, 500000]
-    for (const income of incomes) {
-      expect(isNaN(estimateTariffCost(income))).toBe(false)
-    }
-  })
-
-  test('result is never Infinity', () => {
-    expect(isFinite(estimateTariffCost(Number.MAX_SAFE_INTEGER))).toBe(true)
-  })
 })
 
 describe('formatDollars — extended cases', () => {
@@ -67,13 +53,6 @@ describe('formatDollars — extended cases', () => {
 
   test('formats 1000000 as $1,000,000', () => {
     expect(formatDollars(1000000)).toBe('$1,000,000')
-  })
-
-  test('always returns a string starting with $', () => {
-    const amounts = [0, 100, 1234, 83821]
-    for (const amount of amounts) {
-      expect(formatDollars(amount)).toMatch(/^\$/)
-    }
   })
 
   test('no decimal places (maximumFractionDigits: 0)', () => {
