@@ -52,7 +52,7 @@ jobs:
           if [ -n "${{ inputs.zips }}" ]; then
             python src/main.py --zips ${{ inputs.zips }}
           else
-            python src/main.py --num-zips ${{ inputs.num_zips || '10' }}
+            python src/main.py --workers 1 --num-zips ${{ inputs.num_zips || '10' }}
           fi
 
       - name: Upload audit report

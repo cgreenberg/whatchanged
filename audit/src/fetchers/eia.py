@@ -70,6 +70,10 @@ def fetch_gas_price(duoarea: str, product: str = "EPM0", num_results: int = 5) -
                 "EIA API returned 400 for area=%s product=%s — invalid params, skipping",
                 duoarea, product,
             )
+        elif e.response is not None and e.response.status_code == 403:
+            logger.warning(
+                "EIA API returned 403 Forbidden — likely blocked by IP restrictions (common in CI/cloud environments)"
+            )
         else:
             logger.error("EIA API request failed for area %s: %s", duoarea, e)
         return None

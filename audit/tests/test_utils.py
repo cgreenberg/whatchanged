@@ -103,6 +103,7 @@ class TestRetryRequest:
     @patch("src.utils.requests.request")
     def test_retries_on_failure_then_succeeds(self, mock_request, mock_sleep):
         mock_fail = MagicMock()
+        mock_fail.status_code = 500
         mock_fail.raise_for_status.side_effect = requests.HTTPError("500")
         mock_success = MagicMock()
         mock_success.status_code = 200
@@ -128,6 +129,7 @@ class TestRetryRequest:
     @patch("src.utils.requests.request")
     def test_passes_kwargs_to_request(self, mock_request):
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.raise_for_status.return_value = None
         mock_request.return_value = mock_response
 

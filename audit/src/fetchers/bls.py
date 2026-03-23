@@ -46,6 +46,13 @@ def fetch_bls_series(
 
     try:
         response = retry_request("post", BLS_API_URL, json=payload, timeout=30.0)
+
+        # BLS sometimes returns HTML error pages instead of JSON
+        content_type = response.headers.get("content-type", "")
+        if "json" not in content_type:
+            logger.warning("BLS API returned non-JSON response (content-type: %s) — may be rate limited or down", content_type)
+            return None
+
         data = response.json()
 
         if data.get("status") != "REQUEST_SUCCEEDED":

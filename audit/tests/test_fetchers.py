@@ -83,6 +83,7 @@ class TestBLSFetcher:
     @patch("src.fetchers.bls.retry_request")
     def test_returns_series_data(self, mock_request):
         mock_resp = MagicMock()
+        mock_resp.headers = {"content-type": "application/json"}
         mock_resp.json.return_value = {
             "status": "REQUEST_SUCCEEDED",
             "Results": {
