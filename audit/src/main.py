@@ -171,6 +171,15 @@ def audit_single_zip(
     site_tariff_is_fallback = tariff_data.get("isFallback", False) if tariff_data else False
     all_checks.extend(compare_tariff(site_tariff_cost, site_tariff_income, census_data, zip_code=zip_code))
 
+    if site_tariff_is_fallback:
+        all_checks.append(CheckResult(
+            status=CheckStatus.WARN,
+            category="tariff",
+            check_name="tariff_income_fallback",
+            message=f"Site tariff for zip {zip_code} uses national average income (not zip-specific)",
+            description="The tariff estimate is based on national average income because zip-specific Census data was unavailable.",
+        ))
+
     # Also verify rendered tariff matches API tariff (if browser ran)
     if browser_result and browser_result.rendered_values:
         rendered_tariff = browser_result.rendered_values.get("tariff_estimate")

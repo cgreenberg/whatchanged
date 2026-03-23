@@ -81,21 +81,30 @@ def compare_cpi(
         # Recompute from site's own baseline and current
         site_baseline = site_cpi.get("groceriesBaseline")
         site_current = site_cpi.get("groceriesCurrent")
-        if site_baseline and site_current and site_baseline != 0:
-            recomputed = round((site_current - site_baseline) / site_baseline * 100, 1)
-            cmp = compare_values(site_grocery_change, recomputed, tolerance_pct, "pp")
-            results.append(CheckResult(
-                status=cmp["status"],
-                category="cpi",
-                check_name="grocery_pct_change_internal",
-                site_value=site_grocery_change,
-                source_value=recomputed,
-                difference=cmp.get("difference"),
-                tolerance=tolerance_pct,
-                unit="percentage points",
-                message="Internal consistency: displayed change vs computed from baseline/current",
-                description="Internal consistency: does the displayed grocery % change match (current - baseline) / baseline x 100?",
-            ))
+        if site_baseline is not None and site_current is not None:
+            if site_baseline == 0:
+                results.append(CheckResult(
+                    status=CheckStatus.FAIL,
+                    category="cpi",
+                    check_name="grocery_pct_change_internal",
+                    message="Grocery baseline is zero — cannot compute % change",
+                    description="Internal consistency check failed: grocery baseline index is zero.",
+                ))
+            else:
+                recomputed = round((site_current - site_baseline) / site_baseline * 100, 1)
+                cmp = compare_values(site_grocery_change, recomputed, tolerance_pct, "pp")
+                results.append(CheckResult(
+                    status=cmp["status"],
+                    category="cpi",
+                    check_name="grocery_pct_change_internal",
+                    site_value=site_grocery_change,
+                    source_value=recomputed,
+                    difference=cmp.get("difference"),
+                    tolerance=tolerance_pct,
+                    unit="percentage points",
+                    message="Internal consistency: displayed change vs computed from baseline/current",
+                    description="Internal consistency: does the displayed grocery % change match (current - baseline) / baseline x 100?",
+                ))
 
     # Check shelter % change
     shelter_series_id = series_ids.get("shelter")
@@ -121,5 +130,26 @@ def compare_cpi(
             description="Confirms BLS shelter CPI series has data. The site shows shelter cost % change from this series.",
             source_url=f"https://data.bls.gov/timeseries/{shelter_series_id}" if shelter_series_id else "",
         ))
+
+    # Verify shelter % change is reasonable
+    if site_shelter_change is not None:
+        if -20 <= site_shelter_change <= 50:
+            results.append(CheckResult(
+                status=CheckStatus.PASS,
+                category="cpi",
+                check_name="shelter_change_reasonable",
+                site_value=site_shelter_change,
+                message=f"Shelter change {site_shelter_change}% is within reasonable range",
+                description="Sanity check: shelter % change is between -20% and +50%.",
+            ))
+        else:
+            results.append(CheckResult(
+                status=CheckStatus.FAIL,
+                category="cpi",
+                check_name="shelter_change_reasonable",
+                site_value=site_shelter_change,
+                message=f"Shelter change {site_shelter_change}% is outside reasonable range (-20% to +50%)",
+                description="Sanity check: shelter % change should be between -20% and +50%.",
+            ))
 
     return results

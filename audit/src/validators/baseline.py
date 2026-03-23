@@ -205,7 +205,7 @@ def _find_jan_2025_in_series(
             else:
                 distance = 0  # month-only — treat as exact match
         except (ValueError, IndexError):
-            distance = 0
+            continue
 
         candidates.append((distance, float_val))
 

@@ -49,7 +49,7 @@ def fetch_median_income(zip_code: str, year: str = "2023") -> Optional[dict]:
         income_idx = headers.index("B19013_001E")
         income_raw = values[income_idx]
 
-        if income_raw is None or income_raw == "-666666666":
+        if income_raw is None or str(income_raw).strip() == "-666666666":
             logger.warning("Census reports no income data for zip %s", zip_code)
             return None
 

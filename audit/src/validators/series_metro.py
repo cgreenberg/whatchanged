@@ -113,11 +113,14 @@ def _metro_names_match(site_metro: str, bls_metro: str) -> bool:
     - Site may omit state: "San Francisco-Oakland-Hayward"
     - Case differences
     - Extra whitespace
+
+    Uses primary city comparison to avoid false positives like
+    "Portland" matching both "Portland-South Portland, ME" and
+    "Portland-Vancouver-Hillsboro, OR-WA".
     """
     if not site_metro or not bls_metro:
         return False
 
-    # Normalize: lowercase, strip whitespace
     site_norm = site_metro.lower().strip()
     bls_norm = bls_metro.lower().strip()
 
@@ -125,13 +128,31 @@ def _metro_names_match(site_metro: str, bls_metro: str) -> bool:
     if site_norm == bls_norm:
         return True
 
-    # Check if one contains the other (handles state suffix)
-    if site_norm in bls_norm or bls_norm in site_norm:
-        return True
-
     # Strip state suffix from BLS name (", XX" or ", XX-YY")
     bls_no_state = bls_norm.rsplit(",", 1)[0].strip()
-    if site_norm == bls_no_state:
+    site_no_state = site_norm.rsplit(",", 1)[0].strip()
+
+    if site_no_state == bls_no_state:
+        return True
+
+    # Compare the primary city (first component before "-")
+    site_primary = site_no_state.split("-")[0].strip()
+    bls_primary = bls_no_state.split("-")[0].strip()
+
+    if site_primary and bls_primary and site_primary == bls_primary:
+        # Primary cities match — but verify they're in the same state if state info available
+        site_state = _extract_state(site_metro)
+        bls_state = _extract_state(bls_metro)
+        if site_state and bls_state:
+            return site_state == bls_state
+        # No state info to disambiguate — still likely correct
         return True
 
     return False
+
+
+def _extract_state(metro_name: str) -> str:
+    """Extract state abbreviation from metro name like 'Portland-Vancouver, OR-WA'."""
+    import re
+    m = re.search(r',\s*([A-Z]{2})', metro_name)
+    return m.group(1).lower() if m else ""

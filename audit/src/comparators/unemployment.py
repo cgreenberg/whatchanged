@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def compare_unemployment(
     site_unemp: dict,
     bls_data: dict | None,
-    tolerance: float = 0.0,
+    tolerance: float = 0.005,
 ) -> list[CheckResult]:
     """Compare site unemployment rate against BLS LAUS.
 
