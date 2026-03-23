@@ -183,13 +183,21 @@ export default function HomeContent() {
       )}
 
       {/* Footer */}
-      <footer className="mt-16 mb-4 text-center">
+      <footer className="mt-16 mb-4 text-center flex items-center justify-center gap-4">
         <Link
           href="/about"
           className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
           style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
         >
           About the data
+        </Link>
+        <span className="text-zinc-700" aria-hidden="true">·</span>
+        <Link
+          href="/audit"
+          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+          style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+        >
+          Audit reports
         </Link>
       </footer>
     </main>

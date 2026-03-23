@@ -73,12 +73,8 @@ def retry_request(
     for attempt in range(retries):
         try:
             response = requests.request(method, url, **kwargs)
-            # Don't retry on 400 Bad Request — bad params won't improve on retry
-            if response.status_code == 400:
-                logger.error(
-                    "Request to %s returned 400 Bad Request (bad params, not retrying)",
-                    _redact_url(url),
-                )
+            # Don't retry on 4xx client errors — these won't improve on retry
+            if 400 <= response.status_code < 500:
                 response.raise_for_status()
             response.raise_for_status()
             return response
