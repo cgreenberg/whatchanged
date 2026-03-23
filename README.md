@@ -113,8 +113,21 @@ tests/
   fixtures/         # Test data fixtures
   mocks/            # MSW API mock handlers
 scripts/            # Utility scripts (cache preloading, data auditing)
+audit/              # Independent data audit system (Python)
 public/             # Static assets
 ```
+
+---
+
+## Data Auditing
+
+An independent audit system verifies the site's data weekly against the original government sources. It runs as a separate Python application that interacts with whatchanged.us only through the public API — no shared code, no internal access.
+
+Each audit tests 10 random zip codes and checks every number against BLS, EIA, Census, and AAA. The result is an HTML report with pass/fail verdicts, comparison tables, and full-page screenshots.
+
+- **View reports**: [whatchanged.us/audit](https://www.whatchanged.us/audit) or [GitHub Actions](https://github.com/cgreenberg/whatchanged/actions/workflows/weekly-audit.yml)
+- **Schedule**: Every Wednesday at 9:00 AM Eastern (automated via GitHub Actions)
+- **Details**: See [audit/README.md](audit/README.md)
 
 ---
 
