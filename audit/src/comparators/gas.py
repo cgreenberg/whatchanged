@@ -74,6 +74,13 @@ def compare_gas_price(
         aaa_cmp = compare_values(site_price, aaa_price, tolerance_aaa, "$/gal")
         # Downgrade FAIL to WARN for best-effort checks
         status = CheckStatus.WARN if aaa_cmp["status"] == CheckStatus.FAIL else aaa_cmp["status"]
+        diff = aaa_cmp.get("difference", 0)
+        aaa_state = aaa_data.get("state", "")
+        aaa_url = aaa_data.get("source_url", "https://gasprices.aaa.com/")
+        if status == CheckStatus.PASS:
+            msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) matches site (${site_price:.3f}) within ${tolerance_aaa}/gal"
+        else:
+            msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) differs from site (${site_price:.3f}) by ${diff:.2f}/gal — may reflect city vs state difference"
         results.append(CheckResult(
             status=status,
             category="gas",
@@ -83,9 +90,9 @@ def compare_gas_price(
             difference=aaa_cmp.get("difference"),
             tolerance=tolerance_aaa,
             unit="$/gal",
-            message="AAA best-effort cross-check (scraped via Playwright from state page)",
-            description="Cross-check gas price against AAA state average (scraped via Playwright). Best-effort — layout changes may break extraction.",
-            source_url="https://gasprices.aaa.com/",
+            message=msg,
+            description="Cross-check gas price against AAA state average (scraped via Playwright). Differences may reflect city-level site price vs state-level AAA average.",
+            source_url=aaa_url,
         ))
     else:
         results.append(CheckResult(

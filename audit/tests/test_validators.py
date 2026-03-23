@@ -192,8 +192,8 @@ class TestBaseline:
             "unemployment": {"data": {
                 "baseline": 3.8,
                 "series": [
-                    {"date": "2025-01-01", "value": 3.8},
-                    {"date": "2026-01-01", "value": 3.5},
+                    {"date": "2025-01-01", "rate": 3.8},
+                    {"date": "2026-01-01", "rate": 3.5},
                 ],
             }},
         })

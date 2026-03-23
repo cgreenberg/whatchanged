@@ -103,7 +103,7 @@ def _check_unemployment_baseline(unemp_data: dict) -> Optional[CheckResult]:
     if baseline is None or not series:
         return None
 
-    jan_2025 = _find_jan_2025_in_series(series, date_key="date", value_key="value")
+    jan_2025 = _find_jan_2025_in_series(series, date_key="date", value_key="rate")
 
     if jan_2025 is None:
         return CheckResult(
@@ -136,7 +136,7 @@ def _check_cpi_baseline(cpi_data: dict) -> Optional[CheckResult]:
     if baseline is None or not series:
         return None
 
-    jan_2025 = _find_jan_2025_in_series(series, date_key="date", value_key="value")
+    jan_2025 = _find_jan_2025_in_series(series, date_key="date", value_key="groceries")
 
     if jan_2025 is None:
         return CheckResult(
