@@ -17,7 +17,7 @@
     "@upstash/redis": "^1.37.0",
     "framer-motion": "^12.36.0",
     "leaflet": "^1.9.4",
-    "next": "16.1.6",
+    "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
