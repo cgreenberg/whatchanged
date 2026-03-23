@@ -52,6 +52,7 @@ def verify_baselines(site_data: dict) -> list[CheckResult]:
             category="baseline",
             check_name="baseline_verification",
             message="No baseline data available to verify",
+            description="Verify that baseline values correspond to January 2025 in the series data.",
         ))
 
     return results
@@ -76,6 +77,7 @@ def _check_gas_baseline(gas_data: dict) -> Optional[CheckResult]:
             check_name="gas_baseline",
             message="Could not find Jan 2025 in gas series to verify baseline",
             details={"reported_baseline": baseline},
+            description="Verify the gas price baseline matches the Jan 20, 2025 data point in the series (inauguration day).",
         )
 
     tolerance = 0.10
@@ -89,6 +91,7 @@ def _check_gas_baseline(gas_data: dict) -> Optional[CheckResult]:
         difference=abs(baseline - jan_2025),
         tolerance=tolerance,
         message=f"Gas baseline: reported {baseline}, series Jan 2025 = {jan_2025}",
+        description="Verify the gas price baseline matches the Jan 20, 2025 data point in the series (inauguration day).",
     )
 
 
@@ -109,6 +112,7 @@ def _check_unemployment_baseline(unemp_data: dict) -> Optional[CheckResult]:
             check_name="unemployment_baseline",
             message="Could not find Jan 2025 in unemployment series",
             details={"reported_baseline": baseline},
+            description="Verify the unemployment baseline matches the January 2025 data point in the series.",
         )
 
     match = abs(baseline - jan_2025) < 0.1
@@ -120,6 +124,7 @@ def _check_unemployment_baseline(unemp_data: dict) -> Optional[CheckResult]:
         source_value=jan_2025,
         difference=abs(baseline - jan_2025),
         message=f"Unemployment baseline: reported {baseline}, series Jan 2025 = {jan_2025}",
+        description="Verify the unemployment baseline matches the January 2025 data point in the series.",
     )
 
 
@@ -140,6 +145,7 @@ def _check_cpi_baseline(cpi_data: dict) -> Optional[CheckResult]:
             check_name="cpi_grocery_baseline",
             message="Could not find Jan 2025 in CPI series",
             details={"reported_baseline": baseline},
+            description="Verify the CPI grocery baseline matches the January 2025 index value in the series.",
         )
 
     match = abs(baseline - jan_2025) < 0.01
@@ -151,6 +157,7 @@ def _check_cpi_baseline(cpi_data: dict) -> Optional[CheckResult]:
         source_value=jan_2025,
         difference=abs(baseline - jan_2025),
         message=f"CPI grocery baseline: reported {baseline}, series Jan 2025 = {jan_2025}",
+        description="Verify the CPI grocery baseline matches the January 2025 index value in the series.",
     )
 
 

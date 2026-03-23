@@ -62,6 +62,9 @@
 
         .footer { text-align: center; margin-top: 40px; padding: 20px; color: #999; font-size: 0.85em; }
 
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
         @media (max-width: 768px) {
             body { padding: 10px; }
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -138,6 +141,7 @@
             <thead>
                 <tr>
                     <th>Check</th>
+                    <th>Description</th>
                     <th>Category</th>
                     <th>Site Value</th>
                     <th>Source Value</th>
@@ -149,9 +153,18 @@
             {% for check in zip_result.checks %}
                 <tr>
                     <td>{{ check.check_name }}</td>
+                    <td>{{ check.description if check.description else '—' }}</td>
                     <td>{{ check.category }}</td>
                     <td>{{ check.site_value if check.site_value is not none else '—' }}</td>
-                    <td>{{ check.source_value if check.source_value is not none else '—' }}</td>
+                    <td>
+                        {% if check.source_url %}
+                            <a href="{{ check.source_url }}" target="_blank" rel="noopener">
+                                {{ check.source_value if check.source_value is not none else 'View source' }}
+                            </a>
+                        {% else %}
+                            {{ check.source_value if check.source_value is not none else '—' }}
+                        {% endif %}
+                    </td>
                     <td>
                         {% if check.difference is not none %}
                             {{ check.difference }}{{ ' ' + check.unit if check.unit else '' }}
@@ -169,7 +182,7 @@
         </table>
 
         {% for check in zip_result.checks %}
-            {% if check.message and check.status in ['FAIL', 'WARN'] %}
+            {% if check.message and check.status in ['FAIL', 'WARN', 'SKIP'] %}
             <div class="findings {% if check.status == 'FAIL' %}findings-critical{% else %}findings-advisory{% endif %}" style="margin-bottom: 8px;">
                 <strong>{{ check.check_name }}:</strong> {{ check.message }}
             </div>

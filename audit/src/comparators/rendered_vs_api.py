@@ -33,6 +33,7 @@ def compare_rendered_vs_api(
             category="rendered",
             check_name="rendered_vs_api",
             message="Missing rendered or API data",
+            description="Compare values shown on the rendered page vs the API response (checks for display/rounding bugs).",
         ))
         return results
 
@@ -54,6 +55,7 @@ def compare_rendered_vs_api(
                 source_value=expected_display,
                 difference=abs(rendered_gas - expected_display),
                 message=f"API: {api_gas} → expected display: {expected_display}",
+                description="Gas price shown on the rendered page vs the API response (checks for display/rounding bugs).",
             ))
 
     # Grocery % change
@@ -73,6 +75,7 @@ def compare_rendered_vs_api(
                 difference=abs(rendered_grocery - api_grocery_change),
                 unit="%",
                 message="Grocery % change: rendered vs API",
+                description="Grocery % change on the rendered page vs the API response.",
             ))
 
     # Shelter % change
@@ -91,6 +94,7 @@ def compare_rendered_vs_api(
                 difference=abs(rendered_shelter - api_shelter_change),
                 unit="%",
                 message="Shelter % change: rendered vs API",
+                description="Shelter % change on the rendered page vs the API response.",
             ))
 
     return results

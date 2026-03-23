@@ -40,6 +40,7 @@ def verify_series_metro_mapping(
             category="metro_mapping",
             check_name="series_metro_verification",
             message="No CPI data available to verify",
+            description="Verify BLS series IDs actually map to the metro area the site claims. A mismatch means data from the wrong city.",
         ))
         return results
 
@@ -52,6 +53,7 @@ def verify_series_metro_mapping(
             category="metro_mapping",
             check_name="series_metro_verification",
             message="No BLS API data available for verification",
+            description="Verify BLS series IDs actually map to the metro area the site claims. A mismatch means data from the wrong city.",
         ))
         return results
 
@@ -62,6 +64,8 @@ def verify_series_metro_mapping(
                 category="metro_mapping",
                 check_name=f"metro_match_{name}",
                 message=f"Series {series_id} not found in BLS response",
+                description=f"Verify BLS series {series_id} actually maps to the metro area the site claims ('{site_metro}'). A mismatch means data from the wrong city.",
+                source_url=f"https://data.bls.gov/timeseries/{series_id}",
             ))
             continue
 
@@ -94,6 +98,8 @@ def verify_series_metro_mapping(
                 "bls_title": bls_title,
                 "category": name,
             },
+            description=f"Verify BLS series {series_id} actually maps to the metro area the site claims ('{site_metro}'). A mismatch means data from the wrong city.",
+            source_url=f"https://data.bls.gov/timeseries/{series_id}",
         ))
 
     return results

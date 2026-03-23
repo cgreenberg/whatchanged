@@ -63,6 +63,8 @@ def compare_gas_price(
             "site_region": site_gas.get("region") if site_gas else None,
             "is_national_comparison": is_national_comparison,
         },
+        description="Gas price from whatchanged.us vs EIA weekly retail average. Site shows a local/regional price; EIA value is the US national average unless the exact EIA series was matched.",
+        source_url="https://www.eia.gov/petroleum/gasdiesel/",
     ))
 
     # Best-effort: AAA cross-check (WARN only, never FAIL)
@@ -81,6 +83,8 @@ def compare_gas_price(
             tolerance=tolerance_aaa,
             unit="$/gal",
             message="AAA best-effort cross-check",
+            description="Cross-check gas price against AAA (independent source). Best-effort — AAA blocks scrapers, so SKIP is normal.",
+            source_url="https://gasprices.aaa.com/",
         ))
     else:
         results.append(CheckResult(
@@ -88,6 +92,8 @@ def compare_gas_price(
             category="gas",
             check_name="aaa_cross_check",
             message="AAA data unavailable (best-effort scraper)",
+            description="Cross-check gas price against AAA (independent source). Best-effort — AAA blocks scrapers, so SKIP is normal.",
+            source_url="https://gasprices.aaa.com/",
         ))
 
     return results

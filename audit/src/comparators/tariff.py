@@ -17,6 +17,7 @@ def compare_tariff(
     census_data: dict | None,
     tolerance_income: float = 2000.0,
     tolerance_tariff: float = 200.0,
+    zip_code: str = "",
 ) -> list[CheckResult]:
     """Compare tariff estimate against Census income and Yale methodology.
 
@@ -38,6 +39,11 @@ def compare_tariff(
     # Check income against Census ACS
     census_income = census_data.get("median_income") if census_data else None
 
+    census_source_url = (
+        f"https://data.census.gov/table/ACSDT5Y2023.B19013?g=860XX00US{zip_code}"
+        if zip_code else ""
+    )
+
     if site_income is not None and census_income is not None:
         cmp = compare_values(site_income, census_income, tolerance_income, "$")
         results.append(CheckResult(
@@ -50,6 +56,8 @@ def compare_tariff(
             tolerance=tolerance_income,
             unit="dollars",
             message=f"Census ACS {census_data.get('year', '')} median income",
+            description="Median household income used by the site vs Census ACS 5-year estimate (table B19013) for this zip code.",
+            source_url=census_source_url,
         ))
     else:
         results.append(CheckResult(
@@ -57,9 +65,14 @@ def compare_tariff(
             category="tariff",
             check_name="income_vs_census",
             message="Income not available from API or Census",
+            description="Median household income used by the site vs Census ACS 5-year estimate (table B19013) for this zip code.",
+            source_url=census_source_url,
         ))
 
     # Check tariff estimate vs Yale methodology
+    yale_url = "https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
+    yale_desc = "Site's tariff estimate vs independent calculation using Census income x Yale Budget Lab rate (2.05% of household income)."
+
     if site_tariff_cost is not None and census_income is not None:
         expected_tariff = round(census_income * YALE_TARIFF_RATE)
         cmp = compare_values(site_tariff_cost, expected_tariff, tolerance_tariff, "$")
@@ -73,6 +86,8 @@ def compare_tariff(
             tolerance=tolerance_tariff,
             unit="dollars/yr",
             message=f"Yale Budget Lab method: {census_income} × {YALE_TARIFF_RATE} = {expected_tariff}",
+            description=yale_desc,
+            source_url=yale_url,
         ))
     elif site_tariff_cost is not None:
         # Can't verify methodology without income, but tariff exists
@@ -82,6 +97,8 @@ def compare_tariff(
             check_name="tariff_vs_yale_method",
             site_value=site_tariff_cost,
             message="Cannot verify tariff methodology without Census income data",
+            description=yale_desc,
+            source_url=yale_url,
         ))
     else:
         results.append(CheckResult(
@@ -89,6 +106,8 @@ def compare_tariff(
             category="tariff",
             check_name="tariff_vs_yale_method",
             message="No tariff estimate found in API response",
+            description=yale_desc,
+            source_url=yale_url,
         ))
 
     return results

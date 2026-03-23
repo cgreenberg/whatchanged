@@ -31,6 +31,7 @@ def compare_unemployment(
             category="unemployment",
             check_name="unemployment_data_present",
             message="No unemployment data from whatchanged.us",
+            description="Check for presence of unemployment data from whatchanged.us API.",
         ))
         return results
 
@@ -43,6 +44,8 @@ def compare_unemployment(
             category="unemployment",
             check_name="bls_laus_match",
             message=f"Missing BLS data for series {series_id}",
+            description="Unemployment rate from whatchanged.us vs directly from BLS LAUS (Local Area Unemployment Statistics) for the same county.",
+            source_url=f"https://data.bls.gov/timeseries/{series_id}" if series_id else "",
         ))
         return results
 
@@ -67,6 +70,8 @@ def compare_unemployment(
                 "bls_period": f"{bls_latest['year']}-{bls_latest['period']}",
                 "area_name": bls_series.get("area_name", ""),
             },
+            description="Unemployment rate from whatchanged.us vs directly from BLS LAUS (Local Area Unemployment Statistics) for the same county.",
+            source_url=f"https://data.bls.gov/timeseries/{series_id}",
         ))
     else:
         results.append(CheckResult(
@@ -74,6 +79,8 @@ def compare_unemployment(
             category="unemployment",
             check_name="bls_laus_match",
             message="No data points in BLS LAUS series",
+            description="Unemployment rate from whatchanged.us vs directly from BLS LAUS (Local Area Unemployment Statistics) for the same county.",
+            source_url=f"https://data.bls.gov/timeseries/{series_id}",
         ))
 
     return results

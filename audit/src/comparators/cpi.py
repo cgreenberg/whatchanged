@@ -35,6 +35,7 @@ def compare_cpi(
             category="cpi",
             check_name="cpi_data_present",
             message="No CPI data from whatchanged.us",
+            description="Check for presence of CPI data from whatchanged.us API.",
         ))
         return results
 
@@ -61,6 +62,8 @@ def compare_cpi(
                 tolerance=tolerance_index,
                 unit="index points",
                 message=f"BLS series: {grocery_series_id}",
+                description="BLS CPI grocery index value from the site vs directly from the BLS API for the same series ID.",
+                source_url=f"https://data.bls.gov/timeseries/{grocery_series_id}",
             ))
     else:
         results.append(CheckResult(
@@ -68,6 +71,8 @@ def compare_cpi(
             category="cpi",
             check_name="grocery_index_match",
             message=f"Missing BLS data for grocery series {grocery_series_id}",
+            description="BLS CPI grocery index value from the site vs directly from the BLS API for the same series ID.",
+            source_url=f"https://data.bls.gov/timeseries/{grocery_series_id}" if grocery_series_id else "",
         ))
 
     # Check grocery % change
@@ -89,6 +94,7 @@ def compare_cpi(
                 tolerance=tolerance_pct,
                 unit="percentage points",
                 message="Internal consistency: displayed change vs computed from baseline/current",
+                description="Internal consistency: does the displayed grocery % change match (current - baseline) / baseline x 100?",
             ))
 
     # Check shelter % change
@@ -103,6 +109,8 @@ def compare_cpi(
                 check_name="shelter_data_present",
                 message=f"BLS shelter series {shelter_series_id} has {len(bls_shelter['data'])} data points",
                 details={"site_shelter_change": site_shelter_change},
+                description="Confirms BLS shelter CPI series has data. The site shows shelter cost % change from this series.",
+                source_url=f"https://data.bls.gov/timeseries/{shelter_series_id}",
             ))
     else:
         results.append(CheckResult(
@@ -110,6 +118,8 @@ def compare_cpi(
             category="cpi",
             check_name="shelter_data_present",
             message=f"Missing BLS data for shelter series {shelter_series_id}",
+            description="Confirms BLS shelter CPI series has data. The site shows shelter cost % change from this series.",
+            source_url=f"https://data.bls.gov/timeseries/{shelter_series_id}" if shelter_series_id else "",
         ))
 
     return results

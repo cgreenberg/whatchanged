@@ -87,6 +87,7 @@ def audit_single_zip(
                 category="site",
                 check_name="site_data_fetch",
                 message=f"Failed to fetch data from whatchanged.us for zip {zip_code}",
+                description="Fetch economic data from whatchanged.us API for this zip code.",
             )],
             "screenshot_paths": [],
         }
@@ -181,7 +182,7 @@ def audit_single_zip(
     site_tariff_cost = tariff_data.get("estimatedCost") if tariff_data else None
     site_tariff_income = tariff_data.get("medianIncome") if tariff_data else None
     site_tariff_is_fallback = tariff_data.get("isFallback", False) if tariff_data else False
-    all_checks.extend(compare_tariff(site_tariff_cost, site_tariff_income, census_data))
+    all_checks.extend(compare_tariff(site_tariff_cost, site_tariff_income, census_data, zip_code=zip_code))
 
     # Also verify rendered tariff matches API tariff (if browser ran)
     if browser_result and browser_result.rendered_values:
@@ -196,6 +197,7 @@ def audit_single_zip(
                 source_value=float(site_tariff_cost),
                 difference=abs(rendered_tariff - site_tariff_cost),
                 message="Rendered tariff vs API tariff.data.estimatedCost",
+                description="Tariff estimate shown on the rendered page vs the API response (checks for display/rounding bugs).",
             ))
 
     # Census fallback detection
@@ -206,6 +208,7 @@ def audit_single_zip(
             category="census",
             check_name="census_fallback_detected",
             message=f"Site is using national average income (not zip-specific) for zip {zip_code}",
+            description="Detect when the site falls back to national average income instead of zip-specific Census data.",
         ))
 
     # Rendered vs API
@@ -236,6 +239,7 @@ def audit_single_zip(
                     source_value=expected,
                     difference=abs(actual - expected),
                     message="Gas change from _audit.computations matches independent calculation",
+                    description="Verify gas change from the API's _audit.computations block matches an independent calculation.",
                 ))
 
         # Verify tariff computation
@@ -253,6 +257,7 @@ def audit_single_zip(
                     source_value=expected,
                     difference=abs(actual - expected),
                     message="Tariff from _audit.computations matches independent calculation",
+                    description="Verify tariff estimate from the API's _audit.computations block matches an independent calculation.",
                 ))
 
     # Step 5: Run validators
@@ -346,6 +351,7 @@ def run_audit(
                             category="site",
                             check_name="audit_error",
                             message=f"Unexpected error: {type(e).__name__}: {e}",
+                            description="Audit pipeline encountered an unexpected error for this zip code.",
                         )],
                         "screenshot_paths": [],
                     })

@@ -50,6 +50,7 @@ def verify_computations(site_data: dict) -> list[CheckResult]:
             category="computation",
             check_name="all_computations",
             message="No computable data available",
+            description="Re-derive computed values from raw series data to catch internal math errors.",
         ))
 
     return results
@@ -80,6 +81,7 @@ def _verify_gas_change(gas_data: dict) -> CheckResult | None:
         source_value=recomputed,
         difference=abs(reported_change - recomputed),
         message=f"Gas change: {current} - {baseline} = {recomputed} (site says {reported_change})",
+        description="Re-derive gas price change from current and baseline values. Catches internal math errors.",
     )
 
 
@@ -98,6 +100,7 @@ def _verify_grocery_change(cpi_data: dict) -> CheckResult | None:
             category="computation",
             check_name="grocery_pct_recomputed",
             message="Grocery baseline is zero — cannot compute % change",
+            description="Re-derive grocery CPI % change from current and baseline index values.",
         )
 
     recomputed = round((current - baseline) / baseline * 100, 1)
@@ -112,6 +115,7 @@ def _verify_grocery_change(cpi_data: dict) -> CheckResult | None:
         difference=abs(reported - recomputed),
         unit="percentage points",
         message=f"Grocery CPI: ({current} - {baseline}) / {baseline} × 100 = {recomputed}% (site says {reported}%)",
+        description="Re-derive grocery CPI % change from current and baseline index values.",
     )
 
 
@@ -136,4 +140,5 @@ def _verify_unemployment_change(unemp_data: dict) -> CheckResult | None:
         difference=abs(reported - recomputed),
         unit="percentage points",
         message=f"Unemployment: {current} - {baseline} = {recomputed} (site says {reported})",
+        description="Re-derive unemployment rate change from current and baseline values.",
     )

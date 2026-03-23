@@ -39,6 +39,8 @@ class CheckResult:
     message: str = ""
     details: dict = field(default_factory=dict)
     screenshots: list = field(default_factory=list)
+    description: str = ""
+    source_url: str = ""
 
 
 def retry_request(

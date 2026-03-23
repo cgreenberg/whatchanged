@@ -74,6 +74,8 @@ def generate_report(
                     "tolerance": check.tolerance,
                     "unit": check.unit,
                     "message": check.message,
+                    "description": check.description,
+                    "source_url": check.source_url,
                 })
             else:
                 checks_for_template.append(check)

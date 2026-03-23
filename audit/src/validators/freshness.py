@@ -46,6 +46,7 @@ def verify_data_freshness(site_data: dict) -> list[CheckResult]:
                 category="freshness",
                 check_name=f"freshness_{source_name}",
                 message=f"No fetchedAt timestamp for {source_name}",
+                description=f"Check that {source_name} data was fetched recently enough (within {threshold.days} days).",
             ))
             continue
 
@@ -68,6 +69,7 @@ def verify_data_freshness(site_data: dict) -> list[CheckResult]:
                     "age_days": age.days,
                     "threshold_days": threshold.days,
                 },
+                description=f"Check that {source_name} data was fetched recently enough (within {threshold.days} days).",
             ))
 
         except (ValueError, TypeError) as e:
@@ -76,6 +78,7 @@ def verify_data_freshness(site_data: dict) -> list[CheckResult]:
                 category="freshness",
                 check_name=f"freshness_{source_name}",
                 message=f"Could not parse fetchedAt for {source_name}: {e}",
+                description=f"Check that {source_name} data was fetched recently enough (within {threshold.days} days).",
             ))
 
     return results

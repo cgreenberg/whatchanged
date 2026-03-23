@@ -26,6 +26,7 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
             category="links",
             check_name="link_verification",
             message="No links extracted from page",
+            description="Verify source attribution links resolve (HTTP 200).",
         ))
         return results
 
@@ -41,6 +42,7 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
             category="links",
             check_name="link_verification",
             message="No external source links found",
+            description="Verify source attribution links resolve (HTTP 200).",
         ))
         return results
 
@@ -56,6 +58,8 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
                 check_name="link_check",
                 message=f"Skipped (blocks automated requests): {href}",
                 details={"href": href, "text": text},
+                description="Verify source attribution link resolves (HTTP 200).",
+                source_url=href,
             ))
             continue
 
@@ -75,6 +79,8 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
                 check_name="link_check",
                 message=f"HTTP {status_code}: {href}",
                 details={"href": href, "text": text, "status_code": status_code},
+                description="Verify source attribution link resolves (HTTP 200).",
+                source_url=href,
             ))
 
         except Exception as e:
@@ -84,6 +90,8 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
                 check_name="link_check",
                 message=f"Failed to reach: {href} ({type(e).__name__})",
                 details={"href": href, "text": text, "error": str(e)},
+                description="Verify source attribution link resolves (HTTP 200).",
+                source_url=href,
             ))
 
     return results
