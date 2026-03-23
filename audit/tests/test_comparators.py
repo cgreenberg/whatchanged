@@ -16,7 +16,6 @@ class TestGasComparator:
             site_gas={"current": 4.50, "region": "SCA"},
             eia_data={"latest_price": 4.48, "area_name": "California", "latest_period": "2026-03-17"},
             aaa_data=None,
-            is_national_comparison=False,
         )
         eia_result = results[0]
         assert eia_result.status == CheckStatus.PASS
@@ -29,6 +28,17 @@ class TestGasComparator:
             aaa_data=None,
         )
         assert results[0].status == CheckStatus.FAIL
+
+    def test_skip_when_eia_unavailable(self):
+        # No duoarea available — EIA check should SKIP, not fall back to national
+        results = compare_gas_price(
+            site_gas={"current": 4.50, "region": "SCA"},
+            eia_data=None,
+            aaa_data=None,
+        )
+        eia_result = results[0]
+        assert eia_result.status == CheckStatus.SKIP
+        assert eia_result.check_name == "eia_price_match"
 
     def test_aaa_downgraded_to_warn(self):
         results = compare_gas_price(
@@ -56,45 +66,13 @@ class TestGasComparator:
         )
         assert results[0].status == CheckStatus.SKIP
 
-    def test_national_comparison_downgrades_fail_to_warn(self):
-        # Site shows a price $2.00 above the EIA national average, which exceeds
-        # the $1.50 national-comparison tolerance. With is_national_comparison=True
-        # this should be WARN (not FAIL) because it's an advisory comparison.
-        results = compare_gas_price(
-            site_gas={"current": 6.00, "region": "SEATTLE"},
-            eia_data={"latest_price": 3.85, "area_name": "U.S.", "latest_period": "2026-03-17"},
-            aaa_data=None,
-            tolerance_eia=1.50,
-            is_national_comparison=True,
-            site_region="Seattle",
-        )
-        eia_result = results[0]
-        assert eia_result.status == CheckStatus.WARN
-        assert eia_result.check_name == "eia_national_vs_local"
-        assert "national" in eia_result.message.lower()
-
-    def test_national_comparison_passes_within_tolerance(self):
-        # Even with is_national_comparison=True, if prices are close enough it should PASS.
-        results = compare_gas_price(
-            site_gas={"current": 4.50, "region": "MIDWEST"},
-            eia_data={"latest_price": 3.85, "area_name": "U.S.", "latest_period": "2026-03-17"},
-            aaa_data=None,
-            tolerance_eia=1.50,
-            is_national_comparison=True,
-            site_region="Midwest",
-        )
-        eia_result = results[0]
-        assert eia_result.status == CheckStatus.PASS
-        assert eia_result.check_name == "eia_national_vs_local"
-
-    def test_non_national_comparison_still_fails(self):
-        # Without is_national_comparison, a large gap should remain FAIL.
+    def test_large_gap_fails(self):
+        # Without national fallback logic, a large gap against exact series = FAIL
         results = compare_gas_price(
             site_gas={"current": 5.02},
-            eia_data={"latest_price": 3.85, "area_name": "U.S."},
+            eia_data={"latest_price": 3.85, "area_name": "Pacific"},
             aaa_data=None,
             tolerance_eia=0.05,
-            is_national_comparison=False,
         )
         assert results[0].status == CheckStatus.FAIL
 

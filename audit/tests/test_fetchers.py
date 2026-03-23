@@ -221,38 +221,75 @@ class TestCensusFetcher:
         assert result is None
 
 
-class TestAAAScaper:
-    @patch("src.fetchers.scrapers.retry_request")
-    def test_extracts_price_from_html(self, mock_request):
-        mock_resp = MagicMock()
-        mock_resp.text = '<div class="price">Regular: $4.59</div>'
-        mock_request.return_value = mock_resp
+class TestAAAScraper:
+    def _make_playwright_mock(self, page_text: str):
+        """Build a mock sync_playwright context manager that returns page_text."""
+        mock_page = MagicMock()
+        mock_page.inner_text.return_value = page_text
 
+        mock_browser = MagicMock()
+        mock_browser.new_page.return_value = mock_page
+
+        mock_p = MagicMock()
+        mock_p.chromium.launch.return_value = mock_browser
+
+        mock_playwright_cm = MagicMock()
+        mock_playwright_cm.__enter__ = MagicMock(return_value=mock_p)
+        mock_playwright_cm.__exit__ = MagicMock(return_value=False)
+
+        return mock_playwright_cm
+
+    @patch("playwright.sync_api.sync_playwright")
+    def test_extracts_price_from_regular_pattern(self, mock_sync_playwright):
+        mock_sync_playwright.return_value = self._make_playwright_mock(
+            "Regular $4.59\nMidgrade $4.89\nPremium $5.09"
+        )
         result = fetch_aaa_gas_price("CA")
         assert result is not None
         assert result["regular_price"] == 4.59
+        assert result["state"] == "CA"
 
-    @patch("src.fetchers.scrapers.retry_request")
-    def test_returns_none_on_captcha(self, mock_request):
-        mock_resp = MagicMock()
-        mock_resp.text = '<div>Please complete CAPTCHA</div>'
-        mock_request.return_value = mock_resp
+    @patch("playwright.sync_api.sync_playwright")
+    def test_fallback_to_first_valid_price(self, mock_sync_playwright):
+        # No "regular" keyword — falls back to first valid dollar amount
+        mock_sync_playwright.return_value = self._make_playwright_mock(
+            "Current avg price: $3.85 per gallon"
+        )
+        result = fetch_aaa_gas_price("WA")
+        assert result is not None
+        assert result["regular_price"] == 3.85
 
+    @patch("playwright.sync_api.sync_playwright")
+    def test_returns_none_on_captcha(self, mock_sync_playwright):
+        mock_sync_playwright.return_value = self._make_playwright_mock(
+            "Please complete CAPTCHA to continue"
+        )
         result = fetch_aaa_gas_price("CA")
         assert result is None
 
-    @patch("src.fetchers.scrapers.retry_request")
-    def test_returns_none_on_network_error(self, mock_request):
-        mock_request.side_effect = Exception("Connection refused")
-
+    @patch("playwright.sync_api.sync_playwright")
+    def test_returns_none_on_exception(self, mock_sync_playwright):
+        mock_sync_playwright.side_effect = Exception("Browser launch failed")
         result = fetch_aaa_gas_price("CA")
         assert result is None
 
-    @patch("src.fetchers.scrapers.retry_request")
-    def test_rejects_unreasonable_price(self, mock_request):
-        mock_resp = MagicMock()
-        mock_resp.text = '<div>Regular: $99.99</div>'
-        mock_request.return_value = mock_resp
-
+    @patch("playwright.sync_api.sync_playwright")
+    def test_rejects_unreasonable_price(self, mock_sync_playwright):
+        mock_sync_playwright.return_value = self._make_playwright_mock(
+            "Regular $99.99"
+        )
         result = fetch_aaa_gas_price("CA")
+        assert result is None
+
+    def test_returns_none_when_playwright_not_installed(self):
+        import builtins
+        real_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "playwright.sync_api":
+                raise ImportError("No module named 'playwright'")
+            return real_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=mock_import):
+            result = fetch_aaa_gas_price("CA")
         assert result is None

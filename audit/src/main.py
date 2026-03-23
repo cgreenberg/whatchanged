@@ -101,24 +101,17 @@ def audit_single_zip(
     cpi_data = site_data.get("cpi", {}).get("data")
     unemp_data = site_data.get("unemployment", {}).get("data")
 
-    # EIA gas price — use the exact duoarea the site used (now available via gas.data.duoarea).
-    # If the site used a local/regional series, fetch that same series for a precise comparison.
-    # Fall back to the US national average ("NUS") if the site duoarea is unavailable.
+    # EIA gas price — only compare if we can match the exact series
     eia_data = None
-    is_national_comparison = True
     if gas_data:
         site_duoarea = gas_data.get("duoarea")
-        if site_duoarea and site_duoarea != "NUS":
-            # Try the exact EIA series the site used
+        if site_duoarea:
             eia_data = fetch_gas_price(site_duoarea)
-            is_national_comparison = False
-        if eia_data is None:
-            # Fall back to national
-            eia_data = fetch_gas_price("NUS")
-            is_national_comparison = gas_data.get("isNationalFallback") is False
-        if eia_data is None:
-            logger.info("EIA gas price unavailable for zip %s", zip_code)
-        time.sleep(1)  # Rate limit courtesy
+            if eia_data is None:
+                logger.info("EIA fetch failed for duoarea %s (zip %s)", site_duoarea, zip_code)
+        else:
+            logger.info("No duoarea in API response for zip %s — EIA check skipped (deploy pending?)", zip_code)
+        time.sleep(1)
 
     # BLS series (batch all CPI + LAUS series in one call)
     bls_data = None
@@ -161,16 +154,7 @@ def audit_single_zip(
 
     # Step 4: Run comparators
     # Gas
-    # When we fetched the exact duoarea the site used, use tight tolerance (0.05).
-    # When falling back to national average, use wide tolerance (1.50) and mark
-    # as advisory — regional prices routinely differ from the national average.
-    tolerance_eia = 0.05 if not is_national_comparison else 1.50
-    all_checks.extend(compare_gas_price(
-        gas_data, eia_data, aaa_data,
-        tolerance_eia=tolerance_eia,
-        is_national_comparison=is_national_comparison,
-        site_region=gas_data.get("region", "") if gas_data else "",
-    ))
+    all_checks.extend(compare_gas_price(gas_data, eia_data, aaa_data))
 
     # CPI
     all_checks.extend(compare_cpi(cpi_data, bls_data))

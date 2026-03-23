@@ -9,50 +9,65 @@ import logging
 import re
 from typing import Optional
 
-import requests
-
-from src.utils import retry_request
-
 logger = logging.getLogger(__name__)
 
 
 def fetch_aaa_gas_price(state_abbr: str) -> Optional[dict]:
-    """Attempt to scrape state gas price from AAA.
+    """Scrape state gas price from AAA using Playwright (not requests).
 
-    AAA uses dynamic JavaScript rendering and sometimes shows CAPTCHAs.
-    This is best-effort — returns None on any failure.
+    AAA requires JavaScript rendering. This is still best-effort —
+    returns None on any failure.
 
     Args:
         state_abbr: Two-letter state code (e.g., 'CA', 'WA')
 
     Returns:
-        Dict with 'regular_price', 'state' on success, None on failure.
+        Dict with 'regular_price', 'state', 'source_url' on success, None on failure.
     """
     url = f"https://gasprices.aaa.com/?state={state_abbr}"
 
     try:
-        response = retry_request(
-            "get", url,
-            timeout=15.0,
-            retries=1,  # Only 1 attempt for scrapers
-            headers={
-                "User-Agent": "Mozilla/5.0 (compatible; WhatChangedAudit/1.0)"
-            }
-        )
-        html = response.text
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        logger.info("Playwright not installed — AAA scraper skipped")
+        return None
 
-        # AAA embeds prices in structured data or specific elements
-        # Look for regular unleaded price pattern
-        # This is fragile by design — if it breaks, we SKIP
-        price_match = re.search(
-            r'regular["\s:]*?\$?([\d]+\.[\d]{2,3})',
-            html,
-            re.IGNORECASE,
-        )
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=15000)
+            page.wait_for_timeout(2000)  # Let JS render prices
 
-        if price_match:
-            price = float(price_match.group(1))
-            # Sanity check: gas price should be between $1 and $10
+            # Get full page text and look for price patterns
+            text = page.inner_text("body")
+
+            # AAA shows prices like "Regular $X.XXX" or in a table
+            # Look for regular gas price — typically the first price shown
+            # Pattern: a dollar amount near the word "regular" or "current"
+            price_match = re.search(
+                r'(?:regular|current avg|today)[^\d]*\$?([\d]+\.[\d]{2,3})',
+                text,
+                re.IGNORECASE,
+            )
+
+            if not price_match:
+                # Fallback: find any reasonable gas price on the page
+                all_prices = re.findall(r'\$([\d]+\.[\d]{2,3})', text)
+                # Filter to reasonable gas prices ($1-$10)
+                valid = [float(p) for p in all_prices if 1.0 <= float(p) <= 10.0]
+                if valid:
+                    # Take the first one (usually the headline regular price)
+                    price = valid[0]
+                else:
+                    logger.info("AAA: no valid gas prices found on page for state %s", state_abbr)
+                    browser.close()
+                    return None
+            else:
+                price = float(price_match.group(1))
+
+            browser.close()
+
             if 1.0 <= price <= 10.0:
                 return {
                     "regular_price": price,
@@ -60,10 +75,9 @@ def fetch_aaa_gas_price(state_abbr: str) -> Optional[dict]:
                     "source_url": url,
                 }
 
-        logger.info("Could not extract AAA gas price for state %s (scraper may need update)", state_abbr)
-        return None
+            logger.info("AAA: extracted price $%.3f outside valid range for state %s", price, state_abbr)
+            return None
 
     except Exception as e:
-        # Catch everything — scrapers must never crash the audit
-        logger.info("AAA scraper failed for state %s (best-effort): %s", state_abbr, type(e).__name__)
+        logger.info("AAA scraper failed for state %s: %s", state_abbr, type(e).__name__)
         return None
