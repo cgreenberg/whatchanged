@@ -59,6 +59,7 @@ def audit_single_zip(
     zip_code: str,
     timestamp: str,
     run_browser: bool = True,
+    site_url: str = "https://whatchanged.us",
 ) -> Optional[dict]:
     """Run the full audit for a single zip code.
 
@@ -68,6 +69,7 @@ def audit_single_zip(
         zip_code: Zip code to audit
         timestamp: Shared timestamp for organizing screenshots
         run_browser: Whether to run Playwright browser session
+        site_url: Base URL of the site to audit
 
     Returns:
         Dict with zip, location, checks, screenshot_paths, or None on complete failure.
@@ -76,7 +78,7 @@ def audit_single_zip(
     start_time = time.time()
 
     # Step 1: Fetch site data
-    site_data = fetch_site_data(zip_code)
+    site_data = fetch_site_data(zip_code, site_url=site_url)
     if site_data is None:
         logger.warning("Skipping zip %s — failed to fetch site data", zip_code)
         return {
@@ -148,7 +150,7 @@ def audit_single_zip(
     browser_result = None
     if run_browser:
         ss_dir = str(SCREENSHOTS_DIR / timestamp / zip_code)
-        browser_result = run_site_session(zip_code, ss_dir)
+        browser_result = run_site_session(zip_code, ss_dir, site_base_url=site_url)
         if browser_result.screenshot_path:
             screenshot_paths.append(browser_result.screenshot_path)
 
@@ -283,6 +285,7 @@ def run_audit(
     max_workers: int = 3,
     run_browser: bool = True,
     specific_zips: Optional[list[str]] = None,
+    site_url: str = "https://whatchanged.us",
 ) -> str:
     """Run the full weekly audit.
 
@@ -291,6 +294,7 @@ def run_audit(
         max_workers: Max parallel workers for zip processing
         run_browser: Whether to run Playwright sessions
         specific_zips: Override random selection with specific zips
+        site_url: Base URL of the site to audit
 
     Returns:
         Path to the generated HTML report.
@@ -300,6 +304,7 @@ def run_audit(
 
     logger.info("=" * 60)
     logger.info("whatchanged.us Weekly Data Audit")
+    logger.info("Target: %s", site_url)
     logger.info("Started: %s", timestamp)
     logger.info("=" * 60)
 
@@ -317,7 +322,7 @@ def run_audit(
     if max_workers > 1 and len(zip_codes) > 1:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(audit_single_zip, zc, timestamp, run_browser): zc
+                executor.submit(audit_single_zip, zc, timestamp, run_browser, site_url): zc
                 for zc in zip_codes
             }
             for future in as_completed(futures):
@@ -344,7 +349,7 @@ def run_audit(
         # Sequential execution (for debugging or single zip)
         for zc in zip_codes:
             try:
-                result = audit_single_zip(zc, timestamp, run_browser)
+                result = audit_single_zip(zc, timestamp, run_browser, site_url)
                 if result:
                     zip_results.append(result)
             except Exception as e:
@@ -395,6 +400,8 @@ def main():
     parser.add_argument("--workers", type=int, default=3, help="Max parallel workers (default: 3)")
     parser.add_argument("--no-browser", action="store_true", help="Skip Playwright browser sessions")
     parser.add_argument("--sequential", action="store_true", help="Run sequentially (for debugging)")
+    parser.add_argument("--url", default="https://whatchanged.us",
+                        help="Base URL to audit (default: https://whatchanged.us, use http://localhost:3000 for local)")
     args = parser.parse_args()
 
     workers = 1 if args.sequential else args.workers
@@ -404,6 +411,7 @@ def main():
         max_workers=workers,
         run_browser=not args.no_browser,
         specific_zips=args.zips,
+        site_url=args.url,
     )
 
     # Exit with appropriate code
