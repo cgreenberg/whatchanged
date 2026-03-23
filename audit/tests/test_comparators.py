@@ -173,8 +173,8 @@ class TestUnemploymentComparator:
 class TestTariffComparator:
     def test_income_within_tolerance(self):
         results = compare_tariff(
-            rendered_tariff=1529.0,
-            rendered_income=74580.0,
+            site_tariff_cost=1529.0,
+            site_income=74580.0,
             census_data={"median_income": 76200.0, "year": "2023"},
         )
         income_result = [r for r in results if r.check_name == "income_vs_census"][0]
@@ -184,8 +184,8 @@ class TestTariffComparator:
         income = 74580.0
         expected = round(income * YALE_TARIFF_RATE)
         results = compare_tariff(
-            rendered_tariff=expected,
-            rendered_income=None,
+            site_tariff_cost=expected,
+            site_income=None,
             census_data={"median_income": income, "year": "2023"},
         )
         tariff_result = [r for r in results if r.check_name == "tariff_vs_yale_method"][0]
@@ -193,8 +193,8 @@ class TestTariffComparator:
 
     def test_skip_when_no_rendered_data(self):
         results = compare_tariff(
-            rendered_tariff=None,
-            rendered_income=None,
+            site_tariff_cost=None,
+            site_income=None,
             census_data=None,
         )
         assert all(r.status == CheckStatus.SKIP for r in results)

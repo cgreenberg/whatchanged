@@ -100,16 +100,23 @@ def audit_single_zip(
     cpi_data = site_data.get("cpi", {}).get("data")
     unemp_data = site_data.get("unemployment", {}).get("data")
 
-    # EIA gas price — query US national average as baseline comparison.
-    # The site returns gas.data.region (e.g. "SEATTLE") but EIA uses duoarea
-    # codes that differ from those names. Until we have a full region→duoarea
-    # mapping we use the US national weekly retail average (duoarea "NUS").
-    # TODO: map site region names to EIA duoarea codes for precise matching.
+    # EIA gas price — use the exact duoarea the site used (now available via gas.data.duoarea).
+    # If the site used a local/regional series, fetch that same series for a precise comparison.
+    # Fall back to the US national average ("NUS") if the site duoarea is unavailable.
     eia_data = None
+    is_national_comparison = True
     if gas_data:
-        eia_data = fetch_gas_price("NUS")  # US national average
+        site_duoarea = gas_data.get("duoarea")
+        if site_duoarea and site_duoarea != "NUS":
+            # Try the exact EIA series the site used
+            eia_data = fetch_gas_price(site_duoarea)
+            is_national_comparison = False
         if eia_data is None:
-            logger.info("EIA national gas price unavailable for zip %s — skipping EIA check", zip_code)
+            # Fall back to national
+            eia_data = fetch_gas_price("NUS")
+            is_national_comparison = gas_data.get("isNationalFallback") is False
+        if eia_data is None:
+            logger.info("EIA gas price unavailable for zip %s", zip_code)
         time.sleep(1)  # Rate limit courtesy
 
     # BLS series (batch all CPI + LAUS series in one call)
@@ -153,16 +160,14 @@ def audit_single_zip(
 
     # Step 4: Run comparators
     # Gas
-    # If the site is showing a local/regional price (isNationalFallback=False),
-    # the EIA "NUS" national average is an advisory comparison only — regional
-    # prices routinely differ by $1+ from the national average. Use wider
-    # tolerance and downgrade any mismatch from FAIL to WARN.
-    gas_is_local = gas_data is not None and gas_data.get("isNationalFallback") is False
-    gas_tolerance_eia = 1.50 if gas_is_local else 0.05
+    # When we fetched the exact duoarea the site used, use tight tolerance (0.05).
+    # When falling back to national average, use wide tolerance (1.50) and mark
+    # as advisory — regional prices routinely differ from the national average.
+    tolerance_eia = 0.05 if not is_national_comparison else 1.50
     all_checks.extend(compare_gas_price(
         gas_data, eia_data, aaa_data,
-        tolerance_eia=gas_tolerance_eia,
-        is_national_comparison=gas_is_local,
+        tolerance_eia=tolerance_eia,
+        is_national_comparison=is_national_comparison,
     ))
 
     # CPI
@@ -171,12 +176,37 @@ def audit_single_zip(
     # Unemployment
     all_checks.extend(compare_unemployment(unemp_data, bls_data))
 
-    # Tariff (from DOM-scraped values since API returns empty tariff)
-    rendered_tariff = None
-    rendered_income = None
+    # Tariff — now available from the API (was previously client-side only)
+    tariff_data = site_data.get("tariff", {}).get("data")
+    site_tariff_cost = tariff_data.get("estimatedCost") if tariff_data else None
+    site_tariff_income = tariff_data.get("medianIncome") if tariff_data else None
+    site_tariff_is_fallback = tariff_data.get("isFallback", False) if tariff_data else False
+    all_checks.extend(compare_tariff(site_tariff_cost, site_tariff_income, census_data))
+
+    # Also verify rendered tariff matches API tariff (if browser ran)
     if browser_result and browser_result.rendered_values:
         rendered_tariff = browser_result.rendered_values.get("tariff_estimate")
-    all_checks.extend(compare_tariff(rendered_tariff, rendered_income, census_data))
+        if rendered_tariff is not None and site_tariff_cost is not None:
+            match = abs(rendered_tariff - site_tariff_cost) < 1.0
+            all_checks.append(CheckResult(
+                status=CheckStatus.PASS if match else CheckStatus.FAIL,
+                category="rendered",
+                check_name="tariff_display_vs_api",
+                site_value=rendered_tariff,
+                source_value=float(site_tariff_cost),
+                difference=abs(rendered_tariff - site_tariff_cost),
+                message="Rendered tariff vs API tariff.data.estimatedCost",
+            ))
+
+    # Census fallback detection
+    census_fallback = site_data.get("census", {}).get("data", {}).get("isFallback")
+    if census_fallback:
+        all_checks.append(CheckResult(
+            status=CheckStatus.WARN,
+            category="census",
+            check_name="census_fallback_detected",
+            message=f"Site is using national average income (not zip-specific) for zip {zip_code}",
+        ))
 
     # Rendered vs API
     if browser_result:
@@ -186,6 +216,44 @@ def audit_single_zip(
 
     # Computation verification
     all_checks.extend(verify_computations(site_data))
+
+    # Verify _audit computation breakdowns (if available)
+    audit_data = site_data.get("_audit", {})
+    computations = audit_data.get("computations", {}) if audit_data else {}
+    if computations:
+        # Verify gas change computation
+        gc = computations.get("gasChange")
+        if gc and gc.get("current") is not None and gc.get("baseline") is not None:
+            expected = round(gc["current"] - gc["baseline"], 3)
+            actual = gc.get("result")
+            if actual is not None:
+                match = abs(actual - expected) < 0.001
+                all_checks.append(CheckResult(
+                    status=CheckStatus.PASS if match else CheckStatus.FAIL,
+                    category="computation_audit",
+                    check_name="gas_change_audit_block",
+                    site_value=actual,
+                    source_value=expected,
+                    difference=abs(actual - expected),
+                    message="Gas change from _audit.computations matches independent calculation",
+                ))
+
+        # Verify tariff computation
+        tc = computations.get("tariffEstimate")
+        if tc and tc.get("medianIncome") is not None and tc.get("tariffRate") is not None:
+            expected = round(tc["medianIncome"] * tc["tariffRate"])
+            actual = tc.get("result")
+            if actual is not None:
+                match = abs(actual - expected) < 1
+                all_checks.append(CheckResult(
+                    status=CheckStatus.PASS if match else CheckStatus.FAIL,
+                    category="computation_audit",
+                    check_name="tariff_audit_block",
+                    site_value=actual,
+                    source_value=expected,
+                    difference=abs(actual - expected),
+                    message="Tariff from _audit.computations matches independent calculation",
+                ))
 
     # Step 5: Run validators
     # Metro mapping (most critical)

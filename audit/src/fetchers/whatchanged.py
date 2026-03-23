@@ -17,7 +17,7 @@ def fetch_site_data(zip_code: str) -> Optional[dict]:
     Returns parsed JSON dict on success, None on any error.
     Does not raise — errors are logged and returned as None.
     """
-    url = f"{SITE_API_BASE}/{zip_code}"
+    url = f"{SITE_API_BASE}/{zip_code}?audit=true"
     try:
         response = retry_request("get", url, timeout=15.0)
         data = response.json()
