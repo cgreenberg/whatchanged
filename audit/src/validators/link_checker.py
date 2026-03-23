@@ -66,8 +66,8 @@ def verify_links(links: list[dict]) -> list[CheckResult]:
         try:
             response = retry_request(
                 "get", href,
-                timeout=10.0,
-                retries=1,
+                timeout=30.0,
+                retries=2,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; WhatChangedAudit/1.0)"},
                 allow_redirects=True,
             )
