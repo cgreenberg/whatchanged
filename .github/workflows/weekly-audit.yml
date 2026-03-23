@@ -43,6 +43,7 @@ jobs:
       - name: Run audit
         working-directory: audit
         env:
+          PYTHONPATH: .
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
