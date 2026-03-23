@@ -40,15 +40,36 @@ class TestGasComparator:
         assert eia_result.status == CheckStatus.SKIP
         assert eia_result.check_name == "eia_price_match"
 
-    def test_aaa_downgraded_to_warn(self):
+    def test_aaa_downgraded_to_warn_when_large_gap(self):
         results = compare_gas_price(
-            site_gas={"current": 4.50},
+            site_gas={"current": 4.50, "region": "TEST CITY"},
             eia_data={"latest_price": 4.48, "area_name": "CA"},
-            aaa_data={"regular_price": 4.10},
+            aaa_data={"regular_price": 3.50, "state": "CA"},  # $1.00 gap > $0.60 tolerance
         )
         aaa_result = results[1]
         assert aaa_result.status == CheckStatus.WARN
         assert aaa_result.check_name == "aaa_cross_check"
+
+    def test_aaa_pass_within_state_tolerance(self):
+        results = compare_gas_price(
+            site_gas={"current": 4.50, "region": "TEST CITY"},
+            eia_data={"latest_price": 4.48, "area_name": "CA"},
+            aaa_data={"regular_price": 4.10, "state": "CA"},  # $0.40 gap < $0.60 tolerance
+        )
+        aaa_result = results[1]
+        assert aaa_result.status == CheckStatus.PASS
+
+    def test_aaa_prefers_metro_over_state(self):
+        results = compare_gas_price(
+            site_gas={"current": 4.50, "region": "SEATTLE"},
+            eia_data=None,
+            aaa_data={
+                "regular_price": 5.00, "state": "WA",
+                "metros": {"seattle-bellevue-everett": 4.60},
+            },
+        )
+        aaa_result = [r for r in results if r.check_name == "aaa_cross_check"][0]
+        assert aaa_result.source_value == 4.60  # Used metro, not state
 
     def test_aaa_skip_when_unavailable(self):
         results = compare_gas_price(

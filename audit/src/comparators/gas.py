@@ -69,31 +69,81 @@ def compare_gas_price(
         ))
 
     # Best-effort: AAA cross-check (WARN only, never FAIL)
-    aaa_price = aaa_data.get("regular_price") if aaa_data else None
-    if aaa_price is not None and site_price is not None:
-        aaa_cmp = compare_values(site_price, aaa_price, tolerance_aaa, "$/gal")
-        # Downgrade FAIL to WARN for best-effort checks
-        status = CheckStatus.WARN if aaa_cmp["status"] == CheckStatus.FAIL else aaa_cmp["status"]
-        diff = aaa_cmp.get("difference", 0)
+    # Prefer metro-level AAA price over state average when available
+    if aaa_data is not None and site_price is not None:
+        site_region = (site_gas.get("region") or "").lower()
+        aaa_metros = aaa_data.get("metros", {})
         aaa_state = aaa_data.get("state", "")
         aaa_url = aaa_data.get("source_url", "https://gasprices.aaa.com/")
-        if status == CheckStatus.PASS:
-            msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) matches site (${site_price:.3f}) within ${tolerance_aaa}/gal"
+
+        # Try to find a matching metro
+        metro_price = None
+        metro_name = None
+        if site_region and aaa_metros:
+            for name, price in aaa_metros.items():
+                # Match if the site region appears in the AAA metro name
+                if site_region.split()[0].lower() in name:
+                    metro_price = price
+                    metro_name = name
+                    break
+
+        if metro_price is not None:
+            # Metro-level comparison — tighter tolerance since same geography
+            tolerance_metro = 0.50  # EIA vs AAA methodology still differs
+            aaa_cmp = compare_values(site_price, metro_price, tolerance_metro, "$/gal")
+            status = CheckStatus.WARN if aaa_cmp["status"] == CheckStatus.FAIL else aaa_cmp["status"]
+            diff = aaa_cmp.get("difference", 0)
+            if status == CheckStatus.PASS:
+                msg = f"AAA metro '{metro_name}' (${metro_price:.3f}) matches site (${site_price:.3f}) within ${tolerance_metro}/gal"
+            else:
+                msg = f"AAA metro '{metro_name}' (${metro_price:.3f}) differs from site (${site_price:.3f}) by ${diff:.2f}/gal — EIA vs AAA methodology difference"
+            results.append(CheckResult(
+                status=status,
+                category="gas",
+                check_name="aaa_cross_check",
+                site_value=site_price,
+                source_value=metro_price,
+                difference=aaa_cmp.get("difference"),
+                tolerance=tolerance_metro,
+                unit="$/gal",
+                message=msg,
+                description=f"Cross-check gas price against AAA metro-level average for '{metro_name}'. EIA and AAA use different survey methodologies, so $0.20-0.50 differences are normal.",
+                source_url=aaa_url,
+            ))
         else:
-            msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) differs from site (${site_price:.3f}) by ${diff:.2f}/gal — may reflect city vs state difference"
-        results.append(CheckResult(
-            status=status,
-            category="gas",
-            check_name="aaa_cross_check",
-            site_value=site_price,
-            source_value=aaa_price,
-            difference=aaa_cmp.get("difference"),
-            tolerance=tolerance_aaa,
-            unit="$/gal",
-            message=msg,
-            description="Cross-check gas price against AAA state average (scraped via Playwright). Differences may reflect city-level site price vs state-level AAA average.",
-            source_url=aaa_url,
-        ))
+            # Fall back to state average
+            aaa_price = aaa_data.get("regular_price")
+            if aaa_price is not None:
+                tolerance_state = 0.60  # Wider — state avg vs city price
+                aaa_cmp = compare_values(site_price, aaa_price, tolerance_state, "$/gal")
+                status = CheckStatus.WARN if aaa_cmp["status"] == CheckStatus.FAIL else aaa_cmp["status"]
+                diff = aaa_cmp.get("difference", 0)
+                if status == CheckStatus.PASS:
+                    msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) matches site (${site_price:.3f}) within ${tolerance_state}/gal"
+                else:
+                    msg = f"AAA {aaa_state} state avg (${aaa_price:.3f}) differs from site (${site_price:.3f}) by ${diff:.2f}/gal — city vs state + methodology difference"
+                results.append(CheckResult(
+                    status=status,
+                    category="gas",
+                    check_name="aaa_cross_check",
+                    site_value=site_price,
+                    source_value=aaa_price,
+                    difference=aaa_cmp.get("difference"),
+                    tolerance=tolerance_state,
+                    unit="$/gal",
+                    message=msg,
+                    description=f"Cross-check gas price against AAA {aaa_state} state average. No matching metro found for site region '{site_region}'.",
+                    source_url=aaa_url,
+                ))
+            else:
+                results.append(CheckResult(
+                    status=CheckStatus.SKIP,
+                    category="gas",
+                    check_name="aaa_cross_check",
+                    message="AAA price extraction failed",
+                    description="AAA scraping succeeded but no price could be extracted.",
+                    source_url=aaa_url,
+                ))
     else:
         results.append(CheckResult(
             status=CheckStatus.SKIP,
