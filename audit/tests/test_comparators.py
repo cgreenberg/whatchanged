@@ -16,6 +16,7 @@ class TestGasComparator:
             site_gas={"current": 4.50, "region": "SCA"},
             eia_data={"latest_price": 4.48, "area_name": "California", "latest_period": "2026-03-17"},
             aaa_data=None,
+            is_national_comparison=False,
         )
         eia_result = results[0]
         assert eia_result.status == CheckStatus.PASS
@@ -65,9 +66,11 @@ class TestGasComparator:
             aaa_data=None,
             tolerance_eia=1.50,
             is_national_comparison=True,
+            site_region="Seattle",
         )
         eia_result = results[0]
         assert eia_result.status == CheckStatus.WARN
+        assert eia_result.check_name == "eia_national_vs_local"
         assert "national" in eia_result.message.lower()
 
     def test_national_comparison_passes_within_tolerance(self):
@@ -78,9 +81,11 @@ class TestGasComparator:
             aaa_data=None,
             tolerance_eia=1.50,
             is_national_comparison=True,
+            site_region="Midwest",
         )
         eia_result = results[0]
         assert eia_result.status == CheckStatus.PASS
+        assert eia_result.check_name == "eia_national_vs_local"
 
     def test_non_national_comparison_still_fails(self):
         # Without is_national_comparison, a large gap should remain FAIL.

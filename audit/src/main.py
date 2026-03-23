@@ -169,6 +169,7 @@ def audit_single_zip(
         gas_data, eia_data, aaa_data,
         tolerance_eia=tolerance_eia,
         is_national_comparison=is_national_comparison,
+        site_region=gas_data.get("region", "") if gas_data else "",
     ))
 
     # CPI
