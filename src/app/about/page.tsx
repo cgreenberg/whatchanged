@@ -136,42 +136,35 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Site Audit */}
+      {/* Data Audit */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
         <h2
           className="text-2xl text-white mb-4"
           style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}
         >
-          Site Audit
+          Data Audit
         </h2>
-        <p
-          className="text-zinc-300 text-sm leading-relaxed mb-4"
+        <div
+          className="text-zinc-300 text-sm leading-relaxed space-y-3"
           style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
         >
-          An independent audit of this site&apos;s data accuracy and methodology is available for
-          download.
-        </p>
+          <p>
+            Every week, an automated audit verifies the data on this site against the original
+            government sources. It tests 10 random zip codes, checks that every number matches
+            BLS, EIA, and Census data, re-derives all calculations, and takes screenshots as
+            evidence.
+          </p>
+          <p>
+            The audit checks API correctness, display accuracy, internal math, and
+            cross-references gas prices against AAA as an independent source.
+          </p>
+        </div>
         <a
-          href="/audit-report.pdf"
-          download
-          className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+          href="/audit-report.html"
+          className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-4"
           style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12l7 7 7-7" />
-          </svg>
-          Download Audit Report
+          View Latest Audit Report
         </a>
       </div>
 
