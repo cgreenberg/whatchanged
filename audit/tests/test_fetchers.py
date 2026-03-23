@@ -222,10 +222,25 @@ class TestCensusFetcher:
 
 
 class TestAAAScraper:
-    def _make_playwright_mock(self, page_text: str):
-        """Build a mock sync_playwright context manager that returns page_text."""
+    def _make_playwright_mock(self, page_text: str, blue_text: str = None):
+        """Build a mock sync_playwright context manager.
+
+        Args:
+            page_text: Text returned by page.inner_text("body")
+            blue_text: Text returned by .price-text--blue element (None = not found)
+        """
+        mock_blue_el = None
+        if blue_text is not None:
+            mock_blue_el = MagicMock()
+            mock_blue_el.inner_text.return_value = blue_text
+
         mock_page = MagicMock()
         mock_page.inner_text.return_value = page_text
+        mock_page.query_selector.side_effect = lambda sel: (
+            mock_blue_el if sel == ".price-text--blue"
+            else MagicMock() if sel == "text=Expand all"
+            else None
+        )
 
         mock_browser = MagicMock()
         mock_browser.new_page.return_value = mock_page
@@ -240,9 +255,10 @@ class TestAAAScraper:
         return mock_playwright_cm
 
     @patch("playwright.sync_api.sync_playwright")
-    def test_extracts_price_from_regular_pattern(self, mock_sync_playwright):
+    def test_extracts_price_from_blue_element(self, mock_sync_playwright):
         mock_sync_playwright.return_value = self._make_playwright_mock(
-            "Regular $4.59\nMidgrade $4.89\nPremium $5.09"
+            page_text="National $3.942\nCurrent Avg.\t$4.59",
+            blue_text="Today's AAA California Avg. $4.59",
         )
         result = fetch_aaa_gas_price("CA")
         assert result is not None
@@ -250,10 +266,11 @@ class TestAAAScraper:
         assert result["state"] == "CA"
 
     @patch("playwright.sync_api.sync_playwright")
-    def test_fallback_to_first_valid_price(self, mock_sync_playwright):
-        # No "regular" keyword — falls back to first valid dollar amount
+    def test_falls_back_to_current_avg_row(self, mock_sync_playwright):
+        # No blue element — falls back to "Current Avg." row
         mock_sync_playwright.return_value = self._make_playwright_mock(
-            "Current avg price: $3.85 per gallon"
+            page_text="Some text\nCurrent Avg.\t$3.85\t$4.10\t$4.50\t$5.20",
+            blue_text=None,
         )
         result = fetch_aaa_gas_price("WA")
         assert result is not None
