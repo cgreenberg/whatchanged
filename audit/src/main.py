@@ -35,6 +35,7 @@ from src.comparators.unemployment import compare_unemployment
 from src.comparators.tariff import compare_tariff
 from src.comparators.rendered_vs_api import compare_rendered_vs_api
 from src.comparators.computation import verify_computations
+from src.comparators.national import compare_national_data
 from src.validators.series_metro import verify_series_metro_mapping
 from src.validators.freshness import verify_data_freshness
 from src.validators.link_checker import verify_links
@@ -215,6 +216,9 @@ def audit_single_zip(
 
     # Computation verification
     all_checks.extend(verify_computations(site_data))
+
+    # National data verification
+    all_checks.extend(compare_national_data(site_data))
 
     # Verify _audit computation breakdowns (if available)
     audit_data = site_data.get("_audit", {})

@@ -33,9 +33,21 @@
         .stat-skip { background: #e9ecef; }
         .stat-skip .number { color: #495057; }
 
-        .zip-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .zip-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        /* Zip navigation bar */
+        .zip-nav { background: white; padding: 16px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .zip-nav strong { white-space: nowrap; }
+        .zip-link { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95em; text-decoration: none; min-height: 44px; transition: opacity 0.15s; }
+        .zip-link:hover { opacity: 0.8; text-decoration: none; }
+        .zip-link-PASS { background: #d4edda; color: #155724; }
+        .zip-link-FAIL { background: #f8d7da; color: #721c24; }
+        .zip-link-PARTIAL { background: #fff3cd; color: #856404; }
+        .zip-link-verdict { font-size: 0.75em; opacity: 0.7; }
 
+        .zip-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .zip-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+
+        /* Horizontally scrollable table wrapper for mobile */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 0.9em; }
         th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
         th { background: #f8f9fa; font-weight: 600; }
@@ -66,10 +78,26 @@
         a:hover { text-decoration: underline; }
 
         @media (max-width: 768px) {
-            body { padding: 10px; }
+            body { padding: 10px; font-size: 0.95em; }
+            h1 { font-size: 1.4em; }
+            h2 { font-size: 1.2em; }
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
-            table { font-size: 0.8em; }
+            .summary-stat .number { font-size: 1.6em; }
+            .summary-stat .label { font-size: 0.8em; }
+            .zip-nav { padding: 12px; gap: 6px; }
+            .zip-link { padding: 8px 12px; font-size: 0.85em; }
+            table { font-size: 0.78em; }
             th, td { padding: 6px 8px; }
+            .zip-section { padding: 14px; }
+            .header { padding: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 8px; font-size: 0.9em; }
+            h1 { font-size: 1.2em; }
+            .summary-stat .number { font-size: 1.4em; }
+            table { font-size: 0.72em; }
+            th, td { padding: 5px 6px; }
         }
     </style>
 </head>
@@ -130,13 +158,25 @@
         {% endif %}
     </div>
 
+    <div class="zip-nav">
+        <strong>Jump to:</strong>
+        {% for zip_result in zip_results %}
+        <a href="#zip-{{ zip_result.zip }}" class="zip-link zip-link-{{ zip_result.verdict }}">
+            {{ zip_result.zip }}
+            <span class="zip-link-verdict">{{ zip_result.verdict }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- National data checks appear in the table with category="national" -->
     {% for zip_result in zip_results %}
-    <div class="zip-section">
+    <div class="zip-section" id="zip-{{ zip_result.zip }}">
         <div class="zip-header">
             <h2 style="margin: 0; border: none;">{{ zip_result.zip }} — {{ zip_result.location_name }}</h2>
             <span class="verdict verdict-{{ zip_result.verdict }}">{{ zip_result.verdict }}</span>
         </div>
 
+        <div class="table-scroll">
         <table>
             <thead>
                 <tr>
@@ -180,6 +220,7 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
 
         {% for check in zip_result.checks %}
             {% if check.message and check.status in ['FAIL', 'WARN', 'SKIP'] %}
