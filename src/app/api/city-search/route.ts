@@ -14,12 +14,13 @@ interface ZipEntry {
 const zipData = zipCountyData as Record<string, ZipEntry>
 
 // Build a city index on first request (cached in module scope)
-let cityIndex: Array<{ city: string; state: string; stateAbbr: string; zip: string; display: string }> | null = null
+interface CityEntry { city: string; state: string; stateAbbr: string; zip: string; display: string }
+let cityIndex: CityEntry[] | null = null
 
 function getCityIndex() {
   if (cityIndex) return cityIndex
   const seen = new Set<string>()
-  const entries: typeof cityIndex = []
+  const entries: CityEntry[] = []
 
   for (const [zip, entry] of Object.entries(zipData)) {
     if (!entry.cityName) continue
