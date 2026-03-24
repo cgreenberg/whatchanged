@@ -7,7 +7,8 @@ interface CityGridProps {
 }
 
 export function CityGrid({ onCitySelect }: CityGridProps) {
-  const cities = CITY_ZIP_LOOKUP.slice(0, 16)
+  const GRID_CITIES = ['Austin', 'Charlotte', 'Chicago', 'Columbus', 'Dallas', 'Fort Worth', 'Houston', 'Indianapolis', 'Jacksonville', 'Los Angeles', 'New York', 'Philadelphia', 'Phoenix', 'San Antonio', 'San Diego', 'San Jose', 'Seattle']
+  const cities = GRID_CITIES.map(name => CITY_ZIP_LOOKUP.find(c => c.display.startsWith(name + ','))!).filter(Boolean)
 
   return (
     <div className="mt-4">
