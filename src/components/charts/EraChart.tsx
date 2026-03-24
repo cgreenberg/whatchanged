@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -130,6 +130,16 @@ function filterByTimeframe(
 export function EraChart({ config, data, nationalData }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0]
+    const target = e.currentTarget
+    target.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      bubbles: true,
+    }))
+  }, [])
 
   const filteredData = useMemo(() => filterByTimeframe(data, timeframe), [data, timeframe])
 
@@ -347,7 +357,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
       </div>
-      <div className="h-64">
+      <div className="h-64" onTouchStart={handleTouchStart}>
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
