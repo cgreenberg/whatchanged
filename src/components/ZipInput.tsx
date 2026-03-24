@@ -111,7 +111,6 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
     }
   }
 
-  const isZipMode = /^\d+$/.test(value)
   const showSpinner = status === 'loading' && !dismissed
   const listboxId = 'city-search-listbox'
 
@@ -154,9 +153,7 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
         >
           <input
             type="text"
-            inputMode={isZipMode ? 'numeric' : 'text'}
-            pattern={isZipMode ? '[0-9]*' : undefined}
-            maxLength={isZipMode ? 5 : undefined}
+            inputMode="text"
             placeholder="Zip code or city name"
             value={value}
             onChange={handleChange}
@@ -170,7 +167,7 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
                 ? `city-option-${activeIndex}`
                 : undefined
             }
-            className="w-full text-center text-3xl tracking-widest bg-zinc-900 border-2 border-zinc-700 focus:border-electric-amber rounded-xl px-6 py-4 text-white placeholder:text-zinc-600 outline-none transition-colors disabled:opacity-50 pr-12"
+            className={`w-full text-center text-3xl tracking-widest bg-zinc-900 border-2 border-zinc-700 focus:border-electric-amber rounded-xl py-4 text-white placeholder:text-zinc-600 outline-none transition-colors disabled:opacity-50 ${showSpinner ? 'pl-6 pr-12' : 'px-6'}`}
             style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}
           />
           {showSpinner && (

@@ -14,7 +14,7 @@ export function CityGrid({ onCitySelect }: CityGridProps) {
       <p className="text-sm text-zinc-500 mb-3">Or explore a city →</p>
       <div
         data-testid="city-grid"
-        className="overflow-x-auto flex flex-nowrap gap-2 sm:flex-wrap"
+        className="flex flex-wrap gap-2"
       >
         {cities.map((city) => {
           const label = city.display.split(',')[0]
@@ -22,7 +22,7 @@ export function CityGrid({ onCitySelect }: CityGridProps) {
             <button
               key={city.zip}
               onClick={() => onCitySelect(city.zip)}
-              className="rounded-full px-4 py-1.5 text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 hover:border-zinc-500 transition-colors whitespace-nowrap"
+              className="rounded-full px-4 py-1.5 text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
             >
               {label}
             </button>

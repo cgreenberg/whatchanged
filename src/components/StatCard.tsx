@@ -32,7 +32,7 @@ export function StatCard({
         {direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''} {change}
       </p>
       {nationalValue && (
-        <p className="hidden sm:block text-xs text-zinc-500" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
+        <p className="text-xs text-zinc-500" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
           {nationalValue}
         </p>
       )}
