@@ -90,24 +90,45 @@ export function ShareModal({
     }
   }
 
-  function handleInstagramClick() {
-    const caption = [
-      `My town since Jan 20 👇`,
-      [
-        unemployment ? `Unemployment ${unemployment}` : null,
-        groceries ? `Groceries ${groceries}` : null,
-        shelter ? `Shelter ${shelter}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      `Check yours → whatchanged.us`,
-    ]
-      .filter(Boolean)
-      .join('\n')
+  async function handleDownloadAndShare() {
+    const caption = `My town since Jan 20 👇\n${[
+      unemployment ? `Unemployment ${unemployment}` : null,
+      groceries ? `Groceries ${groceries}` : null,
+      shelter ? `Shelter ${shelter}` : null,
+    ].filter(Boolean).join(' · ')}\nCheck yours → whatchanged.us`
 
-    navigator.clipboard.writeText(caption).catch(() => {
+    try {
+      await navigator.clipboard.writeText(caption)
+    } catch {
       // Ignore clipboard errors
-    })
+    }
+
+    // Try to share as file (opens native share sheet → save to Photos, Instagram, etc.)
+    try {
+      const response = await fetch(`/api/share/${zip}`)
+      const blob = await response.blob()
+      const file = new File([blob], `whatchanged-${zip}.png`, { type: 'image/png' })
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `What changed in ${cityName} since Jan 20`,
+          text: caption,
+        })
+        if (instagramToastTimer.current) clearTimeout(instagramToastTimer.current)
+        setInstagramToast(true)
+        instagramToastTimer.current = setTimeout(() => setInstagramToast(false), 3000)
+        return
+      }
+    } catch {
+      // User cancelled share or API not supported — fall through to download
+    }
+
+    // Fallback: trigger browser download
+    const a = document.createElement('a')
+    a.href = `/api/share/${zip}`
+    a.download = `whatchanged-${zip}.png`
+    a.click()
 
     if (instagramToastTimer.current) clearTimeout(instagramToastTimer.current)
     setInstagramToast(true)
@@ -180,7 +201,7 @@ export function ShareModal({
                   𝕏 Post
                 </a>
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={socialButtonClass}
@@ -209,21 +230,19 @@ export function ShareModal({
               <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">
                 Post to Instagram
               </p>
-              <a
-                href={`/api/share/${zip}`}
-                download={`whatchanged-${zip}.png`}
-                onClick={handleInstagramClick}
+              <button
+                onClick={handleDownloadAndShare}
                 className="block w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-3 rounded-lg text-sm transition-colors text-center"
                 style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
               >
                 Download image + copy caption
-              </a>
+              </button>
               <p className="text-xs text-zinc-500 mt-1">
-                Opens download → New Post → paste caption
+                Opens share sheet → save to Photos or share to Instagram
               </p>
               {instagramToast && (
                 <p className="text-sm text-zinc-400 mt-2">
-                  Image downloaded + caption copied — paste both into Instagram!
+                  Caption copied — share to Instagram!
                 </p>
               )}
             </div>
