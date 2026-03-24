@@ -21,6 +21,7 @@ export default function HomeContent() {
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [markerPosition, setMarkerPosition] = useState<[number, number] | undefined>()
+  const [shareCounter, setShareCounter] = useState(0)
 
   async function handleZipSubmit(zip: string) {
     setState('loading')
@@ -186,6 +187,19 @@ export default function HomeContent() {
               )
             })()}
           </div>
+
+          {/* Primary share button — above charts */}
+          {state === 'loaded' && snapshot && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => setShareCounter(c => c + 1)}
+                className="px-8 py-4 bg-electric-amber text-black font-bold text-xl rounded-xl hover:bg-amber-400 transition-colors"
+                style={{ fontFamily: 'var(--font-inter, sans-serif)', minWidth: 400 }}
+              >
+                ↗ Share What Changed in {snapshot.location.cityName || snapshot.location.countyName}, {snapshot.location.stateAbbr}
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -195,7 +209,7 @@ export default function HomeContent() {
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
           {/* <DigDeeper snapshot={snapshot} /> */}
-          <ShareButton snapshot={snapshot} />
+          <ShareButton snapshot={snapshot} trigger={shareCounter} />
           <CityGrid onCitySelect={handleZipSubmit} />
           <ErrorBoundary>
             <MapSection

@@ -1,15 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { EconomicSnapshot } from '@/types'
 import { ShareModal } from '@/components/ShareModal'
 
 interface ShareButtonProps {
   snapshot: EconomicSnapshot
+  trigger?: number
 }
 
-export function ShareButton({ snapshot }: ShareButtonProps) {
+export function ShareButton({ snapshot, trigger }: ShareButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (trigger && trigger > 0) setIsModalOpen(true)
+  }, [trigger])
 
   const cityName = snapshot.location.cityName || snapshot.location.countyName
   const stateAbbr = snapshot.location.stateAbbr
