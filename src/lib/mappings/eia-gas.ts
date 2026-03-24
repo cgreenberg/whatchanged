@@ -22,6 +22,11 @@ export const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label:
   '39085': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Lake County
   '39055': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Geauga County
   '39103': { duoarea: 'YCLE', label: 'Cleveland area avg' },  // Medina County
+  // SW Washington counties in the Portland-Vancouver-Hillsboro OR-WA MSA
+  // EIA has no Portland city-level gas series — use WA state avg (not Seattle)
+  '53011': { duoarea: 'SWA', label: 'Washington state avg' },  // Clark County (Vancouver)
+  '53015': { duoarea: 'SWA', label: 'Washington state avg' },  // Cowlitz County (Longview)
+  '53059': { duoarea: 'SWA', label: 'Washington state avg' },  // Skamania County
 }
 
 // --- Tier 2: State-level EIA data (8 states) ---
