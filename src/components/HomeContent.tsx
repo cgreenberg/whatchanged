@@ -193,11 +193,21 @@ export default function HomeContent() {
             <div className="mt-6 flex justify-center">
               <button
                 onClick={() => setShareCounter(c => c + 1)}
-                className="px-8 py-4 bg-electric-amber text-black font-bold text-xl rounded-xl hover:bg-amber-400 transition-colors w-full max-w-lg"
-                style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
                 data-testid="primary-share-button"
+                className="bg-electric-amber text-black font-semibold rounded-xl hover:bg-amber-400 transition-colors"
+                style={{
+                  fontFamily: 'var(--font-inter, sans-serif)',
+                  fontSize: 18,
+                  fontWeight: 600,
+                  padding: '18px 40px',
+                  minWidth: 280,
+                  maxWidth: 420,
+                  margin: '0 auto',
+                  whiteSpace: 'nowrap',
+                  display: 'block',
+                }}
               >
-                ↗ Share What Changed in {snapshot.location.cityName || snapshot.location.countyName}, {snapshot.location.stateAbbr}
+                Share Your Results
               </button>
             </div>
           )}
