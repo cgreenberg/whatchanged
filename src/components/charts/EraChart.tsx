@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -130,16 +130,7 @@ function filterByTimeframe(
 export function EraChart({ config, data, nationalData }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
-
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.touches[0]
-    const target = e.currentTarget
-    target.dispatchEvent(new MouseEvent('mousemove', {
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      bubbles: true,
-    }))
-  }, [])
+  const [showTooltip, setShowTooltip] = useState(false)
 
   const filteredData = useMemo(() => filterByTimeframe(data, timeframe), [data, timeframe])
 
@@ -201,9 +192,25 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
         data-testid={`chart-${config.id}`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-inter font-medium text-zinc-300" title={config.description}>
+          <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
             {config.title}
-            {config.description && <span className="ml-1 text-zinc-500 cursor-help" title={config.description}>&#9432;</span>}
+            {config.description && (
+              <span className="relative inline-block ml-1">
+                <button
+                  type="button"
+                  className="text-zinc-500 hover:text-zinc-300 cursor-help"
+                  onClick={() => setShowTooltip(prev => !prev)}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  aria-label="More info"
+                >&#9432;</button>
+                {showTooltip && (
+                  <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
+                    {config.description}
+                  </span>
+                )}
+              </span>
+            )}
           </h3>
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
@@ -338,9 +345,25 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       data-testid={`chart-${config.id}`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-inter font-medium text-zinc-300" title={config.description}>
+        <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
             {config.title}
-            {config.description && <span className="ml-1 text-zinc-500 cursor-help" title={config.description}>&#9432;</span>}
+            {config.description && (
+              <span className="relative inline-block ml-1">
+                <button
+                  type="button"
+                  className="text-zinc-500 hover:text-zinc-300 cursor-help"
+                  onClick={() => setShowTooltip(prev => !prev)}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  aria-label="More info"
+                >&#9432;</button>
+                {showTooltip && (
+                  <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
+                    {config.description}
+                  </span>
+                )}
+              </span>
+            )}
           </h3>
         <div className="flex items-center gap-3">
           {config.showNationalToggle && hasNationalData && (
@@ -357,7 +380,7 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
           <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
         </div>
       </div>
-      <div className="h-64" onTouchStart={handleTouchStart}>
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
