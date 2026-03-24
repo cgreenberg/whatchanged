@@ -133,10 +133,17 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
           setGeoError("Couldn't detect your location — please enter your zip code.")
         }
       },
-      () => {
+      (err) => {
         setGeoLoading(false)
-        setGeoError("Couldn't detect your location — please enter your zip code.")
-      }
+        if (err.code === 1) {
+          setGeoError("Location access denied. On Mac: System Settings → Privacy & Security → Location Services → enable for your browser.")
+        } else if (err.code === 3) {
+          setGeoError("Location request timed out — please try again or enter your zip code.")
+        } else {
+          setGeoError("Couldn't detect your location — please enter your zip code.")
+        }
+      },
+      { timeout: 15000, enableHighAccuracy: false }
     )
   }
 
