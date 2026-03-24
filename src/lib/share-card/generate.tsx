@@ -86,7 +86,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   // ── Grocery Sparkline Data ───────────────────────────────────────
   const groceryRaw = cpiData?.series?.map((p) => p.groceries) ?? []
-  const groceryBase = groceryRaw[0] ?? 1
+  const groceryBase = (groceryRaw[0] !== undefined && groceryRaw[0] !== 0) ? groceryRaw[0] : 1
   const groceryValues = groceryRaw.map((v) => ((v - groceryBase) / groceryBase) * 100)
   const groceryMin = groceryValues.length ? Math.min(...groceryValues) : 0
   const groceryMax = groceryValues.length ? Math.max(...groceryValues) : 0
@@ -100,7 +100,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const shelterPairs = (cpiData?.series ?? [])
     .filter((p) => p.shelter !== null)
     .map((p) => ({ date: p.date, value: p.shelter as number }))
-  const shelterBase = shelterPairs[0]?.value ?? 1
+  const shelterBase = shelterPairs[0]?.value ? shelterPairs[0].value : 1
   const shelterValues = shelterPairs.map((p) => ((p.value - shelterBase) / shelterBase) * 100)
   const shelterMin = shelterValues.length ? Math.min(...shelterValues) : 0
   const shelterMax = shelterValues.length ? Math.max(...shelterValues) : 0
@@ -150,157 +150,53 @@ export async function generateShareCard(zip: string): Promise<Response> {
     ? buildTariffBarChart(tariffCost, PURPLE, 'grad-tariff')
     : null
 
-  // ── Cell renderer ────────────────────────────────────────────────
-  const MetricCell = ({
-    label,
-    sublabel,
-    accentColor,
-    bigNumber,
-    changePillText,
-    metaLeft,
-    metaRight,
-    sparkline,
-    borderRight,
-  }: {
-    label: string
-    sublabel: string
-    accentColor: string
-    bigNumber: string
-    changePillText: string
-    metaLeft: string
-    metaRight?: string
-    sparkline: React.ReactElement | null
-    borderRight?: boolean
-  }) => (
-    <div
-      style={{
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        position: 'relative',
-        padding: '28px 28px 24px 36px',
-        overflow: 'hidden',
-        borderRight: borderRight ? `1px solid ${BORDER}` : undefined,
-      }}
-    >
-      {/* Left accent strip */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          backgroundColor: accentColor,
-        }}
-      />
+  // ── Inline cell helpers (avoid named components in Satori render tree) ──
+  const accentStrip = (accent: string) => (
+    <div style={{
+      position: 'absolute', left: 0, top: 0, bottom: 0,
+      width: 3, backgroundColor: accent, display: 'flex',
+    }} />
+  )
 
-      {/* Section label */}
-      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 12 }}>
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'DM Mono',
-            fontSize: 28,
-            color: TEXT_SECONDARY,
-            letterSpacing: '0.10em',
-          }}
-        >
-          {label}
-        </span>
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'DM Mono',
-            fontSize: 24,
-            color: TEXT_TERTIARY,
-          }}
-        >
-          {sublabel}
-        </span>
-      </div>
+  const sectionLabel = (label: string, sublabel: string) => (
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 12 }}>
+      <span style={{ fontFamily: 'DM Mono', fontSize: 28, color: TEXT_SECONDARY, display: 'flex', letterSpacing: '0.10em' }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
+        {sublabel}
+      </span>
+    </div>
+  )
 
-      {/* Sparkline */}
-      <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
-        {sparkline}
-      </div>
+  const bigNumber = (value: string, accent: string) => (
+    <span style={{ fontFamily: 'Bebas Neue', fontSize: 108, color: accent, lineHeight: 1, display: 'flex' }}>
+      {value}
+    </span>
+  )
 
-      {/* Big number + change pill row */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-        }}
-      >
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'Bebas Neue',
-            fontSize: 108,
-            color: accentColor,
-            lineHeight: 1,
-          }}
-        >
-          {bigNumber}
-        </span>
-        <div
-          style={{
-            display: 'flex',
-            backgroundColor: `${accentColor}22`,
-            borderRadius: 4,
-            padding: '2px 12px',
-            alignSelf: 'flex-end',
-            marginLeft: 12,
-            marginBottom: 16,
-          }}
-        >
-          <span
-            style={{
-              display: 'flex',
-              fontFamily: 'Barlow Condensed',
-              fontSize: 28,
-              color: accentColor,
-            }}
-          >
-            {changePillText}
-          </span>
-        </div>
-      </div>
+  const changePill = (text: string, accent: string) => (
+    <div style={{
+      display: 'flex', backgroundColor: `${accent}22`,
+      borderRadius: 4, padding: '2px 12px',
+      alignSelf: 'flex-end', marginLeft: 12, marginBottom: 16,
+    }}>
+      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 28, color: accent, display: 'flex' }}>
+        {text}
+      </span>
+    </div>
+  )
 
-      {/* Meta row */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: 6,
-        }}
-      >
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'DM Mono',
-            fontSize: 26,
-            color: TEXT_SECONDARY,
-          }}
-        >
-          {metaLeft}
+  const metaRow = (left: string, right: string | null) => (
+    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+      <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex' }}>
+        {left}
+      </span>
+      {right && (
+        <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex', fontStyle: 'italic' }}>
+          {right}
         </span>
-        {metaRight && (
-          <span
-            style={{
-              display: 'flex',
-              fontFamily: 'DM Mono',
-              fontSize: 26,
-              color: TEXT_SECONDARY,
-              fontStyle: 'italic',
-            }}
-          >
-            {metaRight}
-          </span>
-        )}
-      </div>
+      )}
     </div>
   )
 
@@ -423,44 +319,32 @@ export async function generateShareCard(zip: string): Promise<Response> {
             borderBottom: `1px solid ${BORDER}`,
           }}
         >
-          {/* Gas Prices */}
-          <MetricCell
-            label="GAS PRICES"
-            sublabel="(regular unleaded, $/gal)"
-            accentColor={RED}
-            bigNumber={gasData ? `$${gasData.current.toFixed(2)}/gal` : 'N/A'}
-            changePillText={
-              gasData
-                ? `${gasData.change >= 0 ? '+' : ''}$${gasData.change.toFixed(2)}`
-                : '—'
-            }
-            metaLeft="since Jan 2025"
-            metaRight={natGasPrice !== undefined ? `Natl: $${natGasPrice.toFixed(2)}` : undefined}
-            sparkline={gasSparkline}
-            borderRight={true}
-          />
+          {/* Cell: Gas Prices */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
+                         padding: '28px 28px 24px 36px', overflow: 'hidden',
+                         borderRight: `1px solid ${BORDER}` }}>
+            {accentStrip(RED)}
+            {sectionLabel('GAS PRICES', '(regular unleaded, $/gal)')}
+            {gasSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+              {bigNumber(gasData ? `$${gasData.current.toFixed(2)}/gal` : 'N/A', RED)}
+              {changePill(gasData ? `${gasData.change >= 0 ? '+' : ''}$${gasData.change.toFixed(2)}` : '—', RED)}
+            </div>
+            {metaRow('since Jan 2025', natGasPrice != null ? `Natl: $${natGasPrice.toFixed(2)}` : null)}
+          </div>
 
-          {/* Groceries */}
-          <MetricCell
-            label="GROCERIES"
-            sublabel="(CPI: food at home)"
-            accentColor={AMBER}
-            bigNumber={cpiData ? `${formatSigned(cpiData.groceriesChange)}%` : 'N/A'}
-            changePillText={
-              cpiData
-                ? cpiData.groceriesChange >= 0
-                  ? '↑ rising'
-                  : '↓ falling'
-                : '—'
-            }
-            metaLeft="since Jan 2025"
-            metaRight={
-              natGroceriesChange !== undefined
-                ? `Natl: ${formatSigned(natGroceriesChange)}%`
-                : undefined
-            }
-            sparkline={grocerySparkline}
-          />
+          {/* Cell: Groceries */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
+                         padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
+            {accentStrip(AMBER)}
+            {sectionLabel('GROCERIES', '(CPI: food at home)')}
+            {grocerySparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{grocerySparkline}</div>}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+              {bigNumber(cpiData ? `${formatSigned(cpiData.groceriesChange)}%` : 'N/A', AMBER)}
+              {changePill(cpiData ? (cpiData.groceriesChange >= 0 ? '↑ rising' : '↓ falling') : '—', AMBER)}
+            </div>
+            {metaRow('since Jan 2025', natGroceriesChange !== undefined ? `Natl: ${formatSigned(natGroceriesChange)}%` : null)}
+          </div>
         </div>
 
         {/* Row 2 */}
@@ -471,44 +355,32 @@ export async function generateShareCard(zip: string): Promise<Response> {
             flexDirection: 'row',
           }}
         >
-          {/* Shelter */}
-          <MetricCell
-            label="SHELTER"
-            sublabel="(rent & owners' equiv.)"
-            accentColor={BLUE}
-            bigNumber={
-              cpiData?.shelterChange !== undefined
-                ? `${formatSigned(cpiData.shelterChange)}%`
-                : 'N/A'
-            }
-            changePillText={
-              cpiData?.shelterChange !== undefined
-                ? cpiData.shelterChange >= 0
-                  ? '↑ rising'
-                  : '↓ falling'
-                : '—'
-            }
-            metaLeft="since Jan 2025"
-            metaRight={
-              natShelterChange !== undefined
-                ? `Natl: ${formatSigned(natShelterChange)}%`
-                : undefined
-            }
-            sparkline={shelterSparkline}
-            borderRight={true}
-          />
+          {/* Cell: Shelter */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
+                         padding: '28px 28px 24px 36px', overflow: 'hidden',
+                         borderRight: `1px solid ${BORDER}` }}>
+            {accentStrip(BLUE)}
+            {sectionLabel('SHELTER', "(rent & owners' equiv.)")}
+            {shelterSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{shelterSparkline}</div>}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+              {bigNumber(cpiData?.shelterChange !== undefined ? `${formatSigned(cpiData.shelterChange)}%` : 'N/A', BLUE)}
+              {changePill(cpiData?.shelterChange !== undefined ? (cpiData.shelterChange >= 0 ? '↑ rising' : '↓ falling') : '—', BLUE)}
+            </div>
+            {metaRow('since Jan 2025', natShelterChange !== undefined ? `Natl: ${formatSigned(natShelterChange)}%` : null)}
+          </div>
 
-          {/* Tariffs */}
-          <MetricCell
-            label="TARIFFS"
-            sublabel="(effective rate + household cost)"
-            accentColor={PURPLE}
-            bigNumber={tariffCost > 0 ? `~${formatDollars(tariffCost)}/YR` : 'N/A'}
-            changePillText="2.05% rate"
-            metaLeft="since Jan 2025"
-            metaRight="Yale Budget Lab"
-            sparkline={tariffSparkline}
-          />
+          {/* Cell: Tariffs */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
+                         padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
+            {accentStrip(PURPLE)}
+            {sectionLabel('TARIFFS', '(effective rate + household cost)')}
+            {tariffSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{tariffSparkline}</div>}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+              {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/YR` : 'N/A', PURPLE)}
+              {changePill('2.05% rate', PURPLE)}
+            </div>
+            {metaRow('since Jan 2025', 'Yale Budget Lab')}
+          </div>
         </div>
       </div>
 
