@@ -69,6 +69,7 @@ export function buildLineSparkline(
 
 // ── V3 Sparklines ────────────────────────────────────────────────
 
+const SECONDARY = 'rgba(168,159,147,1)'  // --text-secondary
 const TERTIARY = 'rgba(107,101,96,1)'    // --text-tertiary
 
 /** Line sparkline with HTML div axis labels. Height ~220px. */
@@ -111,10 +112,8 @@ export function buildLineSparklineV3(
   // Gridline y-positions for min/mid/max
   const yMax = toY(maxVal);
   const yMid = toY((minVal + maxVal) / 2);
-  const yMin = toY(minVal);
 
   const labelSz = { fontFamily: 'DM Mono', fontSize: 22, color: TERTIARY }
-  const xLabelSz = { fontFamily: 'DM Mono', fontSize: 22, color: TERTIARY }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: 220 }}>
@@ -139,7 +138,6 @@ export function buildLineSparklineV3(
             {/* Dashed gridlines */}
             <line x1="0" y1={yMax} x2="100" y2={yMax} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
             <line x1="0" y1={yMid} x2="100" y2={yMid} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            <line x1="0" y1={yMin} x2="100" y2={yMin} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
             {/* Area fill */}
             <polygon points={areaPts} fill={`url(#${gradientId})`} />
             {/* Line */}
@@ -158,9 +156,9 @@ export function buildLineSparklineV3(
 
         {/* X-axis labels */}
         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', height: 28, paddingTop: 4 }}>
-          <span style={{ ...xLabelSz, display: 'flex' }}>{opts.xLeft}</span>
-          <span style={{ ...xLabelSz, display: 'flex' }}>{opts.xMid}</span>
-          <span style={{ ...xLabelSz, display: 'flex' }}>{opts.xRight}</span>
+          <span style={{ ...labelSz, display: 'flex' }}>{opts.xLeft}</span>
+          <span style={{ ...labelSz, display: 'flex' }}>{opts.xMid}</span>
+          <span style={{ ...labelSz, display: 'flex' }}>{opts.xRight}</span>
         </div>
       </div>
     </div>
@@ -192,7 +190,7 @@ export function buildTariffBarChart(
 
   const yMaxLabel = annualCost >= 1000
     ? `$${(annualCost / 1000).toFixed(1)}k`
-    : `$${annualCost}`
+    : `$${Math.round(annualCost)}`
   const yMidLabel = annualCost >= 1000
     ? `$${(annualCost / 2000).toFixed(1)}k`
     : `$${Math.round(annualCost / 2)}`
