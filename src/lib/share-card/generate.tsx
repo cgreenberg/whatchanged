@@ -134,8 +134,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
+  const groceryRange = groceryValues.length >= 2 ? Math.abs(groceryMax - groceryMin) : 0
   const groceryPadded = groceryValues.length >= 2
-    ? { min: groceryMin - Math.abs(groceryMax - groceryMin) * 0.10, max: groceryMax + Math.abs(groceryMax - groceryMin) * 0.05 }
+    ? { min: Math.max(0, groceryMin - groceryRange * 0.05), max: groceryMax + groceryRange * 0.05 }
     : undefined
 
   const grocerySparkline =
@@ -151,8 +152,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
+  const shelterRange = shelterValues.length >= 2 ? Math.abs(shelterMax - shelterMin) : 0
   const shelterPadded = shelterValues.length >= 2
-    ? { min: shelterMin - Math.abs(shelterMax - shelterMin) * 0.10, max: shelterMax + Math.abs(shelterMax - shelterMin) * 0.05 }
+    ? { min: Math.max(0, shelterMin - shelterRange * 0.05), max: shelterMax + shelterRange * 0.05 }
     : undefined
 
   const shelterSparkline =
@@ -203,14 +205,16 @@ export async function generateShareCard(zip: string): Promise<Response> {
       <div style={{
         display: 'flex',
         backgroundColor: `rgba(${rgb}, 0.22)`,
-        border: `1.5px solid rgba(${rgb}, 0.55)`,
+        borderWidth: 1.5,
+        borderStyle: 'solid',
+        borderColor: `rgba(${rgb}, 0.55)`,
         borderRadius: 4,
-        padding: '8px 18px',
+        padding: '6px 14px',
         alignSelf: 'flex-end',
         marginLeft: 12,
         marginBottom: 16,
       }}>
-        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 32, color: accent, display: 'flex' }}>
+        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 26, color: accent, display: 'flex' }}>
           {text}
         </span>
       </div>
