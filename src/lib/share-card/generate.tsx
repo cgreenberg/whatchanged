@@ -393,7 +393,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
                          padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
             {accentStrip(PURPLE)}
-            {sectionLabel('TARIFFS', '(effective rate + household cost)')}
+            {sectionLabel('TARIFFS', '(est. cumulative cost to household)')}
             {tariffSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{tariffSparkline}</div>}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>

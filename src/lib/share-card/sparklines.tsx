@@ -218,8 +218,6 @@ export function buildTariffBarChart(
             </defs>
             {/* Midline gridline */}
             <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            {/* Baseline at bottom */}
-            <line x1="0" y1="45" x2="100" y2="45" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" />
             {/* Bars */}
             {bars.map((b, i) => (
               <rect
