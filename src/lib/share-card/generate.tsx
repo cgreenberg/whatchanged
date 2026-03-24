@@ -136,13 +136,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   const groceryRange = groceryValues.length >= 2 ? Math.abs(groceryMax - groceryMin) : 0
   const groceryPadded = groceryValues.length >= 2
-    ? { min: Math.max(0, groceryMin - groceryRange * 0.05), max: groceryMax + groceryRange * 0.05 }
+    ? { min: 0, max: groceryMax + groceryRange * 0.05 }
     : undefined
 
   const grocerySparkline =
     groceryValues.length >= 2
       ? buildLineSparklineV3(groceryValues, AMBER, 'grad-groceries', {
-          yMin: `${groceryMin.toFixed(1)}%`,
+          yMin: '0.0%',
           yMid: `${groceryMid.toFixed(1)}%`,
           yMax: `${groceryMax.toFixed(1)}%`,
           xLeft: cpiXLeft,
@@ -154,13 +154,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   const shelterRange = shelterValues.length >= 2 ? Math.abs(shelterMax - shelterMin) : 0
   const shelterPadded = shelterValues.length >= 2
-    ? { min: Math.max(0, shelterMin - shelterRange * 0.05), max: shelterMax + shelterRange * 0.05 }
+    ? { min: 0, max: shelterMax + shelterRange * 0.05 }
     : undefined
 
   const shelterSparkline =
     shelterValues.length >= 2
       ? buildLineSparklineV3(shelterValues, BLUE, 'grad-shelter', {
-          yMin: `${shelterMin.toFixed(1)}%`,
+          yMin: '0.0%',
           yMid: `${shelterMid.toFixed(1)}%`,
           yMax: `${shelterMax.toFixed(1)}%`,
           xLeft: shelterXLeft,
