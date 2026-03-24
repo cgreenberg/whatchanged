@@ -380,7 +380,16 @@ export async function generateShareCard(zip: string): Promise<Response> {
             {sectionLabel('TARIFFS', '(effective rate + household cost)')}
             {tariffSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{tariffSparkline}</div>}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/YR` : 'N/A', PURPLE)}
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>
+                <span style={{ fontFamily: 'Bebas Neue', fontSize: 96, color: PURPLE, lineHeight: 1, display: 'flex' }}>
+                  {tariffCost > 0 ? `~${formatDollars(tariffCost)}` : 'N/A'}
+                </span>
+                {tariffCost > 0 && (
+                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 48, color: PURPLE, opacity: 0.75, display: 'flex', alignSelf: 'flex-end', marginBottom: 8 }}>
+                    /yr
+                  </span>
+                )}
+              </div>
               {changePill('2.05% rate', PURPLE)}
             </div>
             {metaRow('est. annual household cost', 'Yale Budget Lab')}
