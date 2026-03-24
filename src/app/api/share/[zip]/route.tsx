@@ -110,13 +110,22 @@ export async function GET(
 
   // Sparklines
   const gasSparkline = gasData
-    ? buildLineSparkline(gasValues, RED, 'grad-gas')
+    ? buildLineSparkline(gasValues, RED, 'grad-gas', {
+        min: `$${Math.min(...gasValues).toFixed(2)}`,
+        max: `$${Math.max(...gasValues).toFixed(2)}`,
+      })
     : null
   const groceriesSparkline = cpiData
-    ? buildLineSparkline(groceriesValues, AMBER, 'grad-groceries')
+    ? buildLineSparkline(groceriesValues, AMBER, 'grad-groceries', {
+        min: Math.min(...groceriesValues).toFixed(0),
+        max: Math.max(...groceriesValues).toFixed(0),
+      })
     : null
-  const shelterSparkline = cpiData
-    ? buildLineSparkline(shelterValues, BLUE, 'grad-shelter')
+  const shelterSparkline = cpiData && shelterValues.length >= 2
+    ? buildLineSparkline(shelterValues, BLUE, 'grad-shelter', {
+        min: Math.min(...shelterValues).toFixed(0),
+        max: Math.max(...shelterValues).toFixed(0),
+      })
     : null
   // Metric cell builder
   const MetricCell = ({

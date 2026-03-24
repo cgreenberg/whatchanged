@@ -3,7 +3,8 @@ import React from 'react';
 export function buildLineSparkline(
   values: number[],
   accentColor: string,
-  gradientId: string
+  gradientId: string,
+  labels?: { min: string; max: string }
 ): React.ReactElement | null {
   if (values.length < 2) return null;
 
@@ -31,11 +32,11 @@ export function buildLineSparkline(
 
   const last = points[points.length - 1];
 
-  return (
+  const svg = (
     <svg
       viewBox="0 0 100 36"
       preserveAspectRatio="none"
-      style={{ width: '100%', height: '100px' }}
+      style={{ width: '100%', height: '100%' }}
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -66,5 +67,25 @@ export function buildLineSparkline(
         fill={accentColor}
       />
     </svg>
+  );
+
+  if (!labels) {
+    return <div style={{ display: 'flex', width: '100%', height: '100px' }}>{svg}</div>;
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: 'DM Mono',
+    fontSize: 10,
+    color: 'rgba(232,228,220,0.3)',
+    position: 'absolute',
+    left: '3px',
+  };
+
+  return (
+    <div style={{ display: 'flex', position: 'relative', width: '100%', height: '100px' }}>
+      {svg}
+      <span style={{ ...labelStyle, top: '0px' }}>{labels.max}</span>
+      <span style={{ ...labelStyle, bottom: '0px' }}>{labels.min}</span>
+    </div>
   );
 }
