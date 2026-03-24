@@ -100,14 +100,14 @@ export function buildLineSparklineV3(
   const toY = (v: number): number => 45 - ((v - minVal) / range) * 40;
 
   const pts = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * 100,
+    x: (i / (values.length - 1)) * 94,
     y: toY(v),
   }));
 
   const linePts = pts.map(p => `${p.x},${p.y}`).join(' ');
   const areaPts = [
     ...pts.map(p => `${p.x},${p.y}`),
-    '100,50',
+    '94,50',
     '0,50',
   ].join(' ');
   const last = pts[pts.length - 1];
@@ -130,8 +130,8 @@ export function buildLineSparklineV3(
       {/* Chart column */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
         {/* SVG chart — fills available height minus x-axis row */}
-        <div style={{ display: 'flex', flex: 1, width: '100%' }}>
-          <svg viewBox="0 0 100 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+        <div style={{ display: 'flex', flex: 1, width: '100%', paddingRight: 8 }}>
+          <svg viewBox="0 0 100 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={accentColor} stopOpacity="0.30" />
