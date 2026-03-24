@@ -213,6 +213,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
         alignSelf: 'flex-end',
         marginLeft: 12,
         marginBottom: 16,
+        flexShrink: 0,
       }}>
         <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 26, color: accent, display: 'flex' }}>
           {text}
