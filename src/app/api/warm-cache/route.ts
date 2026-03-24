@@ -8,6 +8,10 @@
 
 import { NextResponse } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
+import { deleteCached } from '@/lib/cache/kv'
+import { getGasLookup } from '@/lib/api/eia'
+import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+import { lookupZip } from '@/lib/data/zip-lookup'
 
 // Representative zips covering all 5 PAD districts and major CPI metros
 // Each zip warms: its PAD district gas cache, county unemployment, and CPI metro
@@ -39,7 +43,10 @@ const WARM_ZIPS = [
   '98683',  // Vancouver, WA (Portland CPI metro)
 ]
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const force = searchParams.get('force') === 'true'
+
   const results: Array<{ zip: string; status: string; ms: number }> = []
 
   // Warm sequentially to avoid hammering APIs
@@ -47,6 +54,14 @@ export async function GET() {
   for (const zip of WARM_ZIPS) {
     const start = Date.now()
     try {
+      if (force) {
+        const location = lookupZip(zip)
+        if (location) {
+          const { areaCode: cpiAreaCode } = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
+          const gasLookup = getGasLookup(location.stateAbbr, cpiAreaCode, location.countyFips)
+          await deleteCached(gasLookup.cacheKey)
+        }
+      }
       const snapshot = await fetchSnapshot(zip)
       const cacheStatus = snapshot?.cacheStatus
       const misses = cacheStatus
@@ -68,6 +83,7 @@ export async function GET() {
 
   return NextResponse.json({
     warmed: results.length,
+    forced: force,
     results,
     timestamp: new Date().toISOString(),
   })

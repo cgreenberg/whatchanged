@@ -66,6 +66,14 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
         const result = await safelyFetch(eiaSource, [location.stateAbbr, cpiAreaCode, location.countyFips])
         if (result.data === null) throw new Error(result.error ?? 'fetch failed')
         return result.data
+      },
+      300,
+      // Reject cached gas data where the latest series entry is stale (>10 days old).
+      // EIA releases weekly; if somehow a stale entry survives TTL, this catches it.
+      (cached) => {
+        if (!cached.series?.length) return false
+        const latest = cached.series[cached.series.length - 1].date
+        return Date.now() - new Date(latest).getTime() < 10 * 24 * 60 * 60 * 1000
       }
     ).catch(() => ({ data: null as GasPriceData | null, cacheHit: false })),
 

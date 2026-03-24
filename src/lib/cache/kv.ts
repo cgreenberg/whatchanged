@@ -41,6 +41,15 @@ export async function setCached<T>(key: string, value: T, ttlSeconds: number): P
   memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })
 }
 
+export async function deleteCached(key: string): Promise<void> {
+  const redis = getRedis()
+  if (redis) {
+    await redis.del(key)
+    return
+  }
+  memCache.delete(key)
+}
+
 export function clearMemCache() {
   memCache.clear()
 }
