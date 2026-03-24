@@ -82,6 +82,8 @@ export default function HomeContent() {
             ) : snapshot && (() => {
               const natGas = snapshot.gas.data?.nationalSeries
               const natGasPrice = natGas?.length ? natGas[natGas.length - 1].price : undefined
+              const natGasBaseline = natGas?.find(p => p.date.startsWith('2025-01'))?.price
+              const natGasDelta = natGasPrice != null && natGasBaseline != null ? natGasPrice - natGasBaseline : undefined
 
               const natCpi = snapshot.cpi.data?.nationalSeries
 
@@ -121,7 +123,7 @@ export default function HomeContent() {
                       isNegative
                       sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
                       accentColor="#F59E0B"
-                      nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal` : undefined}
+                      nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal${natGasDelta != null ? ` (${natGasDelta > 0 ? '+' : ''}$${natGasDelta.toFixed(2)})` : ''}` : undefined}
                     />
                   )}
                   {snapshot.census.data && (() => {
