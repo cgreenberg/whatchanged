@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -130,10 +130,6 @@ function filterByTimeframe(
 export function EraChart({ config, data, nationalData }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
-  }, [])
 
   const filteredData = useMemo(() => filterByTimeframe(data, timeframe), [data, timeframe])
 
@@ -370,7 +366,6 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
               tickFormatter={config.formatValue}
             />
             <Tooltip
-              trigger={isTouchDevice ? 'click' : 'hover'}
               animationDuration={0}
               contentStyle={{
                 backgroundColor: '#18181B',
