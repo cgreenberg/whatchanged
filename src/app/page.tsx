@@ -16,11 +16,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       description: 'Enter your zip code. See what changed.',
       openGraph: {
         type: 'website',
+        siteName: 'WhatChanged.us',
         title: 'What Changed in Your Town Since January 2025?',
         description: 'Enter your zip code. See what changed.',
         images: [{ url: '/api/og', width: 1200, height: 630 }],
       },
-      twitter: { card: 'summary_large_image' },
+      twitter: { card: 'summary_large_image', site: '@whatchangedus' },
     }
   }
 
@@ -35,9 +36,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const cityName = snapshot.location.cityName || snapshot.location.countyName
   const state = snapshot.location.stateAbbr
   const title = `What Changed in ${cityName}, ${state} (${zip})?`
+  const ogTitle = `What Changed in ${cityName}, ${state} Since Jan 2025?`
 
-  // Build description from available data
+  const vParam = new Date().toISOString().slice(0, 7)
+  const cardImageUrl = `/api/card-image?zip=${zip}&v=${vParam}`
+
   const parts: string[] = []
+  if (snapshot.gas.data) {
+    parts.push(`Gas: ${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)}/gal`)
+  }
   if (snapshot.cpi.data) {
     parts.push(`Groceries: ${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`)
   }
@@ -46,34 +53,32 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
   if (snapshot.census.data) {
     const cost = estimateTariffCost(snapshot.census.data.medianIncome)
-    parts.push(`Tariff impact: ~${formatDollars(cost)}/yr`)
-  }
-  if (snapshot.federal.data) {
-    const amt = snapshot.federal.data.amountCut
-    const formatted = amt >= 1_000_000_000
-      ? `$${(amt / 1_000_000_000).toFixed(1)}B`
-      : `$${(amt / 1_000_000).toFixed(0)}M`
-    parts.push(`${formatted} in federal funding cut`)
+    parts.push(`Tariff cost ~${formatDollars(cost)}/yr`)
   }
   parts.push('Enter your zip to see your town.')
   const description = parts.join(' · ')
-
-  const ogTitle = `What Changed in ${cityName}, ${state} Since January 2025?`
 
   return {
     title,
     openGraph: {
       type: 'website',
+      siteName: 'WhatChanged.us',
       title: ogTitle,
       description,
       url: `https://whatchanged.us/?zip=${zip}`,
-      images: [{ url: `/api/og?zip=${zip}`, width: 1200, height: 630 }],
+      images: [{
+        url: cardImageUrl,
+        width: 1080,
+        height: 1080,
+        type: 'image/png',
+      }],
     },
     twitter: {
       card: 'summary_large_image',
+      site: '@whatchangedus',
       title: ogTitle,
       description,
-      images: [`/api/og?zip=${zip}`],
+      images: [cardImageUrl],
     },
   }
 }
