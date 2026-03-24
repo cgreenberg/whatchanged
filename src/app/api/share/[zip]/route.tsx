@@ -76,6 +76,32 @@ export async function GET(
     .map((p) => p.shelter)
     .filter((v): v is number => v !== null)
 
+  // National comparison values
+  const natCpi = snapshot.cpi.data?.nationalSeries
+  const natCpiBaseline = natCpi?.find(p => p.date === '2025-01')
+  const natCpiLatest = natCpi?.length ? natCpi[natCpi.length - 1] : undefined
+
+  let natGroceriesChange: number | undefined
+  if (natCpiBaseline && natCpiLatest) {
+    const first = natCpiBaseline.groceries
+    const last = natCpiLatest.groceries
+    if (first != null && last != null && first !== 0) {
+      natGroceriesChange = ((last - first) / first) * 100
+    }
+  }
+
+  let natShelterChange: number | undefined
+  if (natCpiBaseline && natCpiLatest) {
+    const first = natCpiBaseline.shelter
+    const last = natCpiLatest.shelter
+    if (first != null && last != null && first !== 0) {
+      natShelterChange = ((last - first) / first) * 100
+    }
+  }
+
+  const natUnemployment = unemploymentData?.nationalSeries
+  const natUnemploymentRate = natUnemployment?.length ? natUnemployment[natUnemployment.length - 1].rate : undefined
+
   // Tariff estimate
   const tariffCost = censusData ? estimateTariffCost(censusData.medianIncome) : null
 
@@ -106,8 +132,7 @@ export async function GET(
     border: `1px solid ${PANEL_BORDER}`,
     borderRadius: '12px',
     padding: '24px',
-    flex: 1,
-    minWidth: 0,
+    width: '48%',
   }
 
   const labelStyle = {
@@ -222,9 +247,9 @@ export async function GET(
         </div>
 
         {/* 2x2 metric panels */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Row 1 */}
-          <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+          <div style={{ display: 'flex', gap: '16px' }}>
             {/* Panel 1: Unemployment */}
             <div style={panelStyle}>
               <span style={labelStyle}>Unemployment</span>
@@ -237,6 +262,11 @@ export async function GET(
               {unemploymentData && (
                 <span style={changeStyle(ACCENT_UNEMPLOYMENT)}>
                   {formatSigned(unemploymentData.change, 1, ' pts')}
+                </span>
+              )}
+              {natUnemploymentRate !== undefined && (
+                <span style={{ fontSize: 13, color: MUTED, marginTop: '4px', display: 'flex' }}>
+                  National: {natUnemploymentRate.toFixed(1)}%
                 </span>
               )}
             </div>
@@ -255,11 +285,16 @@ export async function GET(
                   since Jan 2025
                 </span>
               )}
+              {natGroceriesChange !== undefined && (
+                <span style={{ fontSize: 13, color: MUTED, marginTop: '4px', display: 'flex' }}>
+                  National: {formatSigned(natGroceriesChange)}%
+                </span>
+              )}
             </div>
           </div>
 
           {/* Row 2 */}
-          <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+          <div style={{ display: 'flex', gap: '16px' }}>
             {/* Panel 3: Shelter */}
             <div style={panelStyle}>
               <span style={labelStyle}>Shelter</span>
@@ -274,17 +309,20 @@ export async function GET(
                   since Jan 2025
                 </span>
               )}
+              {natShelterChange !== undefined && (
+                <span style={{ fontSize: 13, color: MUTED, marginTop: '4px', display: 'flex' }}>
+                  National: {formatSigned(natShelterChange)}%
+                </span>
+              )}
             </div>
 
             {/* Panel 4: Federal Spending */}
             <div style={panelStyle}>
               <span style={labelStyle}>Federal $</span>
               {/* No sparkline for federal — no time series data */}
-              <div style={{ display: 'flex', flex: 1, alignItems: 'center' }}>
-                <span style={bigNumStyle(ACCENT_FEDERAL)}>
-                  {federalData ? formatFederalAmount(federalData.amountCut) : 'N/A'}
-                </span>
-              </div>
+              <span style={bigNumStyle(ACCENT_FEDERAL)}>
+                {federalData ? formatFederalAmount(federalData.amountCut) : 'N/A'}
+              </span>
               {federalData && (
                 <span style={changeStyle(ACCENT_FEDERAL)}>
                   cut since Jan 20, 2025
