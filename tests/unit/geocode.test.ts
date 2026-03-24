@@ -13,7 +13,7 @@ describe('reverseGeocodeToZip', () => {
       json: async () => ({
         result: {
           geographies: {
-            '2020 Census ZIP Code Tabulation Areas': [{ ZCTA5CE20: '98683' }],
+            '2020 Census ZIP Code Tabulation Areas': [{ ZCTA5: '98683' }],
           },
         },
       }),

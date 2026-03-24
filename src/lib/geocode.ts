@@ -13,8 +13,10 @@ export async function reverseGeocodeToZip(lat: number, lng: number): Promise<str
     // Try 2020 Census ZCTAs first, fall back to 2010
     const geos = data?.result?.geographies;
     const zcta2020 = geos?.['2020 Census ZIP Code Tabulation Areas']?.[0];
+    if (zcta2020?.ZCTA5) return zcta2020.ZCTA5;
     if (zcta2020?.ZCTA5CE20) return zcta2020.ZCTA5CE20;
     const zcta2010 = geos?.['2010 Census ZIP Code Tabulation Areas']?.[0];
+    if (zcta2010?.ZCTA5) return zcta2010.ZCTA5;
     if (zcta2010?.ZCTA5CE10) return zcta2010.ZCTA5CE10;
     return null;
   } catch {

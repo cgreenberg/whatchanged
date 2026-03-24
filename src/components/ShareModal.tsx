@@ -201,10 +201,15 @@ export function ShareModal({
                   𝕏 Post
                 </a>
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`}
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={socialButtonClass}
+                  onClick={() => {
+                    // Facebook doesn't allow pre-populated text — copy it so user can paste
+                    navigator.clipboard?.writeText(shareText).catch(() => {})
+                  }}
+                  title="Caption copied to clipboard — paste into your Facebook post"
                 >
                   Facebook
                 </a>
