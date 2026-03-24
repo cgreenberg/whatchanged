@@ -75,32 +75,36 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const natGasPrice = natGas?.length ? natGas[natGas.length - 1].price : undefined
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
-  const gasValues = gasData?.series?.map((p) => p.price) ?? []
+  // Filter to Jan 2025+ for sparkline to match hero number baseline
+  const gasSeries = (gasData?.series ?? []).filter(p => p.date >= '2025-01')
+  const gasValues = gasSeries.map((p) => p.price)
   const gasMin = gasValues.length ? Math.min(...gasValues) : 0
   const gasMax = gasValues.length ? Math.max(...gasValues) : 0
   const gasMid = (gasMin + gasMax) / 2
-  const gasSeries = gasData?.series ?? []
   const gasXLeft = getMonthLabel(gasSeries, 0)
   const gasXMid = getMonthLabel(gasSeries, Math.floor(gasSeries.length / 2))
   const gasXRight = getMonthLabel(gasSeries, gasSeries.length - 1)
 
   // ── Grocery Sparkline Data ───────────────────────────────────────
-  const groceryRaw = cpiData?.series?.map((p) => p.groceries) ?? []
+  // Filter to Jan 2025+ for sparkline (series may start from 2020)
+  const grocerySeries = (cpiData?.series ?? []).filter(p => p.date >= '2025-01')
+  const groceryRaw = grocerySeries.map((p) => p.groceries)
   const groceryBase = (groceryRaw[0] !== undefined && groceryRaw[0] !== 0) ? groceryRaw[0] : 1
   const groceryValues = groceryRaw.map((v) => ((v - groceryBase) / groceryBase) * 100)
   const groceryMin = groceryValues.length ? Math.min(...groceryValues) : 0
   const groceryMax = groceryValues.length ? Math.max(...groceryValues) : 0
   const groceryMid = (groceryMin + groceryMax) / 2
-  const cpiSeries = cpiData?.series ?? []
-  const cpiXLeft = getMonthLabel(cpiSeries, 0)
-  const cpiXMid = getMonthLabel(cpiSeries, Math.floor(cpiSeries.length / 2))
-  const cpiXRight = getMonthLabel(cpiSeries, cpiSeries.length - 1)
+  // Use the filtered series for x-axis labels
+  const cpiXLeft = getMonthLabel(grocerySeries, 0)
+  const cpiXMid = getMonthLabel(grocerySeries, Math.floor(grocerySeries.length / 2))
+  const cpiXRight = getMonthLabel(grocerySeries, grocerySeries.length - 1)
 
   // ── Shelter Sparkline Data (filtered for null, date-aligned) ─────
+  // Filter to Jan 2025+ AND non-null shelter values for sparkline
   const shelterPairs = (cpiData?.series ?? [])
-    .filter((p) => p.shelter !== null)
+    .filter((p) => p.date >= '2025-01' && p.shelter !== null)
     .map((p) => ({ date: p.date, value: p.shelter as number }))
-  const shelterBase = shelterPairs[0]?.value ? shelterPairs[0].value : 1
+  const shelterBase = (shelterPairs[0]?.value !== undefined && shelterPairs[0].value !== 0) ? shelterPairs[0].value : 1
   const shelterValues = shelterPairs.map((p) => ((p.value - shelterBase) / shelterBase) * 100)
   const shelterMin = shelterValues.length ? Math.min(...shelterValues) : 0
   const shelterMax = shelterValues.length ? Math.max(...shelterValues) : 0
@@ -379,7 +383,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
               {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/YR` : 'N/A', PURPLE)}
               {changePill('2.05% rate', PURPLE)}
             </div>
-            {metaRow('since Jan 2025', 'Yale Budget Lab')}
+            {metaRow('est. annual household cost', 'Yale Budget Lab')}
           </div>
         </div>
       </div>
