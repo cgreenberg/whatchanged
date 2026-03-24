@@ -134,6 +134,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
+  const groceryPadded = groceryValues.length >= 2
+    ? { min: groceryMin - Math.abs(groceryMax - groceryMin) * 0.10, max: groceryMax + Math.abs(groceryMax - groceryMin) * 0.05 }
+    : undefined
+
   const grocerySparkline =
     groceryValues.length >= 2
       ? buildLineSparklineV3(groceryValues, AMBER, 'grad-groceries', {
@@ -143,8 +147,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
           xLeft: cpiXLeft,
           xMid: cpiXMid,
           xRight: cpiXRight,
+          bounds: groceryPadded,
         })
       : null
+
+  const shelterPadded = shelterValues.length >= 2
+    ? { min: shelterMin - Math.abs(shelterMax - shelterMin) * 0.10, max: shelterMax + Math.abs(shelterMax - shelterMin) * 0.05 }
+    : undefined
 
   const shelterSparkline =
     shelterValues.length >= 2
@@ -155,6 +164,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
           xLeft: shelterXLeft,
           xMid: shelterXMid,
           xRight: shelterXRight,
+          bounds: shelterPadded,
         })
       : null
 

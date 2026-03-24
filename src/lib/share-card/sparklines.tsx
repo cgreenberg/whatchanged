@@ -84,12 +84,15 @@ export function buildLineSparklineV3(
     xLeft: string  // e.g. "Jan '25"
     xMid: string   // e.g. "Jul '25"
     xRight: string // e.g. "Mar '26"
+    bounds?: { min: number; max: number }
   }
 ): React.ReactElement | null {
   if (values.length < 2) return null;
 
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const minVal = opts.bounds ? opts.bounds.min : dataMin;
+  const maxVal = opts.bounds ? opts.bounds.max : dataMax;
   const range = maxVal - minVal || 1;
 
   // Map value → SVG y (inverted: higher value = lower y)
