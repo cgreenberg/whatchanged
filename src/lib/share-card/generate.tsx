@@ -16,6 +16,14 @@ const BLUE = '#3D9EFF'
 const PURPLE = '#A87EFF'
 const RED = '#F04040'
 
+// RGB equivalents for use in rgba() strings
+const ACCENT_RGB: Record<string, string> = {
+  [AMBER]:  '240,165,0',
+  [BLUE]:   '61,158,255',
+  [PURPLE]: '168,126,255',
+  [RED]:    '240,64,64',
+}
+
 // ── Helpers ───────────────────────────────────────────────────────
 function formatSigned(value: number, decimals = 1, suffix = ''): string {
   const sign = value >= 0 ? '+' : ''
@@ -179,17 +187,25 @@ export async function generateShareCard(zip: string): Promise<Response> {
     </span>
   )
 
-  const changePill = (text: string, accent: string) => (
-    <div style={{
-      display: 'flex', backgroundColor: `${accent}22`,
-      borderRadius: 4, padding: '2px 12px',
-      alignSelf: 'flex-end', marginLeft: 12, marginBottom: 16,
-    }}>
-      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 28, color: accent, display: 'flex' }}>
-        {text}
-      </span>
-    </div>
-  )
+  const changePill = (text: string, accent: string) => {
+    const rgb = ACCENT_RGB[accent] ?? '255,255,255'
+    return (
+      <div style={{
+        display: 'flex',
+        backgroundColor: `rgba(${rgb}, 0.22)`,
+        border: `1.5px solid rgba(${rgb}, 0.55)`,
+        borderRadius: 4,
+        padding: '8px 18px',
+        alignSelf: 'flex-end',
+        marginLeft: 12,
+        marginBottom: 16,
+      }}>
+        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 32, color: accent, display: 'flex' }}>
+          {text}
+        </span>
+      </div>
+    )
+  }
 
   const metaRow = (left: string, right: string | null) => (
     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
