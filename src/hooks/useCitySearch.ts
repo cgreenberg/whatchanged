@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef } from "react";
 import { searchCitiesStatic } from "@/lib/data/city-zip-lookup";
-import { parseQuery, geocodeCityToZip, CityResult } from "@/lib/city-search";
+import { parseQuery, CityResult } from "@/lib/city-search";
 
 type SearchState = "idle" | "loading" | "done" | "error";
 
@@ -69,11 +69,17 @@ export function useCitySearch(query: string) {
 
     debounceRef.current = setTimeout(async () => {
       const { city, state } = parseQuery(q);
-      const result = await geocodeCityToZip(city, state);
-
-      if (result) {
-        dispatch({ type: "SET_RESULTS", results: [result], status: "done" });
-      } else {
+      const query = state ? `${city} ${state}` : city;
+      try {
+        const res = await fetch(`/api/city-search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(4000) });
+        if (!res.ok) { dispatch({ type: "SET_RESULTS", results: [], status: "error" }); return; }
+        const data: CityResult[] = await res.json();
+        if (data.length > 0) {
+          dispatch({ type: "SET_RESULTS", results: data, status: "done" });
+        } else {
+          dispatch({ type: "SET_RESULTS", results: [], status: "error" });
+        }
+      } catch {
         dispatch({ type: "SET_RESULTS", results: [], status: "error" });
       }
     }, 400);

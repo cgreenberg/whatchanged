@@ -12,39 +12,30 @@ describe('geocodeCityToZip', () => {
     jest.restoreAllMocks()
   })
 
-  test('successful Census response → returns { display, zip, source: "census" }', async () => {
+  test('successful local API response → returns first result', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        result: {
-          addressMatches: [
-            {
-              addressComponents: {
-                zip: '83702',
-                city: 'BOISE',
-                state: 'ID',
-              },
-            },
-          ],
-        },
-      }),
+      json: async () => ([
+        { display: 'Boise, ID', zip: '83702', source: 'local' },
+      ]),
     })
 
     const result = await geocodeCityToZip('boise', 'id')
     expect(result).not.toBeNull()
     expect(result?.zip).toBe('83702')
     expect(result?.display).toBe('Boise, ID')
-    expect(result?.source).toBe('census')
+    expect(result?.source).toBe('local')
+
+    // Verify it calls the local API endpoint
+    const calledUrl = mockFetch.mock.calls[0][0] as string
+    expect(calledUrl).toContain('/api/city-search')
+    expect(calledUrl).toContain('q=')
   })
 
-  test('empty addressMatches → returns null', async () => {
+  test('empty results array → returns null', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        result: {
-          addressMatches: [],
-        },
-      }),
+      json: async () => ([]),
     })
 
     const result = await geocodeCityToZip('nonexistentcity')

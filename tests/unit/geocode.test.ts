@@ -8,7 +8,7 @@ afterEach(() => {
 
 describe('reverseGeocodeToZip', () => {
   test('successful response with 2020 ZCTA returns zip string', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         result: {
@@ -18,9 +18,13 @@ describe('reverseGeocodeToZip', () => {
         },
       }),
     }) as jest.Mock
+    global.fetch = mockFetch
 
     const result = await reverseGeocodeToZip(45.6387, -122.6615)
     expect(result).toBe('98683')
+
+    const calledUrl = mockFetch.mock.calls[0][0] as string
+    expect(calledUrl).toContain('layers=2020%20Census%20ZIP%20Code%20Tabulation%20Areas%2C2010%20Census%20ZIP%20Code%20Tabulation%20Areas')
   })
 
   test('falls back to 2010 ZCTA when 2020 is absent', async () => {

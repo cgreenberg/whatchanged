@@ -1,7 +1,7 @@
 export type CityResult = {
   display: string;
   zip: string;
-  source: "static" | "census";
+  source: "static" | "census" | "local";
 };
 
 // 2-letter abbreviations
@@ -58,47 +58,16 @@ export async function geocodeCityToZip(
   state?: string
 ): Promise<CityResult | null> {
   try {
-    const params = new URLSearchParams({
-      city,
-      benchmark: "Public_AR_Current",
-      format: "json",
-    });
-    if (state) params.set("state", state);
-
-    const url = `https://geocoding.geo.census.gov/geocoder/locations/address?${params.toString()}`;
+    const query = state ? `${city} ${state}` : city;
+    const url = `/api/city-search?q=${encodeURIComponent(query)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
     if (!res.ok) return null;
 
-    const data = await res.json() as {
-      result?: {
-        addressMatches?: Array<{
-          addressComponents?: {
-            zip?: string;
-            city?: string;
-            state?: string;
-          };
-        }>;
-      };
-    };
-    const match = data?.result?.addressMatches?.[0];
-    if (!match) return null;
+    const data: CityResult[] = await res.json();
+    if (data.length === 0) return null;
 
-    const zip = match.addressComponents?.zip;
-    const matchedCity = match.addressComponents?.city ?? city;
-    const matchedState = match.addressComponents?.state ?? state ?? "";
-
-    if (!zip) return null;
-
-    return {
-      display: `${toTitleCase(matchedCity)}, ${matchedState.toUpperCase()}`,
-      zip,
-      source: "census",
-    };
+    return data[0];
   } catch {
     return null;
   }
-}
-
-function toTitleCase(s: string): string {
-  return s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }

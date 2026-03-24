@@ -4,7 +4,8 @@
  */
 export async function reverseGeocodeToZip(lat: number, lng: number): Promise<string | null> {
   try {
-    const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=2020 Census ZIP Code Tabulation Areas,2010 Census ZIP Code Tabulation Areas&format=json`;
+    const layers = encodeURIComponent('2020 Census ZIP Code Tabulation Areas,2010 Census ZIP Code Tabulation Areas');
+    const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=${layers}&format=json`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
 
