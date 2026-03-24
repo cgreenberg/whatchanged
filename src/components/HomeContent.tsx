@@ -63,6 +63,7 @@ export default function HomeContent() {
         {state === 'idle' && <CityGrid onCitySelect={handleZipSubmit} />}
       </section>
 
+
       {/* Results */}
       {(state === 'loading' || state === 'loaded') && (
         <section>
@@ -193,6 +194,7 @@ export default function HomeContent() {
           </ErrorBoundary>
           {/* <DigDeeper snapshot={snapshot} /> */}
           <ShareButton snapshot={snapshot} />
+          <CityGrid onCitySelect={handleZipSubmit} />
           <ErrorBoundary>
             <MapSection
               currentZip={snapshot.zip}

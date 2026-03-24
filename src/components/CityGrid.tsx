@@ -14,7 +14,7 @@ export function CityGrid({ onCitySelect }: CityGridProps) {
       <p className="text-sm text-zinc-500 mb-3">Or explore a city →</p>
       <div
         data-testid="city-grid"
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap justify-center gap-2"
       >
         {cities.map((city) => {
           const label = city.display.split(',')[0]
