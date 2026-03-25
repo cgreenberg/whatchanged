@@ -96,20 +96,20 @@ export function buildLineSparklineV3(
   const range = maxVal - minVal || 1;
 
   // Map value → SVG y (inverted: higher value = lower y)
-  // Y range: 5 (top, max) to 50 (bottom, min) within viewBox 0 0 100 50
-  // minVal maps to y=50 (bottom of viewBox) so zero-value lines touch the chart bottom
-  const toY = (v: number): number => 50 - ((v - minVal) / range) * 45;
+  // Y range: 5 (top, max) to 46 (bottom, min) within viewBox 0 0 100 50
+  // 4px bottom padding so dots at min value aren't clipped
+  const toY = (v: number): number => 46 - ((v - minVal) / range) * 41;
 
   const pts = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * 94,
+    x: 4 + (i / (values.length - 1)) * 90,
     y: toY(v),
   }));
 
   const linePts = pts.map(p => `${p.x},${p.y}`).join(' ');
   const areaPts = [
     ...pts.map(p => `${p.x},${p.y}`),
-    '94,50',
-    '0,50',
+    '94,46',
+    '4,46',
   ].join(' ');
   const last = pts[pts.length - 1];
 
@@ -157,14 +157,17 @@ export function buildLineSparklineV3(
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+            {/* Start reference line */}
+            <line x1={pts[0].x} y1="5" x2={pts[0].x} y2="46" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6" strokeDasharray="2,2" />
             {/* Terminal dot */}
+            <circle cx={pts[0].x} cy={pts[0].y} r="3.0" fill={accentColor} />
             <circle cx={last.x} cy={last.y} r="3.0" fill={accentColor} />
           </svg>
         </div>
 
         {/* X-axis labels */}
         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', height: 28, paddingTop: 4 }}>
-          <span style={{ ...labelSz, display: 'flex' }}>{opts.xLeft}</span>
+          <span style={{ ...labelSz, display: 'flex', fontWeight: 700, color: SECONDARY }}>{opts.xLeft}</span>
           <span style={{ ...labelSz, display: 'flex' }}>{opts.xMid}</span>
           <span style={{ ...labelSz, display: 'flex' }}>{opts.xRight}</span>
         </div>

@@ -26,6 +26,7 @@ export default function HomeContent() {
   async function handleZipSubmit(zip: string) {
     setState('loading')
     setErrorMsg('')
+    setShareCounter(0)
     try {
       const res = await fetch(`/api/data/${zip}`)
       if (res.status === 404) throw new Error('Zip code not found')

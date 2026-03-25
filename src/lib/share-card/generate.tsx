@@ -330,21 +330,49 @@ export async function generateShareCard(zip: string): Promise<Response> {
             flexShrink: 0,
           }}
         >
-          {/* Date badge */}
+          {/* Date range badge */}
           <div
             style={{
               display: 'flex',
-              border: `1px solid ${BORDER}`,
+              flexDirection: 'column',
+              alignItems: 'center',
+              border: `1px solid rgba(240,165,0,0.30)`,
               borderRadius: 4,
-              padding: '4px 14px',
+              padding: '6px 16px',
+              gap: 2,
             }}
           >
             <span
               style={{
                 display: 'flex',
                 fontFamily: 'DM Mono',
-                fontSize: 26,
-                color: TEXT_SECONDARY,
+                fontSize: 22,
+                fontWeight: 700,
+                color: AMBER,
+                letterSpacing: '0.06em',
+              }}
+            >
+              JAN. 20, 2025
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'DM Mono',
+                fontSize: 56,
+                color: 'rgba(240,165,0,0.45)',
+                lineHeight: 1,
+              }}
+            >
+              ↓
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'DM Mono',
+                fontSize: 22,
+                fontWeight: 700,
+                color: AMBER,
+                letterSpacing: '0.06em',
               }}
             >
               {monthYear}

@@ -10,7 +10,7 @@ export const CITY_ZIP_LOOKUP: {
   { city: "san antonio",       state: "tx", zip: "78201", display: "San Antonio, TX" },
   { city: "san diego",         state: "ca", zip: "92101", display: "San Diego, CA" },
   { city: "dallas",            state: "tx", zip: "75201", display: "Dallas, TX" },
-  { city: "san jose",          state: "ca", zip: "95101", display: "San Jose, CA" },
+  { city: "san jose",          state: "ca", zip: "95110", display: "San Jose, CA" },
   { city: "austin",            state: "tx", zip: "78701", display: "Austin, TX" },
   { city: "jacksonville",      state: "fl", zip: "32202", display: "Jacksonville, FL" },
   { city: "fort worth",        state: "tx", zip: "76102", display: "Fort Worth, TX" },
