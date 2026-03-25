@@ -17,7 +17,7 @@ export async function fetchFederalFunding(
 
   const body = {
     filters: {
-      time_period: [{ start_date: '2025-01-20', end_date: '2025-12-31' }],
+      time_period: [{ start_date: '2025-01-20', end_date: new Date().toISOString().split('T')[0] }],
       place_of_performance_locations: [{ country: 'USA', state, county: countyCode }],
       award_type_codes: ['A', 'B', 'C', 'D'],
     },

@@ -136,15 +136,19 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   const groceryRange = groceryValues.length >= 2 ? Math.abs(groceryMax - groceryMin) : 0
   const groceryPadded = groceryValues.length >= 2
-    ? { min: 0, max: groceryMax + groceryRange * 0.05 }
+    ? { min: Math.min(0, groceryMin), max: Math.max(0, groceryMax) + groceryRange * 0.05 }
     : undefined
+
+  const groceryBoundsMin = groceryPadded ? groceryPadded.min : groceryMin
+  const groceryBoundsMax = groceryPadded ? groceryPadded.max : groceryMax
+  const groceryBoundsMid = (groceryBoundsMin + groceryBoundsMax) / 2
 
   const grocerySparkline =
     groceryValues.length >= 2
       ? buildLineSparklineV3(groceryValues, AMBER, 'grad-groceries', {
-          yMin: '0.0%',
-          yMid: `${groceryMid.toFixed(1)}%`,
-          yMax: `${groceryMax.toFixed(1)}%`,
+          yMin: `${groceryBoundsMin.toFixed(1)}%`,
+          yMid: `${groceryBoundsMid.toFixed(1)}%`,
+          yMax: `${groceryBoundsMax.toFixed(1)}%`,
           xLeft: cpiXLeft,
           xMid: cpiXMid,
           xRight: cpiXRight,
@@ -154,15 +158,19 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   const shelterRange = shelterValues.length >= 2 ? Math.abs(shelterMax - shelterMin) : 0
   const shelterPadded = shelterValues.length >= 2
-    ? { min: 0, max: shelterMax + shelterRange * 0.05 }
+    ? { min: Math.min(0, shelterMin), max: Math.max(0, shelterMax) + shelterRange * 0.05 }
     : undefined
+
+  const shelterBoundsMin = shelterPadded ? shelterPadded.min : shelterMin
+  const shelterBoundsMax = shelterPadded ? shelterPadded.max : shelterMax
+  const shelterBoundsMid = (shelterBoundsMin + shelterBoundsMax) / 2
 
   const shelterSparkline =
     shelterValues.length >= 2
       ? buildLineSparklineV3(shelterValues, BLUE, 'grad-shelter', {
-          yMin: '0.0%',
-          yMid: `${shelterMid.toFixed(1)}%`,
-          yMax: `${shelterMax.toFixed(1)}%`,
+          yMin: `${shelterBoundsMin.toFixed(1)}%`,
+          yMid: `${shelterBoundsMid.toFixed(1)}%`,
+          yMax: `${shelterBoundsMax.toFixed(1)}%`,
           xLeft: shelterXLeft,
           xMid: shelterXMid,
           xRight: shelterXRight,
@@ -170,9 +178,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
-  const tariffSparkline = tariffCost > 0
-    ? buildTariffBarChart(tariffCost, PURPLE, 'grad-tariff')
-    : null
+  const medianIncome = censusData?.medianIncome ?? 0
 
   // ── Inline cell helpers (avoid named components in Satori render tree) ──
   const accentStrip = (accent: string) => (
@@ -261,20 +267,20 @@ export async function generateShareCard(zip: string): Promise<Response> {
         }}
       />
 
-      {/* HEADER — 120px */}
+      {/* HEADER — 140px */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          height: 120,
-          padding: '20px 40px 0 40px',
+          height: 160,
+          padding: '16px 40px 0 40px',
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
         {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           <span
             style={{
               display: 'flex',
@@ -290,13 +296,27 @@ export async function generateShareCard(zip: string): Promise<Response> {
             style={{
               display: 'flex',
               fontFamily: 'Bebas Neue',
-              fontSize: 88,
+              fontSize: 76,
               color: TEXT_PRIMARY,
               lineHeight: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
             {cityName.toUpperCase()}, {stateAbbr}
           </span>
+          {cpiData?.metro && (
+            <span style={{
+              display: 'flex',
+              fontFamily: 'DM Mono',
+              fontSize: 20,
+              color: TEXT_TERTIARY,
+              marginTop: 2,
+            }}>
+              CPI source: {cpiData.metro}
+            </span>
+          )}
         </div>
 
         {/* Right column */}
@@ -307,6 +327,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
             alignItems: 'flex-end',
             paddingTop: 4,
             gap: 6,
+            flexShrink: 0,
           }}
         >
           {/* Date badge */}
@@ -329,17 +350,6 @@ export async function generateShareCard(zip: string): Promise<Response> {
               {monthYear}
             </span>
           </div>
-          {/* Metro name */}
-          <span
-            style={{
-              display: 'flex',
-              fontFamily: 'DM Mono',
-              fontSize: 26,
-              color: TEXT_SECONDARY,
-            }}
-          >
-            {cpiData?.metro ?? ''}
-          </span>
         </div>
       </div>
 
@@ -376,7 +386,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
             {grocerySparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{grocerySparkline}</div>}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(cpiData ? `${formatSigned(cpiData.groceriesChange)}%` : 'N/A', AMBER)}
-              {changePill(cpiData ? (cpiData.groceriesChange >= 0 ? '↑ rising' : '↓ falling') : '—', AMBER)}
+              {changePill(cpiData ? (cpiData.groceriesChange >= 0 ? 'rising' : 'falling') : '—', AMBER)}
             </div>
             {metaRow('since Jan 2025', natGroceriesChange !== undefined ? `Natl: ${formatSigned(natGroceriesChange)}%` : null)}
           </div>
@@ -399,7 +409,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
             {shelterSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{shelterSparkline}</div>}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(cpiData?.shelterChange !== undefined ? `${formatSigned(cpiData.shelterChange)}%` : 'N/A', BLUE)}
-              {changePill(cpiData?.shelterChange !== undefined ? (cpiData.shelterChange >= 0 ? '↑ rising' : '↓ falling') : '—', BLUE)}
+              {changePill(cpiData?.shelterChange !== undefined ? (cpiData.shelterChange >= 0 ? 'rising' : 'falling') : '—', BLUE)}
             </div>
             {metaRow('since Jan 2025', natShelterChange !== undefined ? `Natl: ${formatSigned(natShelterChange)}%` : null)}
           </div>
@@ -408,22 +418,50 @@ export async function generateShareCard(zip: string): Promise<Response> {
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
                          padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
             {accentStrip(PURPLE)}
-            {sectionLabel('TARIFFS', '(est. cumulative cost to household)')}
-            {tariffSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{tariffSparkline}</div>}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>
-                <span style={{ fontFamily: 'Bebas Neue', fontSize: 96, color: PURPLE, lineHeight: 1, display: 'flex' }}>
-                  {tariffCost > 0 ? `~${formatDollars(tariffCost)}` : 'N/A'}
+            {sectionLabel('TARIFFS', '(est. annual cost to household)')}
+            {/* Centered number block — fills the chart zone */}
+            <div style={{
+              display: 'flex',
+              flex: 1,
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/yr` : 'N/A', PURPLE)}
+              {tariffCost > 0 && (
+                <span style={{
+                  fontFamily: 'Bebas Neue',
+                  fontSize: 64,
+                  color: PURPLE,
+                  lineHeight: 1,
+                  display: 'flex',
+                  marginTop: 4,
+                }}>
+                  ~{formatDollars(Math.round(tariffCost / 12))}/mo
                 </span>
-                {tariffCost > 0 && (
-                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 48, color: PURPLE, opacity: 0.75, display: 'flex', alignSelf: 'flex-end', marginBottom: 8 }}>
-                    /yr
-                  </span>
-                )}
-              </div>
-              {changePill('2.05% rate', PURPLE)}
+              )}
+              {censusData && (
+                <span style={{
+                  fontFamily: 'DM Mono',
+                  fontSize: 20,
+                  color: TEXT_TERTIARY,
+                  display: 'flex',
+                  marginTop: 16,
+                  textAlign: 'center',
+                }}>
+                  based on median income of {medianIncome >= 1000 ? `$${(medianIncome / 1000).toFixed(0)}k` : `$${Math.round(medianIncome)}`}
+                </span>
+              )}
+              <span style={{
+                fontFamily: 'DM Mono',
+                fontSize: 20,
+                color: TEXT_TERTIARY,
+                display: 'flex',
+                marginTop: 4,
+              }}>
+                Yale Budget Lab
+              </span>
             </div>
-            {metaRow('est. annual household cost', 'Yale Budget Lab')}
           </div>
         </div>
       </div>

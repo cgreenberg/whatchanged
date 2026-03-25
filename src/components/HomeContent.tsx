@@ -127,30 +127,16 @@ export default function HomeContent() {
                       nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal${natGasDelta != null ? ` (${natGasDelta > 0 ? '+' : ''}$${natGasDelta.toFixed(2)})` : ''}` : undefined}
                     />
                   )}
-                  {snapshot.census.data && (() => {
-                    const cost = estimateTariffCost(snapshot.census.data!.medianIncome)
-                    return (
-                      <StatCard
-                        label="Tariff Impact"
-                        value={`~${formatDollars(cost)}/yr`}
-                        change={`based on ${formatDollars(snapshot.census.data!.medianIncome)} local income`}
-                        direction="up"
-                        sourceLabel="Yale Budget Lab"
-                        sourceDate="2025 est."
-                        geoLevel="zip-level income"
-                        isNegative
-                        sourceUrl="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
-                        accentColor="#A855F7"
-                      />
-                    )
-                  })()}
                   {snapshot.cpi.data && (() => {
                     const shelterChange = snapshot.cpi.data!.shelterChange ?? 0
+                    const medianRent = snapshot.census.data?.medianRent ?? 1271
+                    const annualRent = medianRent * 12
+                    const shelterDollarImpact = Math.round(annualRent * Math.abs(shelterChange) / 100)
                     return (
                       <StatCard
                         label="Housing Costs"
                         value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
-                        change="since Jan 2025"
+                        change={`~$${shelterDollarImpact}/yr ${shelterChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                         direction={shelterChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
                         sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -180,6 +166,23 @@ export default function HomeContent() {
                         sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
                         accentColor="#EF4444"
                         nationalValue={natGroceriesChange != null ? `National: ${natGroceriesChange > 0 ? '+' : ''}${natGroceriesChange.toFixed(1)}%` : undefined}
+                      />
+                    )
+                  })()}
+                  {snapshot.census.data && (() => {
+                    const cost = estimateTariffCost(snapshot.census.data!.medianIncome)
+                    return (
+                      <StatCard
+                        label="Tariff Impact"
+                        value={`~${formatDollars(cost)}/yr`}
+                        change={`based on ${formatDollars(snapshot.census.data!.medianIncome)} local income`}
+                        direction="up"
+                        sourceLabel="Yale Budget Lab"
+                        sourceDate="2025 est."
+                        geoLevel="zip-level income"
+                        isNegative
+                        sourceUrl="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
+                        accentColor="#A855F7"
                       />
                     )
                   })()}

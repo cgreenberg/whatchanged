@@ -7,6 +7,11 @@ function detectNativeShare(): boolean {
   return typeof navigator.share === 'function'
 }
 
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024)
+}
+
 interface ShareModalProps {
   isOpen: boolean
   onClose: () => void
@@ -30,7 +35,12 @@ export function ShareModal({
   const [canNativeShare] = useState<boolean>(detectNativeShare)
   const [linkCopied, setLinkCopied] = useState(false)
   const [instagramToast, setInstagramToast] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const instagramToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice())
+  }, [])
 
   const shareUrl =
     typeof window !== 'undefined'
@@ -97,38 +107,52 @@ export function ShareModal({
       shelter ? `Shelter ${shelter}` : null,
     ].filter(Boolean).join(' · ')}\nCheck yours → whatchanged.us`
 
-    try {
-      await navigator.clipboard.writeText(caption)
-    } catch {
-      // Ignore clipboard errors
-    }
-
-    // Try to share as file (opens native share sheet → save to Photos, Instagram, etc.)
-    try {
-      const response = await fetch(`/api/share/${zip}`)
-      const blob = await response.blob()
-      const file = new File([blob], `whatchanged-${zip}.png`, { type: 'image/png' })
-
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `What changed in ${cityName} since Jan 20`,
-          text: caption,
-        })
-        if (instagramToastTimer.current) clearTimeout(instagramToastTimer.current)
-        setInstagramToast(true)
-        instagramToastTimer.current = setTimeout(() => setInstagramToast(false), 3000)
-        return
+    if (isMobileDevice()) {
+      // Mobile: try native share sheet first, fall back to download
+      try {
+        await navigator.clipboard.writeText(caption)
+      } catch {
+        // Ignore clipboard errors
       }
-    } catch {
-      // User cancelled share or API not supported — fall through to download
-    }
 
-    // Fallback: trigger browser download
-    const a = document.createElement('a')
-    a.href = `/api/share/${zip}`
-    a.download = `whatchanged-${zip}.png`
-    a.click()
+      try {
+        const response = await fetch(`/api/share/${zip}`)
+        const blob = await response.blob()
+        const file = new File([blob], `whatchanged-${zip}.png`, { type: 'image/png' })
+
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `What changed in ${cityName} since Jan 20`,
+            text: caption,
+          })
+          if (instagramToastTimer.current) clearTimeout(instagramToastTimer.current)
+          setInstagramToast(true)
+          instagramToastTimer.current = setTimeout(() => setInstagramToast(false), 3000)
+          return
+        }
+      } catch {
+        // User cancelled share or API not supported — fall through to download
+      }
+
+      // Mobile fallback: trigger browser download
+      const a = document.createElement('a')
+      a.href = `/api/share/${zip}`
+      a.download = `whatchanged-${zip}.png`
+      a.click()
+    } else {
+      // Desktop: download image and copy caption — no native share sheet
+      const a = document.createElement('a')
+      a.href = `/api/share/${zip}`
+      a.download = `whatchanged-${zip}.png`
+      a.click()
+
+      try {
+        await navigator.clipboard.writeText(caption)
+      } catch {
+        // Ignore clipboard errors
+      }
+    }
 
     if (instagramToastTimer.current) clearTimeout(instagramToastTimer.current)
     setInstagramToast(true)
@@ -243,7 +267,9 @@ export function ShareModal({
                 Download image + copy caption
               </button>
               <p className="text-xs text-zinc-500 mt-1">
-                Opens share sheet → save to Photos or share to Instagram
+                {isMobile
+                  ? 'Opens share sheet → save to Photos or share to Instagram'
+                  : 'Saves image and copies caption to clipboard'}
               </p>
               {instagramToast && (
                 <p className="text-sm text-zinc-400 mt-2">

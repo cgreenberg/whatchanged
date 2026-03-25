@@ -96,8 +96,9 @@ export function buildLineSparklineV3(
   const range = maxVal - minVal || 1;
 
   // Map value → SVG y (inverted: higher value = lower y)
-  // Y range: 5 (top, max) to 45 (bottom, min) within viewBox 0 0 100 50
-  const toY = (v: number): number => 45 - ((v - minVal) / range) * 40;
+  // Y range: 5 (top, max) to 50 (bottom, min) within viewBox 0 0 100 50
+  // minVal maps to y=50 (bottom of viewBox) so zero-value lines touch the chart bottom
+  const toY = (v: number): number => 50 - ((v - minVal) / range) * 45;
 
   const pts = values.map((v, i) => ({
     x: (i / (values.length - 1)) * 94,
@@ -141,6 +142,10 @@ export function buildLineSparklineV3(
             {/* Dashed gridlines */}
             <line x1="0" y1={yMax} x2="100" y2={yMax} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
             <line x1="0" y1={yMid} x2="100" y2={yMid} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
+            {/* Zero reference line — only when range spans zero */}
+            {minVal < 0 && maxVal > 0 && (
+              <line x1="0" y1={toY(0)} x2="94" y2={toY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" strokeDasharray="2,2" />
+            )}
             {/* Area fill */}
             <polygon points={areaPts} fill={`url(#${gradientId})`} />
             {/* Line */}
@@ -164,6 +169,77 @@ export function buildLineSparklineV3(
           <span style={{ ...labelSz, display: 'flex' }}>{opts.xRight}</span>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Horizontal progress bar showing tariff cost as a fraction of median income.
+ *  Renders at 220px height to match line sparklines.
+ */
+export function buildTariffProgressBar(
+  tariffCost: number,
+  medianIncome: number,
+  accentColor: string,
+): React.ReactElement | null {
+  if (tariffCost <= 0 || medianIncome <= 0) return null
+
+  const fraction = tariffCost / medianIncome
+  const pct = (fraction * 100).toFixed(1)
+
+  const incomeLabel = medianIncome >= 1000
+    ? `$${(medianIncome / 1000).toFixed(0)}k`
+    : `$${Math.round(medianIncome)}`
+
+  const TERTIARY = 'rgba(107,101,96,1)'
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      height: 220,
+      justifyContent: 'center',
+      gap: 12,
+    }}>
+      {/* Label above bar */}
+      <span style={{
+        fontFamily: 'DM Mono',
+        fontSize: 24,
+        color: 'rgba(240,235,225,0.9)',
+        display: 'flex',
+        letterSpacing: '0.02em',
+      }}>
+        {pct}% of income
+      </span>
+
+      {/* Progress bar */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        width: '70%',
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: 'rgba(255,255,255,0.10)',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          display: 'flex',
+          width: `${Math.max(fraction * 100, 2)}%`,
+          height: '100%',
+          backgroundColor: accentColor,
+          borderRadius: 9,
+        }} />
+      </div>
+
+      {/* Label below bar */}
+      <span style={{
+        fontFamily: 'DM Mono',
+        fontSize: 20,
+        color: TERTIARY,
+        display: 'flex',
+      }}>
+        median household income: {incomeLabel}
+      </span>
     </div>
   )
 }
