@@ -228,14 +228,31 @@ export default function HomeContent() {
       )}
 
       {/* Footer */}
-      <footer className="mt-16 mb-4 text-center">
+      <footer className="mt-16 mb-4 text-center text-sm" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
         <Link
           href="/about"
-          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-          style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+          className="text-[#888] hover:text-white hover:underline transition-colors"
         >
-          About the data
+          About the Data
         </Link>
+        <span className="text-[#888] mx-2">·</span>
+        <a
+          href="https://github.com/cgreenberg/whatchanged"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#888] hover:text-white hover:underline transition-colors"
+        >
+          View on GitHub
+        </a>
+        <span className="text-[#888] mx-2">·</span>
+        <a
+          href="https://github.com/cgreenberg/whatchanged/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#888] hover:text-white hover:underline transition-colors"
+        >
+          Report an Issue
+        </a>
       </footer>
     </main>
   )
