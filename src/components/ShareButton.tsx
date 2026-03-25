@@ -15,10 +15,7 @@ export function ShareButton({ snapshot, trigger }: ShareButtonProps) {
   const cityName = snapshot.location.cityName || snapshot.location.countyName
   const zip = snapshot.zip
 
-  const shareUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/?zip=${zip}`
-      : `https://whatchanged.us/?zip=${zip}`
+  const shareUrl = 'https://whatchanged.us'
 
   const shareText = `Here's how the cost of living has changed in ${cityName} since Jan. 20, 2025 📈📈📈 Check your zip too:`
 
