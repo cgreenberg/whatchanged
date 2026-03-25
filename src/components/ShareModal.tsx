@@ -47,7 +47,7 @@ export function ShareModal({
       ? `${window.location.origin}/?zip=${zip}`
       : `https://whatchanged.us/?zip=${zip}`
 
-  const shareText = `What changed in ${cityName} since Jan 20 — check your zip too`
+  const shareText = `Here's how the cost of living has changed in ${cityName} since Jan. 20, 2025 📈📈📈 Check your zip at whatchanged.us`
 
   // Escape key to close
   useEffect(() => {

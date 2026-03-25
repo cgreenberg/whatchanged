@@ -5,6 +5,17 @@ import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 
 export const runtime = 'nodejs'
 
+// ── Design Tokens (match share card) ────────────────────────────────
+const BG = '#0b0c0f'
+const BORDER = 'rgba(255,255,255,0.10)'
+const TEXT_PRIMARY = '#F0EBE1'
+const TEXT_SECONDARY = '#A89F93'
+const TEXT_TERTIARY = '#6B6560'
+const AMBER = '#F0A500'
+const BLUE = '#3D9EFF'
+const PURPLE = '#A87EFF'
+const RED = '#F04040'
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const zip = searchParams.get('zip') ?? ''
@@ -50,6 +61,132 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Dynamic month/year for date range badge
+  const monthYear = new Date()
+    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    .toUpperCase()
+
+  // No zip or no location — show generic fallback card
+  const hasData = location && (gasPrice || groceries || shelter || tariff)
+
+  if (!hasData) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: BG,
+            color: TEXT_PRIMARY,
+            position: 'relative',
+          }}
+        >
+          {/* Top accent line */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 4,
+              background: `linear-gradient(90deg, ${AMBER} 0%, ${BLUE} 60%, transparent 100%)`,
+              display: 'flex',
+            }}
+          />
+
+          {/* Centered content */}
+          <div
+            style={{
+              display: 'flex',
+              flex: 1,
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 80px',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'monospace',
+                fontSize: 18,
+                color: AMBER,
+                letterSpacing: '0.14em',
+                display: 'flex',
+                marginBottom: 24,
+              }}
+            >
+              WHATCHANGED.US
+            </span>
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 800,
+                fontSize: 56,
+                color: TEXT_PRIMARY,
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                display: 'flex',
+              }}
+            >
+              ENTER YOUR ZIP CODE
+            </span>
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 24,
+                color: TEXT_SECONDARY,
+                marginTop: 16,
+                display: 'flex',
+              }}
+            >
+              See what changed since Jan. 20, 2025
+            </span>
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              height: 50,
+              padding: '0 40px',
+              borderTop: `1px solid ${BORDER}`,
+            }}
+          >
+            <span style={{ fontFamily: 'monospace', fontSize: 16, color: TEXT_TERTIARY, display: 'flex' }}>
+              BLS · EIA · Census · Yale Budget Lab
+            </span>
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 800,
+                fontSize: 24,
+                color: AMBER,
+                textTransform: 'uppercase',
+                display: 'flex',
+              }}
+            >
+              WHATCHANGED.US
+            </span>
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630 },
+    )
+  }
+
+  // ── Stats data for the four cards ───────────────────────────────────
+  const stats = [
+    { label: 'GAS PRICES', value: gasPrice, color: RED },
+    { label: 'GROCERIES', value: groceries, color: AMBER },
+    { label: 'SHELTER', value: shelter, color: BLUE },
+    { label: 'TARIFF IMPACT', value: tariff, color: PURPLE },
+  ]
+
   return new ImageResponse(
     (
       <div
@@ -58,92 +195,211 @@ export async function GET(req: NextRequest) {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '60px',
-          backgroundColor: '#0A0A0A',
-          color: '#F5F5F5',
-          fontFamily: 'Inter, sans-serif',
+          backgroundColor: BG,
+          color: TEXT_PRIMARY,
+          position: 'relative',
         }}
       >
-        {/* Title */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
-          <span style={{ fontSize: '48px', color: '#F5F5F5', fontWeight: 'bold' }}>
-            What changed in {location} since Jan 2025?
+        {/* Top accent line */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 4,
+            background: `linear-gradient(90deg, ${AMBER} 0%, ${BLUE} 60%, transparent 100%)`,
+            display: 'flex',
+          }}
+        />
+
+        {/* HEADER — ~120px */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            height: 120,
+            padding: '16px 40px 0 40px',
+            borderBottom: `1px solid ${BORDER}`,
+          }}
+        >
+          {/* Left column */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'monospace',
+                fontSize: 18,
+                color: AMBER,
+                letterSpacing: '0.14em',
+              }}
+            >
+              WHATCHANGED.US · DATA REPORT
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 800,
+                fontSize: 56,
+                color: TEXT_PRIMARY,
+                lineHeight: 1,
+                textTransform: 'uppercase',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {location.toUpperCase()}
+            </span>
+          </div>
+
+          {/* Right column — date range badge */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              border: '1px solid rgba(240,165,0,0.30)',
+              borderRadius: 4,
+              padding: '4px 14px',
+              gap: 0,
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'monospace',
+                fontSize: 16,
+                fontWeight: 700,
+                color: AMBER,
+                letterSpacing: '0.06em',
+              }}
+            >
+              JAN. 20, 2025
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'monospace',
+                fontSize: 28,
+                color: 'rgba(240,165,0,0.45)',
+                lineHeight: 1,
+              }}
+            >
+              ↓
+            </span>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'monospace',
+                fontSize: 16,
+                fontWeight: 700,
+                color: AMBER,
+                letterSpacing: '0.06em',
+              }}
+            >
+              {monthYear}
+            </span>
+          </div>
+        </div>
+
+        {/* STATS ROW — four cards */}
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            flexDirection: 'row',
+            padding: '0 40px',
+            gap: 24,
+            alignItems: 'center',
+          }}
+        >
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                position: 'relative',
+                paddingLeft: 16,
+              }}
+            >
+              {/* 3px left accent border */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 3,
+                  backgroundColor: stat.color,
+                  display: 'flex',
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 18,
+                  color: TEXT_SECONDARY,
+                  display: 'flex',
+                  marginBottom: 8,
+                  letterSpacing: '0.08em',
+                }}
+              >
+                {stat.label}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 800,
+                  fontSize: 52,
+                  color: stat.value ? stat.color : TEXT_TERTIARY,
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                }}
+              >
+                {stat.value || 'N/A'}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* FOOTER — ~50px */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            height: 50,
+            padding: '0 40px',
+            borderTop: `1px solid ${BORDER}`,
+          }}
+        >
+          <span style={{ fontFamily: 'monospace', fontSize: 16, color: TEXT_TERTIARY, display: 'flex' }}>
+            BLS · EIA · Census · Yale Budget Lab
           </span>
-        </div>
-
-        {/* Stats - row 1 */}
-        <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
-          {gasPrice && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '32px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
-                Gas Prices
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#F59E0B' }}>
-                {gasPrice}
-              </span>
-            </div>
-          )}
-
-          {tariff && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '32px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
-                Tariff Impact
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#A855F7' }}>
-                {tariff}
-              </span>
-            </div>
-          )}
-
-          {shelter && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span style={{ fontSize: '32px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
-                Housing Costs
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#3B82F6' }}>
-                {shelter}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Stats - row 2 */}
-        <div style={{ display: 'flex', gap: '40px', marginBottom: '28px' }}>
-          {groceries && (
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
-              <span style={{ fontSize: '32px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
-                Grocery Prices
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
-                {groceries}
-              </span>
-            </div>
-          )}
-
-          {federal && (
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
-              <span style={{ fontSize: '32px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '4px' }}>
-                Federal $ Cut
-              </span>
-              <span style={{ fontSize: '64px', fontWeight: 'bold', color: '#EF4444' }}>
-                {federal}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ display: 'flex', marginTop: 'auto' }}>
-          <span style={{ fontSize: '24px', color: '#6B7280' }}>
-            whatchanged.us — enter your zip
+          <span
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 800,
+              fontSize: 24,
+              color: AMBER,
+              textTransform: 'uppercase',
+              display: 'flex',
+            }}
+          >
+            WHATCHANGED.US
           </span>
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { width: 1200, height: 630 },
   )
 }

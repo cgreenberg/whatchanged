@@ -36,10 +36,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const cityName = snapshot.location.cityName || snapshot.location.countyName
   const state = snapshot.location.stateAbbr
   const title = `What Changed in ${cityName}, ${state} (${zip})?`
-  const ogTitle = `What Changed in ${cityName}, ${state} Since Jan 2025?`
+  const ogTitle = `What changed in ${cityName}, ${state} since Jan. 20, 2025?`
 
   const vParam = new Date().toISOString().slice(0, 7)
-  const cardImageUrl = `/api/card-image?zip=${zip}&v=${vParam}`
+  const ogImageUrl = `/api/og?zip=${zip}&v=${vParam}`
 
   const parts: string[] = []
   if (snapshot.gas.data) {
@@ -55,7 +55,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     const cost = estimateTariffCost(snapshot.census.data.medianIncome)
     parts.push(`Tariff cost ~${formatDollars(cost)}/yr`)
   }
-  parts.push('Enter your zip to see your town.')
+  parts.push('Check your zip at whatchanged.us')
   const description = parts.join(' · ')
 
   return {
@@ -67,9 +67,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       description,
       url: `https://whatchanged.us/?zip=${zip}`,
       images: [{
-        url: cardImageUrl,
-        width: 1080,
-        height: 1080,
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
         type: 'image/png',
       }],
     },
@@ -78,7 +78,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       site: '@whatchangedus',
       title: ogTitle,
       description,
-      images: [cardImageUrl],
+      images: [ogImageUrl],
     },
   }
 }
