@@ -92,3 +92,5 @@ Run 3 review agents in parallel before committing (logic, security, data accurac
 ## Audit System
 
 `audit/` directory — independent Python verification. MUST NOT import main codebase code. Read `audit/AUDIT_RULES.md` before touching.
+
+For detailed architecture, caching, and debugging docs, read `ARCHITECTURE.md`.
