@@ -21,12 +21,9 @@ export default function HomeContent() {
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [markerPosition, setMarkerPosition] = useState<[number, number] | undefined>()
-  const [shareCounter, setShareCounter] = useState(0)
-
   async function handleZipSubmit(zip: string) {
     setState('loading')
     setErrorMsg('')
-    setShareCounter(0)
     try {
       const res = await fetch(`/api/data/${zip}`)
       if (res.status === 404) throw new Error('Zip code not found')
@@ -192,28 +189,9 @@ export default function HomeContent() {
             })()}
           </div>
 
-          {/* Primary share button — above charts */}
+          {/* Primary share buttons — above charts */}
           {state === 'loaded' && snapshot && (
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => setShareCounter(c => c + 1)}
-                data-testid="primary-share-button"
-                className="bg-electric-amber text-black font-semibold rounded-xl hover:bg-amber-400 transition-colors"
-                style={{
-                  fontFamily: 'var(--font-inter, sans-serif)',
-                  fontSize: 18,
-                  fontWeight: 600,
-                  padding: '18px 40px',
-                  minWidth: 280,
-                  maxWidth: 420,
-                  margin: '0 auto',
-                  whiteSpace: 'nowrap',
-                  display: 'block',
-                }}
-              >
-                Share Your Results
-              </button>
-            </div>
+            <ShareButton snapshot={snapshot} />
           )}
         </section>
       )}
@@ -224,7 +202,7 @@ export default function HomeContent() {
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
           {/* <DigDeeper snapshot={snapshot} /> */}
-          <ShareButton snapshot={snapshot} trigger={shareCounter} />
+          <ShareButton snapshot={snapshot} />
           <CityGrid onCitySelect={handleZipSubmit} />
           <ErrorBoundary>
             <MapSection
