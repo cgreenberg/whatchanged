@@ -54,14 +54,19 @@ export function ShareButton({ snapshot, trigger }: ShareButtonProps) {
         }
       }
 
-      // 3. Fallback: download the image on desktop
+      // 3. Fallback: download the image on desktop + copy text with link
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `whatchanged-${zip}.png`
       a.click()
       URL.revokeObjectURL(url)
-      showToast('Image downloaded — share it on your favorite platform! 📲')
+      try {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+        showToast('Image downloaded & link copied to clipboard! 📲')
+      } catch {
+        showToast('Image downloaded — share it on your favorite platform! 📲')
+      }
     } catch {
       showToast('Something went wrong — please try again')
     } finally {
