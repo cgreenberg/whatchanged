@@ -60,3 +60,5 @@ audit/reports/
 audit/screenshots/
 audit/.env
 audit/venv/
+
+architecture.md
