@@ -18,10 +18,10 @@ const RED = '#F04040'
 
 // RGB equivalents for use in rgba() strings
 const ACCENT_RGB: Record<string, string> = {
-  [AMBER]:  '240,165,0',
-  [BLUE]:   '61,158,255',
+  [AMBER]: '240,165,0',
+  [BLUE]: '61,158,255',
   [PURPLE]: '168,126,255',
-  [RED]:    '240,64,64',
+  [RED]: '240,64,64',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -34,7 +34,20 @@ function getMonthLabel(series: Array<{ date: string }>, idx: number): string {
   const d = series[idx]?.date // "2025-01" format
   if (!d) return ''
   const [year, month] = d.split('-')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
   return `${months[parseInt(month, 10) - 1] || ''} '${year.slice(2)}`
 }
 
@@ -84,7 +97,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
   // Filter to Jan 2025+ for sparkline to match hero number baseline
-  const gasSeries = (gasData?.series ?? []).filter(p => p.date >= '2025-01')
+  const gasSeries = (gasData?.series ?? []).filter((p) => p.date >= '2025-01')
   const gasValues = gasSeries.map((p) => p.price)
   const gasMin = gasValues.length ? Math.min(...gasValues) : 0
   const gasMax = gasValues.length ? Math.max(...gasValues) : 0
@@ -95,9 +108,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   // ── Grocery Sparkline Data ───────────────────────────────────────
   // Filter to Jan 2025+ for sparkline (series may start from 2020)
-  const grocerySeries = (cpiData?.series ?? []).filter(p => p.date >= '2025-01')
+  const grocerySeries = (cpiData?.series ?? []).filter((p) => p.date >= '2025-01')
   const groceryRaw = grocerySeries.map((p) => p.groceries)
-  const groceryBase = (groceryRaw[0] !== undefined && groceryRaw[0] !== 0) ? groceryRaw[0] : 1
+  const groceryBase = groceryRaw[0] !== undefined && groceryRaw[0] !== 0 ? groceryRaw[0] : 1
   const groceryValues = groceryRaw.map((v) => ((v - groceryBase) / groceryBase) * 100)
   const groceryMin = groceryValues.length ? Math.min(...groceryValues) : 0
   const groceryMax = groceryValues.length ? Math.max(...groceryValues) : 0
@@ -112,7 +125,8 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const shelterPairs = (cpiData?.series ?? [])
     .filter((p) => p.date >= '2025-01' && p.shelter !== null)
     .map((p) => ({ date: p.date, value: p.shelter as number }))
-  const shelterBase = (shelterPairs[0]?.value !== undefined && shelterPairs[0].value !== 0) ? shelterPairs[0].value : 1
+  const shelterBase =
+    shelterPairs[0]?.value !== undefined && shelterPairs[0].value !== 0 ? shelterPairs[0].value : 1
   const shelterValues = shelterPairs.map((p) => ((p.value - shelterBase) / shelterBase) * 100)
   const shelterMin = shelterValues.length ? Math.min(...shelterValues) : 0
   const shelterMax = shelterValues.length ? Math.max(...shelterValues) : 0
@@ -135,9 +149,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
       : null
 
   const groceryRange = groceryValues.length >= 2 ? Math.abs(groceryMax - groceryMin) : 0
-  const groceryPadded = groceryValues.length >= 2
-    ? { min: Math.min(0, groceryMin), max: Math.max(0, groceryMax) + groceryRange * 0.05 }
-    : undefined
+  const groceryPadded =
+    groceryValues.length >= 2
+      ? { min: Math.min(0, groceryMin), max: Math.max(0, groceryMax) + groceryRange * 0.05 }
+      : undefined
 
   const groceryBoundsMin = groceryPadded ? groceryPadded.min : groceryMin
   const groceryBoundsMax = groceryPadded ? groceryPadded.max : groceryMax
@@ -157,9 +172,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
       : null
 
   const shelterRange = shelterValues.length >= 2 ? Math.abs(shelterMax - shelterMin) : 0
-  const shelterPadded = shelterValues.length >= 2
-    ? { min: Math.min(0, shelterMin), max: Math.max(0, shelterMax) + shelterRange * 0.05 }
-    : undefined
+  const shelterPadded =
+    shelterValues.length >= 2
+      ? { min: Math.min(0, shelterMin), max: Math.max(0, shelterMax) + shelterRange * 0.05 }
+      : undefined
 
   const shelterBoundsMin = shelterPadded ? shelterPadded.min : shelterMin
   const shelterBoundsMax = shelterPadded ? shelterPadded.max : shelterMax
@@ -182,15 +198,31 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   // ── Inline cell helpers (avoid named components in Satori render tree) ──
   const accentStrip = (accent: string) => (
-    <div style={{
-      position: 'absolute', left: 0, top: 0, bottom: 0,
-      width: 3, backgroundColor: accent, display: 'flex',
-    }} />
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        backgroundColor: accent,
+        display: 'flex',
+      }}
+    />
   )
 
   const sectionLabel = (label: string, sublabel: string) => (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 12 }}>
-      <span style={{ fontFamily: 'DM Mono', fontSize: 28, color: TEXT_SECONDARY, display: 'flex', letterSpacing: '0.10em' }}>
+      <span
+        style={{
+          fontFamily: 'Barlow Condensed',
+          fontWeight: 600,
+          fontSize: 40,
+          color: TEXT_SECONDARY,
+          display: 'flex',
+          letterSpacing: '0.10em',
+        }}
+      >
         {label}
       </span>
       <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
@@ -200,7 +232,15 @@ export async function generateShareCard(zip: string): Promise<Response> {
   )
 
   const bigNumber = (value: string, accent: string) => (
-    <span style={{ fontFamily: 'Bebas Neue', fontSize: 108, color: accent, lineHeight: 1, display: 'flex' }}>
+    <span
+      style={{
+        fontFamily: 'Bebas Neue',
+        fontSize: 96,
+        color: accent,
+        lineHeight: 1,
+        display: 'flex',
+      }}
+    >
       {value}
     </span>
   )
@@ -208,20 +248,30 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const changePill = (text: string, accent: string) => {
     const rgb = ACCENT_RGB[accent] ?? '255,255,255'
     return (
-      <div style={{
-        display: 'flex',
-        backgroundColor: `rgba(${rgb}, 0.22)`,
-        borderWidth: 1.5,
-        borderStyle: 'solid',
-        borderColor: `rgba(${rgb}, 0.55)`,
-        borderRadius: 4,
-        padding: '6px 14px',
-        alignSelf: 'flex-end',
-        marginLeft: 12,
-        marginBottom: 16,
-        flexShrink: 0,
-      }}>
-        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 26, color: accent, display: 'flex' }}>
+      <div
+        style={{
+          display: 'flex',
+          backgroundColor: `rgba(${rgb}, 0.22)`,
+          borderWidth: 1.5,
+          borderStyle: 'solid',
+          borderColor: `rgba(${rgb}, 0.55)`,
+          borderRadius: 4,
+          padding: '9px 20px',
+          alignSelf: 'flex-end',
+          marginLeft: 12,
+          marginBottom: 16,
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'Barlow Condensed',
+            fontWeight: 600,
+            fontSize: 40,
+            color: accent,
+            display: 'flex',
+          }}
+        >
           {text}
         </span>
       </div>
@@ -229,12 +279,27 @@ export async function generateShareCard(zip: string): Promise<Response> {
   }
 
   const metaRow = (left: string, right: string | null) => (
-    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 6,
+      }}
+    >
       <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex' }}>
         {left}
       </span>
       {right && (
-        <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex', fontStyle: 'italic' }}>
+        <span
+          style={{
+            fontFamily: 'DM Mono',
+            fontSize: 26,
+            color: TEXT_SECONDARY,
+            display: 'flex',
+            fontStyle: 'italic',
+          }}
+        >
           {right}
         </span>
       )}
@@ -307,13 +372,15 @@ export async function generateShareCard(zip: string): Promise<Response> {
             {cityName.toUpperCase()}, {stateAbbr}
           </span>
           {cpiData?.metro && (
-            <span style={{
-              display: 'flex',
-              fontFamily: 'DM Mono',
-              fontSize: 20,
-              color: TEXT_TERTIARY,
-              marginTop: 2,
-            }}>
+            <span
+              style={{
+                display: 'flex',
+                fontFamily: 'DM Mono',
+                fontSize: 20,
+                color: TEXT_TERTIARY,
+                marginTop: 2,
+              }}
+            >
               CPI source: {cpiData.metro}
             </span>
           )}
@@ -393,30 +460,64 @@ export async function generateShareCard(zip: string): Promise<Response> {
           }}
         >
           {/* Cell: Gas Prices */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
-                         padding: '28px 28px 24px 36px', overflow: 'hidden',
-                         borderRight: `1px solid ${BORDER}` }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative',
+              padding: '16px 28px 24px 36px',
+              overflow: 'hidden',
+              borderRight: `1px solid ${BORDER}`,
+            }}
+          >
             {accentStrip(RED)}
             {sectionLabel('GAS PRICES', '(regular unleaded, $/gal)')}
-            {gasSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>}
+            {gasSparkline && (
+              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(gasData ? `$${gasData.current.toFixed(2)}/gal` : 'N/A', RED)}
-              {changePill(gasData ? `${gasData.change >= 0 ? '+' : ''}$${gasData.change.toFixed(2)}` : '—', RED)}
+              {changePill(
+                gasData ? `${gasData.change >= 0 ? '+' : ''}$${gasData.change.toFixed(2)}` : '—',
+                RED
+              )}
             </div>
-            {metaRow('since Jan 2025', natGasPrice != null ? `Natl: $${natGasPrice.toFixed(2)}` : null)}
+            {metaRow(
+              'since Jan 2025',
+              natGasPrice != null ? `Natl: $${natGasPrice.toFixed(2)}` : null
+            )}
           </div>
 
           {/* Cell: Groceries */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
-                         padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative',
+              padding: '16px 28px 24px 36px',
+              overflow: 'hidden',
+            }}
+          >
             {accentStrip(AMBER)}
             {sectionLabel('GROCERIES', '(CPI: food at home)')}
-            {grocerySparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{grocerySparkline}</div>}
+            {grocerySparkline && (
+              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
+                {grocerySparkline}
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(cpiData ? `${formatSigned(cpiData.groceriesChange)}%` : 'N/A', AMBER)}
-              {changePill(cpiData ? (cpiData.groceriesChange >= 0 ? 'rising' : 'falling') : '—', AMBER)}
+              {changePill(
+                cpiData ? (cpiData.groceriesChange >= 0 ? 'rising' : 'falling') : '—',
+                AMBER
+              )}
             </div>
-            {metaRow('since Jan 2025', natGroceriesChange !== undefined ? `Natl: ${formatSigned(natGroceriesChange)}%` : null)}
+            {metaRow(
+              'since Jan 2025',
+              natGroceriesChange !== undefined ? `Natl: ${formatSigned(natGroceriesChange)}%` : null
+            )}
           </div>
         </div>
 
@@ -429,64 +530,110 @@ export async function generateShareCard(zip: string): Promise<Response> {
           }}
         >
           {/* Cell: Shelter */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
-                         padding: '28px 28px 24px 36px', overflow: 'hidden',
-                         borderRight: `1px solid ${BORDER}` }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative',
+              padding: '16px 28px 24px 36px',
+              overflow: 'hidden',
+              borderRight: `1px solid ${BORDER}`,
+            }}
+          >
             {accentStrip(BLUE)}
             {sectionLabel('SHELTER', "(rent & owners' equiv.)")}
-            {shelterSparkline && <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{shelterSparkline}</div>}
+            {shelterSparkline && (
+              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
+                {shelterSparkline}
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(cpiData?.shelterChange !== undefined ? `${formatSigned(cpiData.shelterChange)}%` : 'N/A', BLUE)}
-              {changePill(cpiData?.shelterChange !== undefined ? (cpiData.shelterChange >= 0 ? 'rising' : 'falling') : '—', BLUE)}
+              {bigNumber(
+                cpiData?.shelterChange !== undefined
+                  ? `${formatSigned(cpiData.shelterChange)}%`
+                  : 'N/A',
+                BLUE
+              )}
+              {changePill(
+                cpiData?.shelterChange !== undefined
+                  ? cpiData.shelterChange >= 0
+                    ? 'rising'
+                    : 'falling'
+                  : '—',
+                BLUE
+              )}
             </div>
-            {metaRow('since Jan 2025', natShelterChange !== undefined ? `Natl: ${formatSigned(natShelterChange)}%` : null)}
+            {metaRow(
+              'since Jan 2025',
+              natShelterChange !== undefined ? `Natl: ${formatSigned(natShelterChange)}%` : null
+            )}
           </div>
 
           {/* Cell: Tariffs */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative',
-                         padding: '28px 28px 24px 36px', overflow: 'hidden' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative',
+              padding: '16px 28px 24px 36px',
+              overflow: 'hidden',
+            }}
+          >
             {accentStrip(PURPLE)}
             {sectionLabel('TARIFFS', '(est. annual cost to household)')}
             {/* Centered number block — fills the chart zone */}
-            <div style={{
-              display: 'flex',
-              flex: 1,
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                flex: 1,
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/yr` : 'N/A', PURPLE)}
               {tariffCost > 0 && (
-                <span style={{
-                  fontFamily: 'Bebas Neue',
-                  fontSize: 64,
-                  color: PURPLE,
-                  lineHeight: 1,
-                  display: 'flex',
-                  marginTop: 4,
-                }}>
+                <span
+                  style={{
+                    fontFamily: 'Bebas Neue',
+                    fontSize: 64,
+                    color: PURPLE,
+                    lineHeight: 1,
+                    display: 'flex',
+                    marginTop: 4,
+                  }}
+                >
                   ~{formatDollars(Math.round(tariffCost / 12))}/mo
                 </span>
               )}
               {censusData && (
-                <span style={{
+                <span
+                  style={{
+                    fontFamily: 'DM Mono',
+                    fontSize: 20,
+                    color: TEXT_TERTIARY,
+                    display: 'flex',
+                    marginTop: 16,
+                    textAlign: 'center',
+                  }}
+                >
+                  based on median income of{' '}
+                  {medianIncome >= 1000
+                    ? `$${(medianIncome / 1000).toFixed(0)}k`
+                    : `$${Math.round(medianIncome)}`}
+                </span>
+              )}
+              <span
+                style={{
                   fontFamily: 'DM Mono',
                   fontSize: 20,
                   color: TEXT_TERTIARY,
                   display: 'flex',
-                  marginTop: 16,
-                  textAlign: 'center',
-                }}>
-                  based on median income of {medianIncome >= 1000 ? `$${(medianIncome / 1000).toFixed(0)}k` : `$${Math.round(medianIncome)}`}
-                </span>
-              )}
-              <span style={{
-                fontFamily: 'DM Mono',
-                fontSize: 20,
-                color: TEXT_TERTIARY,
-                display: 'flex',
-                marginTop: 4,
-              }}>
+                  marginTop: 4,
+                }}
+              >
                 Yale Budget Lab
               </span>
             </div>

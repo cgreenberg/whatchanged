@@ -237,7 +237,7 @@ export async function GET(req: NextRequest) {
                 <span
                   style={{
                     fontFamily: 'monospace',
-                    fontSize: 13,
+                    fontSize: 15,
                     color: TEXT_SECONDARY,
                     letterSpacing: '0.1em',
                     display: 'flex',
@@ -251,7 +251,7 @@ export async function GET(req: NextRequest) {
                   style={{
                     fontFamily: 'Inter, sans-serif',
                     fontWeight: 800,
-                    fontSize: 56,
+                    fontSize: 62,
                     color: panel.color,
                     lineHeight: 1,
                     display: 'flex',
@@ -279,8 +279,8 @@ export async function GET(req: NextRequest) {
                       stroke={panel.color}
                       strokeWidth="3"
                     />
-                    <circle cx="0" cy={panel.startDotY.toFixed(1)} r="4" fill={panel.color} />
-                    <circle cx={sparkW.toString()} cy={panel.endDotY.toFixed(1)} r="4" fill={panel.color} />
+                    <circle cx="0" cy={panel.startDotY.toFixed(1)} r="5" fill={panel.color} />
+                    <circle cx={sparkW.toString()} cy={panel.endDotY.toFixed(1)} r="5" fill={panel.color} />
                   </svg>
                 </div>
                 {/* Date labels */}
@@ -292,10 +292,10 @@ export async function GET(req: NextRequest) {
                     marginTop: 4,
                   }}
                 >
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#555', display: 'flex' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#555', display: 'flex' }}>
                     {"JAN '25"}
                   </span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#555', display: 'flex' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#555', display: 'flex' }}>
                     {latestMonth}
                   </span>
                 </div>
