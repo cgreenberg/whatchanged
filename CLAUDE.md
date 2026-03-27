@@ -192,6 +192,7 @@ npx tsx scripts/verify-mappings-live.ts      # live API verification of all code
 **Offline audit:** Flags missing CPI overrides, gas tier downgrades, unmapped counties. Makes no API calls.
 **Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series, and LAUS series actually returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`.
 **250-city test:** `tests/unit/city-mapping-audit.test.ts` — tests top 5 cities per state across CPI, gas, BLS series IDs, and LAUS series. Run with `npm test`.
+**Python audit:** `audit/src/main.py` — independent weekly verification (10 zips) that cross-checks displayed values against direct BLS/EIA/Census API calls. Also scrapes AAA gas prices as a third-party sanity check. See `audit/AUDIT_RULES.md`. Run: `cd audit && PYTHONPATH=. python src/main.py --zips 98683 --sequential`
 
 **Fix:** Add county FIPS to `COUNTY_CPI_OVERRIDES` or `COUNTY_EIA_CITY_OVERRIDES`, re-run audit + tests.
 
@@ -230,6 +231,8 @@ Each has: time toggles (Jan 2025 | 3Y | 5Y | 10Y), "Show national" checkbox, era
 - Cached data >30 days old → warning badge
 - Never blank cards → real data, skeleton, or "Data not available for this area"
 - % change from **Jan 20, 2025** baseline, NOT latest monthly delta
+- **Baseline precision varies by source:** BLS (unemployment, CPI) uses January 2025 monthly data (M01) — BLS has no daily granularity. EIA (gas) uses the last weekly reading on or before Jan 20, 2025. Only EIA gets close to the actual inauguration date.
+- **Dollar translations computed in frontend**, not API — API returns raw % changes and index values; dollar amounts (`~$6000/yr × grocery_change`, `median_rent × shelter_change`) are calculated in React components (`StatCard.tsx`, `TariffWidget.tsx`). A bug in frontend math won't be caught by backend tests or the Python audit's API layer checks.
 - Dollar translation uses **local** median income/spend, NOT national
 - Source date = date of actual data, NOT today's date
 - Geo level label must be accurate (county vs metro vs state vs national)
@@ -382,6 +385,8 @@ Run 3 review agents in parallel before committing (logic, security, data accurac
 - Zip/city mapping gaps are the #1 recurring bug source → run `npx tsx scripts/audit-zip-mappings.ts`
 - **Connecticut FIPS broken for unemployment:** CT abolished counties in 2022, replaced with Planning Council Regions (FIPS 09110–09190). The HUD crosswalk still uses old county FIPS (09001–09015), so all CT LAUS unemployment series return "series does not exist" from BLS. Needs a crosswalk from old → new FIPS in the zip lookup or BLS fetch layer.
 - Hawaii and Alaska get PAD 5 "West Coast avg" for gas — EIA has no state-level codes for HI/AK, and prices differ significantly ($1+/gal) from mainland West Coast. No fix available without EIA publishing those series.
+- **USASpending has no independent cross-check:** The Python audit verifies BLS, EIA, and Census data against government source APIs, but does not independently query `api.usaspending.gov` to cross-check federal cuts dollar amounts.
+- **Frontend dollar translations are not tested end-to-end:** No test verifies that the dollar amounts shown on cards (`$X more per year`) match the correct formula applied to API data. Unit tests cover backend math; Playwright e2e tests check that cards render, but no test asserts the displayed dollar value equals `API_percent_change × base_amount`.
 
 ## What NOT To Build
 
