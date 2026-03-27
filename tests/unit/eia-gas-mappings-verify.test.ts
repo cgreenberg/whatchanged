@@ -69,16 +69,17 @@ describe('STATE_TO_PAD mapping integrity', () => {
   })
 
   // Ground truth: verified PAD assignments for key states
-  const VERIFIED_PADS: Record<string, number> = {
-    NY: 1, FL: 1, GA: 1, VA: 1,  // East Coast
-    IL: 2, OH: 2, MI: 2, MN: 2,  // Midwest
-    TX: 3, LA: 3, AL: 3,          // Gulf Coast
-    CO: 4, MT: 4, UT: 4,          // Rocky Mountain
-    CA: 5, WA: 5, OR: 5, AZ: 5,  // West Coast
+  const VERIFIED_PADS: Record<string, number | string> = {
+    NY: '1B', FL: '1C', GA: '1C', VA: '1C',  // East Coast sub-districts
+    IL: 2, OH: 2, MI: 2, MN: 2,               // Midwest
+    TX: 3, LA: 3, AL: 3,                       // Gulf Coast
+    OK: 2,                                     // Midwest (PAD 2)
+    CO: 4, MT: 4, UT: 4,                       // Rocky Mountain
+    CA: 5, WA: 5, OR: 5, AZ: 5,               // West Coast
   }
 
   test.each(Object.entries(VERIFIED_PADS))(
-    '%s is in PAD district %i',
+    '%s is in PAD district %s',
     (state, expectedPad) => {
       expect(STATE_TO_PAD[state]).toBe(expectedPad)
     }

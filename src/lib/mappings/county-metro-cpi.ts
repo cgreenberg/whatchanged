@@ -81,7 +81,7 @@ export const STATE_TO_CPI_AREA: Record<string, string> = {
   NV: 'S49A', // Los Angeles (closest — Las Vegas has no BLS CPI metro)
   WA: 'S49D', // Seattle
   OR: 'S49D', // Seattle (closest — Portland has no BLS CPI metro)
-  ID: 'S49D', // Seattle (closest)
+  ID: 'S48B', // Denver (closest — Idaho is PAD 4 Rocky Mountain, not West Coast)
   HI: 'S49F', // Urban Hawaii
   AK: 'S49G', // Urban Alaska
   // PR and VI have no nearby BLS CPI metro — remain national
@@ -96,6 +96,8 @@ export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   '06001': 'S49B', // Alameda County → SF metro
   '06013': 'S49B', // Contra Costa County → SF metro
   '06041': 'S49B', // Marin County → SF metro
+  '06097': 'S49B', // Sonoma County → SF metro
+  '06055': 'S49B', // Napa County → SF metro
   // San Diego-Carlsbad metro
   '06073': 'S49E', // San Diego County → San Diego metro
   // Riverside-San Bernardino-Ontario metro
@@ -113,11 +115,27 @@ export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   // Tampa metro (FL default is Miami)
   '12057': 'S35D', // Hillsborough County → Tampa metro
   '12103': 'S35D', // Pinellas County → Tampa metro
+  '12101': 'S35D', // Pasco County → Tampa metro
+  '12053': 'S35D', // Hernando County → Tampa metro
   // Atlanta metro (GA is already Atlanta default, but include for clarity)
   // Baltimore metro (MD default is now Baltimore)
   // Washington DC metro counties in MD (override MD's Baltimore default)
   '24031': 'S35A', // Montgomery County, MD → Washington metro
   '24033': 'S35A', // Prince George's County, MD → Washington metro
+  '24017': 'S35A', // Charles County, MD → Washington metro
+  // Philadelphia metro — South NJ counties (NJ default is NYC)
+  '34007': 'S12B', // Camden County → Philadelphia metro
+  '34005': 'S12B', // Burlington County → Philadelphia metro
+  // Fairfield County CT — NYC metro, not Boston (CT default is Boston)
+  '09001': 'S12A', // Fairfield County (Bridgeport, Stamford) → NYC metro
+  // Reno NV — closer to SF than LA (NV default is Los Angeles)
+  '32031': 'S49B', // Washoe County (Reno) → SF metro
+  // Southaven MS — Memphis suburb, Houston CPI closer than Atlanta (MS default is Atlanta)
+  '28033': 'S37B', // DeSoto County (Southaven) → Houston metro
+  // Covington KY — Cincinnati suburb, Detroit/Ohio CPI closer than St. Louis (KY default is St. Louis)
+  '21117': 'S23B', // Kenton County (Covington) → Detroit metro
+  '21015': 'S23B', // Boone County KY (Florence) → Detroit metro
+  '21037': 'S23B', // Campbell County KY (Newport) → Detroit metro
 }
 
 export function getMetroCpiArea(stateAbbr: string): { areaCode: string; areaName: string } {

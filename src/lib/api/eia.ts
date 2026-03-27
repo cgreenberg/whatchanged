@@ -5,6 +5,7 @@ import {
   STATE_LEVEL_CODES,
   STATE_TO_PAD,
   PAD_NAMES,
+  PAD_DUOAREA,
 } from '@/lib/mappings/eia-gas'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
@@ -67,7 +68,7 @@ export function getGasLookup(
   const pad = STATE_TO_PAD[upper]
   if (pad !== undefined) {
     return {
-      duoarea: `R${pad}0`,
+      duoarea: PAD_DUOAREA[pad] ?? `R${pad}0`,
       geoLevel: `${PAD_NAMES[pad]} avg`,
       tier: 3,
       cacheKey: `eia:gas:pad:${pad}`,

@@ -27,6 +27,27 @@ export const COUNTY_EIA_CITY_OVERRIDES: Record<string, { duoarea: string; label:
   '53011': { duoarea: 'SWA', label: 'Washington state avg' },  // Clark County (Vancouver)
   '53015': { duoarea: 'SWA', label: 'Washington state avg' },  // Cowlitz County (Longview)
   '53059': { duoarea: 'SWA', label: 'Washington state avg' },  // Skamania County
+  // Jacksonville FL — FL state avg, not Miami city
+  '12031': { duoarea: 'SFL', label: 'Florida state avg' },  // Duval County (Jacksonville)
+  // Orlando FL — FL state avg, not Miami city
+  '12095': { duoarea: 'SFL', label: 'Florida state avg' },  // Orange County (Orlando)
+  // Upstate NY — NY state avg, not NYC city
+  '36029': { duoarea: 'SNY', label: 'New York state avg' },  // Erie County (Buffalo)
+  '36055': { duoarea: 'SNY', label: 'New York state avg' },  // Monroe County (Rochester)
+  '36067': { duoarea: 'SNY', label: 'New York state avg' },  // Onondaga County (Syracuse)
+  // Louisiana parishes — Gulf Coast PAD 3, not Houston city
+  '22071': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Orleans Parish (New Orleans)
+  '22033': { duoarea: 'R30', label: 'Gulf Coast avg' },  // East Baton Rouge Parish
+  '22051': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Jefferson Parish (Metairie)
+  '22017': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Caddo Parish (Shreveport)
+  '22055': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Lafayette Parish
+  '22019': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Calcasieu Parish (Lake Charles)
+  '22079': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Rapides Parish (Alexandria)
+  '22073': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Ouachita Parish (Monroe)
+  '22109': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Terrebonne Parish (Houma)
+  '22015': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Bossier Parish
+  '22063': { duoarea: 'R30', label: 'Gulf Coast avg' },  // Livingston Parish
+  '22103': { duoarea: 'R30', label: 'Gulf Coast avg' },  // St. Tammany Parish
 }
 
 // --- Tier 2: State-level EIA data (8 states) ---
@@ -36,6 +57,7 @@ export const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string 
   CA: { duoarea: 'SCA', label: 'California state avg' },
   CO: { duoarea: 'SCO', label: 'Colorado state avg' },
   FL: { duoarea: 'SFL', label: 'Florida state avg' },
+  MA: { duoarea: 'SMA', label: 'Massachusetts state avg' },
   MN: { duoarea: 'SMN', label: 'Minnesota state avg' },
   NY: { duoarea: 'SNY', label: 'New York state avg' },
   OH: { duoarea: 'SOH', label: 'Ohio state avg' },
@@ -44,10 +66,13 @@ export const STATE_LEVEL_CODES: Record<string, { duoarea: string; label: string 
 
 // --- Tier 3: PAD District (fallback) ---
 
-export const STATE_TO_PAD: Record<string, number> = {
-  // PAD 1 — East Coast
-  ME: 1, NH: 1, VT: 1, MA: 1, RI: 1, CT: 1, NY: 1, NJ: 1, PA: 1,
-  DE: 1, MD: 1, DC: 1, VA: 1, WV: 1, NC: 1, SC: 1, GA: 1, FL: 1,
+export const STATE_TO_PAD: Record<string, number | string> = {
+  // PAD 1A — New England
+  ME: '1A', NH: '1A', VT: '1A', MA: '1A', RI: '1A', CT: '1A',
+  // PAD 1B — Central Atlantic
+  NY: '1B', NJ: '1B', PA: '1B', DE: '1B', MD: '1B', DC: '1B',
+  // PAD 1C — Lower Atlantic
+  VA: '1C', WV: '1C', NC: '1C', SC: '1C', GA: '1C', FL: '1C',
   // PAD 2 — Midwest
   OH: 2, MI: 2, IN: 2, IL: 2, WI: 2, MN: 2, IA: 2, MO: 2, ND: 2,
   SD: 2, NE: 2, KS: 2, KY: 2, TN: 2, OK: 2,
@@ -59,10 +84,22 @@ export const STATE_TO_PAD: Record<string, number> = {
   WA: 5, OR: 5, CA: 5, NV: 5, AZ: 5, AK: 5, HI: 5,
 }
 
-export const PAD_NAMES: Record<number, string> = {
-  1: 'East Coast',
+export const PAD_NAMES: Record<string | number, string> = {
+  '1A': 'New England',
+  '1B': 'Central Atlantic',
+  '1C': 'Lower Atlantic',
   2: 'Midwest',
   3: 'Gulf Coast',
   4: 'Rocky Mountain',
   5: 'West Coast',
+}
+
+export const PAD_DUOAREA: Record<string | number, string> = {
+  '1A': 'R1X',
+  '1B': 'R1Y',
+  '1C': 'R1Z',
+  2: 'R20',
+  3: 'R30',
+  4: 'R40',
+  5: 'R50',
 }

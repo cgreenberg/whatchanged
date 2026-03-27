@@ -116,12 +116,12 @@ describe('getGasLookup — Tier 2: state-level fallback', () => {
 })
 
 describe('getGasLookup — Tier 3: PAD district fallback', () => {
-  test('NC (PAD 1 — East Coast) maps to R10', () => {
+  test('NC (PAD 1C — Lower Atlantic) maps to R1Z', () => {
     const result = getGasLookup('NC')
-    expect(result.duoarea).toBe('R10')
+    expect(result.duoarea).toBe('R1Z')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('East Coast avg')
-    expect(result.cacheKey).toBe('eia:gas:pad:1')
+    expect(result.geoLevel).toBe('Lower Atlantic avg')
+    expect(result.cacheKey).toBe('eia:gas:pad:1C')
   })
 
   test('KS (PAD 2 — Midwest) maps to R20', () => {
