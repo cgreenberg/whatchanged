@@ -19,7 +19,10 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid zip code format' }, { status: 400 })
   }
 
-  const snapshot = await fetchSnapshot(zip)
+  const city = req.nextUrl.searchParams.get('city') ?? undefined
+  const state = req.nextUrl.searchParams.get('state') ?? undefined
+
+  const snapshot = await fetchSnapshot(zip, city, state)
   if (!snapshot) {
     return NextResponse.json({ error: 'Zip code not found' }, { status: 404 })
   }

@@ -72,6 +72,9 @@ export interface CensusData {
   zip: string
   year: number
   isFallback?: boolean
+  isRentFallback?: boolean
+  isCityLevel?: boolean
+  cityName?: string
 }
 
 export interface TariffData {

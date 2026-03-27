@@ -14,7 +14,6 @@ import type {
   FederalFundingData,
 } from '@/types'
 import { estimateTariffCost } from '@/lib/tariff'
-import censusJson from '@/lib/data/census-acs.json'
 import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from './source-registry'
 import { getGasLookup } from './eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
@@ -22,7 +21,7 @@ import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 const TTL_7_DAYS = 604800
 const TTL_24_HOURS = 86400
 
-export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | null> {
+export async function fetchSnapshot(zip: string, city?: string, state?: string): Promise<EconomicSnapshot | null> {
   const location = lookupZip(zip)
   if (!location) return null
 
@@ -117,8 +116,8 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
   }
 
   // Census is synchronous (bundled static data)
-  const censusIsFallback = !((censusJson as Record<string, any>)[zip])
-  const censusData = getCensusData(zip)
+  const censusData = getCensusData(zip, city, state)
+  const censusIsFallback = censusData.isFallback === true
   const census: DataResult<CensusData> = {
     data: censusData,
     error: censusData ? null : 'Census data unavailable for this zip',
@@ -127,12 +126,13 @@ export async function fetchSnapshot(zip: string): Promise<EconomicSnapshot | nul
   }
 
   // Tariff estimate (derived from Census income + Yale Budget Lab rate)
+  const yearSuffix = typeof censusData?.year === 'number' ? `-${censusData.year}` : ''
   const tariffData: TariffData | null = censusData ? {
     medianIncome: censusData.medianIncome,
     tariffRate: 0.0205,
     estimatedCost: estimateTariffCost(censusData.medianIncome),
     source: 'Yale Budget Lab',
-    incomeSource: censusIsFallback ? 'national-average' : `census-acs-${censusData.year}`,
+    incomeSource: censusIsFallback ? 'national-average' : censusData.isCityLevel ? `city-proper-census-acs${yearSuffix}` : `census-acs${yearSuffix}`,
     isFallback: censusIsFallback,
   } : null
 

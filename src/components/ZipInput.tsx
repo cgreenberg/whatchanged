@@ -5,7 +5,7 @@ import type { CityResult } from '@/lib/city-search'
 import { reverseGeocodeToZip } from '@/lib/geocode'
 
 interface ZipInputProps {
-  onSubmit: (zip: string) => void
+  onSubmit: (zip: string, city?: string, state?: string) => void
   isLoading: boolean
 }
 
@@ -68,7 +68,11 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
   const selectResult = useCallback((result: CityResult) => {
     setDismissed(true)
     setValue('')
-    onSubmit(result.zip)
+    // Parse city and state from display string (format: "City Name, ST")
+    const match = result.display.match(/^(.+),\s*([A-Z]{2})$/)
+    const city = match ? match[1].trim() : undefined
+    const state = match ? match[2].trim() : undefined
+    onSubmit(result.zip, city, state)
   }, [onSubmit])
 
   function handleSubmit(e: React.FormEvent) {

@@ -21,11 +21,14 @@ export default function HomeContent() {
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [markerPosition, setMarkerPosition] = useState<[number, number] | undefined>()
-  async function handleZipSubmit(zip: string) {
+  async function handleZipSubmit(zip: string, city?: string, state?: string) {
     setState('loading')
     setErrorMsg('')
     try {
-      const res = await fetch(`/api/data/${zip}`)
+      const url = city && state
+        ? `/api/data/${zip}?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`
+        : `/api/data/${zip}`
+      const res = await fetch(url)
       if (res.status === 404) throw new Error('Zip code not found')
       if (!res.ok) throw new Error('Failed to load data')
       const data: EconomicSnapshot = await res.json()
@@ -169,6 +172,8 @@ export default function HomeContent() {
                   })()}
                   {snapshot.census.data && (() => {
                     const cost = estimateTariffCost(snapshot.census.data!.medianIncome)
+                    const isCityLevel = snapshot.census.data?.isCityLevel
+                    const cityName = snapshot.census.data?.cityName
                     return (
                       <StatCard
                         label="Tariff Impact"
@@ -177,7 +182,7 @@ export default function HomeContent() {
                         direction="up"
                         sourceLabel="Yale Budget Lab"
                         sourceDate="2025 est."
-                        geoLevel="zip-level income"
+                        geoLevel={isCityLevel && cityName ? `${cityName} city proper median income` : 'zip-level income'}
                         isNegative
                         sourceUrl="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
                         accentColor="#A855F7"
