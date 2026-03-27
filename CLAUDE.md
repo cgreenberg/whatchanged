@@ -84,7 +84,15 @@ Return JSON to client → render cards + charts
 ### EIA (Energy Information Administration)
 
 **API Key:** `process.env.EIA_API_KEY` | Weekly retail gasoline prices
-**Geo level:** PAD District / state / city (not county)
+**Geo level:** PAD District / sub-district / state / city (not county)
+**Base URL:** `https://api.eia.gov/v2/petroleum/pri/gnd/data/`
+
+EIA publishes exactly **29 duoarea codes** for product EPM0 (retail gasoline):
+- **10 city codes:** YBOS, Y35NY, YMIA, YORD, YCLE, Y44HO, YDEN, Y05LA, Y05SF, Y48SE
+- **9 state codes:** SCA, SCO, SFL, SMA, SMN, SNY, SOH, STX, SWA (no other states available)
+- **7 PAD codes:** R1X (1A New England), R1Y (1B Central Atlantic), R1Z (1C Lower Atlantic), R20, R30, R40, R50
+- **2 special:** NUS (national), R5XCA (PAD 5 except CA)
+- **1 aggregate:** R10 (all of PAD 1 — don't use, prefer sub-districts)
 
 ### USASpending
 
@@ -136,22 +144,56 @@ Return JSON to client → render cards + charts
 
 ## Geo Mapping
 
-The mapping chain `zip → county FIPS → CPI metro area → EIA gas region` is where most bugs come from.
+The mapping chain `zip → county FIPS → CPI metro area → EIA gas region` is where most bugs come from. **Each data source resolves geography differently:**
+
+| Data Source     | Geo Resolution                                          | Mapping Chain                                                    |
+| --------------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
+| Gas prices      | EIA 3-tier (county → CPI→city → state → PAD)            | `getGasLookup(state, cpiArea, countyFips)` in `eia.ts`          |
+| Groceries       | BLS CPI metro area                                      | `getMetroCpiAreaForCounty()` → `CUUR{area}SAF11`                |
+| Shelter         | Same CPI metro area                                     | `getMetroCpiAreaForCounty()` → `CUUR{area}SAH1`                 |
+| Energy          | Same CPI metro area                                     | `getMetroCpiAreaForCounty()` → `CUUR{area}SA0E`                 |
+| Unemployment    | County FIPS directly                                    | `LAUCN{fips}0000000003` — no metro/state mapping                |
+| Tariff estimate | ZIP-level Census income × 0.0205                        | No geo mapping beyond ZIP                                        |
+
+### EIA Gas 3-Tier Lookup (`getGasLookup`)
+
+1. **Tier 1a:** `COUNTY_EIA_CITY_OVERRIDES[countyFips]` — direct county → city/region
+2. **Tier 1b:** `CPI_TO_EIA_CITY[cpiAreaCode]` — CPI metro → EIA city
+3. **Tier 2:** `STATE_LEVEL_CODES[state]` — state-level average (9 states only)
+4. **Tier 3:** `STATE_TO_PAD[state]` → PAD district/sub-district fallback
+
+**PAD 1 Sub-Districts:** PAD 1 (East Coast) is split into 3 sub-districts with different duoarea codes:
+- **1A New England** (CT, ME, MA, NH, RI, VT) → `R1X`
+- **1B Central Atlantic** (DE, DC, MD, NJ, NY, PA) → `R1Y`
+- **1C Lower Atlantic** (FL, GA, NC, SC, VA, WV) → `R1Z`
+
+PADs 2–5 have no sub-districts.
+
+### Common Mapping Pitfalls
+
+- **CPI→gas chain leaking across PAD districts:** If state A borrows a CPI metro from state B (e.g., Idaho using Seattle CPI), and that CPI metro has an EIA city mapping, state A gets state B's city gas prices — potentially from a completely different PAD district. Fix: add county-level gas overrides (Tier 1a) to intercept before the CPI→city lookup.
+- **Cross-state CPI→city drag:** Louisiana uses Houston CPI (reasonable), but this chains to Houston city gas (wrong — LA should get Gulf Coast PAD 3). Fix: add parish-level gas overrides.
+- **Upstate cities getting metro-city gas:** All NY counties inherit CPI area S12A → Y35NY (NYC gas). Buffalo/Rochester/Syracuse need county overrides → SNY (NY state avg).
+- **PAD district assignments:** Always verify against the official EIA PADD page at `eia.gov/petroleum/weekly/includes/padds.php`. Oklahoma is PAD 2 (Midwest), not PAD 3.
 
 ### Key Mapping Files
 
-1. **`src/lib/mappings/county-metro-cpi.ts`** — `STATE_TO_CPI_AREA`, `COUNTY_CPI_OVERRIDES`
-2. **`src/lib/mappings/eia-gas.ts`** — `CPI_TO_EIA_CITY`, `COUNTY_EIA_CITY_OVERRIDES`, `STATE_LEVEL_CODES`
+1. **`src/lib/mappings/county-metro-cpi.ts`** — `STATE_TO_CPI_AREA`, `COUNTY_CPI_OVERRIDES`, `BLS_CPI_AREAS`
+2. **`src/lib/mappings/eia-gas.ts`** — `CPI_TO_EIA_CITY`, `COUNTY_EIA_CITY_OVERRIDES`, `STATE_LEVEL_CODES`, `STATE_TO_PAD`, `PAD_DUOAREA`
 3. **`src/lib/mappings/state-fips.ts`** — state FIPS codes
 
 ### Diagnosing Mapping Bugs
 
 ```bash
-npx tsx scripts/audit-zip-mappings.ts
+npx tsx scripts/audit-zip-mappings.ts        # offline audit of all 33,780 zips
+npx tsx scripts/verify-mappings-live.ts      # live API verification of all codes
 ```
 
-Audits all 33,780 zips — flags missing CPI overrides, gas tier downgrades, unmapped counties.
-**Fix:** Add county FIPS to `COUNTY_CPI_OVERRIDES` or `COUNTY_EIA_CITY_OVERRIDES`, re-run audit.
+**Offline audit:** Flags missing CPI overrides, gas tier downgrades, unmapped counties. Makes no API calls.
+**Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series, and LAUS series actually returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`.
+**250-city test:** `tests/unit/city-mapping-audit.test.ts` — tests top 5 cities per state across CPI, gas, BLS series IDs, and LAUS series. Run with `npm test`.
+
+**Fix:** Add county FIPS to `COUNTY_CPI_OVERRIDES` or `COUNTY_EIA_CITY_OVERRIDES`, re-run audit + tests.
 
 ## Hero Cards (4, in order)
 
@@ -217,11 +259,12 @@ Each has: time toggles (Jan 2025 | 3Y | 5Y | 10Y), "Show national" checkbox, era
 ```
 npm run dev          # local dev
 npm run build        # production build
-npm test             # run tests
+npm test             # run tests (includes 250-city mapping audit)
 npm run lint         # lint
 npx playwright test  # e2e tests
-npx tsx scripts/audit-zip-mappings.ts  # audit all zip mappings
-npx tsx scripts/preload-cache.ts       # warm Redis cache
+npx tsx scripts/audit-zip-mappings.ts    # offline audit of all 33,780 zip mappings
+npx tsx scripts/verify-mappings-live.ts  # live API verification of all mapping codes
+npx tsx scripts/preload-cache.ts         # warm Redis cache
 npx lighthouse https://www.whatchanged.us --only-categories=performance
 ```
 
@@ -305,7 +348,8 @@ src/
       (bundled JSON)          # HUD crosswalk, Census ACS data
 scripts/
   add-city-names.ts           # Add city names to data
-  audit-zip-mappings.ts       # Audit all 33,780 zips for mapping gaps
+  audit-zip-mappings.ts       # Offline audit of all 33,780 zips for mapping gaps
+  verify-mappings-live.ts     # Live API verification of all EIA/BLS mapping codes
   build-census-acs.ts         # Build Census ACS static data
   flush-cpi-cache.ts          # Flush CPI cache entries
   preload-cache.ts            # Warm Redis with gas + BLS + unemployment
@@ -336,6 +380,8 @@ Run 3 review agents in parallel before committing (logic, security, data accurac
 
 - Location banner sometimes redundant ("Clark County, WA — Clark County") → should use city name from zip lookup
 - Zip/city mapping gaps are the #1 recurring bug source → run `npx tsx scripts/audit-zip-mappings.ts`
+- **Connecticut FIPS broken for unemployment:** CT abolished counties in 2022, replaced with Planning Council Regions (FIPS 09110–09190). The HUD crosswalk still uses old county FIPS (09001–09015), so all CT LAUS unemployment series return "series does not exist" from BLS. Needs a crosswalk from old → new FIPS in the zip lookup or BLS fetch layer.
+- Hawaii and Alaska get PAD 5 "West Coast avg" for gas — EIA has no state-level codes for HI/AK, and prices differ significantly ($1+/gal) from mainland West Coast. No fix available without EIA publishing those series.
 
 ## What NOT To Build
 
