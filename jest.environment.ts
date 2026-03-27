@@ -36,5 +36,10 @@ export default class CustomTestEnvironment extends JsDomEnvironment {
       this.global.Headers = nodeGlobals.Headers as typeof Headers
       this.global.FormData = nodeGlobals.FormData as typeof FormData
     }
+
+    // MSW requires Node-native AbortSignal/AbortController, not jsdom's
+    const nodeGlobals2 = globalThis as Record<string, unknown>
+    this.global.AbortController = nodeGlobals2.AbortController as typeof AbortController
+    this.global.AbortSignal = nodeGlobals2.AbortSignal as typeof AbortSignal
   }
 }

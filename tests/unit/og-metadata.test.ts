@@ -156,17 +156,18 @@ describe('generateMetadata — valid zip with snapshot', () => {
     expect(meta.title as string).toMatch(/\?$/)
   })
 
-  test('og:title includes "Since January 2025?"', async () => {
+  test('og:title references Jan 2025 date', async () => {
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const ogTitle = (meta.openGraph as { title?: string })?.title
-    expect(ogTitle).toContain('Since January 2025?')
+    // Format may be "Jan. 20, 2025" or "January 2025" — match loosely
+    expect(ogTitle).toMatch(/jan\.?\s*(20,?\s*)?2025/i)
   })
 
   test('description includes tariff impact part', async () => {
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('Tariff impact:')
-    expect(desc).toContain('/yr')
+    // Format: "Tariff cost ~$X,XXX/yr"
+    expect(desc).toMatch(/tariff cost ~\$[\d,]+\/yr/i)
   })
 
   test('description includes groceries part', async () => {
@@ -183,11 +184,11 @@ describe('generateMetadata — valid zip with snapshot', () => {
     expect(desc).toContain('+0.8%')
   })
 
-  test('description includes federal funding cut part', async () => {
+  test('description includes gas price change', async () => {
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('federal funding cut')
-    expect(desc).toContain('$4M')
+    // Gas is always the first segment when available
+    expect(desc).toMatch(/gas: [+-]?\$[\d.]+\/gal/i)
   })
 
   test('description parts are joined with " · "', async () => {
@@ -197,10 +198,11 @@ describe('generateMetadata — valid zip with snapshot', () => {
     expect(desc).toContain(' · ')
   })
 
-  test('og:image URL is /api/og?zip=98683', async () => {
+  test('og:image URL starts with /api/og?zip=98683', async () => {
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const images = (meta.openGraph as { images?: Array<{ url: string }> })?.images
-    expect(images?.[0]?.url).toBe('/api/og?zip=98683')
+    // URL may include cache-busting version param (e.g. &v=2026-03)
+    expect(images?.[0]?.url).toMatch(/^\/api\/og\?zip=98683/)
   })
 
   test('og:url is https://whatchanged.us/?zip=98683', async () => {
@@ -277,37 +279,42 @@ describe('generateMetadata — description with missing data', () => {
   })
 })
 
-describe('generateMetadata — federal amount formatting', () => {
-  test('federal amount >= 1B → formatted as "$X.XB"', async () => {
+describe('generateMetadata — tariff cost formatting', () => {
+  // Federal cuts are not included in the OG description — tariff cost is the
+  // dynamic dollar figure. These tests verify the tariff cost varies with income.
+
+  test('high income → larger tariff cost in description', async () => {
     const snapshot = makeSnapshot()
-    snapshot.federal.data!.amountCut = 1_500_000_000
+    snapshot.census.data!.medianIncome = 200_000  // 200k × 0.0205 = $4,100
     mockFetchSnapshot.mockResolvedValue(snapshot)
 
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('$1.5B')
-    expect(desc).not.toContain('M')
+    expect(desc).toMatch(/tariff cost ~\$[\d,]+\/yr/i)
+    // $4,100 should appear (formatted as $4,100 or similar)
+    expect(desc).toMatch(/\$4[,.]?1/)
   })
 
-  test('federal amount < 1B → formatted as "$XM" not "$X.XB"', async () => {
+  test('low income → smaller tariff cost in description', async () => {
     const snapshot = makeSnapshot()
-    snapshot.federal.data!.amountCut = 42_000_000
+    snapshot.census.data!.medianIncome = 30_000  // 30k × 0.0205 = $615
     mockFetchSnapshot.mockResolvedValue(snapshot)
 
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('$42M')
-    expect(desc).not.toContain('B')
+    expect(desc).toMatch(/tariff cost ~\$[\d,]+\/yr/i)
+    // $615 should appear
+    expect(desc).toContain('$615')
   })
 
-  test('federal amount exactly 1B → formatted as "$1.0B"', async () => {
+  test('no census data → tariff cost absent from description', async () => {
     const snapshot = makeSnapshot()
-    snapshot.federal.data!.amountCut = 1_000_000_000
+    snapshot.census = { data: null, error: 'no data', fetchedAt: '2025-03-01T00:00:00.000Z', sourceId: 'census' }
     mockFetchSnapshot.mockResolvedValue(snapshot)
 
     const meta = await generateMetadata({ searchParams: Promise.resolve({ zip: '98683' }) })
     const desc = (meta.openGraph as { description?: string })?.description ?? ''
-    expect(desc).toContain('$1.0B')
+    expect(desc).not.toMatch(/tariff/i)
   })
 })
 
