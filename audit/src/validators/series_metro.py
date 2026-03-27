@@ -124,6 +124,11 @@ def _metro_names_match(site_metro: str, bls_metro: str) -> bool:
     site_norm = site_metro.lower().strip()
     bls_norm = bls_metro.lower().strip()
 
+    # "National" and "U.S. city average" are the same (national CPI series)
+    national_aliases = {"national", "u.s. city average", "us city average"}
+    if site_norm in national_aliases and bls_norm in national_aliases:
+        return True
+
     # Direct match
     if site_norm == bls_norm:
         return True

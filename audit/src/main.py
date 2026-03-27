@@ -218,7 +218,7 @@ def audit_single_zip(
     all_checks.extend(verify_computations(site_data))
 
     # National data verification
-    all_checks.extend(compare_national_data(site_data))
+    all_checks.extend(compare_national_data(site_data, zip_code=zip_code))
 
     # Verify _audit computation breakdowns (if available)
     audit_data = site_data.get("_audit", {})

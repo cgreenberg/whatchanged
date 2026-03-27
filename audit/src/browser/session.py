@@ -175,10 +175,17 @@ def _scrape_rendered_values(page) -> dict:
         if gas_match:
             rendered["gas_price"] = float(gas_match.group(1))
 
-        # Tariff impact: look for ~$X,XXX/yr pattern
-        tariff_match = re.search(r'~?\$?([\d,]+)/yr', text)
-        if tariff_match:
-            rendered["tariff_estimate"] = float(tariff_match.group(1).replace(",", ""))
+        # Tariff impact: look for ~$X,XXX/yr pattern near tariff context
+        # Must search near "tariff" text to avoid matching grocery/housing dollar translations
+        tariff_section = re.search(r'(?:tariff|Tariff)[^\n]*?~?\$?([\d,]+)/yr', text, re.DOTALL)
+        if not tariff_section:
+            # Fallback: look for the largest /yr amount (tariff is typically the biggest)
+            yr_matches = re.findall(r'~?\$?([\d,]+)/yr', text)
+            if yr_matches:
+                amounts = [float(m.replace(",", "")) for m in yr_matches]
+                rendered["tariff_estimate"] = max(amounts)
+        else:
+            rendered["tariff_estimate"] = float(tariff_section.group(1).replace(",", ""))
 
         # Percentage changes: look for +X.X% or -X.X% patterns with context
         # Grocery/Housing/Shelter patterns

@@ -48,11 +48,12 @@ GAS_LOCAL_NATIONAL_TOLERANCE = 2.0             # $/gal
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def compare_national_data(site_data: dict) -> list[CheckResult]:
+def compare_national_data(site_data: dict, zip_code: str = "") -> list[CheckResult]:
     """Verify national-level data embedded in the whatchanged.us API response.
 
     Args:
         site_data: Full API response from whatchanged.us for a single zip code.
+        zip_code: The zip code being audited (used for territory-specific tolerances).
 
     Returns:
         List of CheckResult, all with category="national".
@@ -66,7 +67,7 @@ def compare_national_data(site_data: dict) -> list[CheckResult]:
     results.extend(_check_national_unemployment(unemp_data))
     results.extend(_check_national_cpi(cpi_data))
     results.extend(_check_national_gas(gas_data))
-    results.extend(_check_local_vs_national(unemp_data, cpi_data, gas_data))
+    results.extend(_check_local_vs_national(unemp_data, cpi_data, gas_data, zip_code=zip_code))
 
     return results
 
@@ -294,14 +295,21 @@ def _check_local_vs_national(
     unemp_data: Optional[dict],
     cpi_data: Optional[dict],
     gas_data: Optional[dict],
+    zip_code: str = "",
 ) -> list[CheckResult]:
     """Compare local values against national to catch large divergences.
 
     - Unemployment: local vs national within 10 percentage points (FAIL if not)
+      (Puerto Rico zips starting with "00" use a 20pp tolerance due to structurally
+      higher unemployment rates)
     - Grocery CPI direction: both should be moving the same direction (WARN if not)
     - Gas price: local vs national within $2/gal (FAIL if not)
     """
     results: list[CheckResult] = []
+
+    # Puerto Rico zips start with "00" — use wider unemployment tolerance
+    is_pr = zip_code.startswith("00")
+    unemp_tolerance = 20.0 if is_pr else UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE
 
     # --- Unemployment local vs national ---
     local_unemp = unemp_data.get("current") if unemp_data else None
@@ -311,7 +319,7 @@ def _check_local_vs_national(
         national_rate = latest_national.get("rate") if latest_national else None
         if national_rate is not None:
             diff = abs(local_unemp - national_rate)
-            if diff <= UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE:
+            if diff <= unemp_tolerance:
                 results.append(CheckResult(
                     status=CheckStatus.PASS,
                     category="national",
@@ -319,15 +327,15 @@ def _check_local_vs_national(
                     site_value=local_unemp,
                     source_value=national_rate,
                     difference=round(diff, 3),
-                    tolerance=UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE,
+                    tolerance=unemp_tolerance,
                     unit="percentage points",
                     message=(
                         f"Local {local_unemp}% vs national {national_rate}% "
-                        f"(diff {diff:.2f}pp, within {UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE}pp tolerance)"
+                        f"(diff {diff:.2f}pp, within {unemp_tolerance}pp tolerance)"
                     ),
                     description=(
                         "Local unemployment rate vs national average. "
-                        "A difference > 10pp would be unusual and likely indicates a data mapping error."
+                        f"A difference > {unemp_tolerance}pp would be unusual and likely indicates a data mapping error."
                     ),
                     source_url="https://www.bls.gov/lau/",
                 ))
@@ -339,15 +347,15 @@ def _check_local_vs_national(
                     site_value=local_unemp,
                     source_value=national_rate,
                     difference=round(diff, 3),
-                    tolerance=UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE,
+                    tolerance=unemp_tolerance,
                     unit="percentage points",
                     message=(
                         f"Local {local_unemp}% vs national {national_rate}% — "
-                        f"diff {diff:.2f}pp exceeds {UNEMPLOYMENT_LOCAL_NATIONAL_TOLERANCE}pp tolerance"
+                        f"diff {diff:.2f}pp exceeds {unemp_tolerance}pp tolerance"
                     ),
                     description=(
                         "Local unemployment rate vs national average. "
-                        "A difference > 10pp is unusual and likely indicates a data mapping error."
+                        f"A difference > {unemp_tolerance}pp is unusual and likely indicates a data mapping error."
                     ),
                     source_url="https://www.bls.gov/lau/",
                 ))
