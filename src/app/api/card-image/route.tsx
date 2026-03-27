@@ -11,5 +11,7 @@ export async function GET(request: Request) {
     return new Response('Invalid zip code', { status: 400 })
   }
 
-  return generateShareCard(zip)
+  const city = searchParams.get('city') ?? undefined
+  const state = searchParams.get('state') ?? undefined
+  return generateShareCard(zip, city, state)
 }

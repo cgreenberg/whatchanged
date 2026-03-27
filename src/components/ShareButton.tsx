@@ -12,13 +12,18 @@ export function ShareButton({ snapshot }: ShareButtonProps) {
   const [copied, setCopied] = useState(false)
 
   const zip = snapshot.zip
+  const city = snapshot.census.data?.isCityLevel ? snapshot.census.data?.cityName : undefined
+  const state = city ? snapshot.location.stateAbbr : undefined
+  const shareUrl = city && state
+    ? `/api/share/${zip}?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`
+    : `/api/share/${zip}`
 
   const shareImage = useCallback(async () => {
     if (isSharing) return
     setIsSharing(true)
 
     try {
-      const response = await fetch(`/api/share/${zip}`)
+      const response = await fetch(shareUrl)
       if (!response.ok) throw new Error('Failed to generate image')
       const blob = await response.blob()
       const file = new File([blob], `whatchanged-${zip}.png`, { type: 'image/png' })
@@ -39,7 +44,7 @@ export function ShareButton({ snapshot }: ShareButtonProps) {
     } finally {
       setIsSharing(false)
     }
-  }, [isSharing, zip])
+  }, [isSharing, zip, shareUrl])
 
   async function copyLink() {
     const url = `https://whatchanged.us/?zip=${zip}`

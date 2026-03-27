@@ -3,7 +3,7 @@
 import { CITY_ZIP_LOOKUP } from '@/lib/data/city-zip-lookup'
 
 interface CityGridProps {
-  onCitySelect: (zip: string) => void
+  onCitySelect: (zip: string, city?: string, state?: string) => void
 }
 
 export function CityGrid({ onCitySelect }: CityGridProps) {
@@ -22,7 +22,7 @@ export function CityGrid({ onCitySelect }: CityGridProps) {
           return (
             <button
               key={city.zip}
-              onClick={() => onCitySelect(city.zip)}
+              onClick={() => onCitySelect(city.zip, city.city, city.state)}
               className="rounded-full px-4 py-1.5 text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
             >
               {label}

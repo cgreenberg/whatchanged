@@ -52,8 +52,8 @@ function getMonthLabel(series: Array<{ date: string }>, idx: number): string {
 }
 
 // ── Main Export ───────────────────────────────────────────────────
-export async function generateShareCard(zip: string): Promise<Response> {
-  const snapshot = await fetchSnapshot(zip)
+export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
+  const snapshot = await fetchSnapshot(zip, city, state)
   if (!snapshot) {
     return new Response('Zip code not found', { status: 404 })
   }
