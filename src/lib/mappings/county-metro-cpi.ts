@@ -2,32 +2,32 @@
 // on 2026-03-22. Each code was checked by loading the series page and reading the Area field.
 export const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   // Northeast
-  'S11A': { code: 'S11A', name: 'Boston-Cambridge-Newton' },
-  'S12A': { code: 'S12A', name: 'New York-Newark-Jersey City' },
-  'S12B': { code: 'S12B', name: 'Philadelphia-Camden-Wilmington' },
+  S11A: { code: 'S11A', name: 'Boston-Cambridge-Newton' },
+  S12A: { code: 'S12A', name: 'New York-Newark-Jersey City' },
+  S12B: { code: 'S12B', name: 'Philadelphia-Camden-Wilmington' },
   // Midwest
-  'S23A': { code: 'S23A', name: 'Chicago-Naperville-Elgin' },
-  'S23B': { code: 'S23B', name: 'Detroit-Warren-Dearborn' },
-  'S24A': { code: 'S24A', name: 'Minneapolis-St. Paul-Bloomington' },
-  'S24B': { code: 'S24B', name: 'St. Louis' },
+  S23A: { code: 'S23A', name: 'Chicago-Naperville-Elgin' },
+  S23B: { code: 'S23B', name: 'Detroit-Warren-Dearborn' },
+  S24A: { code: 'S24A', name: 'Minneapolis-St. Paul-Bloomington' },
+  S24B: { code: 'S24B', name: 'St. Louis' },
   // South
-  'S35A': { code: 'S35A', name: 'Washington-Arlington-Alexandria' },
-  'S35B': { code: 'S35B', name: 'Miami-Fort Lauderdale-West Palm Beach' },
-  'S35C': { code: 'S35C', name: 'Atlanta-Sandy Springs-Roswell' },
-  'S35D': { code: 'S35D', name: 'Tampa-St. Petersburg-Clearwater' },
-  'S35E': { code: 'S35E', name: 'Baltimore-Columbia-Towson' },
-  'S37A': { code: 'S37A', name: 'Dallas-Fort Worth-Arlington' },
-  'S37B': { code: 'S37B', name: 'Houston-The Woodlands-Sugar Land' },
+  S35A: { code: 'S35A', name: 'Washington-Arlington-Alexandria' },
+  S35B: { code: 'S35B', name: 'Miami-Fort Lauderdale-West Palm Beach' },
+  S35C: { code: 'S35C', name: 'Atlanta-Sandy Springs-Roswell' },
+  S35D: { code: 'S35D', name: 'Tampa-St. Petersburg-Clearwater' },
+  S35E: { code: 'S35E', name: 'Baltimore-Columbia-Towson' },
+  S37A: { code: 'S37A', name: 'Dallas-Fort Worth-Arlington' },
+  S37B: { code: 'S37B', name: 'Houston-The Woodlands-Sugar Land' },
   // West
-  'S48A': { code: 'S48A', name: 'Phoenix-Mesa-Scottsdale' },
-  'S48B': { code: 'S48B', name: 'Denver-Aurora-Lakewood' },
-  'S49A': { code: 'S49A', name: 'Los Angeles-Long Beach-Anaheim' },
-  'S49B': { code: 'S49B', name: 'San Francisco-Oakland-Hayward' },
-  'S49C': { code: 'S49C', name: 'Riverside-San Bernardino-Ontario' },
-  'S49D': { code: 'S49D', name: 'Seattle-Tacoma-Bellevue' },
-  'S49E': { code: 'S49E', name: 'San Diego-Carlsbad' },
-  'S49F': { code: 'S49F', name: 'Urban Hawaii' },
-  'S49G': { code: 'S49G', name: 'Urban Alaska' },
+  S48A: { code: 'S48A', name: 'Phoenix-Mesa-Scottsdale' },
+  S48B: { code: 'S48B', name: 'Denver-Aurora-Lakewood' },
+  S49A: { code: 'S49A', name: 'Los Angeles-Long Beach-Anaheim' },
+  S49B: { code: 'S49B', name: 'San Francisco-Oakland-Hayward' },
+  S49C: { code: 'S49C', name: 'Riverside-San Bernardino-Ontario' },
+  S49D: { code: 'S49D', name: 'Seattle-Tacoma-Bellevue' },
+  S49E: { code: 'S49E', name: 'San Diego-Carlsbad' },
+  S49F: { code: 'S49F', name: 'Urban Hawaii' },
+  S49G: { code: 'S49G', name: 'Urban Alaska' },
 }
 
 // Map state abbreviation to closest BLS CPI area code
@@ -89,7 +89,7 @@ export const STATE_TO_CPI_AREA: Record<string, string> = {
 
 // County FIPS overrides for metros that don't match the state default
 export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
-// → Boston-Cambridge-Newton (S11A)
+  // → Boston-Cambridge-Newton (S11A)
   '36019': 'S11A', // Clinton County, NY (212mi vs 280mi current)
   '36031': 'S11A', // Essex County, NY (183mi vs 235mi current)
   '36033': 'S11A', // Franklin County, NY (224mi vs 269mi current)
@@ -1147,7 +1147,10 @@ export function getMetroCpiArea(stateAbbr: string): { areaCode: string; areaName
   return { areaCode: '0000', areaName: 'National' }
 }
 
-export function getMetroCpiAreaForCounty(countyFips: string, stateAbbr: string): { areaCode: string; areaName: string } {
+export function getMetroCpiAreaForCounty(
+  countyFips: string,
+  stateAbbr: string
+): { areaCode: string; areaName: string } {
   const override = COUNTY_CPI_OVERRIDES[countyFips]
   if (override && BLS_CPI_AREAS[override]) {
     return { areaCode: override, areaName: BLS_CPI_AREAS[override].name }
