@@ -127,7 +127,7 @@ EIA publishes exactly **29 duoarea codes** for product EPM0 (retail gasoline):
 | Key Pattern                     | TTL      | Scope                               |
 | ------------------------------- | -------- | ----------------------------------- |
 | `bls:unemployment:{countyFips}` | 7 days   | Per county                          |
-| `bls:cpi:{cpiAreaCode}:all`     | 7 days   | Per CPI area (metro, regional, or national) |
+| `bls:cpi:{cpiAreaCode}:all`     | 7 days   | Per CPI area (metro, division, regional, or national) |
 | `eia:gas:city:{duoarea}`        | 24 hours | Per EIA city                        |
 | `eia:gas:state:{state}`         | 24 hours | Per state                           |
 | `eia:gas:pad:{pad}`             | 24 hours | Per PAD district                    |
@@ -145,14 +145,21 @@ When a BLS or EIA fetch fails, `getCachedOrFetch` in `kv.ts` writes a `{key}:fai
 **CRITICAL: Flushing cache burns BLS API quota.** Every flushed key becomes a cache miss, triggering a fresh BLS API call on the next request. BLS allows 500 requests/day per API key.
 
 **Rules for flushing:**
-- **Flush only the keys you need to.** If you changed CPI mappings, flush only `bls:cpi:*` (15 keys), not unemployment or gas. Use `scripts/flush-all-cache.ts` as a last resort.
+- **Flush only the keys you need to.** If you changed CPI mappings, flush only `bls:cpi:*` (~37 keys: 23 metro + 9 division + 4 regional + 1 national), not unemployment or gas. Use `scripts/flush-all-cache.ts` as a last resort.
 - **Never flush and then immediately warm.** If BLS is rate-limited, warm-cache will fail and the failures get negative-cached for 5 minutes.
 - **Flush once, warm once.** Multiple flush+warm cycles multiply the API calls.
-- **Budget:** 23 CPI metros + 4 regional CPI + ~100 county unemployment series + 20 gas series = ~147 calls to fully repopulate. That's 29% of the daily BLS budget in one warm cycle.
+- **Budget:** 23 CPI metros + 9 division CPI + 4 regional CPI + ~100 county unemployment series + 20 gas series = ~156 calls to fully repopulate. That's 31% of the daily BLS budget in one warm cycle.
+
+**CRITICAL: Vercel CDN caches API responses for 24 hours** (`s-maxage=86400`). Flushing Redis alone is NOT enough — stale responses (including "Data unavailable" from negative cache) persist at the CDN edge. After a Redis flush + warm, trigger a Vercel redeploy (`git commit --allow-empty && git push`) to purge the CDN. Without this, users see stale null data until the 24h CDN TTL expires.
+
+**Safe flush + warm sequence:**
+1. Flush Redis CPI keys (`scripts/flush-cpi-cache.ts`)
+2. Immediately run preload (`scripts/preload-cache.ts`) — before user traffic creates negative cache entries
+3. Push an empty commit to purge Vercel CDN (`git commit --allow-empty -m "chore: purge CDN" && git push`)
 
 ### Cache Warming
 
-**Preload script:** `scripts/preload-cache.ts` — bulk-loads gas (24 series), national CPI, top 50 counties
+**Preload script:** `scripts/preload-cache.ts` — bulk-loads gas (24 series), division + regional + national CPI (14 areas × 3 items = 42 series in 1 BLS call), top 50 counties. **Does NOT warm metro CPI** — metro keys are populated on first user request per metro area.
 **Flush script:** `scripts/flush-all-cache.ts` — deletes all `bls:*`, `eia:*` keys from Upstash Redis (use sparingly — see flush safety above)
 **Warm-cache cron:** `/api/warm-cache` endpoint — 19 representative zips (all PAD districts + major CPI metros)
 **Schedule (cron-job.org):** Monday 7am ET (gas update) + 15th of month (BLS update)
@@ -227,7 +234,7 @@ npx tsx scripts/build-cbsa-cpi-crosswalk.ts  # rebuild CBSA crosswalk from OMB d
 
 ## Geographic Labels
 
-Frontend labels reflect the CPI tier and gas resolution level. The `tier` field (1/2/3) is returned by `getMetroCpiAreaForCounty` and threaded through `CpiData`. Gas `tier` comes from `getGasLookup` and is threaded through `GasPriceData`.
+Frontend labels reflect the CPI tier and gas resolution level. The `tier` field (1/2/3/4) is returned by `getMetroCpiAreaForCounty` and threaded through `CpiData`. Gas `tier` comes from `getGasLookup` and is threaded through `GasPriceData`.
 
 | Tier | CPI Label | CPI Source Link | Gas Label (PAD) |
 |------|-----------|-----------------|-----------------|
@@ -240,7 +247,7 @@ Frontend labels reflect the CPI tier and gas resolution level. The `tier` field 
 
 **PAD ≠ Census region:** EIA PAD districts and BLS CPI Census regions use different geographic boundaries. TN/KY/OK are PAD 2 "Midwest" but Census "South". This is correct — PAD districts track petroleum infrastructure, Census regions track cost-of-living surveys. Gas labels include the PADD identifier (e.g., "Midwest (PADD 2) avg") so users can look it up.
 
-**Source links:** CPI cards link to the BLS page matching the tier. Gas card always links to EIA gas/diesel page. See `HomeContent.tsx` and `ChartsSection.tsx` for the logic.
+**Source links:** All CPI tiers link directly to the BLS timeseries page for the specific series being displayed (e.g., `https://data.bls.gov/timeseries/CUUR0480SAF11` for Mountain groceries). Gas card always links to EIA gas/diesel page. See `HomeContent.tsx` and `ChartsSection.tsx` for the logic.
 
 ## Hero Cards (4, in order)
 
