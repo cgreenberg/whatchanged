@@ -22,15 +22,17 @@ function getChartData(
     case 'unemployment': {
       const unemploymentData = snapshot.unemployment.data
       const seriesId = unemploymentData?.seriesId
+      const series = Array.isArray(unemploymentData?.series) ? unemploymentData.series : []
+      const nationalSeries = Array.isArray(unemploymentData?.nationalSeries) ? unemploymentData.nationalSeries : []
       return {
-        data: unemploymentData?.series.map(p => ({
+        data: series.map(p => ({
           date: p.date,
           rate: p.rate,
-        })) ?? [],
-        nationalData: unemploymentData?.nationalSeries?.map(p => ({
+        })),
+        nationalData: nationalSeries.map(p => ({
           date: p.date,
           rate: p.rate,
-        })) ?? [],
+        })),
         configOverrides: seriesId
           ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesId}` }
           : {},
@@ -53,19 +55,21 @@ function getChartData(
         metro === 'National' ? 4 :
         metro?.includes('Urban') ? 3 : 1
       )
+      const cpiSeries = Array.isArray(cpiData?.series) ? cpiData.series : []
+      const cpiNationalSeries = Array.isArray(cpiData?.nationalSeries) ? cpiData.nationalSeries : []
       return {
-        data: cpiData?.series.map(p => ({
+        data: cpiSeries.map(p => ({
           date: p.date,
           groceries: p.groceries,
           shelter: p.shelter,
           energy: p.energy,
-        })) ?? [],
-        nationalData: cpiData?.nationalSeries?.map(p => ({
+        })),
+        nationalData: cpiNationalSeries.map(p => ({
           date: p.date,
           groceries: p.groceries,
           shelter: p.shelter,
           energy: p.energy,
-        })) ?? [],
+        })),
         configOverrides: {
           ...(metro ? {
             sourceLabel: `BLS CPI — ${metro}`,
@@ -82,15 +86,17 @@ function getChartData(
     }
     case 'gas': {
       const gasData = snapshot.gas.data
+      const gasSeries = Array.isArray(gasData?.series) ? gasData.series : []
+      const gasNationalSeries = Array.isArray(gasData?.nationalSeries) ? gasData.nationalSeries : []
       return {
-        data: gasData?.series.map(p => ({
+        data: gasSeries.map(p => ({
           date: p.date,
           price: p.price,
-        })) ?? [],
-        nationalData: gasData?.nationalSeries?.map(p => ({
+        })),
+        nationalData: gasNationalSeries.map(p => ({
           date: p.date,
           price: p.price,
-        })) ?? [],
+        })),
         configOverrides: gasData?.geoLevel
           ? { geoLevel: gasData.geoLevel }
           : {},

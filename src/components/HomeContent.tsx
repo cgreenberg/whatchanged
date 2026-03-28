@@ -131,7 +131,7 @@ export default function HomeContent() {
                       change={`${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)} since Jan 2025`}
                       direction={snapshot.gas.data.change > 0 ? 'up' : 'down'}
                       sourceLabel="EIA"
-                      sourceDate={snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      sourceDate={Array.isArray(snapshot.gas.data?.series) && snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
                       isNegative
                       sourceUrl={
@@ -155,7 +155,7 @@ export default function HomeContent() {
                         change={`~$${shelterDollarImpact}/yr ${shelterChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                         direction={shelterChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
-                        sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        sourceDate={Array.isArray(snapshot.cpi.data?.series) && snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         geoLevel={
                           cpiTier === 4 ? 'national' :
                           cpiTier === 3 ? `region: ${snapshot.cpi.data?.metro}` :
@@ -185,7 +185,7 @@ export default function HomeContent() {
                         change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                         direction={pctChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
-                        sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        sourceDate={Array.isArray(snapshot.cpi.data?.series) && snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         geoLevel={
                           cpiTier === 4 ? 'national' :
                           cpiTier === 3 ? `region: ${snapshot.cpi.data?.metro}` :

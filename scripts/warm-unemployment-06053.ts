@@ -3,15 +3,19 @@
  * warm-unemployment-06053.ts
  *
  * Warms Redis cache for Monterey County, CA unemployment data (FIPS 06053).
- * Clears any negative cache entry, fetches fresh data from BLS, and writes
- * it to Redis with the standard 7-day TTL.
+ * Clears any negative cache entry, fetches fresh PROCESSED data from BLS via
+ * fetchUnemployment(), and writes the UnemploymentData object to Redis with
+ * the standard 7-day TTL.
  *
  * Run with: npx tsx scripts/warm-unemployment-06053.ts
+ *
+ * Previous version was BROKEN: it stored the raw BLS API response ({status,
+ * Results, series...}) instead of the processed UnemploymentData object.
+ * This version calls fetchUnemployment() which returns the correct shape.
  */
 
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import { Redis } from '@upstash/redis'
 
 // ---------------------------------------------------------------------------
 // Env loader — reads .env.local manually (same pattern as preload-cache.ts)
@@ -43,75 +47,20 @@ function loadEnv() {
 loadEnv()
 
 // ---------------------------------------------------------------------------
-// Redis client
+// Imports (after env is loaded so BLS_API_KEY is available)
 // ---------------------------------------------------------------------------
 
-function getRedis(): Redis {
-  const url = process.env.KV_REST_API_URL
-  const token = process.env.KV_REST_API_TOKEN
-  if (!url || !token) {
-    throw new Error('Missing KV_REST_API_URL or KV_REST_API_TOKEN in environment')
-  }
-  return new Redis({ url, token })
-}
+import { fetchUnemployment } from '../src/lib/api/bls'
+import { setCached, deleteCached } from '../src/lib/cache/kv'
 
 // ---------------------------------------------------------------------------
-// BLS fetch (mirrors logic in src/lib/api/bls.ts)
+// Constants
 // ---------------------------------------------------------------------------
 
-const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 const COUNTY_FIPS = '06053'
-const SERIES_ID = `LAUCN${COUNTY_FIPS}0000000003`
-const NATIONAL_SERIES = 'LNS14000000'
 const CACHE_KEY = `bls:unemployment:${COUNTY_FIPS}`
 const FAILED_KEY = `${CACHE_KEY}:failed`
 const TTL_SECONDS = 604800 // 7 days
-
-async function fetchFromBLS(): Promise<unknown> {
-  const currentYear = new Date().getFullYear().toString()
-
-  const body: Record<string, unknown> = {
-    seriesid: [SERIES_ID, NATIONAL_SERIES],
-    startyear: '2016',
-    endyear: currentYear,
-  }
-
-  if (process.env.BLS_API_KEY) {
-    body.registrationkey = process.env.BLS_API_KEY
-    console.log('Using BLS_API_KEY for higher rate limits')
-  } else {
-    console.warn('No BLS_API_KEY set — using anonymous rate limit (25 req/day)')
-  }
-
-  console.log(`Fetching BLS series: ${SERIES_ID} (+ national ${NATIONAL_SERIES})`)
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 15000)
-
-  let json: any
-  try {
-    const response = await fetch(BLS_API_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      throw new Error(`BLS API HTTP error: ${response.status} ${response.statusText}`)
-    }
-
-    json = await response.json()
-  } finally {
-    clearTimeout(timeout)
-  }
-
-  if (json.status !== 'REQUEST_SUCCEEDED') {
-    throw new Error(`BLS API returned status: ${json.status} — ${JSON.stringify(json.message)}`)
-  }
-
-  return json
-}
 
 // ---------------------------------------------------------------------------
 // Main
@@ -121,73 +70,60 @@ async function main() {
   console.log(`\nWarming unemployment cache for Monterey County, CA (FIPS ${COUNTY_FIPS})`)
   console.log('='.repeat(60))
 
-  const redis = getRedis()
+  // Step 1: Delete corrupted key and negative cache entry
+  console.log(`\n[1/4] Deleting corrupted key "${CACHE_KEY}" and negative cache "${FAILED_KEY}"...`)
+  await deleteCached(CACHE_KEY)
+  await deleteCached(FAILED_KEY)
+  console.log('      Done.')
 
-  // Step 1: Delete negative cache entry if it exists
-  console.log(`\n[1/4] Checking for negative cache entry: ${FAILED_KEY}`)
-  const failedEntry = await redis.get(FAILED_KEY)
-  if (failedEntry !== null) {
-    await redis.del(FAILED_KEY)
-    console.log('      Deleted negative cache entry.')
-  } else {
-    console.log('      No negative cache entry found.')
-  }
-
-  // Step 2: Fetch fresh data from BLS
-  console.log(`\n[2/4] Fetching fresh BLS unemployment data...`)
-  let blsData: any
+  // Step 2: Fetch processed data via fetchUnemployment() — returns UnemploymentData, not raw BLS JSON
+  console.log(`\n[2/4] Fetching processed unemployment data from BLS for FIPS ${COUNTY_FIPS}...`)
+  let unemploymentData
   try {
-    blsData = await fetchFromBLS()
+    unemploymentData = await fetchUnemployment(COUNTY_FIPS)
   } catch (err) {
-    console.error('FATAL: BLS fetch failed:', err)
+    console.error('FATAL: fetchUnemployment() failed:', err)
     process.exit(1)
   }
 
-  // Step 3: Log summary of what we got
-  console.log(`\n[3/4] Validating response...`)
-  const series = blsData?.Results?.series ?? []
-  console.log(`      Series returned: ${series.length}`)
+  // Step 3: Validate the result
+  console.log(`\n[3/4] Validating result...`)
+  const { current, baseline, change, series, countyFips, seriesId, nationalSeries } = unemploymentData
 
-  let countyPoints = 0
-  let latestRate: number | null = null
-
-  for (const s of series) {
-    const dataPoints = s.data ?? []
-    if (s.seriesID === SERIES_ID) {
-      countyPoints = dataPoints.length
-      if (dataPoints.length > 0) {
-        // BLS data is newest-first
-        const latest = dataPoints[0]
-        latestRate = parseFloat(latest.value)
-        console.log(
-          `      County series (${SERIES_ID}): ${countyPoints} points, latest = ${latest.value}% (${latest.year} ${latest.period})`
-        )
-      } else {
-        console.warn(`      County series returned 0 data points — BLS may not have data for this county`)
-      }
-    } else if (s.seriesID === NATIONAL_SERIES) {
-      console.log(`      National series (${NATIONAL_SERIES}): ${dataPoints.length} points`)
-    }
+  if (typeof current !== 'number' || isNaN(current)) {
+    console.error('ERROR: current is not a valid number:', current)
+    process.exit(1)
   }
-
-  if (countyPoints === 0) {
-    console.error('ERROR: No county data points returned. Aborting cache write.')
+  if (typeof baseline !== 'number') {
+    console.error('ERROR: baseline is not a valid number:', baseline)
+    process.exit(1)
+  }
+  if (!Array.isArray(series) || series.length === 0) {
+    console.error('ERROR: series is empty or not an array')
     process.exit(1)
   }
 
-  // Step 4: Write to Redis
-  console.log(`\n[4/4] Writing to Redis with key "${CACHE_KEY}" (TTL: ${TTL_SECONDS}s / 7 days)...`)
-  await redis.set(CACHE_KEY, blsData, { ex: TTL_SECONDS })
+  console.log(`      current       : ${current}`)
+  console.log(`      baseline      : ${baseline}`)
+  console.log(`      change        : ${change}`)
+  console.log(`      series.length : ${series.length}`)
+  console.log(`      countyFips    : ${countyFips}`)
+  console.log(`      seriesId      : ${seriesId}`)
+  console.log(`      nationalSeries: ${nationalSeries ? nationalSeries.length + ' points' : 'none'}`)
+
+  // Step 4: Write the processed UnemploymentData object to Redis
+  console.log(`\n[4/4] Writing processed data to Redis key "${CACHE_KEY}" (TTL: ${TTL_SECONDS}s / 7 days)...`)
+  await setCached(CACHE_KEY, unemploymentData, TTL_SECONDS)
   console.log('      Write complete.')
 
   console.log('\n' + '='.repeat(60))
   console.log('Cache warm complete.')
   console.log(`  County FIPS : ${COUNTY_FIPS}`)
   console.log(`  Cache key   : ${CACHE_KEY}`)
-  console.log(`  Data points : ${countyPoints}`)
-  if (latestRate !== null) {
-    console.log(`  Latest rate : ${latestRate}%`)
-  }
+  console.log(`  current     : ${current}%`)
+  console.log(`  baseline    : ${baseline}%`)
+  console.log(`  change      : ${change}pp`)
+  console.log(`  data points : ${series.length}`)
   console.log('')
 }
 
