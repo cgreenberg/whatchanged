@@ -14,11 +14,12 @@ import * as fs from 'fs'
 // Imports from source files (relative paths — no @/ aliases needed at top level)
 // ---------------------------------------------------------------------------
 
+import cbsaCrosswalk from '../src/lib/data/cbsa-cpi-crosswalk.json'
+
 import {
   getMetroCpiAreaForCounty,
   BLS_CPI_AREAS,
-  STATE_TO_CPI_AREA,
-  COUNTY_CPI_OVERRIDES,
+  STATE_TO_REGION,
 } from '../src/lib/mappings/county-metro-cpi'
 
 import { getGasLookup } from '../src/lib/api/eia'
@@ -65,7 +66,7 @@ interface ZipAuditResult {
   gasLabel: string
   gasTier: GasTier
   gasTierName: string
-  cpiSource: 'county-override' | 'state-default' | 'national-fallback'
+  cpiSource: 'cbsa-metro' | 'regional' | 'national-fallback'
 }
 
 // ---------------------------------------------------------------------------
@@ -100,10 +101,10 @@ for (const zip of allZips) {
       ? 'state'
       : 'PAD district'
 
-  const cpiSource: ZipAuditResult['cpiSource'] = COUNTY_CPI_OVERRIDES[countyFips]
-    ? 'county-override'
-    : STATE_TO_CPI_AREA[state]
-    ? 'state-default'
+  const cpiSource: ZipAuditResult['cpiSource'] = (cbsaCrosswalk as Record<string, string>)[countyFips]
+    ? 'cbsa-metro'
+    : STATE_TO_REGION[state]
+    ? 'regional'
     : 'national-fallback'
 
   results.push({
@@ -133,11 +134,11 @@ for (const r of results) {
 }
 const uniqueCounties = Array.from(countyMap.values())
 
-// ---- Issue A: Missing state CPI mapping ----
+// ---- Issue A: Missing state regional CPI mapping ----
 const statesInData = new Set(results.map(r => r.stateAbbr))
-const missingStateCpi: string[] = []
+const missingRegionCpi: string[] = []
 for (const state of statesInData) {
-  if (!STATE_TO_CPI_AREA[state]) missingStateCpi.push(state)
+  if (!STATE_TO_REGION[state]) missingRegionCpi.push(state)
 }
 
 // ---- Issue B: Missing PAD mapping ----
@@ -146,189 +147,65 @@ for (const state of statesInData) {
   if (STATE_TO_PAD[state] === undefined) missingPad.push(state)
 }
 
-// ---- Issue C: Gas tier downgrade ----
-// For each CPI area that has city-level gas data, find counties that RESOLVE
-// to that CPI area but land on a lower tier because their state default routes
-// differently — i.e., counties whose state default CPI IS in CPI_TO_EIA_CITY
-// but the state itself has a STATE_LEVEL_CODES entry that intercepts first.
-//
-// Also: find counties in states where the state default CPI IS in
-// CPI_TO_EIA_CITY but the county resolves to a DIFFERENT CPI area (no override)
-// so it misses city-level gas.
-//
-// Primary pattern (the Houston bug): county's state default IS a CPI area
-// with city gas, but the county has a COUNTY_CPI_OVERRIDE pointing to a
-// DIFFERENT CPI area — meaning it might get better or worse gas resolution.
-//
-// Secondary pattern: county has NO override, state default CPI has no city
-// gas, but the county is actually in a metro whose CPI area DOES have city gas.
-// We can't detect this perfectly without MSA data, but we can flag counties
-// whose FIPS number is numerically adjacent to override counties in the same state.
-
-interface GasTierDowngrade {
+// ---- Issue C: Metro counties at regional/national CPI (CBSA crosswalk gaps) ----
+// Counties that resolve to a metro CPI area via EIA gas (city tier 1) but
+// whose CPI is coming from regional fallback instead of a CBSA metro — this
+// indicates a gap in the CBSA crosswalk for that county.
+interface CbsaGap {
   countyFips: string
   countyName: string
   stateAbbr: string
-  resolvedCpiArea: string
-  resolvedCpiName: string
+  cpiSource: ZipAuditResult['cpiSource']
+  cpiAreaCode: string
   gasTier: GasTier
   gasTierName: string
-  issue: string
-  suggestedFix: string
 }
 
-const gasTierDowngrades: GasTierDowngrade[] = []
-
-// Pattern 2 (primary downgrade): county has a COUNTY_CPI_OVERRIDE pointing
-// to a CPI area WITHOUT city gas, while the state default CPI area HAS city
-// gas. This means the override is HURTING the gas resolution.
+const cbsaGaps: CbsaGap[] = []
 for (const county of uniqueCounties) {
-  const hasOverride = !!COUNTY_CPI_OVERRIDES[county.countyFips]
-  if (!hasOverride) continue
-
-  const overrideCpi = COUNTY_CPI_OVERRIDES[county.countyFips]
-  const stateDefaultCpi = STATE_TO_CPI_AREA[county.stateAbbr]
-
-  const overrideHasCity = !!CPI_TO_EIA_CITY[overrideCpi]
-  const stateDefaultHasCity = stateDefaultCpi ? !!CPI_TO_EIA_CITY[stateDefaultCpi] : false
-
-  if (stateDefaultHasCity && !overrideHasCity) {
-    gasTierDowngrades.push({
+  // Flag counties that get city-level gas (tier 1 — they're clearly in a metro)
+  // but are NOT in the CBSA crosswalk (they fall back to regional CPI).
+  if (county.gasTier === 1 && county.cpiSource !== 'cbsa-metro') {
+    cbsaGaps.push({
       countyFips: county.countyFips,
       countyName: county.countyName,
       stateAbbr: county.stateAbbr,
-      resolvedCpiArea: overrideCpi,
-      resolvedCpiName: BLS_CPI_AREAS[overrideCpi]?.name ?? overrideCpi,
+      cpiSource: county.cpiSource,
+      cpiAreaCode: county.cpiAreaCode,
       gasTier: county.gasTier,
       gasTierName: county.gasTierName,
-      issue: `COUNTY_CPI_OVERRIDE → ${overrideCpi} (no city gas), but state default ${stateDefaultCpi} HAS city gas (${CPI_TO_EIA_CITY[stateDefaultCpi!].label})`,
-      suggestedFix: `Add COUNTY_EIA_CITY_OVERRIDES['${county.countyFips}'] pointing to the correct city duoarea, OR reconsider the CPI override.`,
     })
   }
 }
 
-// Pattern 3 (the core Houston pattern): county has NO CPI override; state
-// default CPI has city gas BUT the county is in a metro that should map to a
-// DIFFERENT CPI area (one that also has city gas). We detect this by looking
-// for counties numerically adjacent to existing CPI overrides in the same state
-// that lack their own override. These are likely in the same MSA.
-interface NearbyMissingOverride {
-  countyFips: string
-  countyName: string
-  stateAbbr: string
-  currentCpiArea: string
-  currentCpiName: string
-  nearbyOverrideFips: string
-  nearbyOverrideName: string
-  nearbyOverrideCpi: string
-  nearbyOverrideCpiName: string
-  gasTier: GasTier
-}
-const nearbyMissingOverrides: NearbyMissingOverride[] = []
-
-// Group override counties by state+targetCpi
-interface OverrideGroup {
-  targetCpi: string
-  fipsNumbers: number[]
-  counties: Array<{ fips: string; name: string }>
-}
-const overridesByStateAndCpi = new Map<string, OverrideGroup>()
-
-for (const [fips, cpiCode] of Object.entries(COUNTY_CPI_OVERRIDES)) {
-  const state = fips.slice(0, 2) // FIPS state prefix (numeric)
-  const key = `${state}:${cpiCode}`
-  if (!overridesByStateAndCpi.has(key)) {
-    overridesByStateAndCpi.set(key, { targetCpi: cpiCode, fipsNumbers: [], counties: [] })
-  }
-  const group = overridesByStateAndCpi.get(key)!
-  group.fipsNumbers.push(parseInt(fips))
-  group.counties.push({ fips, name: countyMap.get(fips)?.countyName ?? fips })
-}
-
-// For each non-override county in the same state (numeric FIPS prefix),
-// check if it's within 50 FIPS units of an override county targeting a CPI
-// area that HAS city gas. (Counties in the same state share the same 2-digit
-// FIPS prefix, and MSA counties often have adjacent numeric codes.)
-const FIPS_PROXIMITY_THRESHOLD = 50
-
-for (const county of uniqueCounties) {
-  if (COUNTY_CPI_OVERRIDES[county.countyFips]) continue // already overridden
-  if (county.gasTier === 1) continue // already getting city gas — no issue
-
-  const statePrefix = county.countyFips.slice(0, 2)
-  const countyNum = parseInt(county.countyFips)
-
-  for (const [key, group] of overridesByStateAndCpi) {
-    if (!key.startsWith(statePrefix + ':')) continue
-    if (!CPI_TO_EIA_CITY[group.targetCpi]) continue // target CPI has no city gas — skip
-
-    const closestDistance = Math.min(...group.fipsNumbers.map(n => Math.abs(n - countyNum)))
-    if (closestDistance > 0 && closestDistance <= FIPS_PROXIMITY_THRESHOLD) {
-      const nearestOverrideFips = group.counties.reduce((best, c) => {
-        const dist = Math.abs(parseInt(c.fips) - countyNum)
-        return dist < Math.abs(parseInt(best.fips) - countyNum) ? c : best
-      })
-      nearbyMissingOverrides.push({
-        countyFips: county.countyFips,
-        countyName: county.countyName,
-        stateAbbr: county.stateAbbr,
-        currentCpiArea: county.cpiAreaCode,
-        currentCpiName: county.cpiAreaName,
-        nearbyOverrideFips: nearestOverrideFips.fips,
-        nearbyOverrideName: nearestOverrideFips.name,
-        nearbyOverrideCpi: group.targetCpi,
-        nearbyOverrideCpiName: BLS_CPI_AREAS[group.targetCpi]?.name ?? group.targetCpi,
-        gasTier: county.gasTier,
-      })
-    }
-  }
-}
-
-// ---- Issue D: CPI metros whose city gas data is available but some
-// counties in those states resolve to a non-city gas tier ----
-// For each CPI area in CPI_TO_EIA_CITY, show how many counties reach it
-// vs. how many counties in the same state fall to state/PAD tier.
+// ---- Issue D: CPI metros with city gas — counties that get the metro gas
+// but are assigned only regional CPI (crosswalk may be missing them) ----
 interface CpiGasCoverageGap {
   cpiAreaCode: string
   cpiAreaName: string
   cityGasLabel: string
-  states: string[]
-  countiesWithCityGas: number
-  countiesWithoutCityGas: number
-  exampleMissingCounties: Array<{ fips: string; name: string; state: string; gasTierName: string }>
+  countiesWithMetroCpi: number
+  countiesWithRegionalCpi: number
+  exampleRegionalCounties: Array<{ fips: string; name: string; state: string; gasTierName: string }>
 }
 const cpiGasCoverageGaps: CpiGasCoverageGap[] = []
 
 for (const [cpiCode, cityData] of Object.entries(CPI_TO_EIA_CITY)) {
-  // Find all states whose default maps to this CPI area
-  const statesWithThisCpiDefault = Object.entries(STATE_TO_CPI_AREA)
-    .filter(([, code]) => code === cpiCode)
-    .map(([state]) => state)
-
-  // Find all counties (via override) that explicitly map to this CPI area
-  const statesViaOverride = new Set(
-    Object.entries(COUNTY_CPI_OVERRIDES)
-      .filter(([, code]) => code === cpiCode)
-      .map(([fips]) => countyMap.get(fips)?.stateAbbr ?? '')
-      .filter(Boolean)
+  // Counties that have this metro CPI assignment (via CBSA)
+  const withMetroCpi = uniqueCounties.filter(c => c.cpiAreaCode === cpiCode)
+  // Counties that get this metro's city gas but have only regional CPI
+  const withCityGasButRegionalCpi = uniqueCounties.filter(
+    c => c.gasTier === 1 && c.gasDuoarea === cityData.duoarea && c.cpiAreaCode !== cpiCode
   )
 
-  const relevantStates = [...new Set([...statesWithThisCpiDefault, ...statesViaOverride])]
-
-  const relevantCounties = uniqueCounties.filter(c => relevantStates.includes(c.stateAbbr))
-  const withCity = relevantCounties.filter(c => c.cpiAreaCode === cpiCode)
-  const withoutCity = relevantCounties.filter(c => c.cpiAreaCode !== cpiCode && c.gasTier !== 1)
-
-  // Only report if there's a meaningful gap
-  if (withoutCity.length > 0 && withCity.length > 0) {
+  if (withCityGasButRegionalCpi.length > 0) {
     cpiGasCoverageGaps.push({
       cpiAreaCode: cpiCode,
       cpiAreaName: BLS_CPI_AREAS[cpiCode]?.name ?? cpiCode,
       cityGasLabel: cityData.label,
-      states: relevantStates,
-      countiesWithCityGas: withCity.length,
-      countiesWithoutCityGas: withoutCity.length,
-      exampleMissingCounties: withoutCity.slice(0, 5).map(c => ({
+      countiesWithMetroCpi: withMetroCpi.length,
+      countiesWithRegionalCpi: withCityGasButRegionalCpi.length,
+      exampleRegionalCounties: withCityGasButRegionalCpi.slice(0, 5).map(c => ({
         fips: c.countyFips,
         name: c.countyName,
         state: c.stateAbbr,
@@ -383,15 +260,15 @@ console.log(`  Unique counties:  ${uniqueCounties.length.toLocaleString()}`)
 console.log(`  Unique states:    ${statesInData.size}`)
 
 // ---------------------------------------------------------------------------
-h2('ISSUE A — MISSING STATE CPI MAPPING (falls back to national CPI)')
+h2('ISSUE A — MISSING STATE REGIONAL CPI MAPPING (falls back to national CPI)')
 
-if (missingStateCpi.length === 0) {
-  console.log('  PASS: All states in zip data have a STATE_TO_CPI_AREA entry.')
+if (missingRegionCpi.length === 0) {
+  console.log('  PASS: All states in zip data have a STATE_TO_REGION entry.')
 } else {
-  missingStateCpi.sort().forEach(state => {
+  missingRegionCpi.sort().forEach(state => {
     const zipsInState = results.filter(r => r.stateAbbr === state).length
     console.log(`  MISSING: ${state} — ${zipsInState.toLocaleString()} zips fall back to National CPI`)
-    console.log(`    FIX: Add ${state} to STATE_TO_CPI_AREA in county-metro-cpi.ts`)
+    console.log(`    FIX: Add ${state} to STATE_TO_REGION in county-metro-cpi.ts`)
   })
 }
 
@@ -409,55 +286,24 @@ if (missingPad.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
-h2('ISSUE C — GAS TIER DOWNGRADE: CPI override hurts gas resolution')
-console.log('  (County has COUNTY_CPI_OVERRIDE pointing to a CPI area WITHOUT city gas,')
-console.log('   while the state default CPI area HAS city gas)')
+h2('ISSUE C — CBSA CROSSWALK GAPS: metro counties missing from CBSA crosswalk')
+console.log('  (Counties that get city-level gas — indicating they are in a metro —')
+console.log('   but are NOT in the CBSA crosswalk, so they fall back to regional CPI)')
 
-if (gasTierDowngrades.length === 0) {
-  console.log('\n  PASS: No counties found where a CPI override causes a gas tier downgrade.')
+if (cbsaGaps.length === 0) {
+  console.log('\n  PASS: All counties with city-level gas have a CBSA metro CPI assignment.')
 } else {
-  for (const d of gasTierDowngrades) {
-    console.log(`\n  COUNTY: ${d.countyFips} — ${d.countyName}, ${d.stateAbbr}`)
-    console.log(`    Issue:  ${d.issue}`)
-    console.log(`    Gas:    Tier ${d.gasTier} (${d.gasTierName})`)
-    console.log(`    Fix:    ${d.suggestedFix}`)
+  console.log(`\n  ${cbsaGaps.length} counties get city gas but only regional CPI:`)
+  for (const g of cbsaGaps.sort((a, b) => a.countyFips.localeCompare(b.countyFips))) {
+    console.log(`  ${g.countyFips} ${g.countyName}, ${g.stateAbbr}  →  CPI: ${g.cpiAreaCode} (${g.cpiSource})  gas: ${g.gasTierName}`)
+    console.log(`    FIX: Add '${g.countyFips}' to cbsa-cpi-crosswalk.json with the correct metro CPI code.`)
   }
 }
 
 // ---------------------------------------------------------------------------
-h2('ISSUE D — POSSIBLE MISSING CPI OVERRIDES (counties adjacent to override counties)')
-console.log('  (Counties within FIPS ±50 of an overridden county in the same state,')
-console.log('   suggesting they may be in the same MSA but lack an override)')
-
-if (nearbyMissingOverrides.length === 0) {
-  console.log('\n  PASS: No numerically adjacent counties found missing overrides.')
-} else {
-  // Group by state + targetCpi for readability
-  const grouped = new Map<string, NearbyMissingOverride[]>()
-  for (const r of nearbyMissingOverrides) {
-    const key = `${r.stateAbbr}:${r.nearbyOverrideCpi}`
-    if (!grouped.has(key)) grouped.set(key, [])
-    grouped.get(key)!.push(r)
-  }
-
-  for (const [key, items] of grouped) {
-    const first = items[0]
-    console.log(`\n  METRO: ${first.nearbyOverrideCpiName} (${first.nearbyOverrideCpi}) — ${first.stateAbbr}`)
-    console.log(`    City gas available via: ${CPI_TO_EIA_CITY[first.nearbyOverrideCpi]?.label}`)
-    console.log(`    Counties possibly in MSA but missing CPI override (gas tier ${items[0].gasTier}):`)
-    for (const item of items) {
-      console.log(`      ${item.countyFips} ${item.countyName} (currently → ${item.currentCpiName})`)
-    }
-    console.log(`    Adjacent override anchor: ${first.nearbyOverrideFips} (${first.nearbyOverrideName})`)
-    console.log(`    FIX: Verify if these counties are in the ${first.nearbyOverrideCpiName} MSA.`)
-    console.log(`         If so, add to COUNTY_CPI_OVERRIDES: { '${items.map(i => i.countyFips).join("': '") + "': '" + first.nearbyOverrideCpi}' }`)
-  }
-}
-
-// ---------------------------------------------------------------------------
-h2('ISSUE E — CPI AREA GAS COVERAGE GAPS')
-console.log('  (CPI areas with city-level gas data where some counties in the same')
-console.log('   state resolve to a different CPI area and miss city gas)')
+h2('ISSUE D — CPI AREA GAS COVERAGE GAPS')
+console.log('  (Metro CPI areas with city-level gas where some counties get city gas')
+console.log('   but have only regional CPI — likely missing from CBSA crosswalk)')
 
 if (cpiGasCoverageGaps.length === 0) {
   console.log('\n  PASS: No coverage gaps detected.')
@@ -465,11 +311,10 @@ if (cpiGasCoverageGaps.length === 0) {
   for (const gap of cpiGasCoverageGaps) {
     console.log(`\n  CPI AREA: ${gap.cpiAreaCode} — ${gap.cpiAreaName}`)
     console.log(`    City gas: ${gap.cityGasLabel}`)
-    console.log(`    States covered by this CPI: ${gap.states.join(', ')}`)
-    console.log(`    Counties WITH city gas:    ${gap.countiesWithCityGas}`)
-    console.log(`    Counties WITHOUT city gas: ${gap.countiesWithoutCityGas}`)
-    console.log(`    Example counties missing city gas:`)
-    for (const c of gap.exampleMissingCounties) {
+    console.log(`    Counties with metro CPI (via CBSA):  ${gap.countiesWithMetroCpi}`)
+    console.log(`    Counties with city gas but regional CPI: ${gap.countiesWithRegionalCpi}`)
+    console.log(`    Example counties missing CBSA entry:`)
+    for (const c of gap.exampleRegionalCounties) {
       console.log(`      ${c.fips} ${c.name}, ${c.state} → gas tier: ${c.gasTierName}`)
     }
   }
@@ -499,10 +344,10 @@ for (const [duoarea, count] of sortedGasAreas) {
   console.log(`  ${duoarea.padEnd(8)}  ${label.padEnd(35)}  ${count.toLocaleString().padStart(7)} zips`)
 }
 
-h2('States with no CPI mapping (full national fallback)')
-const nationalFallbackStates = [...statesInData].filter(s => !STATE_TO_CPI_AREA[s]).sort()
+h2('States with no regional CPI mapping (full national fallback)')
+const nationalFallbackStates = [...statesInData].filter(s => !STATE_TO_REGION[s]).sort()
 if (nationalFallbackStates.length === 0) {
-  console.log('  None — all states have CPI coverage.')
+  console.log('  None — all states have regional CPI coverage.')
 } else {
   for (const state of nationalFallbackStates) {
     const count = results.filter(r => r.stateAbbr === state).length
@@ -510,14 +355,13 @@ if (nationalFallbackStates.length === 0) {
   }
 }
 
-h2('Counties with COUNTY_CPI_OVERRIDES')
-const overrideCounties = Object.keys(COUNTY_CPI_OVERRIDES)
-console.log(`  Total overridden counties: ${overrideCounties.length}`)
-for (const fips of overrideCounties.sort()) {
-  const cpiCode = COUNTY_CPI_OVERRIDES[fips]
-  const countyEntry = countyMap.get(fips)
-  const name = countyEntry ? `${countyEntry.countyName}, ${countyEntry.stateAbbr}` : '(not in zip data)'
-  console.log(`  ${fips}  →  ${cpiCode} (${BLS_CPI_AREAS[cpiCode]?.name ?? cpiCode})  —  ${name}`)
+h2('CPI source breakdown (zip count)')
+const cpiSourceCounts: Record<string, number> = {}
+for (const r of results) {
+  cpiSourceCounts[r.cpiSource] = (cpiSourceCounts[r.cpiSource] ?? 0) + 1
+}
+for (const [source, count] of Object.entries(cpiSourceCounts).sort()) {
+  console.log(`  ${source.padEnd(20)}  ${count.toLocaleString().padStart(7)} zips`)
 }
 
 h2('Counties with COUNTY_EIA_CITY_OVERRIDES')

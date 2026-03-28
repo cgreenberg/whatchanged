@@ -26,8 +26,6 @@ import {
 
 import {
   BLS_CPI_AREAS,
-  STATE_TO_CPI_AREA,
-  COUNTY_CPI_OVERRIDES,
 } from '../src/lib/mappings/county-metro-cpi'
 
 

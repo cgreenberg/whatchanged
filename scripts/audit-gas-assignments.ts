@@ -15,8 +15,7 @@
 
 import centroids from '../src/lib/data/county-centroids.json'
 import {
-  COUNTY_CPI_OVERRIDES,
-  STATE_TO_CPI_AREA,
+  getMetroCpiAreaForCounty,
 } from '../src/lib/mappings/county-metro-cpi'
 import {
   CPI_TO_EIA_CITY,
@@ -80,7 +79,7 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 }
 
 function getCpiArea(countyFips: string, state: string): string {
-  return COUNTY_CPI_OVERRIDES[countyFips] ?? STATE_TO_CPI_AREA[state] ?? ''
+  return getMetroCpiAreaForCounty(countyFips, state).areaCode
 }
 
 function getCountyPad(state: string): string {

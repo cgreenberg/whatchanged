@@ -14,6 +14,7 @@ import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 
 // Hardcoded verified mappings from manual BLS website checks (2026-03-22)
 const VERIFIED_MAPPINGS: Record<string, string> = {
+  // Metro CPI areas
   'S11A': 'Boston-Cambridge-Newton',
   'S12A': 'New York-Newark-Jersey City',
   'S12B': 'Philadelphia-Camden-Wilmington',
@@ -37,6 +38,11 @@ const VERIFIED_MAPPINGS: Record<string, string> = {
   'S49E': 'San Diego-Carlsbad',
   'S49F': 'Urban Hawaii',
   'S49G': 'Urban Alaska',
+  // Regional CPI areas (fallback for non-metro counties)
+  '0100': 'Northeast Urban',
+  '0200': 'Midwest Urban',
+  '0300': 'South Urban',
+  '0400': 'West Urban',
 }
 
 describe('BLS CPI area code verification against ground truth', () => {

@@ -1,169 +1,140 @@
-// Audits CPI metro assignments for all US counties using geographic distance.
-// For each county, computes distance to all 23 BLS CPI metros and reports
-// where the current assignment differs from the geographically closest metro.
+// Audits CPI assignments for all US counties using the CBSA-based mapping system.
+// For each county in the centroids file, reports whether it gets Tier 1 (metro CBSA),
+// Tier 2 (regional), or Tier 3 (national/territory) CPI assignment.
 //
 // Usage: npx tsx scripts/audit-cpi-assignments.ts
-//        npx tsx scripts/audit-cpi-assignments.ts --apply   (writes overrides to stdout)
 
 import centroids from '../src/lib/data/county-centroids.json'
+import cbsaCrosswalk from '../src/lib/data/cbsa-cpi-crosswalk.json'
 import {
-  STATE_TO_CPI_AREA,
-  COUNTY_CPI_OVERRIDES,
+  STATE_TO_REGION,
   BLS_CPI_AREAS,
 } from '../src/lib/mappings/county-metro-cpi'
 
-// BLS CPI metro center coordinates
-const CPI_METRO_COORDS: Record<string, { lat: number; lng: number }> = {
-  S11A: { lat: 42.36, lng: -71.06 },   // Boston
-  S12A: { lat: 40.71, lng: -74.01 },   // New York
-  S12B: { lat: 39.95, lng: -75.17 },   // Philadelphia
-  S23A: { lat: 41.88, lng: -87.63 },   // Chicago
-  S23B: { lat: 42.33, lng: -83.05 },   // Detroit
-  S24A: { lat: 44.98, lng: -93.27 },   // Minneapolis
-  S24B: { lat: 38.63, lng: -90.20 },   // St. Louis
-  S35A: { lat: 38.91, lng: -77.04 },   // Washington DC
-  S35B: { lat: 25.76, lng: -80.19 },   // Miami
-  S35C: { lat: 33.75, lng: -84.39 },   // Atlanta
-  S35D: { lat: 27.95, lng: -82.46 },   // Tampa
-  S35E: { lat: 39.29, lng: -76.61 },   // Baltimore
-  S37A: { lat: 32.78, lng: -96.80 },   // Dallas
-  S37B: { lat: 29.76, lng: -95.37 },   // Houston
-  S48A: { lat: 33.45, lng: -112.07 },  // Phoenix
-  S48B: { lat: 39.74, lng: -104.99 },  // Denver
-  S49A: { lat: 34.05, lng: -118.24 },  // Los Angeles
-  S49B: { lat: 37.77, lng: -122.42 },  // San Francisco
-  S49C: { lat: 33.95, lng: -117.40 },  // Riverside
-  S49D: { lat: 47.61, lng: -122.33 },  // Seattle
-  S49E: { lat: 32.72, lng: -117.16 },  // San Diego
-  S49F: { lat: 21.31, lng: -157.86 },  // Honolulu
-  S49G: { lat: 61.22, lng: -149.90 },  // Anchorage
+interface CountyInfo {
+  lat: number
+  lng: number
+  name: string
+  state: string
 }
 
-// Haversine distance in miles
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 3959 // Earth radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
+type Tier = 1 | 2 | 3
 
-interface AuditResult {
+interface CountyAudit {
   countyFips: string
   countyName: string
   state: string
-  currentCpi: string
-  currentCpiName: string
-  currentDist: number
-  nearestCpi: string
-  nearestCpiName: string
-  nearestDist: number
-  savings: number // miles closer
+  tier: Tier
+  cpiCode: string
+  cpiName: string
 }
 
-function getCurrentCpi(countyFips: string, state: string): string {
-  if (COUNTY_CPI_OVERRIDES[countyFips]) return COUNTY_CPI_OVERRIDES[countyFips]
-  return (STATE_TO_CPI_AREA as Record<string, string>)[state] ?? '0000'
-}
-
-function findNearestCpi(lat: number, lng: number): { code: string; dist: number } {
-  let best = { code: '', dist: Infinity }
-  for (const [code, coords] of Object.entries(CPI_METRO_COORDS)) {
-    const dist = haversine(lat, lng, coords.lat, coords.lng)
-    if (dist < best.dist) best = { code, dist }
+function getAssignment(countyFips: string, state: string): { tier: Tier; cpiCode: string; cpiName: string } {
+  // Tier 1: CBSA crosswalk (metro CPI)
+  const cbsaArea = (cbsaCrosswalk as Record<string, string>)[countyFips]
+  if (cbsaArea && BLS_CPI_AREAS[cbsaArea]) {
+    return {
+      tier: 1,
+      cpiCode: cbsaArea,
+      cpiName: BLS_CPI_AREAS[cbsaArea].name,
+    }
   }
-  return best
+
+  // Tier 2: Regional CPI via state
+  const regionCode = STATE_TO_REGION[state.toUpperCase()]
+  if (regionCode && BLS_CPI_AREAS[regionCode]) {
+    return {
+      tier: 2,
+      cpiCode: regionCode,
+      cpiName: BLS_CPI_AREAS[regionCode].name,
+    }
+  }
+
+  // Tier 3: National fallback (territories, unmapped)
+  return { tier: 3, cpiCode: '0000', cpiName: 'National' }
 }
 
 function main() {
-  const applyMode = process.argv.includes('--apply')
-  const results: AuditResult[] = []
-  let totalCounties = 0
-  let mismatches = 0
+  const auditResults: CountyAudit[] = []
+  const tierCounts: Record<Tier, number> = { 1: 0, 2: 0, 3: 0 }
+  const noAssignment: CountyAudit[] = []
 
-  for (const [fips, info] of Object.entries(centroids) as [string, { lat: number; lng: number; name: string; state: string }][]) {
-    totalCounties++
-    const currentCpi = getCurrentCpi(fips, info.state)
-    if (currentCpi === '0000') continue // skip national fallback (PR, etc.)
+  for (const [fips, info] of Object.entries(centroids) as [string, CountyInfo][]) {
+    const { tier, cpiCode, cpiName } = getAssignment(fips, info.state)
+    const entry: CountyAudit = {
+      countyFips: fips,
+      countyName: info.name,
+      state: info.state,
+      tier,
+      cpiCode,
+      cpiName,
+    }
+    auditResults.push(entry)
+    tierCounts[tier]++
+    if (cpiCode === '0000') noAssignment.push(entry)
+  }
 
-    const currentCoords = CPI_METRO_COORDS[currentCpi]
-    if (!currentCoords) continue
+  const totalCounties = auditResults.length
 
-    const currentDist = haversine(info.lat, info.lng, currentCoords.lat, currentCoords.lng)
-    const nearest = findNearestCpi(info.lat, info.lng)
+  console.log('\nCPI Assignment Audit (CBSA-based)')
+  console.log('==================================')
+  console.log(`Total counties audited: ${totalCounties.toLocaleString()}`)
+  console.log()
+  console.log(`Tier 1 — Metro CBSA:      ${tierCounts[1].toLocaleString().padStart(5)} counties  (${((tierCounts[1] / totalCounties) * 100).toFixed(1)}%)`)
+  console.log(`Tier 2 — Regional CPI:    ${tierCounts[2].toLocaleString().padStart(5)} counties  (${((tierCounts[2] / totalCounties) * 100).toFixed(1)}%)`)
+  console.log(`Tier 3 — National/None:   ${tierCounts[3].toLocaleString().padStart(5)} counties  (${((tierCounts[3] / totalCounties) * 100).toFixed(1)}%)`)
+  console.log()
 
-    if (nearest.code !== currentCpi) {
-      mismatches++
-      results.push({
-        countyFips: fips,
-        countyName: info.name,
-        state: info.state,
-        currentCpi,
-        currentCpiName: (BLS_CPI_AREAS as Record<string, { code: string; name: string }>)[currentCpi]?.name ?? currentCpi,
-        currentDist: Math.round(currentDist),
-        nearestCpi: nearest.code,
-        nearestCpiName: (BLS_CPI_AREAS as Record<string, { code: string; name: string }>)[nearest.code]?.name ?? nearest.code,
-        nearestDist: Math.round(nearest.dist),
-        savings: Math.round(currentDist - nearest.dist),
-      })
+  // Summary of metro assignments
+  console.log('Tier 1 metro distribution:')
+  const metroCounts: Record<string, number> = {}
+  for (const r of auditResults) {
+    if (r.tier === 1) {
+      metroCounts[r.cpiCode] = (metroCounts[r.cpiCode] ?? 0) + 1
+    }
+  }
+  for (const [code, count] of Object.entries(metroCounts).sort((a, b) => b[1] - a[1])) {
+    const name = BLS_CPI_AREAS[code]?.name ?? code
+    console.log(`  ${code}  ${name.padEnd(40)}  ${count.toLocaleString().padStart(4)} counties`)
+  }
+  console.log()
+
+  // Summary of regional assignments
+  console.log('Tier 2 regional distribution:')
+  const regionCounts: Record<string, number> = {}
+  for (const r of auditResults) {
+    if (r.tier === 2) {
+      regionCounts[r.cpiCode] = (regionCounts[r.cpiCode] ?? 0) + 1
+    }
+  }
+  for (const [code, count] of Object.entries(regionCounts).sort()) {
+    const name = BLS_CPI_AREAS[code]?.name ?? code
+    console.log(`  ${code}  ${name.padEnd(40)}  ${count.toLocaleString().padStart(4)} counties`)
+  }
+  console.log()
+
+  // Counties with no CPI assignment
+  if (noAssignment.length === 0) {
+    console.log('PASS: All counties have a CPI assignment (no national fallback).')
+  } else {
+    console.log(`WARNING: ${noAssignment.length} counties have no CPI assignment (national fallback):`)
+    for (const r of noAssignment.sort((a, b) => a.countyFips.localeCompare(b.countyFips))) {
+      console.log(`  ${r.countyFips}  ${r.countyName}, ${r.state}`)
     }
   }
 
-  // Sort by savings (biggest improvement first)
-  results.sort((a, b) => b.savings - a.savings)
-
-  console.log(`\nCPI Geographic Audit`)
-  console.log(`====================`)
-  console.log(`Total counties: ${totalCounties}`)
-  console.log(`Correctly assigned (nearest metro): ${totalCounties - mismatches}`)
-  console.log(`Could be improved: ${mismatches}`)
-  console.log()
-
-  if (!applyMode) {
-    // Report mode: print table
-    console.log('Counties where a closer CPI metro exists:\n')
-    console.log('State | County | FIPS | Current CPI (dist) | Nearest CPI (dist) | Savings')
-    console.log('------|--------|------|--------------------|--------------------|--------')
-    for (const r of results) {
-      console.log(
-        `${r.state.padEnd(5)} | ${r.countyName.slice(0, 25).padEnd(25)} | ${r.countyFips} | ` +
-        `${r.currentCpiName.slice(0, 20)} (${r.currentDist}mi) | ` +
-        `${r.nearestCpiName.slice(0, 20)} (${r.nearestDist}mi) | ` +
-        `${r.savings}mi closer`
-      )
+  // Tier 2 breakdown by state (for verifying region assignments look correct)
+  console.log('\nTier 2 counties by state:')
+  const tier2ByState: Record<string, number> = {}
+  for (const r of auditResults) {
+    if (r.tier === 2) {
+      tier2ByState[r.state] = (tier2ByState[r.state] ?? 0) + 1
     }
-
-    // Summary by state
-    console.log('\n\nSummary by state:')
-    const byState: Record<string, number> = {}
-    for (const r of results) {
-      byState[r.state] = (byState[r.state] ?? 0) + 1
-    }
-    for (const [state, count] of Object.entries(byState).sort((a, b) => b[1] - a[1])) {
-      console.log(`  ${state}: ${count} counties need override`)
-    }
-  } else {
-    // Apply mode: output TypeScript override map
-    console.log('// Generated by scripts/audit-cpi-assignments.ts --apply')
-    console.log('// Add these to COUNTY_CPI_OVERRIDES in src/lib/mappings/county-metro-cpi.ts\n')
-
-    // Group by target CPI area for readability
-    const byTarget: Record<string, AuditResult[]> = {}
-    for (const r of results) {
-      if (!byTarget[r.nearestCpi]) byTarget[r.nearestCpi] = []
-      byTarget[r.nearestCpi].push(r)
-    }
-
-    for (const [cpi, counties] of Object.entries(byTarget).sort()) {
-      const metroName = (BLS_CPI_AREAS as Record<string, { code: string; name: string }>)[cpi]?.name ?? cpi
-      console.log(`  // → ${metroName} (${cpi})`)
-      for (const c of counties.sort((a, b) => a.countyFips.localeCompare(b.countyFips))) {
-        console.log(`  '${c.countyFips}': '${cpi}', // ${c.countyName}, ${c.state} (${c.nearestDist}mi vs ${c.currentDist}mi current)`)
-      }
-      console.log()
-    }
+  }
+  for (const [state, count] of Object.entries(tier2ByState).sort()) {
+    const regionCode = STATE_TO_REGION[state] ?? '???'
+    const regionName = BLS_CPI_AREAS[regionCode]?.name ?? regionCode
+    console.log(`  ${state}  →  ${regionCode} (${regionName})  —  ${count} counties at Tier 2`)
   }
 }
 
