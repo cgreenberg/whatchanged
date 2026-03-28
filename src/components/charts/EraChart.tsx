@@ -149,15 +149,30 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   const mergedData = useMemo((): Array<{ date: string; [key: string]: unknown }> => {
     if (!showNational || !nationalData?.length) return chartData
     const nationalMap = new Map(nationalData.map(d => [d.date, d]))
-    return chartData.map(d => {
+    const localDates = new Set(chartData.map(d => d.date as string))
+
+    const merged = chartData.map(d => {
       const nd = nationalMap.get(d.date as string)
       if (!nd) return d
-      const merged: { date: string; [key: string]: unknown } = { ...d }
+      const entry: { date: string; [key: string]: unknown } = { ...d }
       for (const key of Object.keys(nd)) {
-        if (key !== 'date') merged[`national_${key}`] = nd[key]
+        if (key !== 'date') entry[`national_${key}`] = nd[key]
       }
-      return merged
+      return entry
     })
+
+    // Append national-only data points beyond local range
+    for (const nd of nationalData) {
+      if (!localDates.has(nd.date)) {
+        const entry: { date: string; [key: string]: unknown } = { date: nd.date }
+        for (const key of Object.keys(nd)) {
+          if (key !== 'date') entry[`national_${key}`] = nd[key]
+        }
+        merged.push(entry)
+      }
+    }
+
+    return merged
   }, [chartData, showNational, nationalData])
 
   // Normalize to percentage change from first visible data point
