@@ -39,10 +39,18 @@ export async function GET() {
         await (source.fetch as (...a: string[]) => Promise<unknown>)(...args)
         results[source.id] = { name: source.name, status: 'ok', docsUrl: source.docsUrl }
       } catch (err) {
+        // Redact API keys and sensitive values from error messages before
+        // surfacing them in the public health endpoint response.
+        const rawMessage = err instanceof Error ? err.message : 'Unknown'
+        const blsApiKey = process.env.BLS_API_KEY
+        const eiaApiKey = process.env.EIA_API_KEY
+        let safeMessage = rawMessage
+        if (blsApiKey) safeMessage = safeMessage.replaceAll(blsApiKey, '[REDACTED]')
+        if (eiaApiKey) safeMessage = safeMessage.replaceAll(eiaApiKey, '[REDACTED]')
         results[source.id] = {
           name: source.name,
           status: 'error',
-          error: err instanceof Error ? err.message : 'Unknown',
+          error: safeMessage,
           docsUrl: source.docsUrl,
         }
       }
