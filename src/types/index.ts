@@ -43,7 +43,7 @@ export interface CpiData {
   shelterChange: number
   series: CpiPoint[]
   metro: string
-  tier: 1 | 2 | 3
+  tier: 1 | 2 | 3 | 4
   seriesIds?: { groceries: string; shelter: string; energy: string }
   nationalSeries?: CpiPoint[]
 }

@@ -50,15 +50,9 @@ function getChartData(
         'cpi-energy': seriesIds?.energy,
       }
       const cpiTier = cpiData?.tier ?? (
-        metro === 'National' ? 3 :
-        metro?.includes('Urban') ? 2 : 1
+        metro === 'National' ? 4 :
+        metro?.includes('Urban') ? 3 : 1
       )
-      const REGIONAL_CPI_LINKS: Record<string, string> = {
-        'Northeast Urban': 'https://www.bls.gov/regions/new-york-new-jersey/',
-        'Midwest Urban': 'https://www.bls.gov/regions/midwest/',
-        'South Urban': 'https://www.bls.gov/regions/southeast/',
-        'West Urban': 'https://www.bls.gov/regions/west/',
-      }
       return {
         data: cpiData?.series.map(p => ({
           date: p.date,
@@ -76,14 +70,13 @@ function getChartData(
           ...(metro ? {
             sourceLabel: `BLS CPI — ${metro}`,
             geoLevel: isNational ? 'National'
-              : cpiTier === 2 ? `Region: ${metro}`
+              : cpiTier === 3 ? `Region: ${metro}`
+              : cpiTier === 2 ? `Division: ${metro}`
               : `Metro: ${metro}`,
           } : {}),
-          sourceUrl: cpiTier === 2
-            ? REGIONAL_CPI_LINKS[metro ?? ''] ?? 'https://www.bls.gov/cpi/regional-resources.htm'
-            : cpiTier === 1 && seriesIdMap[id]
-              ? `https://data.bls.gov/timeseries/${seriesIdMap[id]}`
-              : 'https://data.bls.gov/cgi-bin/surveymost?cu',
+          sourceUrl: seriesIdMap[id]
+            ? `https://data.bls.gov/timeseries/${seriesIdMap[id]}`
+            : 'https://data.bls.gov/cgi-bin/surveymost?cu',
         },
       }
     }

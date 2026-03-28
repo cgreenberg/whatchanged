@@ -562,21 +562,32 @@ interface CpiData {
   shelterChange:     number
   series:            CpiPoint[]
   metro:             string
-  tier:              1 | 2 | 3
+  tier:              1 | 2 | 3 | 4
   seriesIds:         { groceries: string; shelter: string; energy: string }
   nationalSeries?:   CpiPoint[]
 }
 
-const CPI_AREAS: Array<{ areaCode: string; areaName: string; tier: 1 | 2 | 3 }> = [
-  { areaCode: '0000', areaName: 'National',      tier: 3 },
-  { areaCode: '0100', areaName: 'Northeast Urban', tier: 2 },
-  { areaCode: '0200', areaName: 'Midwest Urban',   tier: 2 },
-  { areaCode: '0300', areaName: 'South Urban',     tier: 2 },
-  { areaCode: '0400', areaName: 'West Urban',      tier: 2 },
+const CPI_AREAS: Array<{ areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 }> = [
+  { areaCode: '0000', areaName: 'National',              tier: 4 },
+  // Census Divisions (Tier 2)
+  { areaCode: '0110', areaName: 'New England',           tier: 2 },
+  { areaCode: '0120', areaName: 'Middle Atlantic',       tier: 2 },
+  { areaCode: '0230', areaName: 'East North Central',    tier: 2 },
+  { areaCode: '0240', areaName: 'West North Central',    tier: 2 },
+  { areaCode: '0350', areaName: 'South Atlantic',        tier: 2 },
+  { areaCode: '0360', areaName: 'East South Central',    tier: 2 },
+  { areaCode: '0370', areaName: 'West South Central',    tier: 2 },
+  { areaCode: '0480', areaName: 'Mountain',              tier: 2 },
+  { areaCode: '0490', areaName: 'Pacific',               tier: 2 },
+  // Census Regions (Tier 3 fallback)
+  { areaCode: '0100', areaName: 'Northeast Urban',       tier: 3 },
+  { areaCode: '0200', areaName: 'Midwest Urban',         tier: 3 },
+  { areaCode: '0300', areaName: 'South Urban',           tier: 3 },
+  { areaCode: '0400', areaName: 'West Urban',            tier: 3 },
 ]
 
 async function preloadBlsCpiRegional() {
-  console.log('\n=== Section 2b: BLS Regional + National CPI ===')
+  console.log('\n=== Section 2b: BLS Division + Regional + National CPI ===')
 
   if (!process.env.BLS_API_KEY) {
     console.warn('  WARNING: BLS_API_KEY not set — rate limit is 25 req/day')
@@ -602,10 +613,10 @@ async function preloadBlsCpiRegional() {
   try {
     json = await postBls(uniqueSeriesIds, '2016', currentYear)
   } catch (err) {
-    console.error('  ✗ BLS regional CPI fetch failed entirely:', err instanceof Error ? err.message : err)
+    console.error('  ✗ BLS CPI fetch failed entirely:', err instanceof Error ? err.message : err)
     stats.blsCpiRegion.failed += CPI_AREAS.length
     stats.failed              += CPI_AREAS.length
-    console.log(`  BLS regional CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
+    console.log(`  BLS CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
     return
   }
 
@@ -718,7 +729,7 @@ async function preloadBlsCpiRegional() {
     }
   }
 
-  console.log(`  BLS regional CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
+  console.log(`  BLS CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
 }
 
 // ---------------------------------------------------------------------------

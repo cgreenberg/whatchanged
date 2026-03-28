@@ -26,11 +26,35 @@ REGIONAL_ALIASES = {
     'west urban': ['west', 'west urban'],
 }
 
+DIVISION_ALIASES = {
+    'new england': ['new england', 'new england urban'],
+    'middle atlantic': ['middle atlantic', 'middle atlantic urban'],
+    'east north central': ['east north central', 'east north central urban'],
+    'west north central': ['west north central', 'west north central urban'],
+    'south atlantic': ['south atlantic', 'south atlantic urban'],
+    'east south central': ['east south central', 'east south central urban'],
+    'west south central': ['west south central', 'west south central urban'],
+    'mountain': ['mountain', 'mountain urban'],
+    'pacific': ['pacific', 'pacific urban'],
+}
+
 CENSUS_REGIONS = {
     'northeast': {'CT', 'ME', 'MA', 'NH', 'NJ', 'NY', 'PA', 'RI', 'VT'},
     'midwest': {'IL', 'IN', 'IA', 'KS', 'MI', 'MN', 'MO', 'NE', 'ND', 'OH', 'SD', 'WI'},
     'south': {'AL', 'AR', 'DE', 'DC', 'FL', 'GA', 'KY', 'LA', 'MD', 'MS', 'NC', 'OK', 'SC', 'TN', 'TX', 'VA', 'WV'},
     'west': {'AK', 'AZ', 'CA', 'CO', 'HI', 'ID', 'MT', 'NV', 'NM', 'OR', 'UT', 'WA', 'WY'},
+}
+
+CENSUS_DIVISIONS = {
+    'new england': {'CT', 'ME', 'MA', 'NH', 'RI', 'VT'},
+    'middle atlantic': {'NJ', 'NY', 'PA'},
+    'east north central': {'IL', 'IN', 'MI', 'OH', 'WI'},
+    'west north central': {'IA', 'KS', 'MN', 'MO', 'NE', 'ND', 'SD'},
+    'south atlantic': {'DE', 'DC', 'FL', 'GA', 'MD', 'NC', 'SC', 'VA', 'WV'},
+    'east south central': {'AL', 'KY', 'MS', 'TN'},
+    'west south central': {'AR', 'LA', 'OK', 'TX'},
+    'mountain': {'AZ', 'CO', 'ID', 'MT', 'NV', 'NM', 'UT', 'WY'},
+    'pacific': {'AK', 'CA', 'HI', 'OR', 'WA'},
 }
 
 CPI_METRO_STATES = {
@@ -183,15 +207,20 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
         )]
 
     site_metro = cpi_data.get("metro", "")
+    metro_lower = site_metro.lower().strip()
 
-    # Only applies to regional CPI (e.g. "Northeast Urban", "South Urban")
-    if "Urban" not in site_metro:
+    # Determine if this is a regional CPI (contains "Urban"), a division CPI,
+    # or something else (metro/national — handled by other validators).
+    is_regional = "Urban" in site_metro
+    is_division = metro_lower in CENSUS_DIVISIONS
+
+    if not is_regional and not is_division:
         return [CheckResult(
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="cpi_region_appropriate",
-            message=f"Not a regional CPI assignment (metro='{site_metro}')",
-            description="Verify regional CPI assignment matches the zip's Census region.",
+            message=f"Not a regional or division CPI assignment (metro='{site_metro}')",
+            description="Verify regional/division CPI assignment matches the zip's Census region.",
         )]
 
     state_abbr = site_data.get("location", {}).get("stateAbbr", "")
@@ -201,11 +230,43 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
             category="geo_mapping",
             check_name="cpi_region_appropriate",
             message="No state info available to verify region assignment",
-            description="Verify regional CPI assignment matches the zip's Census region.",
+            description="Verify regional/division CPI assignment matches the zip's Census region.",
         )]
 
-    # Extract region name from metro string: "Northeast Urban" → "northeast"
-    region_name = site_metro.lower().replace(" urban", "").strip()
+    state_upper = state_abbr.upper()
+
+    if is_division:
+        # Division CPI: validate against CENSUS_DIVISIONS
+        expected_states = CENSUS_DIVISIONS[metro_lower]
+        geo_label = f"{site_metro} division"
+        description = "Verify division CPI assignment matches the zip's Census division."
+
+        if state_upper in expected_states:
+            return [CheckResult(
+                status=CheckStatus.PASS,
+                category="geo_mapping",
+                check_name="cpi_region_appropriate",
+                site_value=site_metro,
+                source_value=geo_label,
+                message=f"State {state_upper} correctly assigned to {site_metro} CPI division",
+                details={"state": state_upper, "division": metro_lower, "metro": site_metro},
+                description=description,
+            )]
+        else:
+            return [CheckResult(
+                status=CheckStatus.FAIL,
+                category="geo_mapping",
+                check_name="cpi_region_appropriate",
+                site_value=site_metro,
+                source_value=geo_label,
+                message=f"State {state_upper} does NOT belong to {site_metro} CPI division",
+                details={"state": state_upper, "division": metro_lower, "metro": site_metro, "expected_states": sorted(expected_states)},
+                description=description,
+            )]
+
+    # Regional CPI: extract region name from metro string ("Northeast Urban" → "northeast")
+    region_name = metro_lower.replace(" urban", "").strip()
+    description = "Verify regional CPI assignment matches the zip's Census region."
 
     if region_name not in CENSUS_REGIONS:
         return [CheckResult(
@@ -213,11 +274,10 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
             category="geo_mapping",
             check_name="cpi_region_appropriate",
             message=f"Unknown region name '{region_name}' extracted from metro '{site_metro}'",
-            description="Verify regional CPI assignment matches the zip's Census region.",
+            description=description,
         )]
 
     expected_states = CENSUS_REGIONS[region_name]
-    state_upper = state_abbr.upper()
 
     if state_upper in expected_states:
         return [CheckResult(
@@ -228,7 +288,7 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
             source_value=f"{region_name.title()} region states",
             message=f"State {state_upper} correctly assigned to {site_metro} CPI region",
             details={"state": state_upper, "region": region_name, "metro": site_metro},
-            description="Verify regional CPI assignment matches the zip's Census region.",
+            description=description,
         )]
     else:
         return [CheckResult(
@@ -239,7 +299,7 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
             source_value=f"{region_name.title()} region states",
             message=f"State {state_upper} does NOT belong to {site_metro} CPI region",
             details={"state": state_upper, "region": region_name, "metro": site_metro, "expected_states": sorted(expected_states)},
-            description="Verify regional CPI assignment matches the zip's Census region.",
+            description=description,
         )]
 
 
@@ -274,6 +334,16 @@ def verify_metro_state_appropriate(site_data: dict) -> list[CheckResult]:
             category="geo_mapping",
             check_name="metro_state_appropriate",
             message=f"Regional CPI — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
+            description="Verify metro CPI assignment is plausible for the zip's state.",
+        )]
+
+    # Skip division CPI
+    if site_metro.lower().strip() in CENSUS_DIVISIONS:
+        return [CheckResult(
+            status=CheckStatus.SKIP,
+            category="geo_mapping",
+            check_name="metro_state_appropriate",
+            message=f"Division CPI — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
             description="Verify metro CPI assignment is plausible for the zip's state.",
         )]
 
@@ -375,6 +445,10 @@ def _metro_names_match(site_metro: str, bls_metro: str) -> bool:
     # Regional CPI areas
     if site_norm in REGIONAL_ALIASES:
         return bls_norm in REGIONAL_ALIASES[site_norm]
+
+    # Division CPI areas
+    if site_norm in DIVISION_ALIASES:
+        return bls_norm in DIVISION_ALIASES[site_norm]
 
     # Direct match
     if site_norm == bls_norm:

@@ -43,6 +43,16 @@ const VERIFIED_MAPPINGS: Record<string, string> = {
   '0200': 'Midwest Urban',
   '0300': 'South Urban',
   '0400': 'West Urban',
+  // Census Division CPI areas
+  '0110': 'New England',
+  '0120': 'Middle Atlantic',
+  '0230': 'East North Central',
+  '0240': 'West North Central',
+  '0350': 'South Atlantic',
+  '0360': 'East South Central',
+  '0370': 'West South Central',
+  '0480': 'Mountain',
+  '0490': 'Pacific',
 }
 
 describe('BLS CPI area code verification against ground truth', () => {

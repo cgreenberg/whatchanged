@@ -88,7 +88,7 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
       energyData = seriesMap[NATIONAL_ENERGY_SERIES] ?? []
       areaCode = '0000'
       areaName = 'National'
-      tier = 3
+      tier = 4
     } else {
       throw new Error('No groceries CPI data returned')
     }

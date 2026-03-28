@@ -37,8 +37,8 @@ Read at session start:
 | Data         | Source          | Geo Level | Cache TTL |
 | ------------ | --------------- | --------- | --------- |
 | Unemployment | BLS LAUS        | County    | 7 days    |
-| Grocery CPI  | BLS CPI         | Metro/Regional | 7 days    |
-| Shelter CPI  | BLS CPI         | Metro/Regional | 7 days    |
+| Grocery CPI  | BLS CPI         | Metro/Division/Regional | 7 days    |
+| Shelter CPI  | BLS CPI         | Metro/Division/Regional | 7 days    |
 | Gas prices   | EIA Weekly      | Region    | 24 hours  |
 | Federal cuts | USASpending     | County    | 24 hours  |
 | Income/rent  | Census ACS      | ZIP       | Static    |
@@ -170,15 +170,16 @@ The mapping chain `zip → county FIPS → CPI area → EIA gas region` is where
 | Unemployment    | County FIPS directly                                    | `LAUCN{fips}0000000003` — no metro/state mapping                |
 | Tariff estimate | ZIP-level Census income × 0.0205                        | No geo mapping beyond ZIP                                        |
 
-### BLS CPI 3-Tier Lookup (`getMetroCpiAreaForCounty`)
+### BLS CPI 4-Tier Lookup (`getMetroCpiAreaForCounty`)
 
 1. **Tier 1:** `cbsa-cpi-crosswalk.json[countyFips]` — CBSA-based metro CPI (204 counties in 23 metros)
-2. **Tier 2:** `STATE_TO_REGION[stateAbbr]` — regional CPI fallback (Northeast `0100`, Midwest `0200`, South `0300`, West `0400`)
-3. **Tier 3:** National CPI `0000` — territories (PR, VI, GU)
+2. **Tier 2:** `STATE_TO_DIVISION[stateAbbr]` — Census Division CPI (9 divisions, covers all 50 states + DC)
+3. **Tier 3:** `STATE_TO_REGION[stateAbbr]` — Regional CPI fallback (Northeast `0100`, Midwest `0200`, South `0300`, West `0400`)
+4. **Tier 4:** National CPI `0000` — territories (PR, VI, GU)
 
-Returns `{ areaCode, areaName, tier }` — the `tier` field (1/2/3) flows through `CpiData` to the frontend for label and link selection.
+Returns `{ areaCode, areaName, tier }` — the `tier` field (1/2/3/4) flows through `CpiData` to the frontend for label and link selection.
 
-The CBSA crosswalk is built from the OMB CBSA delineation file via `scripts/build-cbsa-cpi-crosswalk.ts`. Each CPI area = exactly one CBSA (the BLS "self-representing" metro from the 2018 geographic revision). Counties not in any CPI metro CBSA get regional CPI data, which is a real BLS-published series — not a proxy. ~16.5% of zips get Tier 1 (metro), ~83% get Tier 2 (regional), ~0.4% get Tier 3 (national/territories).
+The CBSA crosswalk is built from the OMB CBSA delineation file via `scripts/build-cbsa-cpi-crosswalk.ts`. Each CPI area = exactly one CBSA (the BLS "self-representing" metro from the 2018 geographic revision). Counties not in any CPI metro CBSA get regional CPI data, which is a real BLS-published series — not a proxy. ~16.5% of zips get Tier 1 (metro), ~83% get Tier 2 (division), ~0.4% get Tier 4 (national/territories). Tier 3 (regional) is a defensive fallback — all 50 states are covered by divisions.
 
 ### EIA Gas 4-Tier Lookup (`getGasLookup`)
 
@@ -230,11 +231,12 @@ Frontend labels reflect the CPI tier and gas resolution level. The `tier` field 
 
 | Tier | CPI Label | CPI Source Link | Gas Label (PAD) |
 |------|-----------|-----------------|-----------------|
-| 1 (metro) | `metro: Chicago-Naperville-Elgin` | BLS metro chart page | `Chicago area avg` |
-| 2 (regional) | `region: South Urban` | BLS regional resources | `Midwest (PADD 2) avg` |
-| 3 (national) | `national` | General BLS CPI page | `National avg` |
+| 1 (metro) | `metro: Chicago-Naperville-Elgin` | BLS timeseries page for the specific series | `Chicago area avg` |
+| 2 (division) | `division: Mountain` | BLS timeseries page for the specific series | `Midwest (PADD 2) avg` |
+| 3 (regional) | `region: South Urban` | BLS timeseries page for the specific series | `Midwest (PADD 2) avg` |
+| 4 (national) | `national` | BLS timeseries page for the specific series | `National avg` |
 
-**Cache staleness:** The `tier` field was added after initial data was cached. Stale cache entries lack `tier`, so the frontend infers it from the `metro` string: names containing "Urban" → tier 2, "National" → tier 3, else tier 1. This fallback is in `HomeContent.tsx` and `ChartsSection.tsx`.
+**Cache staleness:** The `tier` field was added after initial data was cached. Stale cache entries lack `tier`, so the frontend infers it from the `metro` string: names containing "Urban" → tier 3, "National" → tier 4, else tier 1. This fallback is in `HomeContent.tsx` and `ChartsSection.tsx`.
 
 **PAD ≠ Census region:** EIA PAD districts and BLS CPI Census regions use different geographic boundaries. TN/KY/OK are PAD 2 "Midwest" but Census "South". This is correct — PAD districts track petroleum infrastructure, Census regions track cost-of-living surveys. Gas labels include the PADD identifier (e.g., "Midwest (PADD 2) avg") so users can look it up.
 

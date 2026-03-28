@@ -18,7 +18,8 @@ describe('CBSA CPI crosswalk', () => {
   test('all 23 CPI metros have at least one county', () => {
     const usedAreas = new Set(Object.values(crosswalk))
     const metroAreas = Object.keys(BLS_CPI_AREAS).filter(
-      code => !['0100','0200','0300','0400','0000'].includes(code)
+      code => !['0100','0200','0300','0400','0000',
+                '0110','0120','0230','0240','0350','0360','0370','0480','0490'].includes(code)
     )
     for (const area of metroAreas) {
       expect(usedAreas).toContain(area)
