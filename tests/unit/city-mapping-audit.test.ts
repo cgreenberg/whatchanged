@@ -52,10 +52,10 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['East Providence', 'RI', '44007', 'S11A', 'YBOS', 1],
 
   // === CONNECTICUT ===
-  ['Bridgeport', 'CT', '09001', 'S11A', 'YBOS', 1], // Fairfield County override → NYC
+  ['Bridgeport', 'CT', '09001', 'S11A', 'YBOS', 1], // Old Fairfield County FIPS → state default Boston (new planning region FIPS 09120 overrides to NYC)
   ['New Haven', 'CT', '09009', 'S11A', 'YBOS', 1],
   ['Hartford', 'CT', '09003', 'S11A', 'YBOS', 1],
-  ['Stamford', 'CT', '09001', 'S11A', 'YBOS', 1], // Fairfield County override → NYC
+  ['Stamford', 'CT', '09001', 'S11A', 'YBOS', 1], // Old Fairfield County FIPS → state default Boston (new planning region FIPS 09120 overrides to NYC)
   ['Waterbury', 'CT', '09009', 'S11A', 'YBOS', 1],
 
   // === NEW YORK ===
