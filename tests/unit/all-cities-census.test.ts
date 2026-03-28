@@ -4,7 +4,7 @@ import censusPlaces from '@/lib/data/census-places.json'
 
 const NATIONAL_FALLBACK_INCOME = 74580
 
-describe('city-level income — all 50 metros', () => {
+describe('city-level income — all cities in lookup', () => {
   test.each(CITY_ZIP_LOOKUP)(
     '$display uses city proper income, not zip income',
     ({ zip, city, state }) => {
@@ -21,9 +21,9 @@ describe('city-level income — all 50 metros', () => {
     }
   )
 
-  test('all 50 cities in lookup have a census-places.json entry', () => {
+  test('all cities in lookup have a census-places.json entry', () => {
     const placeKeys = Object.keys(censusPlaces)
-    expect(placeKeys).toHaveLength(50)
+    expect(placeKeys).toHaveLength(53)
 
     for (const { city, state } of CITY_ZIP_LOOKUP) {
       const placeKey = `${city.toLowerCase()}|${state.toLowerCase()}`

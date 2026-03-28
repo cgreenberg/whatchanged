@@ -48,5 +48,8 @@
   "boston|ma": { "medianIncome": 79018, "year": 2023 },
   "pittsburgh|pa": { "medianIncome": 54047, "year": 2023 },
   "cleveland|oh": { "medianIncome": 30907, "year": 2023 },
-  "st. louis|mo": { "medianIncome": 47644, "year": 2023 }
+  "st. louis|mo": { "medianIncome": 47644, "year": 2023 },
+  "honolulu|hi": { "medianIncome": 90857, "year": 2023 },
+  "anchorage|ak": { "medianIncome": 84813, "year": 2023 },
+  "riverside|ca": { "medianIncome": 74030, "year": 2023 }
 }
