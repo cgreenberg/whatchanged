@@ -12,7 +12,7 @@ const NATIONAL_SHELTER_SERIES = 'CUUR0000SAH1'
 const NATIONAL_ENERGY_SERIES = 'CUUR0000SA0E'
 
 export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<CpiData> {
-  const { areaCode, areaName, tier } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
+  let { areaCode, areaName, tier } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
 
   const groceriesSeries = `CUUR${areaCode}SAF11`
   const shelterSeries = `CUUR${areaCode}SAH1`
@@ -71,12 +71,27 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
     seriesMap[s.seriesID] = s.data ?? []
   }
 
-  const groceriesData = seriesMap[groceriesSeries] ?? []
-  const shelterData = seriesMap[shelterSeries] ?? []
-  const energyData = seriesMap[energySeries] ?? []
+  let groceriesData = seriesMap[groceriesSeries] ?? []
+  let shelterData = seriesMap[shelterSeries] ?? []
+  let energyData = seriesMap[energySeries] ?? []
 
   if (!groceriesData.length) {
-    throw new Error('No groceries CPI data returned')
+    if (areaCode !== '0000') {
+      // Regional/metro CPI returned empty — fall back to national (already fetched in same BLS call)
+      console.warn(`CPI area ${areaCode} (${areaName}) returned empty groceries data, falling back to national`)
+      const natG = seriesMap[NATIONAL_GROCERIES_SERIES] ?? []
+      if (!natG.length) {
+        throw new Error('No groceries CPI data returned (regional and national both empty)')
+      }
+      groceriesData = natG
+      shelterData = seriesMap[NATIONAL_SHELTER_SERIES] ?? []
+      energyData = seriesMap[NATIONAL_ENERGY_SERIES] ?? []
+      areaCode = '0000'
+      areaName = 'National'
+      tier = 3
+    } else {
+      throw new Error('No groceries CPI data returned')
+    }
   }
 
   // Build a map of period -> value for each series (keyed by "YYYY-Period")

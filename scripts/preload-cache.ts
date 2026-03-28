@@ -8,6 +8,7 @@
  * Sections:
  *   1. Gas Prices (EIA) — city, state, PAD district, national
  *   2. BLS National Data — national unemployment + CPI series
+ *   2b. BLS Regional + National CPI — 4 regional + national CPI under bls:cpi:{areaCode}:all keys
  *   3. Top 50 Counties — county-level unemployment (BLS LAUS)
  */
 
@@ -85,6 +86,7 @@ const stats = {
   failed: 0,
   gas:          { stored: 0, failed: 0 },
   blsNational:  { stored: 0, failed: 0 },
+  blsCpiRegion: { stored: 0, failed: 0 },
   blsCounty:    { stored: 0, failed: 0 },
 }
 
@@ -543,6 +545,183 @@ async function preloadBlsNational() {
 }
 
 // ---------------------------------------------------------------------------
+// Section 2b: BLS Regional + National CPI (keys the app actually reads)
+// ---------------------------------------------------------------------------
+
+interface CpiPoint {
+  date:      string
+  groceries: number
+  shelter:   number | null
+  energy:    number | null
+}
+
+interface CpiData {
+  groceriesCurrent:  number
+  groceriesBaseline: number
+  groceriesChange:   number
+  shelterChange:     number
+  series:            CpiPoint[]
+  metro:             string
+  tier:              1 | 2 | 3
+  seriesIds:         { groceries: string; shelter: string; energy: string }
+  nationalSeries?:   CpiPoint[]
+}
+
+const CPI_AREAS: Array<{ areaCode: string; areaName: string; tier: 1 | 2 | 3 }> = [
+  { areaCode: '0000', areaName: 'National',      tier: 3 },
+  { areaCode: '0100', areaName: 'Northeast Urban', tier: 2 },
+  { areaCode: '0200', areaName: 'Midwest Urban',   tier: 2 },
+  { areaCode: '0300', areaName: 'South Urban',     tier: 2 },
+  { areaCode: '0400', areaName: 'West Urban',      tier: 2 },
+]
+
+async function preloadBlsCpiRegional() {
+  console.log('\n=== Section 2b: BLS Regional + National CPI ===')
+
+  if (!process.env.BLS_API_KEY) {
+    console.warn('  WARNING: BLS_API_KEY not set — rate limit is 25 req/day')
+  }
+
+  const currentYear = new Date().getFullYear().toString()
+
+  // Build series IDs for all 5 areas (national + 4 regional) × 3 metrics = 15 total.
+  // National series (0000) appear in both the area rows and as the nationalSeries
+  // for regional areas — they're deduplicated by BLS via Set before sending.
+  const allSeriesIds: string[] = []
+  for (const area of CPI_AREAS) {
+    allSeriesIds.push(
+      `CUUR${area.areaCode}SAF11`,  // groceries
+      `CUUR${area.areaCode}SAH1`,   // shelter
+      `CUUR${area.areaCode}SA0E`,   // energy
+    )
+  }
+  // Deduplicate (national series appears in both lists)
+  const uniqueSeriesIds = [...new Set(allSeriesIds)]
+
+  let json: any
+  try {
+    json = await postBls(uniqueSeriesIds, '2016', currentYear)
+  } catch (err) {
+    console.error('  ✗ BLS regional CPI fetch failed entirely:', err instanceof Error ? err.message : err)
+    stats.blsCpiRegion.failed += CPI_AREAS.length
+    stats.failed              += CPI_AREAS.length
+    console.log(`  BLS regional CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
+    return
+  }
+
+  const seriesMap: Record<string, BlsPoint[]> = {}
+  for (const s of json.Results?.series ?? []) {
+    seriesMap[s.seriesID] = s.data ?? []
+  }
+
+  function buildPeriodMap(data: BlsPoint[]): Map<string, number> {
+    const map = new Map<string, number>()
+    for (const d of data) {
+      const val = parseFloat(d.value)
+      if (isNaN(val) || d.value === '-') continue
+      map.set(`${d.year}-${d.period}`, val)
+    }
+    return map
+  }
+
+  function buildCpiPoints(
+    groceriesMap: Map<string, number>,
+    shelterMap:   Map<string, number>,
+    energyMap:    Map<string, number>,
+  ): CpiPoint[] {
+    const periods = [...groceriesMap.keys()].sort()
+    return periods
+      .map((key) => {
+        const [year, period] = key.split('-')
+        const month = period.replace('M', '').padStart(2, '0')
+        const g = groceriesMap.get(key)
+        if (g === undefined || g === null || isNaN(g)) return null
+        return {
+          date:     `${year}-${month}`,
+          groceries: g,
+          shelter:   shelterMap.get(key) ?? null,
+          energy:    energyMap.get(key)  ?? null,
+        }
+      })
+      .filter((p): p is CpiPoint => p !== null)
+  }
+
+  // Pre-build national series data (used as nationalSeries in regional entries)
+  const natGroceriesMap = buildPeriodMap(seriesMap['CUUR0000SAF11'] ?? [])
+  const natShelterMap   = buildPeriodMap(seriesMap['CUUR0000SAH1']  ?? [])
+  const natEnergyMap    = buildPeriodMap(seriesMap['CUUR0000SA0E']   ?? [])
+  const nationalSeries  = buildCpiPoints(natGroceriesMap, natShelterMap, natEnergyMap)
+
+  const baselineKey = `${BLS_BASELINE_YEAR}-${BLS_BASELINE_PERIOD}`
+
+  for (const area of CPI_AREAS) {
+    const groceriesSeriesId = `CUUR${area.areaCode}SAF11`
+    const shelterSeriesId   = `CUUR${area.areaCode}SAH1`
+    const energySeriesId    = `CUUR${area.areaCode}SA0E`
+
+    try {
+      const groceriesMap = buildPeriodMap(seriesMap[groceriesSeriesId] ?? [])
+      const shelterMap   = buildPeriodMap(seriesMap[shelterSeriesId]   ?? [])
+      const energyMap    = buildPeriodMap(seriesMap[energySeriesId]    ?? [])
+
+      if (!groceriesMap.size) {
+        throw new Error(`No groceries data returned for area ${area.areaCode}`)
+      }
+
+      const allPeriods      = [...groceriesMap.keys()].sort()
+      const latestKey       = allPeriods[allPeriods.length - 1]
+
+      const groceriesCurrent  = groceriesMap.get(latestKey) ?? 0
+      const groceriesBaseline = groceriesMap.get(baselineKey) ?? 0
+      const groceriesChange   = groceriesBaseline > 0
+        ? parseFloat(((groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100).toFixed(1))
+        : 0
+
+      const shelterBaseline = shelterMap.get(baselineKey) ?? 0
+      const shelterCurrent  = shelterMap.get(latestKey)  ?? 0
+      const shelterChange   = shelterBaseline > 0
+        ? parseFloat(((shelterCurrent - shelterBaseline) / shelterBaseline * 100).toFixed(1))
+        : 0
+
+      const series = buildCpiPoints(groceriesMap, shelterMap, energyMap)
+
+      // National series is included only when this area is not itself national
+      const isNational = area.areaCode === '0000'
+
+      const cpiData: CpiData = {
+        groceriesCurrent,
+        groceriesBaseline,
+        groceriesChange,
+        shelterChange,
+        series,
+        metro:     area.areaName,
+        tier:      area.tier,
+        seriesIds: {
+          groceries: groceriesSeriesId,
+          shelter:   shelterSeriesId,
+          energy:    energySeriesId,
+        },
+        ...(!isNational && nationalSeries.length ? { nationalSeries } : {}),
+      }
+
+      const cacheKey = `bls:cpi:${area.areaCode}:all`
+      await store(cacheKey, cpiData, TTL_7_DAYS)
+
+      stats.blsCpiRegion.stored++
+      console.log(
+        `  ✓ ${cacheKey} (${area.areaName}): groceries ${groceriesChange > 0 ? '+' : ''}${groceriesChange}%, shelter ${shelterChange > 0 ? '+' : ''}${shelterChange}%`
+      )
+    } catch (err) {
+      stats.blsCpiRegion.failed++
+      stats.failed++
+      console.error(`  ✗ bls:cpi:${area.areaCode}:all (${area.areaName}):`, err instanceof Error ? err.message : err)
+    }
+  }
+
+  console.log(`  BLS regional CPI: ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
+}
+
+// ---------------------------------------------------------------------------
 // Section 3: Top 50 Counties
 // ---------------------------------------------------------------------------
 
@@ -745,6 +924,7 @@ async function main() {
 
   await preloadGasPrices()
   await preloadBlsNational()
+  await preloadBlsCpiRegional()
   await preloadBlsCounties()
 
   const elapsed   = ((Date.now() - startTime) / 1000).toFixed(1)
@@ -757,6 +937,7 @@ async function main() {
   console.log(`  Total failures    : ${stats.failed}`)
   console.log(`  Gas prices        : ${stats.gas.stored} stored, ${stats.gas.failed} failed`)
   console.log(`  BLS national      : ${stats.blsNational.stored} stored, ${stats.blsNational.failed} failed`)
+  console.log(`  BLS regional CPI  : ${stats.blsCpiRegion.stored} stored, ${stats.blsCpiRegion.failed} failed`)
   console.log(`  BLS counties      : ${stats.blsCounty.stored} stored, ${stats.blsCounty.failed} failed`)
   console.log(`  Elapsed           : ${elapsed}s`)
   console.log('=================================================')
