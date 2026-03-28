@@ -161,14 +161,17 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
       return entry
     })
 
-    // Append national-only data points beyond local range
-    for (const nd of nationalData) {
-      if (!localDates.has(nd.date)) {
-        const entry: { date: string; [key: string]: unknown } = { date: nd.date }
-        for (const key of Object.keys(nd)) {
-          if (key !== 'date') entry[`national_${key}`] = nd[key]
+    // Append national-only data points beyond local range (not before it)
+    const lastLocalDate = chartData[chartData.length - 1]?.date as string
+    if (lastLocalDate) {
+      for (const nd of nationalData) {
+        if (nd.date > lastLocalDate) {
+          const entry: { date: string; [key: string]: unknown } = { date: nd.date }
+          for (const key of Object.keys(nd)) {
+            if (key !== 'date') entry[`national_${key}`] = nd[key]
+          }
+          merged.push(entry)
         }
-        merged.push(entry)
       }
     }
 
@@ -237,7 +240,11 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
     )
   }
 
-  // Determine date range for era shading
+  // Local data range (for stable tick computation — unaffected by national overlay extension)
+  const localFirstDate = (chartData[0]?.date ?? '') as string
+  const localLastDate = (chartData[chartData.length - 1]?.date ?? '') as string
+
+  // Full display range (for era shading — needs to cover national extension too)
   const firstDate = (displayData[0]?.date ?? '') as string
   const lastDate = (displayData[displayData.length - 1]?.date ?? '') as string
 
@@ -343,8 +350,9 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
   ) : null
 
   // Bug 4 fix: Custom tick system snapped to Jan/Jul boundaries
-  const rangeMonths = computeDateRangeMonths(firstDate, lastDate)
-  const computedTicks = generateTicks(firstDate, lastDate)
+  // Use local data range so ticks stay stable when toggling national overlay
+  const rangeMonths = computeDateRangeMonths(localFirstDate, localLastDate)
+  const computedTicks = generateTicks(localFirstDate, localLastDate)
   const snappedTicks = snapTicksToData(computedTicks, allDates)
 
   const ChartComponent =
