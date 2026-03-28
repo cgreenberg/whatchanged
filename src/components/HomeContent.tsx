@@ -16,6 +16,12 @@ import type { EconomicSnapshot } from '@/types'
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
 
+function formatSourceDate(dateStr: string): string {
+  const parts = dateStr.split('-')
+  const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1)
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
 export default function HomeContent() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
@@ -120,7 +126,7 @@ export default function HomeContent() {
                       change={`${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)} since Jan 2025`}
                       direction={snapshot.gas.data.change > 0 ? 'up' : 'down'}
                       sourceLabel="EIA"
-                      sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      sourceDate={snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
                       isNegative
                       sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
@@ -140,7 +146,7 @@ export default function HomeContent() {
                         change={`~$${shelterDollarImpact}/yr ${shelterChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                         direction={shelterChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
-                        sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
                         isNegative
                         sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
@@ -161,7 +167,7 @@ export default function HomeContent() {
                         change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
                         direction={pctChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
-                        sourceDate={new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
                         isNegative
                         sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
