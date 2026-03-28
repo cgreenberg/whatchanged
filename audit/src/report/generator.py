@@ -93,10 +93,13 @@ def generate_report(
         zip_counts = _count_statuses(zip_checks)
         zip_verdict = _compute_verdict(zip_counts)
 
+        cpi_tier = _infer_cpi_tier(zip_checks)
+
         template_zip_results.append({
             "zip": zr.get("zip", ""),
             "location_name": location_name,
             "verdict": zip_verdict,
+            "cpi_tier": cpi_tier,
             "checks": checks_for_template,
             "screenshots": screenshots,
         })
@@ -200,6 +203,36 @@ def _format_location(location: dict) -> str:
         name += f" ({county})"
 
     return name
+
+
+def _infer_cpi_tier(checks: list) -> str:
+    """Infer CPI tier label from audit checks for display in the report.
+
+    Looks for a metro_mapping check whose site_value contains the metro name.
+    Returns 'Metro', 'Regional', 'National', or '' if not determinable.
+    """
+    for check in checks:
+        if isinstance(check, CheckResult):
+            cat = check.category
+            name = check.check_name
+            site_val = check.site_value
+        elif isinstance(check, dict):
+            cat = check.get("category", "")
+            name = check.get("check_name", "")
+            site_val = check.get("site_value")
+        else:
+            continue
+
+        if cat == "metro_mapping" and "metro_match" in name:
+            if site_val:
+                site_str = str(site_val).lower()
+                if "urban" in site_str:
+                    return "Regional"
+                elif site_str in ("national", ""):
+                    return "National"
+                else:
+                    return "Metro"
+    return ""
 
 
 def _encode_screenshot(filepath: str) -> Optional[str]:

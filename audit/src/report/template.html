@@ -46,6 +46,11 @@
         .zip-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .zip-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
 
+        .cpi-tier { display: inline-block; padding: 2px 10px; border-radius: 12px; font-weight: 600; font-size: 0.85em; }
+        .cpi-tier-metro { background: #dbeafe; color: #1e40af; }
+        .cpi-tier-regional { background: #fef3c7; color: #92400e; }
+        .cpi-tier-national { background: #e5e7eb; color: #374151; }
+
         /* Horizontally scrollable table wrapper for mobile */
         .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 0.9em; }
@@ -163,6 +168,9 @@
         {% for zip_result in zip_results %}
         <a href="#zip-{{ zip_result.zip }}" class="zip-link zip-link-{{ zip_result.verdict }}">
             {{ zip_result.zip }}
+            {% if zip_result.cpi_tier %}
+            <span style="font-size: 0.7em; opacity: 0.6;">{{ zip_result.cpi_tier }}</span>
+            {% endif %}
             <span class="zip-link-verdict">{{ zip_result.verdict }}</span>
         </a>
         {% endfor %}
@@ -173,7 +181,12 @@
     <div class="zip-section" id="zip-{{ zip_result.zip }}">
         <div class="zip-header">
             <h2 style="margin: 0; border: none;">{{ zip_result.zip }} — {{ zip_result.location_name }}</h2>
-            <span class="verdict verdict-{{ zip_result.verdict }}">{{ zip_result.verdict }}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                {% if zip_result.cpi_tier %}
+                <span class="cpi-tier cpi-tier-{{ zip_result.cpi_tier|lower }}">CPI: {{ zip_result.cpi_tier }}</span>
+                {% endif %}
+                <span class="verdict verdict-{{ zip_result.verdict }}">{{ zip_result.verdict }}</span>
+            </div>
         </div>
 
         <div class="table-scroll">

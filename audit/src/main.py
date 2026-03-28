@@ -36,7 +36,12 @@ from src.comparators.tariff import compare_tariff
 from src.comparators.rendered_vs_api import compare_rendered_vs_api
 from src.comparators.computation import verify_computations
 from src.comparators.national import compare_national_data
-from src.validators.series_metro import verify_series_metro_mapping
+from src.validators.series_metro import (
+    verify_series_metro_mapping,
+    verify_cpi_region_appropriate,
+    verify_metro_state_appropriate,
+)
+from src.validators.gas_region import verify_gas_region_appropriate
 from src.validators.freshness import verify_data_freshness
 from src.validators.link_checker import verify_links
 from src.validators.baseline import verify_baselines
@@ -263,6 +268,11 @@ def audit_single_zip(
     # Step 5: Run validators
     # Metro mapping (most critical)
     all_checks.extend(verify_series_metro_mapping(site_data, bls_data))
+
+    # Geographic appropriateness (CPI region + metro state + gas region)
+    all_checks.extend(verify_cpi_region_appropriate(site_data))
+    all_checks.extend(verify_metro_state_appropriate(site_data))
+    all_checks.extend(verify_gas_region_appropriate(site_data))
 
     # Data freshness
     all_checks.extend(verify_data_freshness(site_data))

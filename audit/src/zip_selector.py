@@ -38,7 +38,10 @@ def select_audit_zips(n: int = 10, include_edge_cases: bool = True) -> list[str]
 
     selected = []
 
-    # First pass: one from each region (if n allows)
+    # First pass: one from each region (if n allows).
+    # The "rural" pool (Montana, Wyoming, Vermont, etc.) intentionally exercises
+    # regional CPI paths (Tier 2 — state-level BLS regional series) because rural
+    # counties are not covered by any CBSA metro CPI area.
     if n >= len(regions):
         for region in regions:
             zip_code = random.choice(pools[region])
