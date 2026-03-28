@@ -1,8 +1,11 @@
 /**
  * audit-gas-assignments.ts
  *
- * Detects CPI→gas chain leaks: cases where a county's CPI area (borrowed from
- * another state) chains it to an EIA city gas price from the wrong region.
+ * Detects CPI→gas chain leaks: cases where a county's CPI area chains it to
+ * an EIA city gas price that is too far away (>100 miles).
+ *
+ * This catches both cross-PAD leaks AND same-state-but-far-away leaks
+ * (e.g. Austin TX getting Houston city gas via CPI chain).
  *
  * Run in report mode:  npx tsx scripts/audit-gas-assignments.ts
  * Run in apply mode:   npx tsx scripts/audit-gas-assignments.ts --apply
@@ -25,34 +28,23 @@ import {
 } from '../src/lib/mappings/eia-gas'
 
 // ---------------------------------------------------------------------------
-// EIA city metadata — which state and PAD each city belongs to
+// EIA city coordinates for distance-based leak detection
 // ---------------------------------------------------------------------------
 
-const EIA_CITY_STATE: Record<string, string> = {
-  YBOS: 'MA',
-  Y35NY: 'NY',
-  YORD: 'IL',
-  YCLE: 'OH',
-  YDEN: 'CO',
-  Y44HO: 'TX',
-  Y05LA: 'CA',
-  Y05SF: 'CA',
-  YMIA: 'FL',
-  Y48SE: 'WA',
+const EIA_CITY_COORDS: Record<string, { lat: number; lng: number; state: string }> = {
+  YBOS: { lat: 42.36, lng: -71.06, state: 'MA' },
+  Y35NY: { lat: 40.71, lng: -74.01, state: 'NY' },
+  YORD: { lat: 41.88, lng: -87.63, state: 'IL' },
+  YCLE: { lat: 41.50, lng: -81.69, state: 'OH' },
+  YDEN: { lat: 39.74, lng: -104.99, state: 'CO' },
+  Y44HO: { lat: 29.76, lng: -95.37, state: 'TX' },
+  Y05LA: { lat: 34.05, lng: -118.24, state: 'CA' },
+  Y05SF: { lat: 37.77, lng: -122.42, state: 'CA' },
+  YMIA: { lat: 25.76, lng: -80.19, state: 'FL' },
+  Y48SE: { lat: 47.61, lng: -122.33, state: 'WA' },
 }
 
-const EIA_CITY_PAD: Record<string, string> = {
-  YBOS: '1A',
-  Y35NY: '1B',
-  YORD: '2',
-  YCLE: '2',
-  YDEN: '4',
-  Y44HO: '3',
-  Y05LA: '5',
-  Y05SF: '5',
-  YMIA: '1C',
-  Y48SE: '5',
-}
+const MAX_CITY_DISTANCE_MILES = 100
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,6 +59,7 @@ interface CountyInfo {
 interface ChainLeak {
   county: CountyInfo
   cpiArea: string
+  distanceMiles: number
   currentGas: { duoarea: string; label: string; tier: string }
   shouldBe: { duoarea: string; label: string; tier: string }
 }
@@ -74,6 +67,17 @@ interface ChainLeak {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Haversine distance in miles */
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3959 // Earth radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
 function getCpiArea(countyFips: string, state: string): string {
   return COUNTY_CPI_OVERRIDES[countyFips] ?? STATE_TO_CPI_AREA[state] ?? ''
@@ -141,21 +145,6 @@ function getCorrectGas(
   return { duoarea, label: `${padName} avg`, tier: '3' }
 }
 
-/**
- * Check if a Tier 1b assignment is valid: the EIA city must be in the same
- * state OR the same PAD district as the county.
- */
-function isTier1bValid(cityDuoarea: string, countyState: string): boolean {
-  const cityState = EIA_CITY_STATE[cityDuoarea]
-  if (cityState && cityState === countyState) return true
-
-  const cityPad = EIA_CITY_PAD[cityDuoarea]
-  const countyPad = getCountyPad(countyState)
-  if (cityPad && countyPad && cityPad === countyPad) return true
-
-  return false
-}
-
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -192,17 +181,28 @@ for (const [fips, info] of counties) {
     continue
   }
 
-  // County is using Tier 1b (CPI→city chain). Check if it's valid.
-  if (isTier1bValid(current.duoarea, state)) {
+  // County is using Tier 1b (CPI→city chain). Check distance.
+  const cityCoords = EIA_CITY_COORDS[current.duoarea]
+  if (!cityCoords) {
+    // Unknown city — shouldn't happen, but skip
     validTier1b++
     continue
   }
 
-  // Chain leak detected
+  const dist = haversine(info.lat, info.lng, cityCoords.lat, cityCoords.lng)
+
+  if (dist <= MAX_CITY_DISTANCE_MILES) {
+    // Close enough — Tier 1b is valid
+    validTier1b++
+    continue
+  }
+
+  // Chain leak detected — county is too far from the EIA city
   const shouldBe = getCorrectGas(state)
   leaks.push({
     county: { fips, name: info.name, state },
     cpiArea,
+    distanceMiles: Math.round(dist),
     currentGas: current,
     shouldBe,
   })
@@ -214,11 +214,11 @@ for (const [fips, info] of counties) {
 
 if (!applyMode) {
   // Report mode
-  console.log('Gas Chain Leak Audit')
-  console.log('====================')
+  console.log('Gas Chain Leak Audit (distance-based)')
+  console.log('======================================')
   console.log(`Total counties: ${totalCounties}`)
   console.log(`Counties with Tier 1a override (skipped): ${tier1aSkipped}`)
-  console.log(`Counties with valid Tier 1b (same state/PAD): ${validTier1b}`)
+  console.log(`Counties with valid Tier 1b (within ${MAX_CITY_DISTANCE_MILES} mi): ${validTier1b}`)
   console.log(`Counties not using Tier 1b: ${noTier1b}`)
   console.log(`Chain leaks found: ${leaks.length}`)
   console.log()
@@ -232,7 +232,7 @@ if (!applyMode) {
       byState.set(leak.county.state, arr)
     }
 
-    const header = `${'State'.padEnd(6)}${'County'.padEnd(30)}${'FIPS'.padEnd(8)}${'Current gas (via CPI chain)'.padEnd(35)}${'Should be'.padEnd(25)}CPI area`
+    const header = `${'State'.padEnd(6)}${'County'.padEnd(30)}${'FIPS'.padEnd(8)}${'Dist'.padEnd(7)}${'Current gas (via CPI chain)'.padEnd(35)}${'Should be'.padEnd(25)}CPI area`
     console.log(header)
     console.log('-'.repeat(header.length))
 
@@ -242,6 +242,7 @@ if (!applyMode) {
           `${leak.county.state.padEnd(6)}` +
           `${leak.county.name.padEnd(30)}` +
           `${leak.county.fips.padEnd(8)}` +
+          `${`${leak.distanceMiles}mi`.padEnd(7)}` +
           `${`${leak.currentGas.duoarea} (${leak.currentGas.label})`.padEnd(35)}` +
           `${`${leak.shouldBe.duoarea} (${leak.shouldBe.label})`.padEnd(25)}` +
           `${leak.cpiArea}`
@@ -265,17 +266,12 @@ if (!applyMode) {
 
   for (const [state, stateLeaks] of [...byState.entries()].sort()) {
     const first = stateLeaks[0]
-    const padName = PAD_NAMES[getCountyPad(state)] ?? ''
-    const stateLevel = STATE_LEVEL_CODES[state]
-    const targetDesc = stateLevel
-      ? `${state} state avg`
-      : `PAD ${getCountyPad(state)} ${padName}`
 
     console.log(`  // ${state} → ${first.shouldBe.label} (not ${first.currentGas.label} via CPI chain)`)
 
     for (const leak of stateLeaks.sort((a, b) => a.county.fips.localeCompare(b.county.fips))) {
       console.log(
-        `  '${leak.county.fips}': { duoarea: '${leak.shouldBe.duoarea}', label: '${leak.shouldBe.label}' },  // ${leak.county.name}`
+        `  '${leak.county.fips}': { duoarea: '${leak.shouldBe.duoarea}', label: '${leak.shouldBe.label}' },  // ${leak.county.name} (${leak.distanceMiles}mi from ${leak.currentGas.label.replace(' avg', '')})`
       )
     }
   }
