@@ -175,6 +175,7 @@ export async function fetchGasPrice(
       geoLevel: 'National avg',
       isNationalFallback: true,
       duoarea: 'NUS',
+      tier: 3 as const,
       series,
     }
   }
@@ -204,6 +205,7 @@ export async function fetchGasPrice(
       geoLevel: lookup.geoLevel,
       isNationalFallback: false,
       duoarea: lookup.duoarea,
+      tier: lookup.tier,
       series,
       ...(nationalSeries ? { nationalSeries } : {}),
     }
@@ -220,6 +222,7 @@ export async function fetchGasPrice(
       geoLevel: 'National avg',
       isNationalFallback: true,
       duoarea: 'NUS',
+      tier: 3 as const,
       series,
     }
   }

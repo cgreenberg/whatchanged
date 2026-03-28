@@ -12,7 +12,7 @@ const NATIONAL_SHELTER_SERIES = 'CUUR0000SAH1'
 const NATIONAL_ENERGY_SERIES = 'CUUR0000SA0E'
 
 export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<CpiData> {
-  const { areaCode, areaName } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
+  const { areaCode, areaName, tier } = getMetroCpiAreaForCounty(countyFips, stateAbbr)
 
   const groceriesSeries = `CUUR${areaCode}SAF11`
   const shelterSeries = `CUUR${areaCode}SAH1`
@@ -177,6 +177,7 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
     shelterChange,
     series,
     metro: areaName,
+    tier,
     seriesIds: {
       groceries: groceriesSeries,
       shelter: shelterSeries,

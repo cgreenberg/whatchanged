@@ -43,6 +43,7 @@ export interface CpiData {
   shelterChange: number
   series: CpiPoint[]
   metro: string
+  tier: 1 | 2 | 3
   seriesIds?: { groceries: string; shelter: string; energy: string }
   nationalSeries?: CpiPoint[]
 }
@@ -57,6 +58,7 @@ export interface GasPriceData {
   isNationalFallback?: boolean
   geoLevel?: string
   duoarea?: string  // EIA area code used for the API query
+  tier?: 1 | 2 | 3
 }
 
 export interface FederalFundingData {

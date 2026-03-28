@@ -55,19 +55,19 @@ export const STATE_TO_REGION: Record<string, string> = {
 export function getMetroCpiAreaForCounty(
   countyFips: string,
   stateAbbr: string
-): { areaCode: string; areaName: string } {
+): { areaCode: string; areaName: string; tier: 1 | 2 | 3 } {
   // Tier 1: CBSA-based lookup (official OMB → BLS mapping)
   const cbsaArea = (cbsaCrosswalk as Record<string, string>)[countyFips]
   if (cbsaArea && BLS_CPI_AREAS[cbsaArea]) {
-    return { areaCode: cbsaArea, areaName: BLS_CPI_AREAS[cbsaArea].name }
+    return { areaCode: cbsaArea, areaName: BLS_CPI_AREAS[cbsaArea].name, tier: 1 }
   }
 
   // Tier 2: Regional CPI fallback
   const regionCode = STATE_TO_REGION[stateAbbr.toUpperCase()]
   if (regionCode && BLS_CPI_AREAS[regionCode]) {
-    return { areaCode: regionCode, areaName: BLS_CPI_AREAS[regionCode].name }
+    return { areaCode: regionCode, areaName: BLS_CPI_AREAS[regionCode].name, tier: 2 }
   }
 
   // Tier 3: National fallback (territories)
-  return { areaCode: '0000', areaName: 'National' }
+  return { areaCode: '0000', areaName: 'National', tier: 3 }
 }

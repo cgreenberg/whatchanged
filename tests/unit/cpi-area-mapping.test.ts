@@ -40,31 +40,37 @@ describe('getMetroCpiAreaForCounty — Tier 1: CBSA metro lookup', () => {
     const result = getMetroCpiAreaForCounty('36061', 'NY')
     expect(result.areaCode).toBe('S12A')
     expect(result.areaName).toBe('New York-Newark-Jersey City')
+    expect(result.tier).toBe(1)
   })
 
   test('Cook County IL → Chicago CPI (S23A)', () => {
     const result = getMetroCpiAreaForCounty('17031', 'IL')
     expect(result.areaCode).toBe('S23A')
+    expect(result.tier).toBe(1)
   })
 
   test('LA County → Los Angeles CPI (S49A)', () => {
     const result = getMetroCpiAreaForCounty('06037', 'CA')
     expect(result.areaCode).toBe('S49A')
+    expect(result.tier).toBe(1)
   })
 
   test('King County WA → Seattle CPI (S49D)', () => {
     const result = getMetroCpiAreaForCounty('53033', 'WA')
     expect(result.areaCode).toBe('S49D')
+    expect(result.tier).toBe(1)
   })
 
   test('Harris County TX → Houston CPI (S37B)', () => {
     const result = getMetroCpiAreaForCounty('48201', 'TX')
     expect(result.areaCode).toBe('S37B')
+    expect(result.tier).toBe(1)
   })
 
   test('Middlesex County MA → Boston CPI (S11A)', () => {
     const result = getMetroCpiAreaForCounty('25017', 'MA')
     expect(result.areaCode).toBe('S11A')
+    expect(result.tier).toBe(1)
   })
 })
 
@@ -74,24 +80,28 @@ describe('getMetroCpiAreaForCounty — Tier 2: regional fallback', () => {
     const result = getMetroCpiAreaForCounty('28005', 'MS')
     expect(result.areaCode).toBe('0300')
     expect(result.areaName).toBe('South Urban')
+    expect(result.tier).toBe(2)
   })
 
   test('Erie County NY (Buffalo) → Northeast regional (0100)', () => {
     // Buffalo not in primary Boston CBSA → falls to regional
     const result = getMetroCpiAreaForCounty('36029', 'NY')
     expect(result.areaCode).toBe('0100')
+    expect(result.tier).toBe(2)
   })
 
   test('Sacramento County CA → West regional (0400)', () => {
     // Sacramento not in primary SF CBSA → falls to regional
     const result = getMetroCpiAreaForCounty('06067', 'CA')
     expect(result.areaCode).toBe('0400')
+    expect(result.tier).toBe(2)
   })
 
   test('state abbreviation is case-insensitive', () => {
     const upper = getMetroCpiAreaForCounty('28005', 'MS')
     const lower = getMetroCpiAreaForCounty('28005', 'ms')
     expect(lower.areaCode).toBe(upper.areaCode)
+    expect(lower.tier).toBe(upper.tier)
   })
 })
 
@@ -100,15 +110,18 @@ describe('getMetroCpiAreaForCounty — Tier 3: national fallback', () => {
     const result = getMetroCpiAreaForCounty('72001', 'PR')
     expect(result.areaCode).toBe('0000')
     expect(result.areaName).toBe('National')
+    expect(result.tier).toBe(3)
   })
 
   test('unknown state → National (0000)', () => {
     const result = getMetroCpiAreaForCounty('99999', 'XX')
     expect(result.areaCode).toBe('0000')
+    expect(result.tier).toBe(3)
   })
 
   test('empty state → National (0000)', () => {
     const result = getMetroCpiAreaForCounty('99999', '')
     expect(result.areaCode).toBe('0000')
+    expect(result.tier).toBe(3)
   })
 })
