@@ -122,6 +122,13 @@ export default function HomeContent() {
                 snapshot.cpi.data?.metro?.includes('Urban') ? 2 : 1
               )
 
+              const REGIONAL_CPI_LINKS: Record<string, string> = {
+                'Northeast Urban': 'https://www.bls.gov/regions/new-york-new-jersey/',
+                'Midwest Urban': 'https://www.bls.gov/regions/midwest/',
+                'South Urban': 'https://www.bls.gov/regions/southeast/',
+                'West Urban': 'https://www.bls.gov/regions/west/',
+              }
+
               return (
                 <>
                   {snapshot.gas.data && (
@@ -134,7 +141,11 @@ export default function HomeContent() {
                       sourceDate={snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
                       isNegative
-                      sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
+                      sourceUrl={
+                        snapshot.gas.data.tier === 3
+                          ? 'https://www.eia.gov/petroleum/weekly/includes/padds.php'
+                          : 'https://www.eia.gov/petroleum/gasdiesel/'
+                      }
                       accentColor="#F59E0B"
                       nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal${natGasDelta != null ? ` (${natGasDelta > 0 ? '+' : ''}$${natGasDelta.toFixed(2)})` : ''}` : undefined}
                     />
@@ -160,7 +171,7 @@ export default function HomeContent() {
                         isNegative
                         sourceUrl={
                           cpiTier === 2
-                            ? 'https://www.bls.gov/cpi/regional-resources.htm'
+                            ? REGIONAL_CPI_LINKS[snapshot.cpi.data?.metro ?? ''] ?? 'https://www.bls.gov/cpi/regional-resources.htm'
                             : cpiTier === 1
                               ? 'https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-metro-area.htm'
                               : 'https://data.bls.gov/cgi-bin/surveymost?cu'
@@ -191,7 +202,7 @@ export default function HomeContent() {
                         isNegative
                         sourceUrl={
                           cpiTier === 2
-                            ? 'https://www.bls.gov/cpi/regional-resources.htm'
+                            ? REGIONAL_CPI_LINKS[snapshot.cpi.data?.metro ?? ''] ?? 'https://www.bls.gov/cpi/regional-resources.htm'
                             : cpiTier === 1
                               ? 'https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-metro-area.htm'
                               : 'https://data.bls.gov/cgi-bin/surveymost?cu'

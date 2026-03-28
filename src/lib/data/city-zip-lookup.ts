@@ -51,6 +51,9 @@ export const CITY_ZIP_LOOKUP: {
   { city: "pittsburgh",        state: "pa", zip: "15201", display: "Pittsburgh, PA" },
   { city: "cleveland",         state: "oh", zip: "44113", display: "Cleveland, OH" },
   { city: "st. louis",         state: "mo", zip: "63101", display: "St. Louis, MO" },
+  { city: "riverside",         state: "ca", zip: "92501", display: "Riverside, CA" },
+  { city: "honolulu",          state: "hi", zip: "96813", display: "Honolulu, HI" },
+  { city: "anchorage",         state: "ak", zip: "99501", display: "Anchorage, AK" },
 ];
 
 export function searchCitiesStatic(query: string): typeof CITY_ZIP_LOOKUP {
