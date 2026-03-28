@@ -37,8 +37,8 @@ Read at session start:
 | Data         | Source          | Geo Level | Cache TTL |
 | ------------ | --------------- | --------- | --------- |
 | Unemployment | BLS LAUS        | County    | 7 days    |
-| Grocery CPI  | BLS CPI         | Metro     | 7 days    |
-| Shelter CPI  | BLS CPI         | Metro     | 7 days    |
+| Grocery CPI  | BLS CPI         | Metro/Regional | 7 days    |
+| Shelter CPI  | BLS CPI         | Metro/Regional | 7 days    |
 | Gas prices   | EIA Weekly      | Region    | 24 hours  |
 | Federal cuts | USASpending     | County    | 24 hours  |
 | Income/rent  | Census ACS      | ZIP       | Static    |
@@ -55,7 +55,7 @@ Client calls /api/data/{zip}
   ↓
 Server-side:
   1. zip → county FIPS (bundled HUD USPS crosswalk JSON, instant)
-  2. county FIPS → CPI metro area (county-metro-cpi.ts mappings)
+  2. county FIPS → CPI area (CBSA crosswalk → regional → national fallback)
   3. county FIPS → EIA gas region (eia-gas.ts mappings)
   4. Check Upstash Redis for each data source (per-source cache keys)
   5. Cache miss → fetch BLS + EIA + USASpending IN PARALLEL (Promise.all)
@@ -75,9 +75,9 @@ Return JSON to client → render cards + charts
 **Base URL:** `https://api.bls.gov/publicAPI/v2/timeseries/data/`
 
 - **LAUS (unemployment):** Series `LAUCN{FIPS}0000000000003` — county-level
-- **CPI (groceries):** Metro-level food subcategory series
-- **CPI (shelter):** Metro-level shelter subcategory series
-- **CPI (energy):** Metro-level energy subcategory series
+- **CPI (groceries):** Metro or regional food series (`CUUR{area}SAF11`)
+- **CPI (shelter):** Metro or regional shelter series (`CUUR{area}SAH1`)
+- **CPI (energy):** Metro or regional energy series (`CUUR{area}SA0E`)
 
 **Critical:** Batch multiple series in one POST call. Never make separate calls per series.
 
@@ -127,7 +127,7 @@ EIA publishes exactly **29 duoarea codes** for product EPM0 (retail gasoline):
 | Key Pattern                     | TTL      | Scope                               |
 | ------------------------------- | -------- | ----------------------------------- |
 | `bls:unemployment:{countyFips}` | 7 days   | Per county                          |
-| `bls:cpi:{cpiAreaCode}:all`     | 7 days   | Per metro (covers national + metro) |
+| `bls:cpi:{cpiAreaCode}:all`     | 7 days   | Per CPI area (metro, regional, or national) |
 | `eia:gas:city:{duoarea}`        | 24 hours | Per EIA city                        |
 | `eia:gas:state:{state}`         | 24 hours | Per state                           |
 | `eia:gas:pad:{pad}`             | 24 hours | Per PAD district                    |
@@ -148,7 +148,7 @@ When a BLS or EIA fetch fails, `getCachedOrFetch` in `kv.ts` writes a `{key}:fai
 - **Flush only the keys you need to.** If you changed CPI mappings, flush only `bls:cpi:*` (15 keys), not unemployment or gas. Use `scripts/flush-all-cache.ts` as a last resort.
 - **Never flush and then immediately warm.** If BLS is rate-limited, warm-cache will fail and the failures get negative-cached for 5 minutes.
 - **Flush once, warm once.** Multiple flush+warm cycles multiply the API calls.
-- **Budget:** 15 CPI metros + ~100 county unemployment series + 20 gas series = ~135 calls to fully repopulate. That's 27% of the daily BLS budget in one warm cycle.
+- **Budget:** 23 CPI metros + 4 regional CPI + ~100 county unemployment series + 20 gas series = ~147 calls to fully repopulate. That's 29% of the daily BLS budget in one warm cycle.
 
 ### Cache Warming
 
@@ -159,21 +159,29 @@ When a BLS or EIA fetch fails, `getCachedOrFetch` in `kv.ts` writes a `{key}:fai
 
 ## Geo Mapping
 
-The mapping chain `zip → county FIPS → CPI metro area → EIA gas region` is where most bugs come from. **Each data source resolves geography differently:**
+The mapping chain `zip → county FIPS → CPI area → EIA gas region` is where most bugs come from. **Each data source resolves geography differently:**
 
 | Data Source     | Geo Resolution                                          | Mapping Chain                                                    |
 | --------------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
-| Gas prices      | EIA 3-tier (county → CPI→city → state → PAD)            | `getGasLookup(state, cpiArea, countyFips)` in `eia.ts`          |
-| Groceries       | BLS CPI metro area                                      | `getMetroCpiAreaForCounty()` → `CUUR{area}SAF11`                |
-| Shelter         | Same CPI metro area                                     | `getMetroCpiAreaForCounty()` → `CUUR{area}SAH1`                 |
-| Energy          | Same CPI metro area                                     | `getMetroCpiAreaForCounty()` → `CUUR{area}SA0E`                 |
+| Gas prices      | EIA 4-tier (county → CPI→city → state → PAD)           | `getGasLookup(state, cpiArea, countyFips)` in `eia.ts`          |
+| Groceries       | BLS CPI area (metro or regional)                        | `getMetroCpiAreaForCounty()` → `CUUR{area}SAF11`                |
+| Shelter         | Same CPI area                                           | `getMetroCpiAreaForCounty()` → `CUUR{area}SAH1`                 |
+| Energy          | Same CPI area                                           | `getMetroCpiAreaForCounty()` → `CUUR{area}SA0E`                 |
 | Unemployment    | County FIPS directly                                    | `LAUCN{fips}0000000003` — no metro/state mapping                |
 | Tariff estimate | ZIP-level Census income × 0.0205                        | No geo mapping beyond ZIP                                        |
 
-### EIA Gas 3-Tier Lookup (`getGasLookup`)
+### BLS CPI 3-Tier Lookup (`getMetroCpiAreaForCounty`)
+
+1. **Tier 1:** `cbsa-cpi-crosswalk.json[countyFips]` — CBSA-based metro CPI (508 counties in 23 metros)
+2. **Tier 2:** `STATE_TO_REGION[stateAbbr]` — regional CPI fallback (Northeast `0100`, Midwest `0200`, South `0300`, West `0400`)
+3. **Tier 3:** National CPI `0000` — territories (PR, VI, GU)
+
+The CBSA crosswalk is built from the OMB CBSA delineation file via `scripts/build-cbsa-cpi-crosswalk.ts`. Each CPI area groups multiple CBSAs (e.g., S12A New York includes CBSAs in NJ and CT). Counties not in any CPI metro CBSA get regional CPI data, which is a real BLS-published series — not a proxy.
+
+### EIA Gas 4-Tier Lookup (`getGasLookup`)
 
 1. **Tier 1a:** `COUNTY_EIA_CITY_OVERRIDES[countyFips]` — direct county → city/region
-2. **Tier 1b:** `CPI_TO_EIA_CITY[cpiAreaCode]` — CPI metro → EIA city
+2. **Tier 1b:** `CPI_TO_EIA_CITY[cpiAreaCode]` — CPI metro → EIA city (only matches metro CPI codes, not regional)
 3. **Tier 2:** `STATE_LEVEL_CODES[state]` — state-level average (9 states only)
 4. **Tier 3:** `STATE_TO_PAD[state]` → PAD district/sub-district fallback
 
@@ -184,35 +192,35 @@ The mapping chain `zip → county FIPS → CPI metro area → EIA gas region` is
 
 PADs 2–5 have no sub-districts.
 
-### Common Mapping Pitfalls
+### How CPI and EIA Interact
 
-- **CPI→gas chain leaking across PAD districts:** If state A borrows a CPI metro from state B (e.g., Idaho using Seattle CPI), and that CPI metro has an EIA city mapping, state A gets state B's city gas prices — potentially from a completely different PAD district. Fix: add county-level gas overrides (Tier 1a) to intercept before the CPI→city lookup.
-- **Cross-state CPI→city drag:** Louisiana uses Houston CPI (reasonable), but this chains to Houston city gas (wrong — LA should get Gulf Coast PAD 3). Fix: add parish-level gas overrides.
-- **Upstate cities getting metro-city gas:** All NY counties inherit CPI area S12A → Y35NY (NYC gas). Buffalo/Rochester/Syracuse need county overrides → SNY (NY state avg).
-- **PAD district assignments:** Always verify against the official EIA PADD page at `eia.gov/petroleum/weekly/includes/padds.php`. Oklahoma is PAD 2 (Midwest), not PAD 3.
+The `cpiAreaCode` from the BLS lookup feeds into EIA Tier 1b (`CPI_TO_EIA_CITY`). Regional CPI codes (`0100`–`0400`) intentionally don't appear in `CPI_TO_EIA_CITY`, so rural counties always fall through to state or PAD gas prices — which is correct, since EIA city gas prices only apply near those cities. County-level gas overrides (Tier 1a) work independently of CPI codes.
 
 ### Key Mapping Files
 
-1. **`src/lib/mappings/county-metro-cpi.ts`** — `STATE_TO_CPI_AREA`, `COUNTY_CPI_OVERRIDES`, `BLS_CPI_AREAS`
-2. **`src/lib/mappings/eia-gas.ts`** — `CPI_TO_EIA_CITY`, `COUNTY_EIA_CITY_OVERRIDES`, `STATE_LEVEL_CODES`, `STATE_TO_PAD`, `PAD_DUOAREA`
-3. **`src/lib/mappings/state-fips.ts`** — state FIPS codes
+1. **`src/lib/mappings/county-metro-cpi.ts`** — `BLS_CPI_AREAS`, `STATE_TO_REGION`, `getMetroCpiAreaForCounty()`
+2. **`src/lib/data/cbsa-cpi-crosswalk.json`** — county FIPS → CPI area code (508 entries, built by `scripts/build-cbsa-cpi-crosswalk.ts`)
+3. **`src/lib/mappings/eia-gas.ts`** — `CPI_TO_EIA_CITY`, `COUNTY_EIA_CITY_OVERRIDES`, `STATE_LEVEL_CODES`, `STATE_TO_PAD`, `PAD_DUOAREA`
+4. **`src/lib/mappings/state-fips.ts`** — state FIPS codes
 
 ### Diagnosing Mapping Bugs
 
 ```bash
 npx tsx scripts/audit-zip-mappings.ts        # offline audit of all 33,780 zips
-npx tsx scripts/verify-mappings-live.ts      # live API verification of all codes
-npx tsx scripts/audit-cpi-assignments.ts     # geographic CPI metro audit (no API calls)
-npx tsx scripts/audit-cpi-assignments.ts --apply  # generate override entries
+npx tsx scripts/verify-mappings-live.ts      # live API verification of all codes (metro + regional)
+npx tsx scripts/audit-cpi-assignments.ts     # CBSA crosswalk tier report (no API calls)
+npx tsx scripts/build-cbsa-cpi-crosswalk.ts  # rebuild CBSA crosswalk from OMB data
 ```
 
-**Offline audit:** Flags missing CPI overrides, gas tier downgrades, unmapped counties. Makes no API calls.
-**Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series, and LAUS series actually returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`. **WARNING:** Uses BLS API quota — don't run same day as a cache flush.
-**CPI geo-audit:** Computes haversine distance from every county centroid to all 23 BLS CPI metros. Reports which counties have a closer metro than their current assignment. Uses bundled `src/lib/data/county-centroids.json` (Census Gazetteer). Makes no API calls.
+**Offline audit:** Flags unmapped counties, gas tier downgrades, CPI source breakdown (CBSA metro vs regional vs national). Makes no API calls.
+**Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series (including 4 regional series), and LAUS series returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`. **WARNING:** Uses BLS API quota — don't run same day as a cache flush.
+**CPI tier report:** Shows how many counties fall into each tier (CBSA metro, regional, national) and lists any counties with no assignment.
+**CBSA crosswalk build:** Downloads OMB CBSA delineation data and rebuilds `cbsa-cpi-crosswalk.json`. Run when OMB updates CBSA definitions.
 **250-city test:** `tests/unit/city-mapping-audit.test.ts` — tests top 5 cities per state across CPI, gas, BLS series IDs, and LAUS series. Run with `npm test`.
 **Python audit:** `audit/src/main.py` — independent weekly verification (10 zips) that cross-checks displayed values against direct BLS/EIA/Census API calls. Also scrapes AAA gas prices as a third-party sanity check. See `audit/AUDIT_RULES.md`. Run: `cd audit && PYTHONPATH=. python src/main.py --zips 98683 --sequential`
 
-**Fix:** Add county FIPS to `COUNTY_CPI_OVERRIDES` or `COUNTY_EIA_CITY_OVERRIDES`, re-run audit + tests.
+**Fix CPI mapping:** Add CBSA code to `CBSA_TO_CPI` in `scripts/build-cbsa-cpi-crosswalk.ts`, re-run the build script, then re-run audit + tests.
+**Fix gas mapping:** Add county FIPS to `COUNTY_EIA_CITY_OVERRIDES` in `eia-gas.ts`, re-run audit + tests.
 
 ## Hero Cards (4, in order)
 
@@ -355,7 +363,7 @@ src/
       chart-config.ts         # Chart configuration
       trendline.ts            # Trendline calculations
     mappings/
-      county-metro-cpi.ts     # County → CPI metro area mappings
+      county-metro-cpi.ts     # County → CPI area (CBSA crosswalk + regional fallback)
       eia-gas.ts              # County → EIA gas region mappings
       state-fips.ts           # State FIPS codes
     share-card/
@@ -366,10 +374,11 @@ src/
     geocode.ts                # Geocoding utilities
     tariff.ts                 # Tariff calculation
     data/
-      (bundled JSON)          # HUD crosswalk, Census ACS data
+      (bundled JSON)          # HUD crosswalk, Census ACS, CBSA CPI crosswalk
 scripts/
   add-city-names.ts           # Add city names to data
   audit-zip-mappings.ts       # Offline audit of all 33,780 zips for mapping gaps
+  build-cbsa-cpi-crosswalk.ts # Build CBSA → CPI area crosswalk from OMB data
   verify-mappings-live.ts     # Live API verification of all EIA/BLS mapping codes
   build-census-acs.ts         # Build Census ACS static data
   flush-cpi-cache.ts          # Flush CPI cache entries

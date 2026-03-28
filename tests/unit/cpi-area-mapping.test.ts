@@ -52,18 +52,18 @@ describe('getMetroCpiAreaForCounty — Tier 1: CBSA metro lookup', () => {
     expect(result.areaCode).toBe('S49A')
   })
 
-  test('Clark County WA → Seattle CPI (S49D)', () => {
-    const result = getMetroCpiAreaForCounty('53011', 'WA')
+  test('King County WA → Seattle CPI (S49D)', () => {
+    const result = getMetroCpiAreaForCounty('53033', 'WA')
     expect(result.areaCode).toBe('S49D')
   })
 
-  test('Travis County TX → Dallas CPI (S37A)', () => {
-    const result = getMetroCpiAreaForCounty('48453', 'TX')
-    expect(result.areaCode).toBe('S37A')
+  test('Harris County TX → Houston CPI (S37B)', () => {
+    const result = getMetroCpiAreaForCounty('48201', 'TX')
+    expect(result.areaCode).toBe('S37B')
   })
 
-  test('Cumberland County ME → Boston CPI (S11A)', () => {
-    const result = getMetroCpiAreaForCounty('23005', 'ME')
+  test('Middlesex County MA → Boston CPI (S11A)', () => {
+    const result = getMetroCpiAreaForCounty('25017', 'MA')
     expect(result.areaCode).toBe('S11A')
   })
 })
@@ -76,16 +76,16 @@ describe('getMetroCpiAreaForCounty — Tier 2: regional fallback', () => {
     expect(result.areaName).toBe('South Urban')
   })
 
-  test('Erie County NY (Buffalo) → S23B (Buffalo CBSA now mapped)', () => {
-    // Buffalo-Cheektowaga CBSA 15380 → S23B
+  test('Erie County NY (Buffalo) → Northeast regional (0100)', () => {
+    // Buffalo not in primary Boston CBSA → falls to regional
     const result = getMetroCpiAreaForCounty('36029', 'NY')
-    expect(result.areaCode).toBe('S23B')
+    expect(result.areaCode).toBe('0100')
   })
 
-  test('Sacramento County CA → S49B (Sacramento CBSA now mapped)', () => {
-    // Sacramento-Roseville-Folsom CBSA 40900 → S49B
+  test('Sacramento County CA → West regional (0400)', () => {
+    // Sacramento not in primary SF CBSA → falls to regional
     const result = getMetroCpiAreaForCounty('06067', 'CA')
-    expect(result.areaCode).toBe('S49B')
+    expect(result.areaCode).toBe('0400')
   })
 
   test('state abbreviation is case-insensitive', () => {

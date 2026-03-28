@@ -4,9 +4,9 @@ import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 describe('CBSA CPI crosswalk', () => {
   test('crosswalk has reasonable county count', () => {
     const count = Object.keys(crosswalk).length
-    // Expect 250-1000 counties in the 23 CPI metro CBSAs
-    expect(count).toBeGreaterThan(250)
-    expect(count).toBeLessThan(1000)
+    // Expect 150-300 counties in the 23 primary CPI metro CBSAs
+    expect(count).toBeGreaterThan(150)
+    expect(count).toBeLessThan(300)
   })
 
   test('all crosswalk values are valid CPI area codes', () => {
@@ -36,7 +36,7 @@ describe('CBSA CPI crosswalk', () => {
     expect(xw['36061']).toBe('S12A') // Manhattan → NYC
     expect(xw['06037']).toBe('S49A') // LA County → LA
     expect(xw['17031']).toBe('S23A') // Cook County → Chicago
-    expect(xw['53011']).toBe('S49D') // Clark County WA → Seattle
-    expect(xw['48453']).toBe('S37A') // Travis County TX → Dallas
+    expect(xw['53033']).toBe('S49D') // King County WA → Seattle
+    expect(xw['26163']).toBe('S23B') // Wayne County MI → Detroit
   })
 })
