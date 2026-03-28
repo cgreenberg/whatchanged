@@ -871,13 +871,13 @@ export const STATE_TO_PAD: Record<string, number | string> = {
 }
 
 export const PAD_NAMES: Record<string | number, string> = {
-  '1A': 'New England',
-  '1B': 'Central Atlantic',
-  '1C': 'Lower Atlantic',
-  2: 'Midwest',
-  3: 'Gulf Coast',
-  4: 'Rocky Mountain',
-  5: 'West Coast',
+  '1A': 'New England (PADD 1A)',
+  '1B': 'Central Atlantic (PADD 1B)',
+  '1C': 'Lower Atlantic (PADD 1C)',
+  2: 'Midwest (PADD 2)',
+  3: 'Gulf Coast (PADD 3)',
+  4: 'Rocky Mountain (PADD 4)',
+  5: 'West Coast (PADD 5)',
 }
 
 export const PAD_DUOAREA: Record<string | number, string> = {

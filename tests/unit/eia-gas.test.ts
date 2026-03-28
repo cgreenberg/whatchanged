@@ -120,7 +120,7 @@ describe('getGasLookup — Tier 3: PAD district fallback', () => {
     const result = getGasLookup('NC')
     expect(result.duoarea).toBe('R1Z')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('Lower Atlantic avg')
+    expect(result.geoLevel).toBe('Lower Atlantic (PADD 1C) avg')
     expect(result.cacheKey).toBe('eia:gas:pad:1C')
   })
 
@@ -128,28 +128,28 @@ describe('getGasLookup — Tier 3: PAD district fallback', () => {
     const result = getGasLookup('KS')
     expect(result.duoarea).toBe('R20')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('Midwest avg')
+    expect(result.geoLevel).toBe('Midwest (PADD 2) avg')
   })
 
   test('LA (PAD 3 — Gulf Coast) maps to R30', () => {
     const result = getGasLookup('LA')
     expect(result.duoarea).toBe('R30')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('Gulf Coast avg')
+    expect(result.geoLevel).toBe('Gulf Coast (PADD 3) avg')
   })
 
   test('MT (PAD 4 — Rocky Mountain) maps to R40', () => {
     const result = getGasLookup('MT')
     expect(result.duoarea).toBe('R40')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('Rocky Mountain avg')
+    expect(result.geoLevel).toBe('Rocky Mountain (PADD 4) avg')
   })
 
   test('OR (PAD 5 — West Coast) maps to R50', () => {
     const result = getGasLookup('OR')
     expect(result.duoarea).toBe('R50')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('West Coast avg')
+    expect(result.geoLevel).toBe('West Coast (PADD 5) avg')
   })
 })
 
