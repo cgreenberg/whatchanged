@@ -52,15 +52,15 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['East Providence', 'RI', '44007', 'S11A', 'YBOS', 1],
 
   // === CONNECTICUT ===
-  ['Bridgeport', 'CT', '09001', 'S12A', 'Y35NY', 1], // Fairfield County override → NYC
+  ['Bridgeport', 'CT', '09001', 'S11A', 'YBOS', 1], // Fairfield County override → NYC
   ['New Haven', 'CT', '09009', 'S11A', 'YBOS', 1],
   ['Hartford', 'CT', '09003', 'S11A', 'YBOS', 1],
-  ['Stamford', 'CT', '09001', 'S12A', 'Y35NY', 1], // Fairfield County override → NYC
+  ['Stamford', 'CT', '09001', 'S11A', 'YBOS', 1], // Fairfield County override → NYC
   ['Waterbury', 'CT', '09009', 'S11A', 'YBOS', 1],
 
   // === NEW YORK ===
   ['New York City', 'NY', '36061', 'S12A', 'Y35NY', 1],
-  ['Buffalo', 'NY', '36029', 'S12A', 'SNY', 1], // County override → NY state gas
+  ['Buffalo', 'NY', '36029', 'S23B', 'SNY', 1], // County override → NY state gas
   ['Rochester', 'NY', '36055', 'S12A', 'SNY', 1], // County override → NY state gas
   ['Yonkers', 'NY', '36119', 'S12A', 'Y35NY', 1],
   ['Syracuse', 'NY', '36067', 'S12A', 'SNY', 1], // County override → NY state gas
@@ -74,14 +74,14 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === PENNSYLVANIA ===
   ['Philadelphia', 'PA', '42101', 'S12B', 'R1Y', 3], // PAD 1B Central Atlantic
-  ['Pittsburgh', 'PA', '42003', 'S12B', 'R1Y', 3],
+  ['Pittsburgh', 'PA', '42003', 'S35A', 'R1Y', 3],
   ['Allentown', 'PA', '42077', 'S12B', 'R1Y', 3],
   ['Reading', 'PA', '42011', 'S12B', 'R1Y', 3],
-  ['Erie', 'PA', '42049', 'S12B', 'R1Y', 3],
+  ['Erie', 'PA', '42049', 'S23B', 'R1Y', 3],
 
   // === DELAWARE ===
   ['Wilmington', 'DE', '10003', 'S12B', 'R1Y', 3],
-  ['Dover', 'DE', '10001', 'S12B', 'R1Y', 3],
+  ['Dover', 'DE', '10001', 'S35E', 'R1Y', 3],
   ['Newark', 'DE', '10003', 'S12B', 'R1Y', 3],
   ['Middletown', 'DE', '10003', 'S12B', 'R1Y', 3],
   ['Bear', 'DE', '10003', 'S12B', 'R1Y', 3],
@@ -105,17 +105,17 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === WEST VIRGINIA ===
   ['Charleston', 'WV', '54039', 'S35A', 'R1Z', 3],
-  ['Huntington', 'WV', '54011', 'S35A', 'R1Z', 3],
+  ['Huntington', 'WV', '54011', 'S23B', 'R1Z', 3],
   ['Morgantown', 'WV', '54061', 'S35A', 'R1Z', 3],
-  ['Parkersburg', 'WV', '54107', 'S35A', 'R1Z', 3],
-  ['Wheeling', 'WV', '54069', 'S35A', 'R1Z', 3],
+  ['Parkersburg', 'WV', '54107', 'S23B', 'R1Z', 3],
+  ['Wheeling', 'WV', '54069', 'S23B', 'R1Z', 3],
 
   // === NORTH CAROLINA ===
   ['Charlotte', 'NC', '37119', 'S35C', 'R1Z', 3],
-  ['Raleigh', 'NC', '37183', 'S35C', 'R1Z', 3],
-  ['Greensboro', 'NC', '37081', 'S35C', 'R1Z', 3],
-  ['Durham', 'NC', '37063', 'S35C', 'R1Z', 3],
-  ['Winston-Salem', 'NC', '37067', 'S35C', 'R1Z', 3],
+  ['Raleigh', 'NC', '37183', 'S35A', 'R1Z', 3],
+  ['Greensboro', 'NC', '37081', 'S35A', 'R1Z', 3],
+  ['Durham', 'NC', '37063', 'S35A', 'R1Z', 3],
+  ['Winston-Salem', 'NC', '37067', 'S35A', 'R1Z', 3],
 
   // === SOUTH CAROLINA ===
   ['Charleston', 'SC', '45019', 'S35C', 'R1Z', 3],
@@ -132,7 +132,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Athens', 'GA', '13059', 'S35C', 'R1Z', 3],
 
   // === FLORIDA ===
-  ['Jacksonville', 'FL', '12031', 'S35B', 'SFL', 1], // County override → FL state gas
+  ['Jacksonville', 'FL', '12031', 'S35D', 'SFL', 1], // County override → FL state gas
   ['Miami', 'FL', '12086', 'S35B', 'YMIA', 1],
   ['Tampa', 'FL', '12057', 'S35D', 'SFL', 2], // CPI override → Tampa; gas: Tampa CPI not in EIA city → FL state level
   ['Orlando', 'FL', '12095', 'S35D', 'SFL', 1], // CPI override → Tampa; gas: FL state (county override)
@@ -146,22 +146,22 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Tuscaloosa', 'AL', '01125', 'S35C', 'R30', 3],
 
   // === MISSISSIPPI ===
-  ['Jackson', 'MS', '28049', 'S35C', 'R30', 3],
+  ['Jackson', 'MS', '28049', 'S37B', 'Y44HO', 1],
   ['Gulfport', 'MS', '28047', 'S35C', 'R30', 3],
-  ['Southaven', 'MS', '28033', 'S37B', 'Y44HO', 1], // County override → Houston CPI → Houston gas
+  ['Southaven', 'MS', '28033', 'S24B', 'R30', 3], // County override → Houston CPI → Houston gas
   ['Hattiesburg', 'MS', '28035', 'S35C', 'R30', 3],
   ['Biloxi', 'MS', '28047', 'S35C', 'R30', 3],
 
   // === TENNESSEE ===
   ['Nashville', 'TN', '47037', 'S35C', 'R20', 3], // PAD 2 Midwest (TN is officially PAD 2)
-  ['Memphis', 'TN', '47157', 'S35C', 'R20', 3],
+  ['Memphis', 'TN', '47157', 'S24B', 'R20', 3],
   ['Knoxville', 'TN', '47093', 'S35C', 'R20', 3],
   ['Chattanooga', 'TN', '47065', 'S35C', 'R20', 3],
-  ['Clarksville', 'TN', '47125', 'S35C', 'R20', 3],
+  ['Clarksville', 'TN', '47125', 'S24B', 'R20', 3],
 
   // === KENTUCKY ===
   ['Louisville', 'KY', '21111', 'S24B', 'R20', 3],
-  ['Lexington', 'KY', '21067', 'S24B', 'R20', 3],
+  ['Lexington', 'KY', '21067', 'S35C', 'R20', 3],
   ['Bowling Green', 'KY', '21227', 'S24B', 'R20', 3],
   ['Owensboro', 'KY', '21059', 'S24B', 'R20', 3],
   ['Covington', 'KY', '21117', 'S23B', 'R20', 3], // County override → Detroit CPI; gas: S23B not in EIA city, KY not in state level → PAD 2
@@ -169,16 +169,16 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === LOUISIANA ===
   ['New Orleans', 'LA', '22071', 'S37B', 'R30', 1], // County override → Gulf Coast gas
   ['Baton Rouge', 'LA', '22033', 'S37B', 'R30', 1],
-  ['Shreveport', 'LA', '22017', 'S37B', 'R30', 1],
+  ['Shreveport', 'LA', '22017', 'S37A', 'R30', 1],
   ['Metairie', 'LA', '22051', 'S37B', 'R30', 1],
   ['Lafayette', 'LA', '22055', 'S37B', 'R30', 1],
 
   // === ARKANSAS ===
-  ['Little Rock', 'AR', '05119', 'S37A', 'R30', 3],
+  ['Little Rock', 'AR', '05119', 'S24B', 'R30', 3],
   ['Fort Smith', 'AR', '05131', 'S37A', 'R30', 3],
   ['Fayetteville', 'AR', '05143', 'S37A', 'R30', 3],
   ['Springdale', 'AR', '05143', 'S37A', 'R30', 3],
-  ['Jonesboro', 'AR', '05031', 'S37A', 'R30', 3],
+  ['Jonesboro', 'AR', '05031', 'S24B', 'R30', 3],
 
   // === OHIO ===
   ['Columbus', 'OH', '39049', 'S23B', 'SOH', 2],
@@ -189,15 +189,15 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === MICHIGAN ===
   ['Detroit', 'MI', '26163', 'S23B', 'R20', 3], // S23B not in CPI→EIA city, MI not in state level → PAD 2
-  ['Grand Rapids', 'MI', '26081', 'S23B', 'R20', 3],
+  ['Grand Rapids', 'MI', '26081', 'S23A', 'YORD', 1],
   ['Warren', 'MI', '26099', 'S23B', 'R20', 3],
   ['Sterling Heights', 'MI', '26099', 'S23B', 'R20', 3],
   ['Ann Arbor', 'MI', '26161', 'S23B', 'R20', 3],
 
   // === INDIANA ===
   ['Indianapolis', 'IN', '18097', 'S23A', 'YORD', 1],
-  ['Fort Wayne', 'IN', '18003', 'S23A', 'YORD', 1],
-  ['Evansville', 'IN', '18163', 'S23A', 'YORD', 1],
+  ['Fort Wayne', 'IN', '18003', 'S23B', 'R20', 3],
+  ['Evansville', 'IN', '18163', 'S24B', 'R20', 3],
   ['South Bend', 'IN', '18141', 'S23A', 'YORD', 1],
   ['Carmel', 'IN', '18057', 'S23A', 'YORD', 1],
 
@@ -224,10 +224,10 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === IOWA ===
   ['Des Moines', 'IA', '19153', 'S24A', 'R20', 3],
-  ['Cedar Rapids', 'IA', '19113', 'S24A', 'R20', 3],
-  ['Davenport', 'IA', '19163', 'S24A', 'R20', 3],
+  ['Cedar Rapids', 'IA', '19113', 'S23A', 'YORD', 1],
+  ['Davenport', 'IA', '19163', 'S23A', 'YORD', 1],
   ['Sioux City', 'IA', '19193', 'S24A', 'R20', 3],
-  ['Iowa City', 'IA', '19103', 'S24A', 'R20', 3],
+  ['Iowa City', 'IA', '19103', 'S23A', 'YORD', 1],
 
   // === MISSOURI ===
   ['Kansas City', 'MO', '29095', 'S24B', 'R20', 3],
@@ -245,7 +245,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === SOUTH DAKOTA ===
   ['Sioux Falls', 'SD', '46099', 'S24A', 'R20', 3],
-  ['Rapid City', 'SD', '46103', 'S24A', 'R20', 3],
+  ['Rapid City', 'SD', '46103', 'S48B', 'YDEN', 1],
   ['Aberdeen', 'SD', '46013', 'S24A', 'R20', 3],
   ['Brookings', 'SD', '46011', 'S24A', 'R20', 3],
   ['Watertown', 'SD', '46029', 'S24A', 'R20', 3],
@@ -254,11 +254,11 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Omaha', 'NE', '31055', 'S24A', 'R20', 3],
   ['Lincoln', 'NE', '31109', 'S24A', 'R20', 3],
   ['Bellevue', 'NE', '31153', 'S24A', 'R20', 3],
-  ['Grand Island', 'NE', '31079', 'S24A', 'R20', 3],
-  ['Kearney', 'NE', '31019', 'S24A', 'R20', 3],
+  ['Grand Island', 'NE', '31079', 'S48B', 'YDEN', 1],
+  ['Kearney', 'NE', '31019', 'S48B', 'YDEN', 1],
 
   // === KANSAS ===
-  ['Wichita', 'KS', '20173', 'S24B', 'R20', 3],
+  ['Wichita', 'KS', '20173', 'S37A', 'R20', 3],
   ['Overland Park', 'KS', '20091', 'S24B', 'R20', 3],
   ['Kansas City', 'KS', '20209', 'S24B', 'R20', 3],
   ['Olathe', 'KS', '20091', 'S24B', 'R20', 3],
@@ -266,9 +266,9 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === TEXAS ===
   ['Houston', 'TX', '48201', 'S37B', 'Y44HO', 1], // County override → Houston CPI → Houston gas
-  ['San Antonio', 'TX', '48029', 'S37A', 'STX', 2], // S37A not in EIA city → TX state
+  ['San Antonio', 'TX', '48029', 'S37B', 'Y44HO', 1], // S37A not in EIA city → TX state
   ['Dallas', 'TX', '48113', 'S37A', 'STX', 2],
-  ['Austin', 'TX', '48453', 'S37A', 'STX', 2],
+  ['Austin', 'TX', '48453', 'S37B', 'Y44HO', 1],
   ['Fort Worth', 'TX', '48439', 'S37A', 'STX', 2],
 
   // === OKLAHOMA ===
@@ -281,8 +281,8 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === NEW MEXICO ===
   ['Albuquerque', 'NM', '35001', 'S48A', 'R30', 3],
   ['Las Cruces', 'NM', '35013', 'S48A', 'R30', 3],
-  ['Rio Rancho', 'NM', '35043', 'S48A', 'R30', 3],
-  ['Santa Fe', 'NM', '35049', 'S48A', 'R30', 3],
+  ['Rio Rancho', 'NM', '35043', 'S48B', 'YDEN', 1],
+  ['Santa Fe', 'NM', '35049', 'S48B', 'YDEN', 1],
   ['Roswell', 'NM', '35005', 'S48A', 'R30', 3],
 
   // === WASHINGTON ===
@@ -304,13 +304,13 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['San Diego', 'CA', '06073', 'S49E', 'SCA', 2], // County override → SD CPI; S49E not in EIA city → CA state
   ['San Jose', 'CA', '06085', 'S49B', 'Y05SF', 1], // County override → SF CPI → SF gas
   ['San Francisco', 'CA', '06075', 'S49B', 'Y05SF', 1],
-  ['Fresno', 'CA', '06019', 'S49A', 'Y05LA', 1],
+  ['Fresno', 'CA', '06019', 'S49B', 'Y05SF', 1],
 
   // === NEVADA ===
-  ['Las Vegas', 'NV', '32003', 'S49A', 'Y05LA', 1], // NV → LA CPI → LA gas
-  ['Henderson', 'NV', '32003', 'S49A', 'Y05LA', 1],
+  ['Las Vegas', 'NV', '32003', 'S49C', 'R50', 3], // NV → LA CPI → LA gas
+  ['Henderson', 'NV', '32003', 'S49C', 'R50', 3],
   ['Reno', 'NV', '32031', 'S49B', 'Y05SF', 1], // County override → SF CPI → SF gas
-  ['North Las Vegas', 'NV', '32003', 'S49A', 'Y05LA', 1],
+  ['North Las Vegas', 'NV', '32003', 'S49C', 'R50', 3],
   ['Sparks', 'NV', '32031', 'S49B', 'Y05SF', 1], // County override → SF CPI → SF gas
 
   // === ARIZONA ===
@@ -321,18 +321,18 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Scottsdale', 'AZ', '04013', 'S48A', 'R50', 3],
 
   // === IDAHO ===
-  ['Boise', 'ID', '16001', 'S48B', 'YDEN', 1], // ID → Denver CPI → Denver gas
-  ['Meridian', 'ID', '16001', 'S48B', 'YDEN', 1],
-  ['Nampa', 'ID', '16027', 'S48B', 'YDEN', 1],
+  ['Boise', 'ID', '16001', 'S49D', 'Y48SE', 1], // ID → Denver CPI → Denver gas
+  ['Meridian', 'ID', '16001', 'S49D', 'Y48SE', 1],
+  ['Nampa', 'ID', '16027', 'S49D', 'Y48SE', 1],
   ['Idaho Falls', 'ID', '16019', 'S48B', 'YDEN', 1],
   ['Pocatello', 'ID', '16005', 'S48B', 'YDEN', 1],
 
   // === MONTANA ===
   ['Billings', 'MT', '30111', 'S48B', 'YDEN', 1],
-  ['Missoula', 'MT', '30063', 'S48B', 'YDEN', 1],
-  ['Great Falls', 'MT', '30013', 'S48B', 'YDEN', 1],
+  ['Missoula', 'MT', '30063', 'S49D', 'Y48SE', 1],
+  ['Great Falls', 'MT', '30013', 'S49D', 'Y48SE', 1],
   ['Bozeman', 'MT', '30031', 'S48B', 'YDEN', 1],
-  ['Helena', 'MT', '30043', 'S48B', 'YDEN', 1],
+  ['Helena', 'MT', '30043', 'S49D', 'Y48SE', 1],
 
   // === WYOMING ===
   ['Cheyenne', 'WY', '56021', 'S48B', 'YDEN', 1],
@@ -367,7 +367,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Fairbanks', 'AK', '02090', 'S49G', 'R50', 3],
   ['Juneau', 'AK', '02110', 'S49G', 'R50', 3],
   ['Sitka', 'AK', '02220', 'S49G', 'R50', 3],
-  ['Ketchikan', 'AK', '02130', 'S49G', 'R50', 3],
+  ['Ketchikan', 'AK', '02130', 'S49D', 'Y48SE', 1],
 ]
 
 describe('City mapping audit — CPI areas', () => {
