@@ -93,7 +93,7 @@ async function fetchNationalGas(): Promise<NationalMetric> {
     'facets[duoarea][]': 'NUS',
     'sort[0][column]': 'period',
     'sort[0][direction]': 'desc',
-    length: '260',
+    length: '520',
   })
 
   const controller = new AbortController()
@@ -116,20 +116,18 @@ async function fetchNationalGas(): Promise<NationalMetric> {
     throw new Error('No EIA national gas data returned')
   }
 
-  // Filter, sort chronologically, and keep only from 2025-01-01 onward
-  const cutoff = new Date('2025-01-01').getTime()
+  // Filter and sort chronologically
   const sorted = [...raw]
     .filter(
       (d) =>
         d.value !== null &&
         d.value !== '--' &&
-        !isNaN(parseFloat(d.value)) &&
-        new Date(d.period).getTime() >= cutoff
+        !isNaN(parseFloat(d.value))
     )
     .sort((a, b) => a.period.localeCompare(b.period))
 
   if (!sorted.length) {
-    throw new Error('No EIA national gas data after 2025-01-01')
+    throw new Error('No valid EIA national gas data')
   }
 
   const series: NationalDataPoint[] = sorted.map((d) => ({
@@ -161,7 +159,7 @@ async function fetchNationalCpi(): Promise<CpiMetrics> {
 
   const body: Record<string, unknown> = {
     seriesid: [NATIONAL_GROCERIES_SERIES, NATIONAL_SHELTER_SERIES],
-    startyear: '2024',
+    startyear: '2016',
     endyear: currentYear,
   }
 
@@ -206,8 +204,6 @@ async function fetchNationalCpi(): Promise<CpiMetrics> {
     for (const d of data) {
       const val = parseFloat(d.value)
       if (isNaN(val) || d.value === '-') continue
-      // Only include from 2025-M01 onward
-      if (d.year < '2025') continue
       const key = `${d.year}-${d.period}` // e.g. "2025-M03"
       map.set(key, val)
     }

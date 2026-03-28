@@ -40,6 +40,102 @@
             "periodName": "October",
             "value": "4.0",
             "footnotes": [{}]
+          },
+          {
+            "year": "2019",
+            "period": "M06",
+            "periodName": "June",
+            "value": "4.0",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2018",
+            "period": "M06",
+            "periodName": "June",
+            "value": "4.3",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2017",
+            "period": "M06",
+            "periodName": "June",
+            "value": "4.8",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2016",
+            "period": "M06",
+            "periodName": "June",
+            "value": "5.5",
+            "footnotes": [{}]
+          }
+        ]
+      },
+      {
+        "seriesID": "LNS14000000",
+        "data": [
+          {
+            "year": "2025",
+            "period": "M02",
+            "periodName": "February",
+            "value": "4.1",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2025",
+            "period": "M01",
+            "periodName": "January",
+            "value": "4.0",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M12",
+            "periodName": "December",
+            "value": "4.2",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M11",
+            "periodName": "November",
+            "value": "4.2",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2024",
+            "period": "M10",
+            "periodName": "October",
+            "value": "4.1",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2019",
+            "period": "M06",
+            "periodName": "June",
+            "value": "3.7",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2018",
+            "period": "M06",
+            "periodName": "June",
+            "value": "3.9",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2017",
+            "period": "M06",
+            "periodName": "June",
+            "value": "4.3",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2016",
+            "period": "M06",
+            "periodName": "June",
+            "value": "4.9",
+            "footnotes": [{}]
           }
         ]
       }

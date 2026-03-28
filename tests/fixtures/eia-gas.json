@@ -73,6 +73,34 @@
         "value": "3.398",
         "area-name": "Pacific",
         "product-name": "Regular"
+      },
+      {
+        "period": "2019-06-17",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.125",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2018-06-18",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "3.219",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2017-06-19",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "2.871",
+        "area-name": "Pacific",
+        "product-name": "Regular"
+      },
+      {
+        "period": "2016-06-20",
+        "series-description": "Weekly Washington Regular Conventional Gas Price (Dollars per Gallon)",
+        "value": "2.645",
+        "area-name": "Pacific",
+        "product-name": "Regular"
       }
     ]
   }

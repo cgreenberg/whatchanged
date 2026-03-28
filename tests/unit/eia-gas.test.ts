@@ -168,3 +168,47 @@ describe('getGasLookup — national fallback', () => {
     expect(result.tier).toBe(3)
   })
 })
+
+describe('EIA gas data supports 10Y range', () => {
+  test('buildSeriesFromData handles data spanning 10+ years', () => {
+    const wideData = [
+      { period: '2016-06-20', value: '2.645', 'area-name': 'Washington', duoarea: 'SWA' },
+      { period: '2019-06-17', value: '3.125', 'area-name': 'Washington', duoarea: 'SWA' },
+      { period: '2025-01-13', value: '3.241', 'area-name': 'Washington', duoarea: 'SWA' },
+      { period: '2025-02-24', value: '3.348', 'area-name': 'Washington', duoarea: 'SWA' },
+    ]
+    const sorted = [...wideData].sort((a, b) => a.period.localeCompare(b.period))
+    const series = sorted
+      .filter(d => d.value !== null && d.value !== '--' && !isNaN(parseFloat(d.value)))
+      .map(d => ({ date: d.period, price: parseFloat(d.value) }))
+
+    expect(series.length).toBe(4)
+    expect(series[0].date).toBe('2016-06-20')
+    expect(series[series.length - 1].date).toBe('2025-02-24')
+
+    const firstYear = parseInt(series[0].date.slice(0, 4))
+    const lastYear = parseInt(series[series.length - 1].date.slice(0, 4))
+    expect(lastYear - firstYear).toBeGreaterThanOrEqual(9)
+  })
+
+  test('baseline is still anchored to Jan 20 2025 with 10Y data', () => {
+    const BASELINE_DATE = '2025-01-20'
+    const data = [
+      { period: '2016-06-20', value: '2.645', 'area-name': 'WA', duoarea: 'SWA' },
+      { period: '2025-01-13', value: '3.241', 'area-name': 'WA', duoarea: 'SWA' },
+      { period: '2025-01-20', value: '3.300', 'area-name': 'WA', duoarea: 'SWA' },
+      { period: '2025-02-24', value: '3.348', 'area-name': 'WA', duoarea: 'SWA' },
+    ]
+    const sorted = [...data].sort((a, b) => a.period.localeCompare(b.period))
+    const series = sorted
+      .filter(d => d.value !== null && !isNaN(parseFloat(d.value)))
+      .map(d => ({ date: d.period, price: parseFloat(d.value) }))
+
+    const baselineTime = new Date(BASELINE_DATE).getTime()
+    const onOrBefore = series.filter(d => new Date(d.date).getTime() <= baselineTime)
+    const baseline = onOrBefore[onOrBefore.length - 1].price
+
+    expect(baseline).toBe(3.300)
+    expect(baseline).not.toBe(2.645)
+  })
+})

@@ -126,7 +126,7 @@ async function fetchEiaData(duoarea: string, apiKey: string): Promise<any[]> {
     'facets[duoarea][]': duoarea,
     'sort[0][column]': 'period',
     'sort[0][direction]': 'desc',
-    length: '260',
+    length: '520',
   })
 
   const controller = new AbortController()

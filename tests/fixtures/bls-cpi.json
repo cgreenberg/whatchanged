@@ -40,6 +40,34 @@
             "periodName": "October",
             "value": "302.345",
             "footnotes": [{}]
+          },
+          {
+            "year": "2019",
+            "period": "M06",
+            "periodName": "June",
+            "value": "252.0",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2018",
+            "period": "M06",
+            "periodName": "June",
+            "value": "247.8",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2017",
+            "period": "M06",
+            "periodName": "June",
+            "value": "243.5",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2016",
+            "period": "M06",
+            "periodName": "June",
+            "value": "240.1",
+            "footnotes": [{}]
           }
         ]
       },
@@ -80,6 +108,34 @@
             "periodName": "October",
             "value": "415.890",
             "footnotes": [{}]
+          },
+          {
+            "year": "2019",
+            "period": "M06",
+            "periodName": "June",
+            "value": "275.4",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2018",
+            "period": "M06",
+            "periodName": "June",
+            "value": "268.1",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2017",
+            "period": "M06",
+            "periodName": "June",
+            "value": "260.5",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2016",
+            "period": "M06",
+            "periodName": "June",
+            "value": "253.2",
+            "footnotes": [{}]
           }
         ]
       },
@@ -119,6 +175,34 @@
             "period": "M10",
             "periodName": "October",
             "value": "244.890",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2019",
+            "period": "M06",
+            "periodName": "June",
+            "value": "199.7",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2018",
+            "period": "M06",
+            "periodName": "June",
+            "value": "210.8",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2017",
+            "period": "M06",
+            "periodName": "June",
+            "value": "201.2",
+            "footnotes": [{}]
+          },
+          {
+            "year": "2016",
+            "period": "M06",
+            "periodName": "June",
+            "value": "193.5",
             "footnotes": [{}]
           }
         ]

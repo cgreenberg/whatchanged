@@ -21,7 +21,7 @@ export async function fetchUnemployment(
   options: { startYear?: string; endYear?: string } = {}
 ): Promise<UnemploymentData> {
   const currentYear = new Date().getFullYear().toString()
-  const startYear = options.startYear ?? '2020'
+  const startYear = options.startYear ?? '2016'
   const endYear = options.endYear ?? currentYear
 
   const seriesId = buildSeriesId(countyFips)

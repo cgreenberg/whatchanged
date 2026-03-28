@@ -71,6 +71,32 @@ describe('fetchSnapshot', () => {
       expect(snapshot.census.data!.zip).toBe('10001')
     }
   })
+
+  test('snapshot series data spans back to at least 2016 for 10Y charts', async () => {
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot).not.toBeNull()
+
+    // Unemployment series should include pre-2020 data
+    if (snapshot!.unemployment.data) {
+      const dates = snapshot!.unemployment.data.series.map(p => p.date)
+      const earliest = dates.sort()[0]
+      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
+    }
+
+    // CPI series should include pre-2020 data
+    if (snapshot!.cpi.data) {
+      const dates = snapshot!.cpi.data.series.map(p => p.date)
+      const earliest = dates.sort()[0]
+      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
+    }
+
+    // Gas series should include pre-2020 data
+    if (snapshot!.gas.data) {
+      const dates = snapshot!.gas.data.series.map(p => p.date)
+      const earliest = dates.sort()[0]
+      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
+    }
+  })
 })
 
 describe('source registry docsUrls', () => {

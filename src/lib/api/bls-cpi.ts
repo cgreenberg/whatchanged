@@ -28,7 +28,7 @@ export async function fetchCpi(countyFips: string, stateAbbr: string): Promise<C
 
   const body: Record<string, unknown> = {
     seriesid: allSeriesIds,
-    startyear: '2020',
+    startyear: '2016',
     endyear: currentYear,
   }
 
