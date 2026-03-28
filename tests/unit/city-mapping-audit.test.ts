@@ -135,7 +135,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Jacksonville', 'FL', '12031', 'S35B', 'SFL', 1], // County override → FL state gas
   ['Miami', 'FL', '12086', 'S35B', 'YMIA', 1],
   ['Tampa', 'FL', '12057', 'S35D', 'SFL', 2], // CPI override → Tampa; gas: Tampa CPI not in EIA city → FL state level
-  ['Orlando', 'FL', '12095', 'S35B', 'SFL', 1], // County override → FL state gas
+  ['Orlando', 'FL', '12095', 'S35D', 'SFL', 1], // CPI override → Tampa; gas: FL state (county override)
   ['St. Petersburg', 'FL', '12103', 'S35D', 'SFL', 2], // CPI override → Tampa; gas: FL state
 
   // === ALABAMA ===

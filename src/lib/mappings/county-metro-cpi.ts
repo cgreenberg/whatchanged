@@ -117,6 +117,16 @@ export const COUNTY_CPI_OVERRIDES: Record<string, string> = {
   '12103': 'S35D', // Pinellas County → Tampa metro
   '12101': 'S35D', // Pasco County → Tampa metro
   '12053': 'S35D', // Hernando County → Tampa metro
+  // Orlando metro → Tampa CPI (closer than Miami default)
+  '12095': 'S35D', // Orange County (Orlando)
+  '12117': 'S35D', // Seminole County (Sanford, north Orlando)
+  '12097': 'S35D', // Osceola County (Kissimmee, south Orlando)
+  '12069': 'S35D', // Lake County (west of Orlando)
+  '12127': 'S35D', // Volusia County (Daytona Beach, northeast of Orlando)
+  '12035': 'S35D', // Flagler County (Palm Coast, northeast)
+  '12119': 'S35D', // Sumter County (The Villages, northwest of Orlando)
+  '12105': 'S35D', // Polk County (Lakeland, between Orlando and Tampa)
+  '12009': 'S35D', // Brevard County (Melbourne/Space Coast, east of Orlando)
   // Atlanta metro (GA is already Atlanta default, but include for clarity)
   // Baltimore metro (MD default is now Baltimore)
   // Washington DC metro counties in MD (override MD's Baltimore default)
