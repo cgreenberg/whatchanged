@@ -172,11 +172,13 @@ The mapping chain `zip → county FIPS → CPI area → EIA gas region` is where
 
 ### BLS CPI 3-Tier Lookup (`getMetroCpiAreaForCounty`)
 
-1. **Tier 1:** `cbsa-cpi-crosswalk.json[countyFips]` — CBSA-based metro CPI (508 counties in 23 metros)
+1. **Tier 1:** `cbsa-cpi-crosswalk.json[countyFips]` — CBSA-based metro CPI (204 counties in 23 metros)
 2. **Tier 2:** `STATE_TO_REGION[stateAbbr]` — regional CPI fallback (Northeast `0100`, Midwest `0200`, South `0300`, West `0400`)
 3. **Tier 3:** National CPI `0000` — territories (PR, VI, GU)
 
-The CBSA crosswalk is built from the OMB CBSA delineation file via `scripts/build-cbsa-cpi-crosswalk.ts`. Each CPI area groups multiple CBSAs (e.g., S12A New York includes CBSAs in NJ and CT). Counties not in any CPI metro CBSA get regional CPI data, which is a real BLS-published series — not a proxy.
+Returns `{ areaCode, areaName, tier }` — the `tier` field (1/2/3) flows through `CpiData` to the frontend for label and link selection.
+
+The CBSA crosswalk is built from the OMB CBSA delineation file via `scripts/build-cbsa-cpi-crosswalk.ts`. Each CPI area = exactly one CBSA (the BLS "self-representing" metro from the 2018 geographic revision). Counties not in any CPI metro CBSA get regional CPI data, which is a real BLS-published series — not a proxy. ~16.5% of zips get Tier 1 (metro), ~83% get Tier 2 (regional), ~0.4% get Tier 3 (national/territories).
 
 ### EIA Gas 4-Tier Lookup (`getGasLookup`)
 
@@ -199,7 +201,7 @@ The `cpiAreaCode` from the BLS lookup feeds into EIA Tier 1b (`CPI_TO_EIA_CITY`)
 ### Key Mapping Files
 
 1. **`src/lib/mappings/county-metro-cpi.ts`** — `BLS_CPI_AREAS`, `STATE_TO_REGION`, `getMetroCpiAreaForCounty()`
-2. **`src/lib/data/cbsa-cpi-crosswalk.json`** — county FIPS → CPI area code (508 entries, built by `scripts/build-cbsa-cpi-crosswalk.ts`)
+2. **`src/lib/data/cbsa-cpi-crosswalk.json`** — county FIPS → CPI area code (204 entries, built by `scripts/build-cbsa-cpi-crosswalk.ts`)
 3. **`src/lib/mappings/eia-gas.ts`** — `CPI_TO_EIA_CITY`, `COUNTY_EIA_CITY_OVERRIDES`, `STATE_LEVEL_CODES`, `STATE_TO_PAD`, `PAD_DUOAREA`
 4. **`src/lib/mappings/state-fips.ts`** — state FIPS codes
 
@@ -219,8 +221,24 @@ npx tsx scripts/build-cbsa-cpi-crosswalk.ts  # rebuild CBSA crosswalk from OMB d
 **250-city test:** `tests/unit/city-mapping-audit.test.ts` — tests top 5 cities per state across CPI, gas, BLS series IDs, and LAUS series. Run with `npm test`.
 **Python audit:** `audit/src/main.py` — independent weekly verification (10 zips) that cross-checks displayed values against direct BLS/EIA/Census API calls. Also scrapes AAA gas prices as a third-party sanity check. See `audit/AUDIT_RULES.md`. Run: `cd audit && PYTHONPATH=. python src/main.py --zips 98683 --sequential`
 
-**Fix CPI mapping:** Add CBSA code to `CBSA_TO_CPI` in `scripts/build-cbsa-cpi-crosswalk.ts`, re-run the build script, then re-run audit + tests.
+**Fix CPI mapping:** Only add CBSAs that BLS actually samples for a CPI area (one CBSA per area). Add to `CBSA_TO_CPI` in `scripts/build-cbsa-cpi-crosswalk.ts`, re-run the build script, then re-run audit + tests. Do NOT add nearby CBSAs that are not in the BLS geographic sample — that's haversine with extra steps.
 **Fix gas mapping:** Add county FIPS to `COUNTY_EIA_CITY_OVERRIDES` in `eia-gas.ts`, re-run audit + tests.
+
+## Geographic Labels
+
+Frontend labels reflect the CPI tier and gas resolution level. The `tier` field (1/2/3) is returned by `getMetroCpiAreaForCounty` and threaded through `CpiData`. Gas `tier` comes from `getGasLookup` and is threaded through `GasPriceData`.
+
+| Tier | CPI Label | CPI Source Link | Gas Label (PAD) |
+|------|-----------|-----------------|-----------------|
+| 1 (metro) | `metro: Chicago-Naperville-Elgin` | BLS metro chart page | `Chicago area avg` |
+| 2 (regional) | `region: South Urban` | BLS regional resources | `Midwest (PADD 2) avg` |
+| 3 (national) | `national` | General BLS CPI page | `National avg` |
+
+**Cache staleness:** The `tier` field was added after initial data was cached. Stale cache entries lack `tier`, so the frontend infers it from the `metro` string: names containing "Urban" → tier 2, "National" → tier 3, else tier 1. This fallback is in `HomeContent.tsx` and `ChartsSection.tsx`.
+
+**PAD ≠ Census region:** EIA PAD districts and BLS CPI Census regions use different geographic boundaries. TN/KY/OK are PAD 2 "Midwest" but Census "South". This is correct — PAD districts track petroleum infrastructure, Census regions track cost-of-living surveys. Gas labels include the PADD identifier (e.g., "Midwest (PADD 2) avg") so users can look it up.
+
+**Source links:** CPI cards link to the BLS page matching the tier. Gas card always links to EIA gas/diesel page. See `HomeContent.tsx` and `ChartsSection.tsx` for the logic.
 
 ## Hero Cards (4, in order)
 
@@ -272,16 +290,16 @@ Each has: time toggles (Jan 2025 | 3Y | 5Y | 10Y), "Show national" checkbox, era
 
 ## Test Zips
 
-| Zip   | Tests                                                 |
-| ----- | ----------------------------------------------------- |
-| 98683 | Vancouver WA — primary test, all data populates       |
-| 10001 | NYC — large metro, high rent, good CPI coverage       |
-| 60601 | Chicago — manufacturing exposure                      |
-| 73301 | Austin TX — above-avg electricity → energy card shows |
-| 90210 | Beverly Hills — high income, tariff scaling           |
-| 04101 | Portland ME — small metro, sparse data                |
-| 00601 | PR — no BLS county data, graceful failure             |
-| 99999 | Invalid — clean error, no crash                       |
+| Zip   | CPI Tier | Tests                                                 |
+| ----- | -------- | ----------------------------------------------------- |
+| 98683 | Regional (West) | Vancouver WA — primary test, all data populates |
+| 10001 | Metro (S12A) | NYC — large metro, high rent, good CPI coverage  |
+| 60601 | Metro (S23A) | Chicago — manufacturing exposure                 |
+| 73301 | Regional (South) | Austin TX — above-avg electricity → energy card |
+| 90210 | Metro (S49A) | Beverly Hills — high income, tariff scaling      |
+| 04101 | Regional (NE) | Portland ME — regional CPI, not Boston metro     |
+| 00601 | National | PR — no BLS county data, graceful failure              |
+| 99999 | — | Invalid — clean error, no crash                            |
 
 ## Commands
 
@@ -380,6 +398,7 @@ scripts/
   audit-zip-mappings.ts       # Offline audit of all 33,780 zips for mapping gaps
   build-cbsa-cpi-crosswalk.ts # Build CBSA → CPI area crosswalk from OMB data
   verify-mappings-live.ts     # Live API verification of all EIA/BLS mapping codes
+  verify-crosswalk-zips.ts    # Verify CPI tier distribution across all 33,780 zips
   build-census-acs.ts         # Build Census ACS static data
   flush-cpi-cache.ts          # Flush CPI cache entries
   preload-cache.ts            # Warm Redis with gas + BLS + unemployment
