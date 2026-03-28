@@ -49,6 +49,10 @@ function getChartData(
         'cpi-shelter': seriesIds?.shelter,
         'cpi-energy': seriesIds?.energy,
       }
+      const cpiTier = cpiData?.tier ?? (
+        metro === 'National' ? 3 :
+        metro?.includes('Urban') ? 2 : 1
+      )
       return {
         data: cpiData?.series.map(p => ({
           date: p.date,
@@ -66,12 +70,12 @@ function getChartData(
           ...(metro ? {
             sourceLabel: `BLS CPI — ${metro}`,
             geoLevel: isNational ? 'National'
-              : cpiData?.tier === 2 ? `Region: ${metro}`
+              : cpiTier === 2 ? `Region: ${metro}`
               : `Metro: ${metro}`,
           } : {}),
-          sourceUrl: cpiData?.tier === 2
+          sourceUrl: cpiTier === 2
             ? 'https://www.bls.gov/cpi/regional-resources.htm'
-            : cpiData?.tier === 1 && seriesIdMap[id]
+            : cpiTier === 1 && seriesIdMap[id]
               ? `https://data.bls.gov/timeseries/${seriesIdMap[id]}`
               : 'https://data.bls.gov/cgi-bin/surveymost?cu',
         },
