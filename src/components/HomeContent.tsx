@@ -129,7 +129,11 @@ export default function HomeContent() {
                       sourceDate={snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
                       isNegative
-                      sourceUrl="https://www.eia.gov/petroleum/gasdiesel/"
+                      sourceUrl={
+                        snapshot.gas.data.tier === 3
+                          ? 'https://www.eia.gov/petroleum/weekly/includes/padds.php'
+                          : 'https://www.eia.gov/petroleum/gasdiesel/'
+                      }
                       accentColor="#F59E0B"
                       nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal${natGasDelta != null ? ` (${natGasDelta > 0 ? '+' : ''}$${natGasDelta.toFixed(2)})` : ''}` : undefined}
                     />
@@ -147,9 +151,19 @@ export default function HomeContent() {
                         direction={shelterChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
                         sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                        geoLevel={
+                          snapshot.cpi.data?.tier === 3 ? 'national' :
+                          snapshot.cpi.data?.tier === 2 ? `region: ${snapshot.cpi.data?.metro}` :
+                          `metro: ${snapshot.cpi.data?.metro}`
+                        }
                         isNegative
-                        sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                        sourceUrl={
+                          snapshot.cpi.data?.tier === 2
+                            ? 'https://www.bls.gov/cpi/regional-resources.htm'
+                            : snapshot.cpi.data?.tier === 1
+                              ? 'https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-metro-area.htm'
+                              : 'https://data.bls.gov/cgi-bin/surveymost?cu'
+                        }
                         accentColor="#3B82F6"
                         nationalValue={natShelterChange != null ? `National: ${natShelterChange > 0 ? '+' : ''}${natShelterChange.toFixed(1)}%` : undefined}
                       />
@@ -168,9 +182,19 @@ export default function HomeContent() {
                         direction={pctChange > 0 ? 'up' : 'down'}
                         sourceLabel="BLS CPI"
                         sourceDate={snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        geoLevel={snapshot.cpi.data?.metro === 'National' ? 'national' : `metro: ${snapshot.cpi.data?.metro}`}
+                        geoLevel={
+                          snapshot.cpi.data?.tier === 3 ? 'national' :
+                          snapshot.cpi.data?.tier === 2 ? `region: ${snapshot.cpi.data?.metro}` :
+                          `metro: ${snapshot.cpi.data?.metro}`
+                        }
                         isNegative
-                        sourceUrl="https://data.bls.gov/cgi-bin/surveymost?cu"
+                        sourceUrl={
+                          snapshot.cpi.data?.tier === 2
+                            ? 'https://www.bls.gov/cpi/regional-resources.htm'
+                            : snapshot.cpi.data?.tier === 1
+                              ? 'https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-metro-area.htm'
+                              : 'https://data.bls.gov/cgi-bin/surveymost?cu'
+                        }
                         accentColor="#EF4444"
                         nationalValue={natGroceriesChange != null ? `National: ${natGroceriesChange > 0 ? '+' : ''}${natGroceriesChange.toFixed(1)}%` : undefined}
                       />

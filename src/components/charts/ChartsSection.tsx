@@ -63,8 +63,17 @@ function getChartData(
           energy: p.energy,
         })) ?? [],
         configOverrides: {
-          ...(metro ? { sourceLabel: `BLS CPI — ${metro}`, geoLevel: isNational ? 'National' : `Metro: ${metro}` } : {}),
-          ...(seriesIdMap[id] ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesIdMap[id]}` } : {}),
+          ...(metro ? {
+            sourceLabel: `BLS CPI — ${metro}`,
+            geoLevel: isNational ? 'National'
+              : cpiData?.tier === 2 ? `Region: ${metro}`
+              : `Metro: ${metro}`,
+          } : {}),
+          sourceUrl: cpiData?.tier === 2
+            ? 'https://www.bls.gov/cpi/regional-resources.htm'
+            : cpiData?.tier === 1 && seriesIdMap[id]
+              ? `https://data.bls.gov/timeseries/${seriesIdMap[id]}`
+              : 'https://data.bls.gov/cgi-bin/surveymost?cu',
         },
       }
     }
