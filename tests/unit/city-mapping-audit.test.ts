@@ -245,7 +245,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === SOUTH DAKOTA ===
   ['Sioux Falls', 'SD', '46099', 'S24A', 'R20', 3],
-  ['Rapid City', 'SD', '46103', 'S48B', 'YDEN', 1],
+  ['Rapid City', 'SD', '46103', 'S48B', 'R20', 1], // County override → Midwest avg
   ['Aberdeen', 'SD', '46013', 'S24A', 'R20', 3],
   ['Brookings', 'SD', '46011', 'S24A', 'R20', 3],
   ['Watertown', 'SD', '46029', 'S24A', 'R20', 3],
@@ -254,8 +254,8 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Omaha', 'NE', '31055', 'S24A', 'R20', 3],
   ['Lincoln', 'NE', '31109', 'S24A', 'R20', 3],
   ['Bellevue', 'NE', '31153', 'S24A', 'R20', 3],
-  ['Grand Island', 'NE', '31079', 'S48B', 'YDEN', 1],
-  ['Kearney', 'NE', '31019', 'S48B', 'YDEN', 1],
+  ['Grand Island', 'NE', '31079', 'S48B', 'R20', 1], // County override → Midwest avg
+  ['Kearney', 'NE', '31019', 'S48B', 'R20', 1], // County override → Midwest avg
 
   // === KANSAS ===
   ['Wichita', 'KS', '20173', 'S37A', 'R20', 3],
@@ -281,8 +281,8 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === NEW MEXICO ===
   ['Albuquerque', 'NM', '35001', 'S48A', 'R30', 3],
   ['Las Cruces', 'NM', '35013', 'S48A', 'R30', 3],
-  ['Rio Rancho', 'NM', '35043', 'S48B', 'YDEN', 1],
-  ['Santa Fe', 'NM', '35049', 'S48B', 'YDEN', 1],
+  ['Rio Rancho', 'NM', '35043', 'S48B', 'R30', 1], // County override → Gulf Coast avg
+  ['Santa Fe', 'NM', '35049', 'S48B', 'R30', 1], // County override → Gulf Coast avg
   ['Roswell', 'NM', '35005', 'S48A', 'R30', 3],
 
   // === WASHINGTON ===
@@ -321,18 +321,18 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Scottsdale', 'AZ', '04013', 'S48A', 'R50', 3],
 
   // === IDAHO ===
-  ['Boise', 'ID', '16001', 'S49D', 'Y48SE', 1], // ID → Denver CPI → Denver gas
-  ['Meridian', 'ID', '16001', 'S49D', 'Y48SE', 1],
-  ['Nampa', 'ID', '16027', 'S49D', 'Y48SE', 1],
+  ['Boise', 'ID', '16001', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
+  ['Meridian', 'ID', '16001', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
+  ['Nampa', 'ID', '16027', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
   ['Idaho Falls', 'ID', '16019', 'S48B', 'YDEN', 1],
   ['Pocatello', 'ID', '16005', 'S48B', 'YDEN', 1],
 
   // === MONTANA ===
   ['Billings', 'MT', '30111', 'S48B', 'YDEN', 1],
-  ['Missoula', 'MT', '30063', 'S49D', 'Y48SE', 1],
-  ['Great Falls', 'MT', '30013', 'S49D', 'Y48SE', 1],
+  ['Missoula', 'MT', '30063', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
+  ['Great Falls', 'MT', '30013', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
   ['Bozeman', 'MT', '30031', 'S48B', 'YDEN', 1],
-  ['Helena', 'MT', '30043', 'S49D', 'Y48SE', 1],
+  ['Helena', 'MT', '30043', 'S49D', 'R40', 1], // County override → Rocky Mountain avg
 
   // === WYOMING ===
   ['Cheyenne', 'WY', '56021', 'S48B', 'YDEN', 1],
