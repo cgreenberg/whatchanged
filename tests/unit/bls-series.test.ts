@@ -8,13 +8,7 @@
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
 import { clearMemCache } from '@/lib/cache/kv'
-
-// The expected series ID format is: LAUCN{5-digit-FIPS}0000000003
-// We can test this directly by replicating the pure function:
-function buildSeriesId(countyFips: string): string {
-  const padded = countyFips.padStart(5, '0')
-  return `LAUCN${padded}0000000003`
-}
+import { buildSeriesId } from '@/lib/api/bls'
 
 describe('BLS LAUS series ID format', () => {
   test('5-digit FIPS 53011 produces correct series ID', () => {

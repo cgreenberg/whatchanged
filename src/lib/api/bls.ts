@@ -2,11 +2,27 @@ import type { UnemploymentData, UnemploymentPoint } from '@/types'
 
 const BLS_API_BASE = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 
+// Connecticut abolished its 8 counties in January 2022 and replaced them with
+// 9 Planning Council Regions. The old county FIPS codes (09001–09015) no longer
+// exist in BLS LAUS. This map remaps old CT county FIPS to the new planning
+// region FIPS codes that BLS publishes unemployment data for.
+const CT_COUNTY_TO_PLANNING_REGION: Record<string, string> = {
+  '09001': '09120', // Fairfield → Greater Bridgeport Planning Region
+  '09003': '09110', // Hartford → Capitol Planning Region
+  '09005': '09160', // Litchfield → Northwest Hills Planning Region
+  '09007': '09130', // Middlesex → Lower CT River Valley Planning Region
+  '09009': '09170', // New Haven → South Central CT Planning Region
+  '09011': '09180', // New London → Southeastern CT Planning Region
+  '09013': '09150', // Tolland → Northeastern CT Planning Region
+  '09015': '09150', // Windham → Northeastern CT Planning Region
+}
+
 // BLS series ID format for county unemployment rate: LAUCN{FIPS}0000000003
 // FIPS must be exactly 5 digits (state 2 + county 3)
-function buildSeriesId(countyFips: string): string {
+export function buildSeriesId(countyFips: string): string {
   const padded = countyFips.padStart(5, '0')
-  return `LAUCN${padded}0000000003`
+  const remapped = CT_COUNTY_TO_PLANNING_REGION[padded] ?? padded
+  return `LAUCN${remapped}0000000003`
 }
 
 // The January 2025 baseline — lock date for the entire app
