@@ -295,7 +295,7 @@ Each has: time toggles (Jan 2025 | 3Y | 5Y | 10Y), "Show national" checkbox, era
 | 98683 | Regional (West) | Vancouver WA — primary test, all data populates |
 | 10001 | Metro (S12A) | NYC — large metro, high rent, good CPI coverage  |
 | 60601 | Metro (S23A) | Chicago — manufacturing exposure                 |
-| 73301 | Regional (South) | Austin TX — above-avg electricity → energy card |
+| 78701 | Regional (South) | Austin TX (downtown, Travis County) — above-avg electricity → energy card |
 | 90210 | Metro (S49A) | Beverly Hills — high income, tariff scaling      |
 | 04101 | Regional (NE) | Portland ME — regional CPI, not Boston metro     |
 | 00601 | National | PR — no BLS county data, graceful failure              |

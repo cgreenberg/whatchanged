@@ -238,14 +238,14 @@ class TestRunAudit:
     def test_specific_zips_skips_select(self, mock_select, mock_audit, mock_report):
         """When specific_zips is provided, select_audit_zips should not be called."""
         mock_audit.return_value = {
-            "zip": "73301",
+            "zip": "78701",
             "location": {},
             "checks": [],
             "screenshot_paths": [],
         }
         mock_report.return_value = "/tmp/audit_test.html"
 
-        run_audit(specific_zips=["73301", "04101"], max_workers=1, run_browser=False)
+        run_audit(specific_zips=["78701", "04101"], max_workers=1, run_browser=False)
 
         mock_select.assert_not_called()
         assert mock_audit.call_count == 2

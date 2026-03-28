@@ -44,6 +44,7 @@ function makeSnapshot(overrides: Partial<EconomicSnapshot> = {}): EconomicSnapsh
         shelterChange: 0.8,
         series: [],
         metro: 'Portland-Vancouver-Hillsboro',
+        tier: 1,
       },
       error: null,
       fetchedAt: '2025-03-01T00:00:00.000Z',
@@ -82,6 +83,19 @@ function makeSnapshot(overrides: Partial<EconomicSnapshot> = {}): EconomicSnapsh
       error: null,
       fetchedAt: '2025-03-01T00:00:00.000Z',
       sourceId: 'census',
+    },
+    tariff: {
+      data: {
+        medianIncome: 83821,
+        tariffRate: 0.0205,
+        estimatedCost: 1718,
+        source: 'Yale Budget Lab',
+        incomeSource: 'Census ACS',
+        isFallback: false,
+      },
+      error: null,
+      fetchedAt: '2025-03-01T00:00:00.000Z',
+      sourceId: 'tariff',
     },
     ...overrides,
   }

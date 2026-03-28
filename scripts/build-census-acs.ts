@@ -161,7 +161,7 @@ async function main() {
   console.log(`Written to:                 ${OUTPUT_PATH}`)
 
   // Sample spot-checks
-  const spotChecks = ['98683', '10001', '60601', '90210', '73301']
+  const spotChecks = ['98683', '10001', '60601', '90210', '78701']
   console.log('\n--- Spot Checks ---')
   for (const zip of spotChecks) {
     const entry = sorted[zip]
