@@ -136,9 +136,24 @@ EIA publishes exactly **29 duoarea codes** for product EPM0 (retail gasoline):
 
 **CRITICAL:** National CPI data is shared across ALL zips. Never fetch national data per-zip.
 
+### Negative Cache
+
+When a BLS or EIA fetch fails, `getCachedOrFetch` in `kv.ts` writes a `{key}:failed` entry with a 5-minute TTL. During those 5 minutes, no retry is attempted — the site shows "Data unavailable." This prevents hammering broken APIs but means a cache flush during an outage will cache the failure and block recovery for 5 minutes.
+
+### Cache Flush Safety
+
+**CRITICAL: Flushing cache burns BLS API quota.** Every flushed key becomes a cache miss, triggering a fresh BLS API call on the next request. BLS allows 500 requests/day per API key.
+
+**Rules for flushing:**
+- **Flush only the keys you need to.** If you changed CPI mappings, flush only `bls:cpi:*` (15 keys), not unemployment or gas. Use `scripts/flush-all-cache.ts` as a last resort.
+- **Never flush and then immediately warm.** If BLS is rate-limited, warm-cache will fail and the failures get negative-cached for 5 minutes.
+- **Flush once, warm once.** Multiple flush+warm cycles multiply the API calls.
+- **Budget:** 15 CPI metros + ~100 county unemployment series + 20 gas series = ~135 calls to fully repopulate. That's 27% of the daily BLS budget in one warm cycle.
+
 ### Cache Warming
 
 **Preload script:** `scripts/preload-cache.ts` — bulk-loads gas (24 series), national CPI, top 50 counties
+**Flush script:** `scripts/flush-all-cache.ts` — deletes all `bls:*`, `eia:*` keys from Upstash Redis (use sparingly — see flush safety above)
 **Warm-cache cron:** `/api/warm-cache` endpoint — 19 representative zips (all PAD districts + major CPI metros)
 **Schedule (cron-job.org):** Monday 7am ET (gas update) + 15th of month (BLS update)
 
@@ -187,10 +202,13 @@ PADs 2–5 have no sub-districts.
 ```bash
 npx tsx scripts/audit-zip-mappings.ts        # offline audit of all 33,780 zips
 npx tsx scripts/verify-mappings-live.ts      # live API verification of all codes
+npx tsx scripts/audit-cpi-assignments.ts     # geographic CPI metro audit (no API calls)
+npx tsx scripts/audit-cpi-assignments.ts --apply  # generate override entries
 ```
 
 **Offline audit:** Flags missing CPI overrides, gas tier downgrades, unmapped counties. Makes no API calls.
-**Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series, and LAUS series actually returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`.
+**Live verification:** Hits EIA + BLS APIs to confirm every duoarea code, CPI series, and LAUS series actually returns data. Exits non-zero on any failure. Requires `EIA_API_KEY` and optionally `BLS_API_KEY`. **WARNING:** Uses BLS API quota — don't run same day as a cache flush.
+**CPI geo-audit:** Computes haversine distance from every county centroid to all 23 BLS CPI metros. Reports which counties have a closer metro than their current assignment. Uses bundled `src/lib/data/county-centroids.json` (Census Gazetteer). Makes no API calls.
 **250-city test:** `tests/unit/city-mapping-audit.test.ts` — tests top 5 cities per state across CPI, gas, BLS series IDs, and LAUS series. Run with `npm test`.
 **Python audit:** `audit/src/main.py` — independent weekly verification (10 zips) that cross-checks displayed values against direct BLS/EIA/Census API calls. Also scrapes AAA gas prices as a third-party sanity check. See `audit/AUDIT_RULES.md`. Run: `cd audit && PYTHONPATH=. python src/main.py --zips 98683 --sequential`
 
