@@ -147,7 +147,9 @@ const GAS_SERIES: GasSeriesSpec[] = [
   { cacheKey: 'eia:gas:state:TX', duoarea: 'STX', label: 'Texas state avg'      },
 
   // Tier 3 PAD districts
-  { cacheKey: 'eia:gas:pad:1', duoarea: 'R10', label: 'East Coast avg'       },
+  { cacheKey: 'eia:gas:pad:1A', duoarea: 'R1X', label: 'New England (PADD 1A) avg'       },
+  { cacheKey: 'eia:gas:pad:1B', duoarea: 'R1Y', label: 'Central Atlantic (PADD 1B) avg'  },
+  { cacheKey: 'eia:gas:pad:1C', duoarea: 'R1Z', label: 'Lower Atlantic (PADD 1C) avg'    },
   { cacheKey: 'eia:gas:pad:2', duoarea: 'R20', label: 'Midwest avg'          },
   { cacheKey: 'eia:gas:pad:3', duoarea: 'R30', label: 'Gulf Coast avg'       },
   { cacheKey: 'eia:gas:pad:4', duoarea: 'R40', label: 'Rocky Mountain avg'   },
@@ -182,7 +184,7 @@ async function fetchEiaRawData(duoarea: string, apiKey: string): Promise<any[]> 
     'facets[duoarea][]':  duoarea,
     'sort[0][column]':    'period',
     'sort[0][direction]': 'desc',
-    length:               '260',
+    length:               '520',
   })
 
   const response = await fetch(`${EIA_API_BASE}?${params.toString()}`)
