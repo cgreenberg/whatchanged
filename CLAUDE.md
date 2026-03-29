@@ -150,12 +150,12 @@ When a BLS or EIA fetch fails, `getCachedOrFetch` in `kv.ts` writes a `{key}:fai
 - **Flush once, warm once.** Multiple flush+warm cycles multiply the API calls.
 - **Budget:** 23 CPI metros + 9 division CPI + 4 regional CPI + ~100 county unemployment series + 20 gas series = ~156 calls to fully repopulate. That's 31% of the daily BLS budget in one warm cycle.
 
-**CRITICAL: Vercel CDN caches API responses for 24 hours** (`s-maxage=86400`). Flushing Redis alone is NOT enough — stale responses (including "Data unavailable" from negative cache) persist at the CDN edge. After a Redis flush + warm, trigger a Vercel redeploy (`git commit --allow-empty && git push`) to purge the CDN. Without this, users see stale null data until the 24h CDN TTL expires.
+**Vercel CDN caching:** Successful responses (all data sources present) use `s-maxage=86400` (24h). Responses with any null data source use `s-maxage=300` (5 min) so they self-heal quickly. Flushing Redis alone may still serve stale CDN responses for up to 5 minutes for null-data responses or 24 hours for previously-successful responses. A `vercel deploy --prod --force` or empty-commit push can help, but does **not** reliably purge all CDN edge locations.
 
 **Safe flush + warm sequence:**
-1. Flush Redis CPI keys (`scripts/flush-cpi-cache.ts`)
-2. Immediately run preload (`scripts/preload-cache.ts`) — before user traffic creates negative cache entries
-3. Push an empty commit to purge Vercel CDN (`git commit --allow-empty -m "chore: purge CDN" && git push`)
+1. Flush the specific Redis keys you changed (`scripts/flush-cpi-cache.ts`, `scripts/flush-ct-unemployment.ts`, etc.)
+2. Immediately run the corresponding warm script — before user traffic creates negative cache entries
+3. Force redeploy to purge CDN: `vercel deploy --prod --force` (note: empty-commit pushes don't reliably purge all edge locations)
 
 ### Cache Warming
 
@@ -410,6 +410,8 @@ scripts/
   verify-crosswalk-zips.ts    # Verify CPI tier distribution across all 33,780 zips
   build-census-acs.ts         # Build Census ACS static data
   flush-cpi-cache.ts          # Flush CPI cache entries
+  flush-ct-unemployment.ts    # Flush CT unemployment cache entries
+  warm-ct-unemployment.ts     # Warm CT unemployment cache with planning region data
   preload-cache.ts            # Warm Redis with gas + BLS + unemployment
   process-crosswalk.ts        # Process HUD crosswalk data
   publish-audit.sh            # Publish audit results
@@ -438,7 +440,7 @@ Run 3 review agents in parallel before committing (logic, security, data accurac
 
 - Location banner sometimes redundant ("Clark County, WA — Clark County") → should use city name from zip lookup
 - Zip/city mapping gaps are the #1 recurring bug source → run `npx tsx scripts/audit-zip-mappings.ts`
-- **Connecticut FIPS broken for unemployment:** CT abolished counties in 2022, replaced with Planning Council Regions (FIPS 09110–09190). The HUD crosswalk still uses old county FIPS (09001–09015), so all CT LAUS unemployment series return "series does not exist" from BLS. Needs a crosswalk from old → new FIPS in the zip lookup or BLS fetch layer.
+- **Connecticut FIPS remapping for unemployment:** CT abolished counties in 2022, replaced with Planning Council Regions (FIPS 09110–09190). The HUD crosswalk still uses old county FIPS (09001–09015). A remapping in `bls.ts` (`CT_COUNTY_TO_PLANNING_REGION`) translates old → new FIPS before building LAUS series IDs. Two geographic approximations: Fairfield County maps entirely to Greater Bridgeport (09120) instead of splitting with Western CT (09190), and New Haven County maps entirely to South Central CT (09170) instead of splitting with Naugatuck Valley (09140). Use `scripts/flush-ct-unemployment.ts` and `scripts/warm-ct-unemployment.ts` to flush/warm CT data.
 - Hawaii and Alaska get PAD 5 "West Coast avg" for gas — EIA has no state-level codes for HI/AK, and prices differ significantly ($1+/gal) from mainland West Coast. No fix available without EIA publishing those series.
 - **USASpending has no independent cross-check:** The Python audit verifies BLS, EIA, and Census data against government source APIs, but does not independently query `api.usaspending.gov` to cross-check federal cuts dollar amounts.
 - **Frontend dollar translations are not tested end-to-end:** No test verifies that the dollar amounts shown on cards (`$X more per year`) match the correct formula applied to API data. Unit tests cover backend math; Playwright e2e tests check that cards render, but no test asserts the displayed dollar value equals `API_percent_change × base_amount`.
