@@ -25,7 +25,6 @@ from src.zip_selector import select_audit_zips
 from src.fetchers.whatchanged import fetch_site_data
 from src.fetchers.eia import fetch_gas_price
 from src.fetchers.bls import fetch_bls_series
-from src.fetchers.fred import fetch_fred_series
 from src.fetchers.census import fetch_median_income
 from src.fetchers.scrapers import fetch_aaa_gas_price
 from src.browser.session import run_site_session, take_source_screenshots
@@ -45,6 +44,12 @@ from src.validators.gas_region import verify_gas_region_appropriate
 from src.validators.freshness import verify_data_freshness
 from src.validators.link_checker import verify_links
 from src.validators.baseline import verify_baselines
+from src.validators.completeness import verify_completeness
+from src.validators.tier_hierarchy import verify_tier_hierarchy
+from src.validators.label_consistency import verify_label_consistency
+from src.validators.link_geography import verify_link_geography
+from src.validators.audit_health import verify_audit_health
+from src.validators.chart_depth import verify_chart_depth
 from src.report.generator import generate_report
 
 # Configure logging
@@ -59,6 +64,70 @@ logger = logging.getLogger(__name__)
 AUDIT_DIR = Path(__file__).parent.parent
 SCREENSHOTS_DIR = AUDIT_DIR / "screenshots"
 REPORTS_DIR = AUDIT_DIR / "reports"
+
+
+# Mapping from geoLevel / region strings to EIA duoarea codes.
+# Used as a fallback when the gas.data.duoarea field is absent from the API
+# response (older cached entries predate that field being added).
+# Keys are lowercase substrings that appear in the geoLevel string.
+_GEOLEVEL_TO_DUOAREA: list[tuple[str, str]] = [
+    # PAD sub-districts — checked before broad "padd 1" / "padd 2" matches
+    ("padd 1a", "R1X"),
+    ("padd 1b", "R1Y"),
+    ("padd 1c", "R1Z"),
+    # PAD districts 2–5
+    ("padd 2", "R20"),
+    ("padd 3", "R30"),
+    ("padd 4", "R40"),
+    ("padd 5", "R50"),
+    # State-level series — checked BEFORE city keywords to avoid "new york state"
+    # matching the "new york" city keyword.  Only 9 states have EIA state series.
+    ("california state", "SCA"),
+    ("colorado state", "SCO"),
+    ("florida state", "SFL"),
+    ("massachusetts state", "SMA"),
+    ("minnesota state", "SMN"),
+    ("new york state", "SNY"),
+    ("ohio state", "SOH"),
+    ("texas state", "STX"),
+    ("washington state", "SWA"),
+    # EIA city-level series (after state keywords to avoid substring collisions)
+    ("boston", "YBOS"),
+    ("new york", "Y35NY"),
+    ("miami", "YMIA"),
+    ("chicago", "YORD"),
+    ("cleveland", "YCLE"),
+    ("houston", "Y44HO"),
+    ("denver", "YDEN"),
+    ("los angeles", "Y05LA"),
+    ("san francisco", "Y05SF"),
+    ("seattle", "Y48SE"),
+    # National
+    ("national", "NUS"),
+]
+
+
+def _infer_duoarea_from_geo_level(geo_level: str, region: str) -> Optional[str]:
+    """Infer EIA duoarea code from the geoLevel and region strings in gas data.
+
+    This is a fallback for cached gas entries that predate the duoarea field.
+    It parses strings like "Midwest (PADD 2) avg" or "Los Angeles area avg"
+    to determine which EIA series to query independently.
+
+    Args:
+        geo_level: The geoLevel field from gas.data (e.g. "Midwest (PADD 2) avg")
+        region: The region field from gas.data (e.g. "Midwest")
+
+    Returns:
+        EIA duoarea code string if identifiable, None otherwise.
+    """
+    combined = (geo_level + " " + region).lower()
+    for keyword, duoarea in _GEOLEVEL_TO_DUOAREA:
+        if keyword in combined:
+            logger.debug("Inferred duoarea %s from geoLevel=%r region=%r", duoarea, geo_level, region)
+            return duoarea
+    logger.debug("Could not infer duoarea from geoLevel=%r region=%r", geo_level, region)
+    return None
 
 
 def audit_single_zip(
@@ -109,16 +178,22 @@ def audit_single_zip(
     cpi_data = site_data.get("cpi", {}).get("data")
     unemp_data = site_data.get("unemployment", {}).get("data")
 
-    # EIA gas price — only compare if we can match the exact series
+    # EIA gas price — use duoarea from site API response, with geoLevel fallback
+    # for older cached entries where duoarea was not yet stored.
     eia_data = None
     if gas_data:
-        site_duoarea = gas_data.get("duoarea")
+        site_duoarea = gas_data.get("duoarea") or _infer_duoarea_from_geo_level(
+            gas_data.get("geoLevel", ""), gas_data.get("region", "")
+        )
         if site_duoarea:
             eia_data = fetch_gas_price(site_duoarea)
             if eia_data is None:
                 logger.info("EIA fetch failed for duoarea %s (zip %s)", site_duoarea, zip_code)
         else:
-            logger.info("No duoarea in API response for zip %s — EIA check skipped (deploy pending?)", zip_code)
+            logger.info(
+                "Cannot determine duoarea for zip %s (geoLevel=%r) — EIA check skipped",
+                zip_code, gas_data.get("geoLevel"),
+            )
         time.sleep(1)
 
     # BLS series (batch all CPI + LAUS series in one call)
@@ -131,16 +206,6 @@ def audit_single_zip(
     if series_ids:
         bls_data = fetch_bls_series(series_ids)
         time.sleep(1)
-
-    # FRED cross-check (Layer 1 — confirms API pull)
-    fred_results = {}
-    if cpi_data and cpi_data.get("seriesIds"):
-        grocery_id = cpi_data["seriesIds"].get("groceries")
-        if grocery_id:
-            fred_result = fetch_fred_series(grocery_id)
-            if fred_result:
-                fred_results[grocery_id] = fred_result
-            time.sleep(0.5)
 
     # Census income (for tariff verification)
     census_data = fetch_median_income(zip_code)
@@ -283,6 +348,24 @@ def audit_single_zip(
 
     # Baseline verification
     all_checks.extend(verify_baselines(site_data))
+
+    # Completeness — all expected data keys present and non-null
+    all_checks.extend(verify_completeness(site_data))
+
+    # Tier hierarchy — CPI/gas tiers make geographic sense
+    all_checks.extend(verify_tier_hierarchy(site_data))
+
+    # Label consistency — displayed geo labels match tier assignments
+    all_checks.extend(verify_label_consistency(site_data))
+
+    # Link geography — source links point to the correct geographic series
+    all_checks.extend(verify_link_geography(site_data))
+
+    # Audit health — cross-checks API-reported values against raw BLS/EIA data
+    all_checks.extend(verify_audit_health(site_data, bls_data, eia_data))
+
+    # Chart depth — time-series data has sufficient historical depth
+    all_checks.extend(verify_chart_depth(site_data))
 
     elapsed = time.time() - start_time
     logger.info(

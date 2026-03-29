@@ -184,11 +184,46 @@ def verify_series_metro_mapping(
     return results
 
 
-def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
-    """Verify that a regional CPI assignment is correct for the zip's state.
+def _get_cpi_tier(cpi_data: dict) -> int:
+    """Determine the CPI tier (1–4) from CPI data.
 
-    For regional CPI (where metro contains "Urban"), checks that the
-    zip's state belongs to the correct Census region.
+    Prefers the explicit ``tier`` field; falls back to name-based
+    inference for stale cache entries that predate the tier field.
+
+    Tier meanings:
+      1 — metro (CBSA-based, e.g. "Chicago-Naperville-Elgin")
+      2 — Census division (e.g. "East North Central")
+      3 — Census region (e.g. "Northeast Urban")
+      4 — national / territories
+    """
+    explicit_tier = cpi_data.get("tier")
+    if explicit_tier is not None:
+        try:
+            return int(explicit_tier)
+        except (TypeError, ValueError):
+            pass
+
+    # Fallback: infer from metro name for stale cache entries
+    site_metro = cpi_data.get("metro", "")
+    metro_lower = site_metro.lower().strip()
+
+    national_aliases = {"national", "u.s. city average", "us city average"}
+    if metro_lower in national_aliases:
+        return 4
+    if "urban" in metro_lower:
+        return 3
+    if metro_lower in CENSUS_DIVISIONS:
+        return 2
+    return 1
+
+
+def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
+    """Verify that a division or regional CPI assignment is correct for the zip's state.
+
+    For tier-2 (Census division) CPI, checks that the zip's state belongs
+    to the correct Census division.  For tier-3 (regional) CPI, checks
+    the correct Census region.  Tier-1 (metro) and tier-4 (national) are
+    handled by other validators.
 
     Args:
         site_data: Full API response from whatchanged.us
@@ -208,20 +243,20 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
 
     site_metro = cpi_data.get("metro", "")
     metro_lower = site_metro.lower().strip()
+    tier = _get_cpi_tier(cpi_data)
 
-    # Determine if this is a regional CPI (contains "Urban"), a division CPI,
-    # or something else (metro/national — handled by other validators).
-    is_regional = "Urban" in site_metro
-    is_division = metro_lower in CENSUS_DIVISIONS
-
-    if not is_regional and not is_division:
+    # Only handle tier 2 (division) and tier 3 (regional) here
+    if tier not in (2, 3):
         return [CheckResult(
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="cpi_region_appropriate",
-            message=f"Not a regional or division CPI assignment (metro='{site_metro}')",
+            message=f"Not a division/regional CPI assignment (tier={tier}, metro='{site_metro}')",
             description="Verify regional/division CPI assignment matches the zip's Census region.",
         )]
+
+    is_division = (tier == 2)
+    is_regional = (tier == 3)
 
     state_abbr = site_data.get("location", {}).get("stateAbbr", "")
     if not state_abbr:
@@ -236,10 +271,22 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
     state_upper = state_abbr.upper()
 
     if is_division:
-        # Division CPI: validate against CENSUS_DIVISIONS
-        expected_states = CENSUS_DIVISIONS[metro_lower]
-        geo_label = f"{site_metro} division"
+        # Division CPI (tier 2): validate state belongs to the correct Census division.
+        # metro_lower should match a key in CENSUS_DIVISIONS (e.g. "east north central"),
+        # but fall back gracefully if the name doesn't match exactly.
         description = "Verify division CPI assignment matches the zip's Census division."
+        expected_states = CENSUS_DIVISIONS.get(metro_lower)
+
+        if expected_states is None:
+            return [CheckResult(
+                status=CheckStatus.SKIP,
+                category="geo_mapping",
+                check_name="cpi_region_appropriate",
+                message=f"Unknown division name '{site_metro}' (tier=2) — cannot verify state assignment",
+                description=description,
+            )]
+
+        geo_label = f"{site_metro} division"
 
         if state_upper in expected_states:
             return [CheckResult(
@@ -264,7 +311,7 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
                 description=description,
             )]
 
-    # Regional CPI: extract region name from metro string ("Northeast Urban" → "northeast")
+    # Regional CPI (tier 3): extract region name from metro string ("Northeast Urban" → "northeast").
     region_name = metro_lower.replace(" urban", "").strip()
     description = "Verify regional CPI assignment matches the zip's Census region."
 
@@ -273,7 +320,7 @@ def verify_cpi_region_appropriate(site_data: dict) -> list[CheckResult]:
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="cpi_region_appropriate",
-            message=f"Unknown region name '{region_name}' extracted from metro '{site_metro}'",
+            message=f"Unknown region name '{region_name}' extracted from metro '{site_metro}' (tier=3)",
             description=description,
         )]
 
@@ -326,36 +373,33 @@ def verify_metro_state_appropriate(site_data: dict) -> list[CheckResult]:
         )]
 
     site_metro = cpi_data.get("metro", "")
+    tier = _get_cpi_tier(cpi_data)
 
-    # Skip regional CPI
-    if "Urban" in site_metro:
+    # Only tier-1 (metro) is validated here; all other tiers are delegated
+    if tier == 2:
         return [CheckResult(
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="metro_state_appropriate",
-            message=f"Regional CPI — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
+            message=f"Division CPI (tier=2) — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
             description="Verify metro CPI assignment is plausible for the zip's state.",
         )]
 
-    # Skip division CPI
-    if site_metro.lower().strip() in CENSUS_DIVISIONS:
+    if tier == 3:
         return [CheckResult(
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="metro_state_appropriate",
-            message=f"Division CPI — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
+            message=f"Regional CPI (tier=3) — use verify_cpi_region_appropriate instead (metro='{site_metro}')",
             description="Verify metro CPI assignment is plausible for the zip's state.",
         )]
 
-    # Skip national CPI
-    site_norm = site_metro.lower().strip()
-    national_aliases = {"national", "u.s. city average", "us city average"}
-    if site_norm in national_aliases:
+    if tier == 4:
         return [CheckResult(
             status=CheckStatus.SKIP,
             category="geo_mapping",
             check_name="metro_state_appropriate",
-            message=f"National CPI — no state check needed (metro='{site_metro}')",
+            message=f"National CPI (tier=4) — no state check needed (metro='{site_metro}')",
             description="Verify metro CPI assignment is plausible for the zip's state.",
         )]
 

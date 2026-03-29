@@ -152,4 +152,78 @@ def compare_cpi(
                 description="Sanity check: shelter % change should be between -20% and +50%.",
             ))
 
+    # Check energy BLS data present
+    energy_series_id = series_ids.get("energy")
+    if energy_series_id and bls_data and energy_series_id in bls_data:
+        bls_energy = bls_data[energy_series_id]
+        if bls_energy["data"]:
+            results.append(CheckResult(
+                status=CheckStatus.PASS,
+                category="cpi",
+                check_name="energy_data_present",
+                message=f"BLS energy series {energy_series_id} has {len(bls_energy['data'])} data points",
+                description="Confirms BLS energy CPI series has data. The site shows energy cost % change from this series.",
+                source_url=f"https://data.bls.gov/timeseries/{energy_series_id}",
+            ))
+    else:
+        results.append(CheckResult(
+            status=CheckStatus.SKIP,
+            category="cpi",
+            check_name="energy_data_present",
+            message=f"Missing BLS data for energy series {energy_series_id}",
+            description="Confirms BLS energy CPI series has data. The site shows energy cost % change from this series.",
+            source_url=f"https://data.bls.gov/timeseries/{energy_series_id}" if energy_series_id else "",
+        ))
+
+    # Verify energy % change is reasonable (derived from series array)
+    # The API does not return a top-level energyChange field, so compute from series points.
+    series_points = site_cpi.get("series") or []
+    BASELINE_DATE = "2025-01"
+    baseline_energy = next(
+        (p["energy"] for p in series_points if p.get("date") == BASELINE_DATE and p.get("energy") is not None),
+        None,
+    )
+    latest_energy = next(
+        (p["energy"] for p in reversed(series_points) if p.get("energy") is not None),
+        None,
+    )
+
+    if baseline_energy is not None and latest_energy is not None:
+        if baseline_energy == 0:
+            results.append(CheckResult(
+                status=CheckStatus.FAIL,
+                category="cpi",
+                check_name="energy_change_reasonable",
+                message="Energy baseline index is zero — cannot compute % change",
+                description="Sanity check: energy baseline index from the series array is zero.",
+            ))
+        else:
+            energy_change = round((latest_energy - baseline_energy) / baseline_energy * 100, 1)
+            if -50 <= energy_change <= 100:
+                results.append(CheckResult(
+                    status=CheckStatus.PASS,
+                    category="cpi",
+                    check_name="energy_change_reasonable",
+                    site_value=energy_change,
+                    message=f"Energy change {energy_change}% is within reasonable range",
+                    description="Sanity check: energy % change since Jan 2025 is between -50% and +100%.",
+                ))
+            else:
+                results.append(CheckResult(
+                    status=CheckStatus.FAIL,
+                    category="cpi",
+                    check_name="energy_change_reasonable",
+                    site_value=energy_change,
+                    message=f"Energy change {energy_change}% is outside reasonable range (-50% to +100%)",
+                    description="Sanity check: energy % change should be between -50% and +100%.",
+                ))
+    else:
+        results.append(CheckResult(
+            status=CheckStatus.SKIP,
+            category="cpi",
+            check_name="energy_change_reasonable",
+            message="No energy data points found in series for Jan 2025 baseline or latest value",
+            description="Sanity check: energy % change since Jan 2025 is between -50% and +100%.",
+        ))
+
     return results

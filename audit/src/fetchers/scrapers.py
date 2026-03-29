@@ -25,6 +25,9 @@ def fetch_aaa_gas_price(state_abbr: str) -> Optional[dict]:
         Dict with 'regular_price', 'state', 'metros', 'source_url' on success,
         None on failure.
     """
+    # NOTE (March 2026): gasprices.aaa.com is behind Cloudflare Bot Management
+    # and returns 403 to all headless browsers. This function gracefully returns
+    # None, producing a SKIP in the audit. Do not spend time debugging selectors.
     url = f"https://gasprices.aaa.com/?state={state_abbr}"
 
     try:
