@@ -92,7 +92,11 @@ export async function GET(
       }
     : snapshot
 
+  const hasNullData = !snapshot.unemployment?.data || !snapshot.cpi?.data || !snapshot.gas?.data || !snapshot.federal?.data
+  const cacheHeader = hasNullData
+    ? 's-maxage=300, stale-while-revalidate=300'
+    : 's-maxage=86400, stale-while-revalidate=604800'
   const response = NextResponse.json(body)
-  response.headers.set('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800')
+  response.headers.set('Cache-Control', cacheHeader)
   return response
 }
