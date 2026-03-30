@@ -1,3 +1,5 @@
+import type { DollarImpact } from '@/lib/compute/dollar-translations'
+
 export interface ZipInfo {
   zip: string
   countyFips: string
@@ -105,6 +107,7 @@ export interface EconomicSnapshot {
   federal: DataResult<FederalFundingData>
   census: DataResult<CensusData>
   tariff: DataResult<TariffData>
+  dollarImpact?: DollarImpact
   fetchedAt: string
   cacheStatus?: CacheStatus
 }

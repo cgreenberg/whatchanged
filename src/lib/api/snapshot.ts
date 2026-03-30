@@ -14,6 +14,7 @@ import type {
   FederalFundingData,
 } from '@/types'
 import { estimateTariffCost } from '@/lib/tariff'
+import { computeDollarImpact } from '@/lib/compute/dollar-translations'
 import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from './source-registry'
 import { getGasLookup } from './eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
@@ -143,6 +144,16 @@ export async function fetchSnapshot(zip: string, city?: string, state?: string):
     sourceId: 'yale-budget-lab',
   }
 
+  // Dollar impact (centralized computation for hero cards)
+  const dollarImpact = computeDollarImpact({
+    groceriesChangePct: cpiResult.data?.groceriesChange,
+    shelterChangePct: cpiResult.data?.shelterChange,
+    gasChange: gasResult.data?.change,
+    tariffEstimatedCost: tariffData?.estimatedCost,
+    localIncome: censusData?.medianIncome,
+    medianRent: censusData?.medianRent,
+  })
+
   // Build cache status
   const cacheStatus: CacheStatus = {
     unemployment: unemploymentResult.cacheHit ? 'hit' : 'miss',
@@ -161,6 +172,7 @@ export async function fetchSnapshot(zip: string, city?: string, state?: string):
     federal,
     census,
     tariff,
+    dollarImpact,
     fetchedAt,
     cacheStatus,
   }

@@ -7,6 +7,7 @@ import { StatCard } from '@/components/StatCard'
 import { StatCardSkeleton } from '@/components/StatCardSkeleton'
 import { ChartsSection } from '@/components/charts/ChartsSection'
 import { estimateTariffCost, formatDollars } from '@/lib/tariff'
+import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
 import { ShareButton } from '@/components/ShareButton'
 import { MapSection } from '@/components/map/MapSection'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -146,8 +147,8 @@ export default function HomeContent() {
                   {snapshot.cpi.data && (() => {
                     const shelterChange = snapshot.cpi.data!.shelterChange ?? 0
                     const medianRent = snapshot.census.data?.medianRent ?? 1271
-                    const annualRent = medianRent * 12
-                    const shelterDollarImpact = Math.round(annualRent * Math.abs(shelterChange) / 100)
+                    const shelterDollarImpact = snapshot.dollarImpact?.shelter
+                      ?? computeShelterImpact(shelterChange, medianRent)
                     return (
                       <StatCard
                         label="Housing Costs"
@@ -176,8 +177,8 @@ export default function HomeContent() {
                   {snapshot.cpi.data && (() => {
                     const pctChange = snapshot.cpi.data.groceriesChange
                     const localIncome = snapshot.census.data?.medianIncome ?? 74580
-                    const grocerySpend = 6000 * (localIncome / 74580)
-                    const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
+                    const dollarImpact = snapshot.dollarImpact?.groceries
+                      ?? computeGroceryImpact(pctChange, localIncome)
                     return (
                       <StatCard
                         label="Grocery Prices"

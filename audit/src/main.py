@@ -27,11 +27,13 @@ from src.fetchers.eia import fetch_gas_price
 from src.fetchers.bls import fetch_bls_series
 from src.fetchers.census import fetch_median_income
 from src.fetchers.scrapers import fetch_aaa_gas_price
+from src.fetchers.usaspending import fetch_federal_spending
 from src.browser.session import run_site_session, take_source_screenshots
 from src.comparators.gas import compare_gas_price
 from src.comparators.cpi import compare_cpi
 from src.comparators.unemployment import compare_unemployment
 from src.comparators.tariff import compare_tariff
+from src.comparators.federal import compare_federal_spending
 from src.comparators.rendered_vs_api import compare_rendered_vs_api
 from src.comparators.computation import verify_computations
 from src.comparators.national import compare_national_data
@@ -50,6 +52,7 @@ from src.validators.label_consistency import verify_label_consistency
 from src.validators.link_geography import verify_link_geography
 from src.validators.audit_health import verify_audit_health
 from src.validators.chart_depth import verify_chart_depth
+from src.validators.dollar_translations import verify_dollar_translations
 from src.report.generator import generate_report
 
 # Configure logging
@@ -217,6 +220,14 @@ def audit_single_zip(
     if state_abbr:
         aaa_data = fetch_aaa_gas_price(state_abbr)
 
+    # USASpending federal spending (independent cross-check)
+    usaspending_data = None
+    federal_site_data = site_data.get("federal", {}).get("data")
+    county_fips = location.get("countyFips", "")
+    if federal_site_data and county_fips and state_abbr:
+        usaspending_data = fetch_federal_spending(county_fips, state_abbr)
+        time.sleep(0.5)
+
     # Step 3: Browser session (screenshot + DOM scrape + link extraction)
     browser_result = None
     if run_browser:
@@ -250,6 +261,9 @@ def audit_single_zip(
             message=f"Site tariff for zip {zip_code} uses national average income (not zip-specific)",
             description="The tariff estimate is based on national average income because zip-specific Census data was unavailable.",
         ))
+
+    # Federal spending cross-check
+    all_checks.extend(compare_federal_spending(federal_site_data, usaspending_data))
 
     # Also verify rendered tariff matches API tariff (if browser ran)
     if browser_result and browser_result.rendered_values:
@@ -366,6 +380,9 @@ def audit_single_zip(
 
     # Chart depth — time-series data has sufficient historical depth
     all_checks.extend(verify_chart_depth(site_data))
+
+    # Dollar translations — verify pre-computed dollar impacts match formulas
+    all_checks.extend(verify_dollar_translations(site_data))
 
     elapsed = time.time() - start_time
     logger.info(
