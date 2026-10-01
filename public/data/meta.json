@@ -1,0 +1,36 @@
+{
+ "baseline": "2025-01",
+ "sources": {
+  "zhvi": {
+   "latest": "2026-08",
+   "label": "Zillow Home Value Index (ZHVI)",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "zori": {
+   "latest": "2026-08",
+   "label": "Zillow Observed Rent Index (ZORI), seasonally adjusted by whatchanged",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "realtor": {
+   "latest": "2026-09",
+   "label": "Realtor.com\u00ae Economic Research",
+   "url": "https://www.realtor.com/research/data/"
+  },
+  "laus": {
+   "latest": "2026-08",
+   "label": "BLS LAUS, seasonally adjusted by whatchanged",
+   "url": "https://www.bls.gov/lau/"
+  },
+  "qcew": {
+   "latest": "2026-Q1",
+   "label": "BLS QCEW",
+   "url": "https://www.bls.gov/cew/"
+  },
+  "permits": {
+   "latest": "2026-08 YTD",
+   "label": "Census Building Permits Survey",
+   "url": "https://www.census.gov/construction/bps/"
+  }
+ },
+ "paycheckWindow": "Q1 2026 vs Q1 2025"
+}

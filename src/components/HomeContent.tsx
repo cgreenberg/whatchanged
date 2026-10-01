@@ -9,11 +9,17 @@ import { ChartsSection } from '@/components/charts/ChartsSection'
 import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
 import { ShareButton } from '@/components/ShareButton'
-import { MapSection } from '@/components/map/MapSection'
+import { LocalPulse } from '@/components/pulse/LocalPulse'
+import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { geocodeZip } from '@/lib/data/zip-coords'
 import { CityGrid } from '@/components/CityGrid'
 import type { EconomicSnapshot } from '@/types'
+
+// d3-geo/topojson are ESM-only and ~40KB; load the map chunk only on the client
+const NationalMap = dynamic(
+  () => import('@/components/pulse/NationalMap').then(m => ({ default: m.NationalMap })),
+  { ssr: false, loading: () => <div className="mt-12 aspect-[975/610] bg-zinc-900 rounded-xl" /> }
+)
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -27,7 +33,6 @@ export default function HomeContent() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [markerPosition, setMarkerPosition] = useState<[number, number] | undefined>()
   async function handleZipSubmit(zip: string, city?: string, state?: string) {
     setState('loading')
     setErrorMsg('')
@@ -42,12 +47,15 @@ export default function HomeContent() {
       setSnapshot(data)
       setState('loaded')
       window.history.replaceState({}, '', `/?zip=${zip}`)
-      const coords = await geocodeZip(zip)
-      if (coords) setMarkerPosition(coords)
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong')
       setState('error')
     }
+  }
+
+  function selectFromMap(zip: string) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    handleZipSubmit(zip)
   }
 
   useEffect(() => {
@@ -238,19 +246,24 @@ export default function HomeContent() {
       {state === 'loaded' && snapshot && (
         <>
           <ErrorBoundary>
+            <LocalPulse key={snapshot.zip} zip={snapshot.zip} countyFips={snapshot.location.countyFips} />
+          </ErrorBoundary>
+          <ErrorBoundary>
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
           {/* <DigDeeper snapshot={snapshot} /> */}
           <ShareButton snapshot={snapshot} />
           <CityGrid onCitySelect={handleZipSubmit} />
           <ErrorBoundary>
-            <MapSection
-              currentZip={snapshot.zip}
-              markerPosition={markerPosition}
-              onZipChange={handleZipSubmit}
-            />
+            <NationalMap countyFips={snapshot.location.countyFips} onZipSelect={selectFromMap} />
           </ErrorBoundary>
         </>
+      )}
+
+      {state === 'idle' && (
+        <ErrorBoundary>
+          <NationalMap onZipSelect={selectFromMap} />
+        </ErrorBoundary>
       )}
 
       {state === 'error' && (

@@ -1,0 +1,29 @@
+name: Refresh local data (Zillow, Realtor.com, QCEW, LAUS, CPI, permits)
+
+on:
+  schedule:
+    - cron: '0 15 20 * *' # 20th of each month: after Zillow (~mid-month) and BLS CPI/LAUS releases
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install pandas numpy
+      - run: scripts/fetch-local-data.sh /tmp/raw
+      - run: python3 scripts/build-local-data.py --raw /tmp/raw --out public/data
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          branch: data/local-refresh
+          base: dev
+          title: 'data: monthly local data refresh'
+          commit-message: 'data: monthly local data refresh'
+          body: 'Automated refresh of public/data via scripts/build-local-data.py. Spot-check meta.json dates before merging.'
