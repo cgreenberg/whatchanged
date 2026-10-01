@@ -116,7 +116,7 @@ export function LocalPulse({ zip, countyFips }: { zip: string; countyFips?: stri
             </p>
             {county.wageCur != null && (
               <p className="text-xs text-zinc-400">
-                Average weekly pay across all jobs in the county: ${county.wageCur.toLocaleString('en-US')} (latest quarter).
+                Average weekly pay across all jobs in the county: ${county.wageCur.toLocaleString('en-US')} (average of the last 4 quarters).
                 Averages shift when the mix of jobs changes, not just when raises happen.
               </p>
             )}

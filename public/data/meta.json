@@ -18,19 +18,36 @@
   },
   "laus": {
    "latest": "2026-08",
-   "label": "BLS LAUS, seasonally adjusted by whatchanged",
+   "label": "BLS LAUS, seasonally adjusted by whatchanged; 3-month averages",
    "url": "https://www.bls.gov/lau/"
   },
   "qcew": {
    "latest": "2026-Q1",
-   "label": "BLS QCEW",
+   "label": "BLS QCEW, trailing 4-quarter avg weekly wage",
    "url": "https://www.bls.gov/cew/"
   },
   "permits": {
    "latest": "2026-08 YTD",
    "label": "Census Building Permits Survey",
    "url": "https://www.census.gov/construction/bps/"
+  },
+  "electricity": {
+   "latest": "2026-07",
+   "label": "EIA residential electricity price (state), seasonally adjusted by whatchanged",
+   "url": "https://www.eia.gov/electricity/data/browser/"
+  },
+  "indeed": {
+   "latest": "2026-09-25",
+   "label": "Indeed Hiring Lab job postings index (metro, CC BY 4.0)",
+   "url": "https://github.com/hiring-lab/job_postings_tracker",
+   "metros_matched": 580,
+   "metros_total": 595
+  },
+  "aca": {
+   "latest": "plan year 2026 vs 2025",
+   "label": "CMS Marketplace Open Enrollment county PUF (HealthCare.gov states only)",
+   "url": "https://www.cms.gov/data-research/statistics-trends-reports/marketplace-products"
   }
  },
- "paycheckWindow": "Q1 2026 vs Q1 2025"
+ "paycheckWindow": "Q2 2025\u2013Q1 2026 vs a year earlier"
 }

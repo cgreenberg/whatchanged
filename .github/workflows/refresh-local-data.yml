@@ -17,13 +17,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install pandas numpy
+      - run: pip install pandas numpy openpyxl
       - run: scripts/fetch-local-data.sh /tmp/raw
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
       - run: python3 scripts/build-local-data.py --raw /tmp/raw --out public/data
+      - name: Validate (fails the run on any FAIL check)
+        run: python3 scripts/validate-local-data.py --raw /tmp/raw --data public/data --out docs/validation
       - uses: peter-evans/create-pull-request@v6
         with:
           branch: data/local-refresh
           base: dev
           title: 'data: monthly local data refresh'
           commit-message: 'data: monthly local data refresh'
-          body: 'Automated refresh of public/data via scripts/build-local-data.py. Spot-check meta.json dates before merging.'
+          body-path: docs/validation/report.md

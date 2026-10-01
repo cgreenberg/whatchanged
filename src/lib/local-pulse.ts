@@ -133,7 +133,7 @@ export const METRICS: MetricDef[] = [
       c.real == null || c.wage == null || c.cpi == null
         ? null
         : `Wages ${fmtPct(c.wage)} vs prices ${fmtPct(c.cpi)} → ${c.real >= 0 ? 'ahead' : 'behind'} by ${Math.abs(c.real).toFixed(1)}%`,
-    source: 'BLS QCEW avg weekly wage vs local CPI, latest quarter vs a year earlier',
+    source: 'BLS QCEW avg weekly wage vs local CPI, last 4 quarters vs the 4 before',
   },
   {
     key: 'ur', label: 'Unemployment', short: 'Unemployment', clamp: 1.5, unit: 'pts',

@@ -1,0 +1,732 @@
+[
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "Zip home value % (10 test zips, independent recompute)",
+  "status": "PASS",
+  "detail": "all match raw ZHVI within 0.06 pts",
+  "metrics": {}
+ },
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all zips)",
+  "status": "PASS",
+  "detail": "median |adj| 0.05 pts, mean -0.89, p95 |adj| 3.69",
+  "metrics": {
+   "n": 5824,
+   "median_abs": 0.05,
+   "mean": -0.89
+  }
+ },
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "County 4-quarter wage change vs independent recompute from live BLS QCEW API (5 counties \u00d7 8 quarters)",
+  "status": "PASS",
+  "detail": "5 checked; mismatches: none",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Zillow zips unreachable from site (not in zip\u2192county crosswalk)",
+  "status": "PASS",
+  "detail": "7 of 26268 ZHVI zips; examples ['08739', '18934', '19481', '88032', '95424', '95433']",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Site zips with zip-level home values",
+  "status": "INFO",
+  "detail": "26261/33791 (78%)",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Site zips with zip-level rent",
+  "status": "INFO",
+  "detail": "5822/33791 (17%) \u2014 gap filled by county/HUD fallback",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Counties with data but no map shape",
+  "status": "WARN",
+  "detail": "84: ['02066', '09140', '09190', '72001', '72003', '72005', '72007', '72009', '72011', '72013', '72015', '72017'] (new AK census areas; CT planning regions are folded into legacy counties)",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Map shapes with no data",
+  "status": "INFO",
+  "detail": "1: ['15005']",
+  "metrics": {}
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "County (all): ZHVI annual-avg change 2025 vs FHFA HPI 2025",
+  "status": "INFO",
+  "detail": "{'n': 2600, 'pearson': 0.165, 'spearman': 0.258, 'mae': 4.13, 'bias': -1.83, 'sign_agree': 0.756} \u2014 small counties have few repeat sales; both indexes are noisy there",
+  "metrics": {
+   "n": 2600,
+   "pearson": 0.165,
+   "spearman": 0.258,
+   "mae": 4.13,
+   "bias": -1.83,
+   "sign_agree": 0.756
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "County (\u226550k jobs): ZHVI annual-avg change 2025 vs FHFA HPI 2025",
+  "status": "PASS",
+  "detail": "{'n': 492, 'pearson': 0.805, 'spearman': 0.796, 'mae': 1.77, 'bias': -1.45, 'sign_agree': 0.823}",
+  "metrics": {
+   "n": 492,
+   "pearson": 0.805,
+   "spearman": 0.796,
+   "mae": 1.77,
+   "bias": -1.45,
+   "sign_agree": 0.823
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "Zip (all): ZHVI annual-avg change 2025 vs FHFA zip5 HPI 2025",
+  "status": "INFO",
+  "detail": "{'n': 14723, 'pearson': 0.243, 'spearman': 0.308, 'mae': 4.87, 'bias': -1.74, 'sign_agree': 0.726}",
+  "metrics": {
+   "n": 14723,
+   "pearson": 0.243,
+   "spearman": 0.308,
+   "mae": 4.87,
+   "bias": -1.74,
+   "sign_agree": 0.726
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "Zip (active markets, \u226520 listings): ZHVI vs FHFA zip5 2025",
+  "status": "WARN",
+  "detail": "{'n': 7921, 'pearson': 0.324, 'spearman': 0.402, 'mae': 3.91, 'bias': -1.71, 'sign_agree': 0.727}",
+  "metrics": {
+   "n": 7921,
+   "pearson": 0.324,
+   "spearman": 0.402,
+   "mae": 3.91,
+   "bias": -1.71,
+   "sign_agree": 0.727
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "Zip home values, within- vs between-county agreement: ZHVI vs FHFA zip5 (2025)",
+  "status": "WARN",
+  "detail": "between counties r=0.53; zip-vs-zip inside the same county r=0.06 (n=11637 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "metrics": {
+   "within": 0.058541688310230953,
+   "between": 0.5343859610153111
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "Zip home values, within- vs between-county agreement: ZHVI YoY vs Realtor.com list $/sqft YoY",
+  "status": "WARN",
+  "detail": "between counties r=0.54; zip-vs-zip inside the same county r=0.11 (n=5348 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "metrics": {
+   "within": 0.1095762377239109,
+   "between": 0.5439952339752769
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent sources",
+  "check": "Zip: ZHVI YoY vs Realtor.com median list price YoY (\u226520 listings)",
+  "status": "INFO",
+  "detail": "{'n': 8769, 'pearson': 0.214, 'spearman': 0.23, 'mae': 6.81, 'bias': -1.41, 'sign_agree': 0.588} \u2014 list prices are noisy (mix of homes listed), weak agreement expected",
+  "metrics": {
+   "n": 8769,
+   "pearson": 0.214,
+   "spearman": 0.23,
+   "mae": 6.81,
+   "bias": -1.41,
+   "sign_agree": 0.588
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
+  "status": "PASS",
+  "detail": "{'n': 370, 'pearson': 0.842, 'spearman': 0.764, 'mae': 2.3, 'bias': 0.65, 'sign_agree': 0.822}",
+  "metrics": {
+   "n": 370,
+   "pearson": 0.842,
+   "spearman": 0.764,
+   "mae": 2.3,
+   "bias": 0.65,
+   "sign_agree": 0.822
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City: Zillow ZORI (raw) vs Apartment List, since Jan 2025",
+  "status": "PASS",
+  "detail": "{'n': 564, 'pearson': 0.813, 'spearman': 0.732, 'mae': 3.01, 'bias': 2.13, 'sign_agree': 0.716}",
+  "metrics": {
+   "n": 564,
+   "pearson": 0.813,
+   "spearman": 0.732,
+   "mae": 3.01,
+   "bias": 2.13,
+   "sign_agree": 0.716
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Austin, TX",
+  "status": "PASS",
+  "detail": "Zillow -0.6% vs Apartment List -4.1%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: San Francisco, CA",
+  "status": "PASS",
+  "detail": "Zillow +36.6% vs Apartment List +40.3%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Phoenix, AZ",
+  "status": "WARN",
+  "detail": "Zillow +0.7% vs Apartment List -4.2%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Denver, CO",
+  "status": "WARN",
+  "detail": "Zillow +1.5% vs Apartment List -2.1%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Miami, FL",
+  "status": "PASS",
+  "detail": "Zillow +1.7% vs Apartment List +1.7%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: New York, NY",
+  "status": "PASS",
+  "detail": "Zillow +12.7% vs Apartment List +11.7%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Abilene, TX",
+  "status": "WARN",
+  "detail": "Zillow +51.1% vs Apartment List +nan%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "City spot check: Lake Charles, LA",
+  "status": "PASS",
+  "detail": "Zillow +25.1% vs Apartment List +27.3%",
+  "metrics": {}
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "Zip rents, within- vs between-county agreement: Zillow ZORI vs HUD SAFMR FY25\u2192FY27",
+  "status": "WARN",
+  "detail": "between counties r=0.29; zip-vs-zip inside the same county r=-0.04 (n=4844 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "metrics": {
+   "within": -0.03931552930651075,
+   "between": 0.2928187566468345
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "Zip: Zillow rent since Jan 2025 vs HUD Small Area FMR FY25\u2192FY27 (2BR)",
+  "status": "INFO",
+  "detail": "{'n': 5824, 'pearson': 0.229, 'spearman': 0.274, 'mae': 7.88, 'bias': 0.44, 'sign_agree': 0.663} \u2014 HUD FMRs are formula-based on ~2-yr-old survey data plus trend; expect weak agreement and upward bias",
+  "metrics": {
+   "n": 5824,
+   "pearson": 0.229,
+   "spearman": 0.274,
+   "mae": 7.88,
+   "bias": 0.44,
+   "sign_agree": 0.663
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent sources",
+  "check": "Metro: BLS CPI rent (all tenants) vs Zillow (new leases) \u2014 same window vs Zillow lagged 1 yr",
+  "status": "INFO",
+  "detail": "same-window r=0.496, lagged r=0.795; CPI \u2212 Zillow bias 1.0 pts. CPI rent averages existing leases, so it trails market rents by ~a year.",
+  "metrics": {
+   "same_window": {
+    "n": 21,
+    "pearson": 0.496,
+    "spearman": 0.611,
+    "mae": 2.08,
+    "bias": 1.0,
+    "sign_agree": 0.905
+   },
+   "lagged": {
+    "n": 21,
+    "pearson": 0.795,
+    "spearman": 0.653,
+    "mae": 1.57,
+    "bias": -1.1,
+    "sign_agree": 0.857
+   },
+   "table": [
+    [
+     "Boston-Cambridge-Newton",
+     5.9,
+     4.4,
+     3.6
+    ],
+    [
+     "New York-Newark-Jersey City",
+     6.5,
+     9.9,
+     4.2
+    ],
+    [
+     "Philadelphia-Camden-Wilmington",
+     6.3,
+     6.1,
+     4.1
+    ],
+    [
+     "Chicago-Naperville-Elgin",
+     8.1,
+     10.5,
+     5.3
+    ],
+    [
+     "Detroit-Warren-Dearborn",
+     3.4,
+     6.1,
+     4.7
+    ],
+    [
+     "Minneapolis-St. Paul-Bloomington",
+     6.4,
+     7.3,
+     2.9
+    ],
+    [
+     "St. Louis",
+     5.8,
+     6.8,
+     5.4
+    ],
+    [
+     "Washington-Arlington-Alexandria",
+     3.3,
+     3.2,
+     4.4
+    ],
+    [
+     "Miami-Fort Lauderdale-West Palm Beach",
+     3.8,
+     2.0,
+     1.8
+    ],
+    [
+     "Atlanta-Sandy Springs-Roswell",
+     2.3,
+     4.7,
+     1.2
+    ],
+    [
+     "Tampa-St. Petersburg-Clearwater",
+     3.9,
+     0.1,
+     2.8
+    ],
+    [
+     "Baltimore-Columbia-Towson",
+     5.3,
+     4.9,
+     4.2
+    ],
+    [
+     "Dallas-Fort Worth-Arlington",
+     0.0,
+     1.8,
+     -0.4
+    ],
+    [
+     "Houston-The Woodlands-Sugar Land",
+     0.8,
+     0.9,
+     1.7
+    ],
+    [
+     "Phoenix-Mesa-Scottsdale",
+     -1.2,
+     0.8,
+     0.2
+    ],
+    [
+     "Denver-Aurora-Lakewood",
+     1.2,
+     1.6,
+     -1.1
+    ],
+    [
+     "Los Angeles-Long Beach-Anaheim",
+     5.3,
+     3.6,
+     2.9
+    ],
+    [
+     "San Francisco-Oakland-Hayward",
+     3.1,
+     16.4,
+     3.3
+    ],
+    [
+     "Riverside-San Bernardino-Ontario",
+     5.8,
+     4.2,
+     3.6
+    ],
+    [
+     "Seattle-Tacoma-Bellevue",
+     3.6,
+     5.6,
+     3.2
+    ],
+    [
+     "San Diego-Carlsbad",
+     4.2,
+     4.0,
+     2.7
+    ]
+   ]
+  }
+ },
+ {
+  "section": "5. Paychecks (QCEW)",
+  "check": "County wage changes aggregate to official state change (emp-weighted)",
+  "status": "PASS",
+  "detail": "{'n': 53, 'pearson': 0.936, 'spearman': 0.937, 'mae': 0.27, 'bias': -0.2, 'sign_agree': 1.0}",
+  "metrics": {
+   "n": 53,
+   "pearson": 0.936,
+   "spearman": 0.937,
+   "mae": 0.27,
+   "bias": -0.2,
+   "sign_agree": 1.0
+  }
+ },
+ {
+  "section": "5. Paychecks (QCEW)",
+  "check": "Why we pool 4 quarters: single-quarter YoY persistence (Q1-2026 vs Q4-2025, raw)",
+  "status": "INFO",
+  "detail": "all counties r=0.222; counties with \u226520k jobs r=0.029 \u2192 single quarters are mostly bonus/vesting timing noise. Built 4-quarter metric: \u226520k-job counties p5/p50/p95 = [1.3, 3.8, 6.0]",
+  "metrics": {
+   "all": {
+    "n": 3275,
+    "pearson": 0.222,
+    "spearman": 0.176,
+    "mae": 3.74,
+    "bias": -1.02,
+    "sign_agree": 0.827
+   },
+   "big": {
+    "n": 963,
+    "pearson": 0.029,
+    "spearman": 0.132,
+    "mae": 2.49,
+    "bias": -0.86,
+    "sign_agree": 0.91
+   }
+  }
+ },
+ {
+  "section": "6. Unemployment (LAUS)",
+  "check": "Our seasonal adjustment vs official BLS state SA (change since Jan 2025)",
+  "status": "PASS",
+  "detail": "MAE ours 0.22 pts vs raw NSA 0.36 pts; raw NSA bias -0.22 pts (the live site's current method)",
+  "metrics": {}
+ },
+ {
+  "section": "6. Unemployment (LAUS)",
+  "check": "Preliminary-month anomalies: 2026M08 vs same month a year earlier, |\u0394| \u2265 1.5 pts (\u226550k-job counties)",
+  "status": "WARN",
+  "detail": "8 flagged: Lorain County, OH -1.9, Cuyahoga County, OH -1.9, Cumberland County, NJ -1.7, Lake County, OH -1.6, Essex County, NJ -1.5, Medina County, OH -1.5, Centre County, PA -1.5, Mohave County, AZ +1.5. Build uses 3-month averages to damp these; re-check after BLS revisions.",
+  "metrics": {}
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "EIA API monthly prices vs EIA Electric Power Monthly table 5.6.A (July 2026, July 2025)",
+  "status": "PASS",
+  "detail": "62 states compared; 0 mismatches []",
+  "metrics": {}
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "Electricity: our SA change since Jan 2025 vs raw same-month YoY",
+  "status": "INFO",
+  "detail": "{'n': 51, 'pearson': 0.7, 'spearman': 0.659, 'mae': 5.37, 'bias': 4.08, 'sign_agree': 0.882} \u2014 different windows (19 vs 12 months); checks direction/ranking only",
+  "metrics": {
+   "n": 51,
+   "pearson": 0.7,
+   "spearman": 0.659,
+   "mae": 5.37,
+   "bias": 4.08,
+   "sign_agree": 0.882
+  }
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "Indeed metros whose CBSA code isn't in the 2023 OMB delineation",
+  "status": "PASS",
+  "detail": "15 unmatched: ['Ashtabula, OH', 'California-Lexington Park, MD', 'Cleveland-Elyria, OH', 'Cullowhee, NC', 'Georgetown, SC', 'Glenwood Springs, CO', 'Lebanon, NH-VT', 'London, KY']",
+  "metrics": {}
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "Job postings change since Jan 2025 \u2014 distribution across counties",
+  "status": "INFO",
+  "detail": "n=1438, p5/median/p95 = -17.6/-7.0/6.0%",
+  "metrics": {}
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "ACA oep2025: enrollment-weighted county avg net premium vs file's national Total row",
+  "status": "PASS",
+  "detail": "official $85 vs recomputed $85; consumers 17,128,890 of 17,128,890 (suppressed counties excluded)",
+  "metrics": {}
+ },
+ {
+  "section": "6b. New metrics (electricity, job postings, ACA)",
+  "check": "ACA oep2026: enrollment-weighted county avg net premium vs file's national Total row",
+  "status": "PASS",
+  "detail": "official $137 vs recomputed $137; consumers 15,771,373 of 15,771,397 (suppressed counties excluded)",
+  "metrics": {}
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "home value %",
+  "status": "PASS",
+  "detail": "0 flagged: ",
+  "metrics": {
+   "flagged": []
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "rent %",
+  "status": "WARN",
+  "detail": "5 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Ouachita Parish, LA +27.3, Cape May County, NJ +24.0, Calcasieu Parish, LA +23.4",
+  "metrics": {
+   "flagged": [
+    [
+     "48441",
+     "Taylor County, TX",
+     47.8
+    ],
+    [
+     "06075",
+     "San Francisco County, CA",
+     33.6
+    ],
+    [
+     "22073",
+     "Ouachita Parish, LA",
+     27.3
+    ],
+    [
+     "34009",
+     "Cape May County, NJ",
+     24.0
+    ],
+    [
+     "22019",
+     "Calcasieu Parish, LA",
+     23.4
+    ]
+   ]
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "unemployment pts",
+  "status": "WARN",
+  "detail": "1 flagged: Buncombe County, NC -3.6",
+  "metrics": {
+   "flagged": [
+    [
+     "37021",
+     "Buncombe County, NC",
+     -3.6
+    ]
+   ]
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "wage % (4-quarter)",
+  "status": "WARN",
+  "detail": "10 flagged: St. Charles Parish, LA -6.6, Jones County, MS +12.5, Carver County, MN -4.0, San Mateo County, CA +11.1, St. Clair County, AL -3.2, Stafford County, VA -2.9, Suffolk city, VA -2.9, Hamilton County, IN -2.4",
+  "metrics": {
+   "flagged": [
+    [
+     "22089",
+     "St. Charles Parish, LA",
+     -6.6
+    ],
+    [
+     "28067",
+     "Jones County, MS",
+     12.5
+    ],
+    [
+     "27019",
+     "Carver County, MN",
+     -4.0
+    ],
+    [
+     "06081",
+     "San Mateo County, CA",
+     11.1
+    ],
+    [
+     "01115",
+     "St. Clair County, AL",
+     -3.2
+    ],
+    [
+     "51179",
+     "Stafford County, VA",
+     -2.9
+    ],
+    [
+     "51800",
+     "Suffolk city, VA",
+     -2.9
+    ],
+    [
+     "18057",
+     "Hamilton County, IN",
+     -2.4
+    ],
+    [
+     "08069",
+     "Larimer County, CO",
+     9.7
+    ],
+    [
+     "26121",
+     "Muskegon County, MI",
+     9.5
+    ]
+   ]
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "permits %",
+  "status": "WARN",
+  "detail": "9 flagged: Olmsted County, MN +288.0, Berks County, PA +256.0, Ramsey County, MN +241.0, Champaign County, IL +236.0, Montgomery County, MD +228.0, Yolo County, CA +206.0, Queens County, NY +186.0, McLean County, IL +149.0",
+  "metrics": {
+   "flagged": [
+    [
+     "27109",
+     "Olmsted County, MN",
+     288.0
+    ],
+    [
+     "42011",
+     "Berks County, PA",
+     256.0
+    ],
+    [
+     "27123",
+     "Ramsey County, MN",
+     241.0
+    ],
+    [
+     "17019",
+     "Champaign County, IL",
+     236.0
+    ],
+    [
+     "24031",
+     "Montgomery County, MD",
+     228.0
+    ],
+    [
+     "06113",
+     "Yolo County, CA",
+     206.0
+    ],
+    [
+     "36081",
+     "Queens County, NY",
+     186.0
+    ],
+    [
+     "17113",
+     "McLean County, IL",
+     149.0
+    ],
+    [
+     "19155",
+     "Pottawattamie County, IA",
+     147.0
+    ]
+   ]
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "job postings %",
+  "status": "WARN",
+  "detail": "4 flagged: Elko County, NV +43.1, Umatilla County, OR +36.8, Taylor County, TX +29.1, Lycoming County, PA +24.2",
+  "metrics": {
+   "flagged": [
+    [
+     "32007",
+     "Elko County, NV",
+     43.1
+    ],
+    [
+     "41059",
+     "Umatilla County, OR",
+     36.8
+    ],
+    [
+     "48441",
+     "Taylor County, TX",
+     29.1
+    ],
+    [
+     "42081",
+     "Lycoming County, PA",
+     24.2
+    ]
+   ]
+  }
+ },
+ {
+  "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "ACA net premium $",
+  "status": "WARN",
+  "detail": "1 flagged: Navajo County, AZ +381.0",
+  "metrics": {
+   "flagged": [
+    [
+     "04017",
+     "Navajo County, AZ",
+     381.0
+    ]
+   ]
+  }
+ }
+]
