@@ -5,6 +5,7 @@
 import fs from 'fs'
 import type { EconomicSnapshot } from '@/types'
 import austin from '../fixtures/snapshots/78701.json'
+import { blsGasData } from '../mocks/bls-gas-data'
 
 jest.mock('@/lib/api/snapshot', () => ({ fetchSnapshot: jest.fn() }))
 jest.mock('@/lib/share-card/fonts', () => ({ loadShareFonts: async () => [] }))
@@ -159,21 +160,27 @@ test('OG + share card: flagged county rent gets "†" and an unusual-value footn
   expect(share).toContain('Unusual value')
 }, 30000)
 
-test('OG + share card: Hawaii/Alaska gas carries the West Coast caveat', async () => {
+test('OG + share card: BLS monthly gas tier (Urban Hawaii) — geography tag, "since Jan 2025", BLS national', async () => {
   if (process.env.REAL_OG) return
   const s = snap()
   s.location = { ...s.location, stateAbbr: 'HI' }
-  s.gas.data = { ...s.gas.data!, duoarea: 'R5XCA', geoLevel: 'West Coast excl. California (PADD 5) avg', tier: 3 }
+  s.gas.data = blsGasData('S49F')
   mockFetch.mockResolvedValue(s)
   await generateShareCard('78701')
   const share = textOf(mockRendered[mockRendered.length - 1])
-  expect(share).toContain('No EIA series for Hawaii/Alaska')
+  expect(share).toContain('Urban Hawaii')
+  expect(share).toContain('$5.40/gal')
+  expect(share).toContain('+$0.99')
+  expect(share).toContain('+$0.99 since Jan 2025 Natl') // monthly: Jan 2025, not Jan 20
+  expect(share).toContain('Natl: +$0.99') // BLS U.S. avg 4.200 − 3.211, same months
+  expect(share).not.toContain('No EIA series')
   const { GET } = await import('@/app/api/og/route')
   const { NextRequest } = await import('next/server')
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   const og = textOf(mockRendered[mockRendered.length - 1])
-  expect(og).toContain('West Coast excl. CA avg')
-  expect(og).toContain('no EIA Hawaii/Alaska series')
+  expect(og).toContain('Urban Hawaii')
+  expect(og).toContain('since Jan 2025')
+  expect(og).not.toContain('Hawaii/Alaska series')
 }, 30000)
 
 test('share card tariff names where the income comes from; national CPI fallback is labeled', async () => {

@@ -21,7 +21,7 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 | `npm run dev` / `build` / `lint` | Dev server, production build, ESLint |
 | `npm test` | Jest (unit + integration, MSW mocks, no network) |
 | `npx playwright test` (`npm run test:e2e`) | E2E; `/api/data` is mocked from `tests/fixtures/snapshots/`. `PW_PORT=3107` uses another port (parallel worktrees) |
-| `npm run verify:live [-- --codes] [zips]` | Deployed site vs BLS/EIA for 10 fixed zips; `--codes` also checks every mapped EIA/CPI code (~100 calls, uses BLS quota) |
+| `npm run verify:live [-- --codes] [zips]` | Deployed site vs BLS/EIA for 12 fixed zips (incl. BLS gas tiers 19103, 53202, 96813, 99501); `--codes` also checks every mapped EIA/CPI/BLS-gas code (~100 calls, uses BLS quota) |
 | `npm run audit:mappings` | Offline audit of every zip's county/CPI/gas mapping (no API calls; also checks the CT planning-region lookup used for county income) |
 | `npm run build:zip-county` | Rebuild `zip-county.json` + `ct-planning-regions.json` (`NODE_OPTIONS=--max-old-space-size=6144`; caches downloads in `$GEO_CACHE_DIR`) |
 | `npm run build:cbsa-crosswalk` | Rebuild `cbsa-cpi-crosswalk.json` (OMB 2013 delineation) |
@@ -43,7 +43,8 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
   zip → lookupZip (zip-county.json) → county FIPS
   ├─ BLS CPI   bls-cpi.ts  ┐ through cached-sources.ts → kv.ts getCachedOrFetch (validate, last-good, dedupe)
   │                        │ local CPI failed → shared national CPI key (labeled national)
-  ├─ EIA gas   eia.ts      ┘ + shared national gas key (overlay, or labeled fallback)
+  ├─ gas  eia.ts (EIA weekly) / bls-gas.ts (BLS monthly) ┘ + shared national gas key of the SAME source
+  │                        (EIA → NUS, BLS → APU000074714; overlay, or labeled fallback)
   ├─ Census ACS  src/lib/data/census-acs.ts (bundled JSON, no runtime API)
   ├─ Rent      src/lib/rent.ts ← src/lib/data/county-rent.json (built by path 2)
   └─ dollarImpact  src/lib/compute/dollar-translations.ts
@@ -86,12 +87,28 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
 - **CPI (4 tiers)** `getMetroCpiAreaForCounty()` in `src/lib/mappings/county-metro-cpi.ts`: 1 metro (county in
   `cbsa-cpi-crosswalk.json`, the OMB **2013** CBSAs BLS samples) → 2 Census division → 3 region (defensive only) →
   4 national `0000` (territories). Series `CUUR{area}SAF11` / `SAH1` / `SA0E`. Only add CBSAs that BLS actually samples.
-- **Gas** `getGasLookup()` in `src/lib/api/eia.ts`, tables in `src/lib/mappings/eia-gas.ts`: county override (Cleveland
-  only) → CPI metro → EIA city → one of EIA's 9 state series → PADD/sub-PADD (1A `R1X`, 1B `R1Y`, 1C `R1Z`,
-  `R20`/`R30`/`R40`; PADD 5 → `R5XCA` "West Coast excl. California", because CA and WA always use their state series)
-  → `NUS`. Tier, cache key and label come from the duoarea prefix (`describeDuoarea`). Product is **`EPMR`
-  (regular gasoline)**, `EIA_GAS_PRODUCT` in `eia.ts`; series `EMM_EPMR_PTE_{duoarea}_DPG`. (EPM0 "all grades" ran
-  ~10–15¢ above regular; EPMR was verified for all 27 reachable duoareas on 2026-10-02.)
+- **Gas** `getGasLookup()` in `src/lib/api/eia.ts`, tables in `src/lib/mappings/eia-gas.ts` (EIA) and
+  `src/lib/mappings/bls-gas.ts` (BLS). Most local first:
+  1. EIA weekly city: county override (Cleveland only) or CPI metro → EIA city (`CPI_TO_EIA_CITY`)
+  2. **BLS monthly** CPI average price `APU{area}74714` for a CPI metro **without** an EIA city (Philadelphia, Detroit,
+     Minneapolis, St. Louis, DC, Atlanta, Tampa, Baltimore, Dallas, Phoenix, Riverside, San Diego, Urban HI/AK)
+  3. HI / AK zips outside those CBSAs → BLS Urban Hawaii `S49F` / Urban Alaska `S49G` (EIA has no HI/AK series;
+     the card notes it is an urban average and rural prices may differ)
+  4. one of EIA's 9 state series
+  5. **BLS monthly** Census division, Midwest only: East North Central `0230` (IL, IN, MI, WI; OH has `SOH`) and West
+     North Central `0240` (IA, KS, MO, NE, ND, SD; MN has `SMN`) — both divisions lie entirely in PADD 2. KY/TN/OK
+     keep `R20` (their divisions are mostly PADD 3 states)
+  6. EIA PADD/sub-PADD (1A `R1X`, 1B `R1Y`, 1C `R1Z`, `R20`/`R30`/`R40`; PADD 5 → `R5XCA` "West Coast excl.
+     California", because CA and WA always use their state series)  7. `NUS`.
+  `GasLookupResult`/`GasPriceData` carry `source: 'eia' | 'bls'` and `frequency: 'weekly' | 'monthly'`; one series per
+  location — baseline, current and national comparison always come from the same source (BLS → `APU000074714` over the
+  same months; EIA → `NUS`). EIA tier/key/label come from the duoarea prefix (`describeDuoarea`); BLS from the area
+  code (`describeBlsGasArea`: metro tier 1, Urban HI/AK tier 2, division tier 3). EIA product is **`EPMR` (regular
+  gasoline)**, `EIA_GAS_PRODUCT` in `eia.ts`; series `EMM_EPMR_PTE_{duoarea}_DPG`. (EPM0 "all grades" ran ~10–15¢
+  above regular.) BLS average prices exist monthly (also for bimonthly CPI metros, ~2–6 week lag) with Jan 2025 values
+  for every area in `BLS_GAS_PUBLISHED_AREAS`; since 2021 they come from crowdsourced station data and run ~10¢ above
+  EIA. Zip coverage: EIA city 10.1%, BLS metro 9.5%, BLS Urban HI/AK 1.0%, EIA state 21.5%, BLS division 19.2%,
+  EIA PADD 38.2%, national 0.5%.
 - **CT planning regions** `src/lib/mappings/laus-area.ts`: Connecticut zip / legacy county → 2022 planning region
   (09110–09190), data in `ct-planning-regions.json`. Used for CT county income (tariff card) and by the static pipeline.
 - **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas.
@@ -103,7 +120,7 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
 
 | Card | Number | Dollar line (formula source) |
 |---|---|---|
-| Gas | EIA weekly $/gal: latest vs last weekly reading in [Jan 6, Jan 20] 2025 | signed `current − baseline` $/gal (`eia.ts`) |
+| Gas | EIA weekly $/gal: latest vs last weekly reading in [Jan 6, Jan 20] 2025; BLS tiers: latest month vs Jan 2025 ("since Jan 2025", provenance "BLS CPI average price, regular gasoline · {area} · monthly · …") | signed `current − baseline` $/gal (`eia.ts` / `bls-gas.ts`) |
 | Rent (new leases) | Zillow ZORI county % since Jan 2025, SA by whatchanged | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
 | ↳ fallback, county has no rent | "Shelter prices (CPI, all tenants & homeowners)", CPI SAH1 % | `round(localAcsRent × 12 × pct/100)` $/yr, **null** without local ACS rent (`computeShelterImpact`) |
 | Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`) |
@@ -117,8 +134,9 @@ is national): national CPI % is never applied to local rent; the card says why.
 
 Share card, OG image and `og:description` tag every number with a short geography (`geoTag`: "Buncombe Co.",
 "South Atlantic region", "Lower Atlantic avg", "U.S. avg; local n/a"); flagged county rent (outliers, bundled as
-`flagged`/`note` in `county-rent.json`) gets "†" plus an "unusual value" footnote; HI/AK gas shows
-`HI_AK_GAS_CAVEAT` on the card and share/OG images.
+`flagged`/`note` in `county-rent.json`) gets "†" plus an "unusual value" footnote. BLS gas tiers are tagged
+"Philadelphia metro", "Urban Hawaii", "East North Central div." with "since Jan 2025"; HI/AK cards carry
+`URBAN_HI_AK_GAS_NOTE` (urban average; rural prices may differ). The gas chart for BLS tiers is monthly.
 
 Dollar amounts are computed server-side in `snapshot.ts` → `dollarImpact`. The frontend never recomputes them or
 substitutes national stand-ins. Sanity ranges (`src/lib/api/validate.ts`, mirrored in `hero-cards.ts`): price %
@@ -174,9 +192,10 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
 releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
-every CPI area (33; 15 per POST, national series ride along) and every EIA gas series (27), then writes them with the
-runtime's own parsers, validators, keys and `writeEnvelope`. A full run is **3 BLS requests** (of 500/day) and
-~27 EIA requests; BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
+every CPI area (33; 15 per POST, national series ride along), every BLS gas series (17 `APU…74714`, packed into the
+spare room of the CPI POSTs by `planBlsRequests`, ≤ 50 series each) and every EIA gas series (27), then writes them
+with the runtime's own parsers, validators, keys and `writeEnvelope`. A full run is still **3 BLS requests** (of
+500/day) and ~27 EIA requests (`--only=gas` also needs `BLS_API_KEY`); BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
 a full run that starts < 12 h after it is skipped (two schedules can land on the same day) unless `--force`
 (workflow_dispatch input `force`). Each full run also writes `refresh:last-attempt` at start; another unforced full
 run within 2 h is skipped, so a failed run plus a coinciding cron can't spend the quota twice. Unknown CLI args
@@ -189,6 +208,7 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
 | Key | Runtime TTL |
 |---|---|
 | `bls:cpi:{areaCode}:all` (`0000` = national, shared) | 21 days |
+| `bls:gas:{areaCode}` (BLS monthly gas tiers; `bls:gas:0000` = BLS national, shared) | 21 days |
 | `eia:gas:epmr:city:{duoarea}` · `eia:gas:epmr:state:{ST}` · `eia:gas:epmr:pad:{1A,1B,1C,2,3,4,5XCA}` · `eia:gas:epmr:national` | 10 days |
 | `budget:{bls\|eia}:{YYYY-MM-DD}` (runtime upstream counter) | 2 days |
 
@@ -231,7 +251,8 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
 ## Testing strategy
 
 - **Golden zips** (`golden-zips.test.ts`): hand-checked county/CPI/gas expectations taken from the sources, not the code.
-- **Recorded fixtures:** `tests/fixtures/bls-recorded-*.json` (real BLS responses) drive parser and baseline tests.
+- **Recorded fixtures:** `tests/fixtures/bls-recorded-*.json` and `bls-gas-ap-2024-2026.json` (real BLS responses,
+  incl. the 17 `APU…74714` gas series) drive parser and baseline tests (`bls-gas.test.ts` for the BLS gas tiers).
   `tests/fixtures/snapshots/{zip}.json` drive render tests and Playwright.
 - **Render-level:** `hero-cards.test.tsx` asserts the displayed $ equals the API % × stated base, null/out-of-range →
   "Data unavailable", and signs/arrows. `provenance.test.tsx` requires complete provenance. `no-hardcoded-dates.test.ts`.
@@ -256,8 +277,6 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
 Vercel: `BLS_API_KEY`, `EIA_API_KEY`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `CRON_SECRET` (live health checks only);
 optional `BLS_RUNTIME_DAILY_BUDGET` (default 60) / `EIA_RUNTIME_DAILY_BUDGET` (default 300). GitHub secrets: `BLS_API_KEY`,
 `EIA_API_KEY`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (refresh-cache); `BLS_API_KEY` and `EIA_API_KEY` (verify-live);
-`EIA_API_KEY` and `BLS_CONTACT_EMAIL` (refresh-local-data). download.bls.gov returns 403
-without a contact email in the User-Agent; the secret is required (the workflow and `scripts/fetch-local-data.sh` fail if it is unset).
 `CENSUS_API_KEY` is used only by the Census build scripts.
 
 ## Deploy
@@ -268,8 +287,8 @@ the refresh-cache workflow once (Actions → workflow_dispatch) **before or righ
 
 ## Known issues
 
-- HI and AK gas use `R5XCA` (West Coast excl. CA). EIA has no HI/AK series, so this is an approximation; the gas card
-  and share/OG images say so ("local prices are typically higher").
+- HI and AK gas use BLS Urban Hawaii / Urban Alaska average prices (monthly). Rural parts of those states (e.g. the
+  outer islands, interior Alaska) can differ; the gas card says so.
 - PO-box/unique zips (`zcta: false`) have no ACS data of their own; they borrow a donor zip's ACS values: the largest
   residential zip in the same city (`donorScope: 'city'`), else the most populous in the county (`'county'`) — not
   necessarily the nearest zip.

@@ -5,6 +5,7 @@ jest.mock('@/lib/api/snapshot', () => ({ fetchSnapshot: jest.fn() }))
 import { generateMetadata } from '@/app/page'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import austin from '../fixtures/snapshots/78701.json'
+import { blsGasData } from '../mocks/bls-gas-data'
 
 const mockFetch = fetchSnapshot as jest.MockedFunction<typeof fetchSnapshot>
 const snap = (): EconomicSnapshot => JSON.parse(JSON.stringify(austin))
@@ -129,11 +130,17 @@ test('og:url and OG image echo city/state only when they are validated against t
   expect(img).not.toContain('Evil')
 })
 
-test('Hawaii/Alaska gas is tagged as having no HI/AK series', async () => {
+test('BLS gas tiers: og:description tags the BLS geography (Urban Hawaii, Philadelphia metro)', async () => {
   const s = snap()
   s.location = { ...s.location, stateAbbr: 'HI' }
-  s.gas.data = { ...s.gas.data!, duoarea: 'R5XCA', geoLevel: 'West Coast excl. California (PADD 5) avg' }
+  s.gas.data = blsGasData('S49F')
   mockFetch.mockResolvedValue(s)
   const d = (await meta({ zip: '78701' })).openGraph?.description as string
-  expect(d).toContain('(West Coast excl. CA avg; no HI/AK series)')
+  expect(d).toMatch(/^Since Jan 2025: Gas \+\$0\.99\/gal \(Urban Hawaii\)/) // 5.402 − 4.413 (Aug 2026 vs Jan 2025)
+  expect(d).not.toContain('no HI/AK series')
+  const p = snap()
+  p.location = { ...p.location, stateAbbr: 'PA' }
+  p.gas.data = blsGasData('S12B')
+  mockFetch.mockResolvedValue(p)
+  expect((await meta({ zip: '78701' })).openGraph?.description).toContain('Gas +$0.94/gal (Philadelphia metro)')
 })

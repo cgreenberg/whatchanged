@@ -15,6 +15,7 @@ import {
 } from '@/lib/cache/kv'
 import {
   planRefresh,
+  planBlsRequests,
   runRefresh,
   summarize,
   BLS_MAX_SERIES_PER_REQUEST,
@@ -24,23 +25,22 @@ import { fetchSnapshot } from '@/lib/api/snapshot'
 import { lookupZip } from '@/lib/data/zip-lookup'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 import { getGasLookup, buildSeriesFromData, type EiaRawPoint } from '@/lib/api/eia'
-import { NATIONAL_GAS_LOOKUP } from '@/lib/api/cached-sources'
+import { nationalGasLookupFor } from '@/lib/api/cached-sources'
 import { cpiCacheKey } from '@/lib/api/bls-cpi'
+import { CPI_TO_EIA_CITY } from '@/lib/mappings/eia-gas'
 import eiaFixture from '../fixtures/eia-gas.json'
 
 // Zips covering: metro CPI + EIA city (10001), state gas (98683), PADD gas +
 // division CPI (04101), CT planning region (06902), PR municipio (00601),
-// Cleveland county override (44113), Hawaii (96813).
-const SAMPLE_ZIPS = ['10001', '98683', '04101', '06902', '00601', '44113', '96813']
+// Cleveland county override (44113), BLS monthly gas: Urban Hawaii (96813),
+// Philadelphia metro (19103), East North Central division (53202).
+const SAMPLE_ZIPS = ['10001', '98683', '04101', '06902', '00601', '44113', '96813', '19103', '53202']
 
 function runtimeKeysFor(zip: string): string[] {
   const loc = lookupZip(zip)!
   const area = getMetroCpiAreaForCounty(loc.countyFips, loc.stateAbbr)
-  return [
-    cpiCacheKey(area.areaCode),
-    getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips).cacheKey,
-    NATIONAL_GAS_LOOKUP.cacheKey,
-  ]
+  const gas = getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips)
+  return [...new Set([cpiCacheKey(area.areaCode), gas.cacheKey, nationalGasLookupFor(gas).cacheKey])]
 }
 
 const fastOpts = { blsPauseMs: 0, backoffMs: 0 }
@@ -74,9 +74,23 @@ describe('planRefresh', () => {
     expect(codes).toContain('0000')
     expect(codes).toEqual(expect.arrayContaining(['S12A', 'S49G', '0110', '0490']))
     expect(codes.filter((c) => c.startsWith('S')).length).toBe(23)
-    const gasAreas = plan.gasLookups.map((g) => g.duoarea)
-    expect(gasAreas).toEqual(expect.arrayContaining(['NUS', 'YCLE', 'SWA', 'R1X', 'R1Y', 'R1Z', 'R20', 'R5XCA']))
-    expect(plan.gasLookups.every((g) => g.cacheKey.startsWith('eia:gas:epmr:'))).toBe(true)
+    const eia = plan.gasLookups.filter((g) => g.source === 'eia')
+    const bls = plan.gasLookups.filter((g) => g.source === 'bls')
+    expect(eia.map((g) => g.duoarea)).toEqual(expect.arrayContaining(['NUS', 'YCLE', 'SWA', 'R1X', 'R1Y', 'R1Z', 'R20', 'R5XCA']))
+    expect(eia.every((g) => g.cacheKey.startsWith('eia:gas:epmr:'))).toBe(true)
+    // BLS monthly tiers: every CPI metro without an EIA city, Urban HI/AK, 2 Midwest divisions, + U.S.
+    const metrosWithoutEiaCity = codes.filter((c) => c.startsWith('S') && !CPI_TO_EIA_CITY[c])
+    expect(bls.map((g) => g.areaCode).sort()).toEqual(['0000', '0230', '0240', ...metrosWithoutEiaCity].sort())
+    expect(bls.every((g) => g.cacheKey === `bls:gas:${g.areaCode}` && g.seriesId === `APU${g.areaCode}74714`)).toBe(true)
+  })
+
+  test('BLS gas series ride along in the CPI batches: still 3 BLS requests, each ≤ 50 series', () => {
+    const reqs = planBlsRequests(plan)
+    expect(reqs.length).toBe(3)
+    expect(reqs.every((r) => r.ids.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
+    const gasIds = reqs.flatMap((r) => r.gas.map((g) => g.seriesId))
+    expect(gasIds.length).toBe(plan.gasLookups.filter((g) => g.source === 'bls').length)
+    for (const r of reqs) for (const g of r.gas) expect(r.ids).toContain(g.seriesId)
   })
 
   test('the plan includes every key the runtime can request for the sample zips', () => {
@@ -108,9 +122,9 @@ describe('runRefresh — full plan with mocked upstreams', () => {
     expect(blsBatches.every((b) => new Set(b).size === b.length)).toBe(true)
     const expectedCalls = Math.ceil((plan.cpiAreas.length - 1) / 15)
     expect(s.blsCalls).toBe(expectedCalls)
-    expect(s.blsCalls).toBe(3) // 32 local CPI areas (+ national) → 3 BLS requests per full refresh
+    expect(s.blsCalls).toBe(3) // 32 local CPI areas (+ national) + 17 BLS gas series → 3 BLS requests per full refresh
     expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
-    expect(s.eiaCalls).toBe(plan.gasLookups.length)
+    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length)
     expect(s.errors).toBe(0)
     expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length)
   })

@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
-import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, HI_AK_GAS_CAVEAT, type HeroCardModel } from '@/lib/hero-cards'
+import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
 import { BASELINE_DAY_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
@@ -80,7 +80,8 @@ function gridlineYPositions(series: NationalDataPoint[], height: number): { minY
  * area: county rent, regional CPI, regional gas), line 2 = baseline window.
  */
 function ogSublines(c: HeroCardModel): [string, string] {
-  const since = c.provenance.window.replace(/^since week of /, 'since ')
+  // Weekly EIA: "since Jan 13, 2025"; monthly BLS gas: "since Jan 2025"
+  const since = c.provenance.window.replace(/^since week of /, 'since ').replace(/^monthly · /, '')
   switch (c.id) {
     case 'gas': return [c.geoTag ?? c.provenance.geography, since]
     case 'rent': return [c.geoTag ?? c.provenance.geography, `${since}, seas. adj.`]
@@ -143,9 +144,6 @@ export async function GET(req: NextRequest) {
           }
         })
         if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
-        if (cards.some(c => c.id === 'gas' && c.status === 'ok' && c.caveat === HI_AK_GAS_CAVEAT)) {
-          footnotes.push('Gas: no EIA Hawaii/Alaska series; West Coast avg shown, local prices typically higher')
-        }
         latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
         throughLabel = dataThroughLabel(cards)
         degraded = cards.some(c => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)

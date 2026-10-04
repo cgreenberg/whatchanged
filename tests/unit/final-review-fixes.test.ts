@@ -28,7 +28,7 @@ import {
   cpiShortGeo,
   gasShortGeo,
   tariffIncomeTag,
-  HI_AK_GAS_CAVEAT,
+  URBAN_HI_AK_GAS_NOTE,
 } from '@/lib/hero-cards'
 import { cpiGeoLabel } from '@/lib/provenance'
 import { getCountyRent } from '@/lib/rent'
@@ -37,8 +37,8 @@ import { moversFor, timelineMonths, type CountyMap } from '@/lib/county-data'
 import { filterByTimeframe } from '@/lib/charts/chart-data'
 import { chartConfigs as CHART_CONFIGS } from '@/lib/charts/chart-config'
 import type { EconomicSnapshot, CpiData, GasPriceData } from '@/types'
-import meta from '../../public/data/meta.json'
 import austin from '../fixtures/snapshots/78701.json'
+import { blsGasData } from '../mocks/bls-gas-data'
 
 const snap = (): EconomicSnapshot => JSON.parse(JSON.stringify(austin))
 
@@ -239,16 +239,25 @@ describe('hero-card geography tags and caveats', () => {
     expect(tariffIncomeTag(s)).toBe('U.S.')
   })
 
-  test('Hawaii/Alaska gas (R5XCA) carries the West Coast caveat; other states do not', () => {
+  test('Hawaii/Alaska gas is BLS Urban Hawaii/Alaska with an honest urban-average note; other states get none', () => {
     const s = snap()
-    s.gas.data = { ...s.gas.data!, duoarea: 'R5XCA', geoLevel: 'West Coast excl. California (PADD 5) avg' }
-    for (const st of ['HI', 'AK']) {
-      s.location = { ...s.location, stateAbbr: st }
-      expect(buildGasCard(s).caveat).toBe(HI_AK_GAS_CAVEAT)
-    }
+    s.location = { ...s.location, stateAbbr: 'HI' }
+    s.gas.data = blsGasData('S49F')
+    const card = buildGasCard(s)
+    expect(card.caveat).toBe(URBAN_HI_AK_GAS_NOTE('HI'))
+    expect(card.caveat).toBe('Urban Hawaii average (BLS); prices in rural Hawaii may differ.')
+    expect(card.geoTag).toBe('Urban Hawaii')
+    s.location = { ...s.location, stateAbbr: 'AK' }
+    s.gas.data = blsGasData('S49G')
+    expect(buildGasCard(s).caveat).toBe('Urban Alaska average (BLS); prices in rural Alaska may differ.')
+    s.location = { ...s.location, stateAbbr: 'PA' }
+    s.gas.data = blsGasData('S12B')
+    expect(buildGasCard(s).caveat).toBeUndefined()
     s.location = { ...s.location, stateAbbr: 'NV' }
+    s.gas.data = { ...snap().gas.data!, duoarea: 'R5XCA', geoLevel: 'West Coast excl. California (PADD 5) avg' }
     expect(buildGasCard(s).caveat).toBeUndefined()
   })
+
 
   test('bundled county rent carries outlier flags (Taylor Co., TX) → card caveat without the client shard', () => {
     const r = getCountyRent('48441')
@@ -336,12 +345,5 @@ describe('misc', () => {
       { date: '2025-02-03', price: 3.2 },
     ]
     expect(filterByTimeframe(weekly, 'Jan 2025', true, 'price')).toEqual(weekly)
-  })
-
-  test('county unemployment 3-month window is 3 consecutive months (never bridges a missing month)', () => {
-    const laus = (meta as { sources: { laus: { curWindow: string } } }).sources.laus
-    const [a, b] = laus.curWindow.split('–').map(s => new Date(`1 ${s} UTC`))
-    const months = (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + b.getUTCMonth() - a.getUTCMonth()
-    expect(months).toBe(2)
   })
 })

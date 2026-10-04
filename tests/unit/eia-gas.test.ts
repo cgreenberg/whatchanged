@@ -83,7 +83,7 @@ describe('getGasLookup — Tier 1: CPI area → EIA city', () => {
 
 describe('getGasLookup — Tier 2: state-level fallback', () => {
   test('WA with unknown CPI area falls back to state tier 2', () => {
-    const result = getGasLookup('WA', 'S49G')
+    const result = getGasLookup('WA', 'S99Z')
     expect(result.duoarea).toBe('SWA')
     expect(result.tier).toBe(2)
     expect(result.geoLevel).toBe('Washington state avg')
@@ -125,8 +125,8 @@ describe('getGasLookup — Tier 3: PAD district fallback', () => {
     expect(result.cacheKey).toBe('eia:gas:epmr:pad:1C')
   })
 
-  test('KS (PAD 2 — Midwest) maps to R20', () => {
-    const result = getGasLookup('KS')
+  test('KY (PAD 2 — Midwest; East South Central division is mostly PADD 3) maps to R20', () => {
+    const result = getGasLookup('KY')
     expect(result.duoarea).toBe('R20')
     expect(result.tier).toBe(3)
     expect(result.geoLevel).toBe('Midwest (PADD 2) avg')

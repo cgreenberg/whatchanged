@@ -27,6 +27,7 @@
  */
 import {
   planRefresh,
+  planBlsRequests,
   runRefresh,
   summarize,
   parseRefreshArgs,
@@ -72,7 +73,8 @@ async function main() {
   const { dryRun, force, only, zips } = args
   const isFullRun = !only && !zips
 
-  if (!process.env.BLS_API_KEY && only !== 'gas') fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
+  // Gas includes the BLS monthly average-price tiers, so every source needs the BLS key.
+  if (!process.env.BLS_API_KEY) fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
   if (!process.env.EIA_API_KEY && (!only || only === 'gas')) fail('EIA_API_KEY is required')
 
   if (dryRun) {
@@ -107,7 +109,8 @@ async function main() {
   if (planSize(plan) === 0) fail('Refresh plan is empty (check --zips / --only)')
   console.log(
     `refresh-cache${dryRun ? ' (dry run, in-memory)' : ''}: ` +
-      `${plan.cpiAreas.length} CPI areas, ${plan.gasLookups.length} EIA gas series`
+      `${plan.cpiAreas.length} CPI areas, ${plan.gasLookups.filter((l) => l.source !== 'bls').length} EIA gas series, ` +
+      `${plan.gasLookups.filter((l) => l.source === 'bls').length} BLS gas series in ${planBlsRequests(plan).length} BLS requests`
   )
 
   const started = Date.now()

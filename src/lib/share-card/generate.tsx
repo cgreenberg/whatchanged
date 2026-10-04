@@ -3,10 +3,10 @@ import { ImageResponse } from 'next/og'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthYear, fmtMonthShort, fmtDay, monthsBetween } from '@/lib/format'
 import {
-  BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasChangeSinceBaseline,
+  BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
-import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, HI_AK_GAS_CAVEAT } from '@/lib/hero-cards'
+import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
@@ -147,13 +147,19 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const natShelterChange = nationalChangeMatching(
     cpiData?.nationalSeries, (p) => p.shelter, cpiData?.shelterBaselinePeriod, cpiData?.shelterLatestPeriod,
   )?.pct
-  const natGas = gasChangeSinceBaseline(gasData?.nationalSeries)
-  // One line in the cell (the sparkline height assumes it): abbreviate the longest EIA name.
-  const gasGeo = gasOk ? card('gas')?.provenance.geography?.replace('excl. California', 'excl. CA') ?? null : null
-  const gasCaveat = gasOk && card('gas')?.caveat === HI_AK_GAS_CAVEAT ? HI_AK_GAS_CAVEAT : null
+  // National from the same source over the same period (BLS monthly → same months; EIA weekly → NUS)
+  const natGas = gasData?.isNationalFallback ? null : gasNationalMatching(gasData)
+  const gasMonthly = isMonthlyGas(gasData)
+  // One line in the cell (the sparkline height assumes it): abbreviate the longest EIA name;
+  // BLS tiers use the short tag ("Philadelphia metro", "Urban Hawaii", "East North Central div.").
+  const gasGeo = gasOk
+    ? (gasMonthly ? card('gas')?.geoTag : card('gas')?.provenance.geography?.replace('excl. California', 'excl. CA')) ?? null
+    : null
   const rentOutlier = !!rent && card('rent')?.outlier === true
   const incomeTag = tariffOk ? tariffIncomeTag(snapshot) : undefined
-  const gasSince = gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
+  const gasSince = gasMonthly
+    ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}`
+    : gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
   const cpiLabel = cpiShareLabel(cpiData)
   const natGasChange = natGas?.change
 
@@ -206,7 +212,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
 
   // ── Build Sparklines ─────────────────────────────────────────────
   const gasSparkline =
-    gasOk && !gasCaveat && gasValues.length >= 2
+    gasOk && gasValues.length >= 2
       ? buildLineSparklineV3(gasValues, RED, 'grad-gas', {
           yMin: `$${gasMin.toFixed(2)}`,
           yMid: `$${gasMid.toFixed(2)}`,
@@ -556,15 +562,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             }}
           >
             {accentStrip(RED)}
-            {/* HI/AK: the caveat names the series (West Coast excl. CA) and replaces the sparkline */}
-            {sectionLabel('GAS PRICES', '(regular gasoline, $/gal)', gasCaveat ? null : gasGeo)}
-            {gasCaveat && (
-              <div style={{ display: 'flex', flex: 1, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'DM Mono', fontSize: 22, color: AMBER, display: 'flex' }}>
-                  {gasCaveat}
-                </span>
-              </div>
-            )}
+            {sectionLabel('GAS PRICES', '(regular gasoline, $/gal)', gasGeo)}
             {gasSparkline && (
               <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>
             )}
@@ -574,7 +572,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             </div>
             {metaRow(
               gasSince,
-              // Like-for-like with the pill: national change since its own baseline week
+              // Like-for-like with the pill: same source, same baseline rule, same months (BLS)
               natGasChange != null ? `Natl: ${fmtSignedDollars(natGasChange)}` : null
             )}
           </div>

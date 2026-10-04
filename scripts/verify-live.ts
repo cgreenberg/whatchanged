@@ -23,7 +23,8 @@
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
-const DEFAULT_ZIPS = ['98683', '10001', '60601', '78701', '90210', '04101', '06103', '83702', '96813', '99501']
+// 19103 Philadelphia (BLS metro gas), 53202 Milwaukee (BLS East North Central gas), 96813 / 99501 (BLS Urban HI / AK gas)
+const DEFAULT_ZIPS = ['98683', '10001', '60601', '78701', '90210', '04101', '06103', '83702', '96813', '99501', '19103', '53202']
 const BASE_URL = (process.env.BASE_URL ?? 'https://www.whatchanged.us').replace(/\/$/, '')
 const BLS_URL = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 const EIA_URL = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
@@ -211,10 +212,29 @@ async function checkZip(zip: string, bls: Map<string, Map<string, number>>, snap
     }
   }
 
-  // Gas (EIA weekly)
   const g = get(snap, 'gas.data')
-  const duoarea: string | undefined = g?.duoarea ?? get(audit, 'gasSeries.duoarea')
   if (!g) return add(zip, 'gas', 'SKIP', get(snap, 'gas.error') ?? 'no data in response')
+
+  // Gas, BLS monthly tiers (CPI average price APU{area}74714): baseline Jan 2025, latest month, math,
+  // and the national comparison from the BLS U.S. average over the same months
+  if (g.source === 'bls') {
+    const id: string | undefined = g.seriesId ?? get(audit, 'gasSeries.seriesId')
+    if (!id || !/^APU\w{4}74714$/.test(id)) return add(zip, 'gas (BLS) series', 'FAIL', `unexpected series id ${id}`)
+    add(zip, 'gas (BLS) baseline period', g.baselineDate === '2025-01' ? 'PASS' : 'FAIL', `${g.baselineDate}`)
+    checkBlsSeries(zip, 'gas (BLS)', id, bls, { current: g.current, baseline: g.baseline, series: g.series, valueKey: 'price' }, 0.0005)
+    if (isNum(g.current) && isNum(g.baseline) && isNum(g.change)) {
+      add(zip, 'gas (BLS) math', near(g.change, g.current - g.baseline, 0.0011) ? 'PASS' : 'FAIL', `change ${g.change} vs ${(g.current - g.baseline).toFixed(3)}`)
+    }
+    const nat = bls.get('APU000074714')
+    const natBase = g.nationalSeries?.find((p: SiteSeriesPoint) => p.date === '2025-01')?.price
+    if (!nat) add(zip, 'gas (BLS) national', 'SKIP', 'APU000074714 not fetched')
+    else if (natBase === undefined) add(zip, 'gas (BLS) national', 'FAIL', 'no national (BLS) Jan 2025 point in response')
+    else add(zip, 'gas (BLS) national', near(Number(natBase), nat.get('2025-01') ?? NaN, 0.0005) ? 'PASS' : 'FAIL', `site ${natBase} vs BLS ${nat.get('2025-01')} (must be BLS, not EIA NUS)`)
+    return
+  }
+
+  // Gas (EIA weekly)
+  const duoarea: string | undefined = g?.duoarea ?? get(audit, 'gasSeries.duoarea')
   if (!duoarea) return add(zip, 'gas', 'SKIP', 'no duoarea in response')
   const product = get(audit, 'sources.gas.product')
   if (product === undefined) add(zip, 'gas product', 'WARN', 'site does not report its EIA product (pre-EPMR deploy?)')
@@ -287,6 +307,19 @@ async function checkCodes() {
     add('codes', 'BLS CPI areas', 'FAIL', (e as Error).message)
   }
 
+  // BLS gas average prices: every published area has monthly data incl. Jan 2025
+  const gasMap = await import('../src/lib/mappings/bls-gas')
+  const gasIds = [...gasMap.BLS_GAS_PUBLISHED_AREAS].map((a) => gasMap.blsGasSeriesId(a))
+  try {
+    const res = await fetchBls(gasIds)
+    for (const id of gasIds) {
+      const m = res.get(id)
+      add('codes', `BLS ${id}`, m?.has('2025-01') ? 'PASS' : 'FAIL', m?.size ? `Jan 2025 ${m.get('2025-01')}, latest ${latestKey(m)}` : 'no data')
+    }
+  } catch (e) {
+    add('codes', 'BLS gas areas', 'FAIL', (e as Error).message)
+  }
+
   for (const [st, pad] of Object.entries(eiaMap.STATE_TO_PAD) as Array<[string, unknown]>) {
     const off = OFFICIAL_PAD[st]
     if (off) add('codes', `PAD ${st}`, String(pad) === off ? 'PASS' : 'FAIL', `ours ${pad}, EIA ${off}`)
@@ -319,6 +352,10 @@ async function main() {
     const a = snap._audit?.blsSeriesIds ?? {}
     for (const id of [snap.cpi?.data?.seriesIds?.groceries, snap.cpi?.data?.seriesIds?.shelter,
       a.cpiGroceries, a.cpiShelter]) if (typeof id === 'string') ids.add(id)
+    if (snap.gas?.data?.source === 'bls' && typeof snap.gas.data.seriesId === 'string') {
+      ids.add(snap.gas.data.seriesId)
+      ids.add('APU000074714') // BLS national gas (the comparison for BLS tiers)
+    }
   }
   let bls = new Map<string, Map<string, number>>()
   if (ids.size) {

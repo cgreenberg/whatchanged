@@ -61,9 +61,16 @@ export default function AboutPage() {
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Gas Prices (regular)</td>
                 <td className="py-3 pr-4 text-zinc-300">EIA Weekly Retail Gasoline Prices, regular grade</td>
-                <td className="py-3 pr-4">Closest EIA city, state, or PADD region</td>
+                <td className="py-3 pr-4">EIA city where EIA publishes one; otherwise EIA state (9 states) or PADD region</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Weekly</td>
-                <td className="py-3">Baseline: last weekly reading on or before Jan 20, 2025. Not seasonally adjusted. EIA publishes no Hawaii or Alaska series; those zips show the West Coast (excl. California) average, and local prices are typically higher (labeled on the card).</td>
+                <td className="py-3">Baseline: last weekly reading on or before Jan 20, 2025. Not seasonally adjusted. The national comparison is EIA&apos;s U.S. average.</td>
+              </tr>
+              <tr className="border-b border-zinc-800">
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Gas Prices (regular), BLS areas</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS CPI Average Price Data, gasoline (unleaded regular), per gallon</td>
+                <td className="py-3 pr-4">CPI metro areas without an EIA city series (e.g. Philadelphia, Atlanta, Phoenix); Urban Hawaii and Urban Alaska for all of HI and AK; East and West North Central divisions for Midwest states without an EIA state series</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
+                <td className="py-3">Used where it is more local than the nearest EIA series. Baseline: January 2025. Not seasonally adjusted. The national comparison is the BLS U.S. city average for the same months, never EIA. BLS average prices run slightly above EIA&apos;s. Urban Hawaii and Urban Alaska are urban averages; prices in rural parts of those states may differ.</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Rent (new leases)</td>
@@ -127,6 +134,7 @@ export default function AboutPage() {
           Changes compare the most recent available data with a baseline tied to January 20, 2025,
           the date of the presidential inauguration. Each source uses the closest baseline it
           publishes: for gas (EIA, weekly), the last weekly reading on or before January 20, 2025;
+          for gas from BLS average prices (monthly), January 2025;
           for BLS consumer prices, the January 2025 index, or the nearest earlier month for areas
           BLS doesn&apos;t publish every month (for example December 2024); for county rent and home
           values (Zillow), January 2025. Every card shows its source, geography, baseline, the date of its latest

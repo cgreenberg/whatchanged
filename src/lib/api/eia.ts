@@ -7,6 +7,9 @@ import {
   PAD_NAMES,
   PAD_DUOAREA,
 } from '@/lib/mappings/eia-gas'
+import { BLS_GAS_STATE_AREA, BLS_GAS_DIVISIONS, isBlsGasMetro } from '@/lib/mappings/bls-gas'
+import { STATE_TO_DIVISION } from '@/lib/mappings/county-metro-cpi'
+import { describeBlsGasArea, fetchBlsGasSeries } from './bls-gas'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
 
@@ -41,8 +44,19 @@ export function eiaGasSeriesId(duoarea: string): string {
 // --- Lookup ---
 
 export interface GasLookupResult {
-  duoarea: string
+  /** 'eia' = EIA weekly retail regular gasoline; 'bls' = BLS CPI average price, regular gasoline (monthly). */
+  source: 'eia' | 'bls'
+  frequency: 'weekly' | 'monthly'
+  /** EIA duoarea (source 'eia') or BLS CPI area code (source 'bls'). */
+  areaCode: string
+  /** EIA duoarea; set only for source 'eia'. */
+  duoarea?: string
+  /** BLS area name (source 'bls'), e.g. "Philadelphia-Camden-Wilmington". */
+  areaName?: string
+  /** Upstream series id: EMM_EPMR_PTE_{duoarea}_DPG (EIA) or APU{area}74714 (BLS). */
+  seriesId: string
   geoLevel: string
+  /** Geographic granularity: 1 city/metro, 2 state (or Urban HI/AK), 3 PADD/division/national. */
   tier: 1 | 2 | 3
   cacheKey: string
 }
@@ -71,6 +85,10 @@ const PADD_CODES: Record<string, { key: string; label: string }> = {
  */
 export function describeDuoarea(duoarea: string, label?: string): GasLookupResult {
   const code = duoarea.toUpperCase()
+  return { source: 'eia', frequency: 'weekly', areaCode: code, seriesId: eiaGasSeriesId(code), ...describeEiaCode(code, label) }
+}
+
+function describeEiaCode(code: string, label?: string): Pick<GasLookupResult, 'duoarea' | 'geoLevel' | 'tier' | 'cacheKey'> {
   if (code === 'NUS') {
     return { duoarea: 'NUS', geoLevel: 'National avg', tier: 3, cacheKey: NATIONAL_GAS_CACHE_KEY }
   }
@@ -114,13 +132,24 @@ export function getGasLookup(
     if (city) return describeDuoarea(city.duoarea, city.label)
   }
 
+  // BLS monthly: CPI metro without an EIA city series (incl. Urban Hawaii/Alaska CBSAs)
+  if (isBlsGasMetro(cpiAreaCode)) return describeBlsGasArea(cpiAreaCode)
+
   const upper = stateAbbr.toUpperCase()
 
-  // Tier 2: state-level
+  // BLS monthly: rest of Hawaii / Alaska → Urban Hawaii / Urban Alaska (EIA has no HI/AK series)
+  const urbanState = BLS_GAS_STATE_AREA[upper]
+  if (urbanState) return describeBlsGasArea(urbanState)
+
+  // EIA state-level
   const state = STATE_LEVEL_CODES[upper]
   if (state) return describeDuoarea(state.duoarea, state.label)
 
-  // Tier 3: PAD district / sub-district
+  // BLS monthly: Midwest Census divisions that lie entirely inside PADD 2
+  const division = STATE_TO_DIVISION[upper]?.code
+  if (division && BLS_GAS_DIVISIONS.has(division)) return describeBlsGasArea(division)
+
+  // EIA PAD district / sub-district
   const pad = STATE_TO_PAD[upper]
   if (pad !== undefined) {
     const duoarea = PAD_DUOAREA[pad] ?? `R${pad}0`
@@ -241,16 +270,21 @@ export function toGasPriceData(
   s: GasSeriesData,
   extra: { nationalSeries?: Array<{ date: string; price: number }>; isNationalFallback?: boolean } = {}
 ): GasPriceData {
+  const isNational = lookup.duoarea === 'NUS' || (lookup.source === 'bls' && lookup.areaCode === '0000')
   return {
     current: s.current,
     baseline: s.baseline,
     change: s.change,
     baselineDate: s.baselineDate,
     latestDate: s.latestDate,
-    region: lookup.duoarea === 'NUS' ? 'National avg' : s.regionName,
+    region: isNational ? 'National avg' : s.regionName,
     geoLevel: lookup.geoLevel,
-    isNationalFallback: extra.isNationalFallback ?? lookup.duoarea === 'NUS',
-    duoarea: lookup.duoarea,
+    isNationalFallback: extra.isNationalFallback ?? isNational,
+    source: lookup.source,
+    frequency: lookup.frequency,
+    seriesId: lookup.seriesId,
+    ...(lookup.duoarea ? { duoarea: lookup.duoarea } : {}),
+    ...(lookup.source === 'bls' ? { blsArea: lookup.areaCode, areaName: lookup.areaName } : {}),
     tier: lookup.tier,
     series: s.series,
     ...(extra.nationalSeries ? { nationalSeries: extra.nationalSeries } : {}),
@@ -267,5 +301,12 @@ export async function fetchGasPrice(
   countyFips?: string
 ): Promise<GasPriceData> {
   const lookup = getGasLookup(stateAbbr, cpiAreaCode, countyFips)
-  return toGasPriceData(lookup, await fetchGasSeries(lookup.duoarea))
+  return toGasPriceData(lookup, await fetchLookupSeries(lookup))
+}
+
+/** Fetch + parse the series behind a lookup from its own source (EIA weekly or BLS monthly). */
+export function fetchLookupSeries(lookup: GasLookupResult, opts: { timeoutMs?: number } = {}): Promise<GasSeriesData> {
+  return lookup.source === 'bls'
+    ? fetchBlsGasSeries(lookup.areaCode, opts)
+    : fetchGasSeries(lookup.duoarea ?? lookup.areaCode, opts)
 }

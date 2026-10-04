@@ -1,14 +1,16 @@
 import { http, HttpResponse } from 'msw'
 import blsRecorded from '../fixtures/bls-recorded-2024-2026.json'
+import blsGasRecorded from '../fixtures/bls-gas-ap-2024-2026.json'
 import eiaGas from '../fixtures/eia-gas.json'
 import eiaEpmrSWA from '../fixtures/eia-epmr-SWA.json'
 import eiaEpmrNUS from '../fixtures/eia-epmr-NUS.json'
 
 type RawPoint = { year: string; period: string; value: string }
 
-// Recorded BLS series, keyed by series ID
+// Recorded BLS series (CPI + APU…74714 average gas prices), keyed by series ID
 const RECORDED = new Map<string, RawPoint[]>(
-  (blsRecorded.Results.series as Array<{ seriesID: string; data: RawPoint[] }>).map((s) => [s.seriesID, s.data])
+  [...blsRecorded.Results.series, ...blsGasRecorded.Results.series]
+    .map((s) => [(s as { seriesID: string }).seriesID, (s as { data: RawPoint[] }).data] as [string, RawPoint[]])
 )
 
 // Template for series IDs that weren't recorded: same measure, keyed by item —

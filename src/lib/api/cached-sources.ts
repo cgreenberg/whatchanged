@@ -8,12 +8,20 @@
 import { getCachedOrFetch, TTL_BLS, TTL_EIA, type CachedResult } from '@/lib/cache/kv'
 import type { CpiData } from '@/types'
 import { fetchCpiArea, cpiCacheKey, NATIONAL_CPI_AREA } from './bls-cpi'
-import { fetchGasSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
+import { fetchLookupSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
+import { BLS_NATIONAL_GAS_LOOKUP } from './bls-gas'
 import { isValidCpi, isValidGasSeries } from './validate'
 
 /** Runtime TTLs (longer than the refresh interval; see kv.ts). */
 export const CPI_TTL = TTL_BLS
 export const GAS_TTL = TTL_EIA
+/** BLS monthly gas tiers (bls:gas:{area}) use the BLS TTL. */
+export const BLS_GAS_TTL = TTL_BLS
+
+/** Cache TTL for a gas lookup's own source. */
+export function gasTtlFor(lookup: GasLookupResult): number {
+  return lookup.source === 'bls' ? BLS_GAS_TTL : GAS_TTL
+}
 
 export interface FetchOpts {
   forceRefresh?: boolean
@@ -32,14 +40,21 @@ export function getCpiCached(area: CpiArea, opts: FetchOpts = {}): Promise<Cache
 }
 
 export function getGasSeriesCached(lookup: GasLookupResult, opts: FetchOpts = {}): Promise<CachedResult<GasSeriesData>> {
-  return getCachedOrFetch(lookup.cacheKey, GAS_TTL, () => fetchGasSeries(lookup.duoarea), {
+  return getCachedOrFetch(lookup.cacheKey, gasTtlFor(lookup), () => fetchLookupSeries(lookup), {
     validate: isValidGasSeries,
     forceRefresh: opts.forceRefresh,
-    budget: 'eia',
+    budget: lookup.source === 'bls' ? 'bls' : 'eia',
   })
 }
 
+/** EIA U.S. average (NUS): national comparison/fallback for EIA tiers, and the OG national card. */
 export const NATIONAL_GAS_LOOKUP = describeDuoarea('NUS')
+export { BLS_NATIONAL_GAS_LOOKUP }
+
+/** National gas lookup from the SAME source as `lookup` (BLS tiers → APU000074714, EIA → NUS). */
+export function nationalGasLookupFor(lookup: Pick<GasLookupResult, 'source'>): GasLookupResult {
+  return lookup.source === 'bls' ? BLS_NATIONAL_GAS_LOOKUP : NATIONAL_GAS_LOOKUP
+}
 
 export function getNationalGasCached(opts: FetchOpts = {}): Promise<CachedResult<GasSeriesData>> {
   return getGasSeriesCached(NATIONAL_GAS_LOOKUP, opts)

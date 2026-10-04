@@ -104,6 +104,8 @@ for (const zip of allZips) {
   const gasTierName =
     gasLookup.duoarea === 'NUS'
       ? 'national'
+      : gasLookup.source === 'bls'
+      ? `BLS monthly (${gasLookup.areaCode})`
       : gasLookup.tier === 1
       ? (() => {
           if (COUNTY_EIA_CITY_OVERRIDES[countyFips]?.duoarea.startsWith('Y')) return 'city (county override)'
@@ -127,7 +129,7 @@ for (const zip of allZips) {
     cityName,
     cpiAreaCode: cpi.areaCode,
     cpiAreaName: cpi.areaName,
-    gasDuoarea: gasLookup.duoarea,
+    gasDuoarea: gasLookup.areaCode,
     gasLabel: gasLookup.geoLevel,
     gasTier,
     gasTierName,

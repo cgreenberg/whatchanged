@@ -11,7 +11,6 @@ import {
   usesNationalFallback,
   dataThroughLabel,
   gasCaveatFor,
-  HI_AK_GAS_CAVEAT,
   type HeroCardModel,
 } from '@/lib/hero-cards'
 import type { CpiData, GasPriceData } from '@/types'
@@ -329,9 +328,11 @@ describe('geography + header labels', () => {
     expect(dataThroughLabel([])).toBeNull()
   })
 
-  test('gas caveats: HI/AK West Coast stand-in, territories with only the U.S. average', () => {
+  test('gas caveats: HI/AK urban-average note (BLS), territories with only the U.S. average', () => {
     const s = (st: string, g: GasPriceData) => ({ location: { stateAbbr: st }, gas: { data: g } }) as unknown as Parameters<typeof gasCaveatFor>[0]
-    expect(gasCaveatFor(s('HI', gas({ duoarea: 'R5XCA', isNationalFallback: false })))).toBe(HI_AK_GAS_CAVEAT)
+    expect(gasCaveatFor(s('HI', gas({ duoarea: undefined, source: 'bls', frequency: 'monthly', blsArea: 'S49F', isNationalFallback: false }))))
+      .toBe('Urban Hawaii average (BLS); prices in rural Hawaii may differ.')
+    expect(gasCaveatFor(s('HI', gas({ duoarea: 'R5XCA', isNationalFallback: false })))).toBeUndefined()
     expect(gasCaveatFor(s('PR', gas({})))).toMatch(/No EIA gas price series for Puerto Rico; showing the U.S. average/)
     expect(gasCaveatFor(s('TX', gas({ fallback: 'national' })))).toBeUndefined()
     expect(gasCaveatFor(s('WA', gas({ duoarea: 'SWA', isNationalFallback: false })))).toBeUndefined()

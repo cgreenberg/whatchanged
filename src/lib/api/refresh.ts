@@ -6,8 +6,10 @@
 //
 // Upstream use for a full refresh (prices only; county unemployment/LAUS is no
 // longer fetched at runtime):
-//   - CPI: one BLS POST per 15 areas (45 series + 3 national = 48), 3 calls
-//   - Gas: one EIA GET per duoarea (~28 calls)
+//   - BLS: CPI in batches of 15 areas (45 series + 3 national = 48); the BLS
+//     monthly gas series (APU{area}74714, ~17) fill the spare room in those
+//     batches (≤ 50 series per POST) → 3 BLS calls for a full refresh
+//   - Gas: one EIA GET per EIA duoarea (~22 calls)
 
 import zipCountyData from '@/lib/data/zip-county.json'
 import { lookupZip } from '@/lib/data/zip-lookup'
@@ -16,12 +18,14 @@ import { writeEnvelope, setCached, missingKey, MISSING_TTL } from '@/lib/cache/k
 import { fetchBlsSeries, type BlsRawPoint } from './bls-common'
 import { cpiSeriesIds, cpiCacheKey, parseCpiResponse, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchGasSeries, getGasLookup, type GasLookupResult, type GasSeriesData } from './eia'
+import { parseBlsGasSeries } from './bls-gas'
 import { isValidCpi, isValidGasSeries } from './validate'
 import {
   CPI_TTL,
-  GAS_TTL,
+  gasTtlFor,
   NATIONAL_CPI,
   NATIONAL_GAS_LOOKUP,
+  BLS_NATIONAL_GAS_LOOKUP,
   type CpiArea,
 } from './cached-sources'
 
@@ -34,7 +38,10 @@ export const CPI_AREAS_PER_REQUEST = 15 // 15 × 3 items + 3 national items = 48
 export interface RefreshPlan {
   /** Every CPI area any county resolves to, plus national (runtime fallback). */
   cpiAreas: CpiArea[]
-  /** Every EIA gas series any zip resolves to, plus national (overlay + fallback). */
+  /**
+   * Every gas series any zip resolves to (EIA weekly and BLS monthly), plus each source's
+   * national series (overlay + fallback) when any lookup of that source is present.
+   */
   gasLookups: GasLookupResult[]
 }
 
@@ -52,6 +59,7 @@ export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
     const lookup = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips)
     if (!gas.has(lookup.cacheKey)) gas.set(lookup.cacheKey, lookup)
   }
+  if ([...gas.values()].some((l) => l.source === 'bls')) gas.set(BLS_NATIONAL_GAS_LOOKUP.cacheKey, BLS_NATIONAL_GAS_LOOKUP)
   return {
     cpiAreas: [...cpi.values()].sort((a, b) => a.areaCode.localeCompare(b.areaCode)),
     gasLookups: [...gas.values()].sort((a, b) => a.cacheKey.localeCompare(b.cacheKey)),
@@ -62,6 +70,47 @@ export function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = []
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
   return out
+}
+
+/** One BLS POST: CPI areas (their 3 items each, plus the 3 national items) and BLS gas series. */
+export interface BlsRequest {
+  ids: string[]
+  cpiAreas: CpiArea[]
+  gas: GasLookupResult[]
+}
+
+/**
+ * Pack every BLS series in the plan into as few POSTs as possible (≤ 50 series each):
+ * CPI batches as before, then the BLS gas series fill the spare room, in new requests only
+ * when every CPI batch is full.
+ */
+export function planBlsRequests(plan: RefreshPlan): BlsRequest[] {
+  const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
+  const natIds = [nat.groceries, nat.shelter, nat.energy]
+  const localCpi = plan.cpiAreas.filter((a) => a.areaCode !== NATIONAL_CPI_AREA)
+  const hasNational = plan.cpiAreas.some((a) => a.areaCode === NATIONAL_CPI_AREA)
+  const requests: BlsRequest[] = chunk(localCpi, CPI_AREAS_PER_REQUEST).map((batch, i) => ({
+    ids: [
+      ...batch.flatMap((a) => {
+        const s = cpiSeriesIds(a.areaCode)
+        return [s.groceries, s.shelter, s.energy]
+      }),
+      ...natIds,
+    ],
+    cpiAreas: i === 0 && hasNational ? [...batch, NATIONAL_CPI] : batch,
+    gas: [],
+  }))
+  if (hasNational && !requests.length) requests.push({ ids: [...natIds], cpiAreas: [NATIONAL_CPI], gas: [] })
+  for (const lookup of plan.gasLookups.filter((l) => l.source === 'bls')) {
+    let req = requests.find((r) => r.ids.length < BLS_MAX_SERIES_PER_REQUEST)
+    if (!req) {
+      req = { ids: [], cpiAreas: [], gas: [] }
+      requests.push(req)
+    }
+    if (!req.ids.includes(lookup.seriesId)) req.ids.push(lookup.seriesId)
+    req.gas.push(lookup)
+  }
+  return requests
 }
 
 // --- Execution ---------------------------------------------------------------
@@ -167,28 +216,19 @@ export async function runRefresh(
   const record = (key: string, status: ItemStatus, error?: string) =>
     report.results.push(error ? { key, status, error } : { key, status })
 
-  // CPI — batched with the shared national series.
-  const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
-  const natIds = [nat.groceries, nat.shelter, nat.energy]
-  const localCpi = plan.cpiAreas.filter((a) => a.areaCode !== NATIONAL_CPI_AREA)
-  const cpiBatches = chunk(localCpi, CPI_AREAS_PER_REQUEST)
-  const hasNational = plan.cpiAreas.some((a) => a.areaCode === NATIONAL_CPI_AREA)
-  if (hasNational && !cpiBatches.length) cpiBatches.push([])
-  for (const [i, batch] of cpiBatches.entries()) {
-    const ids = batch.flatMap((a) => {
-      const s = cpiSeriesIds(a.areaCode)
-      return [s.groceries, s.shelter, s.energy]
-    })
-    const areas = i === 0 && hasNational ? [...batch, NATIONAL_CPI] : batch
+  // BLS — CPI batched with the shared national series; BLS gas series fill the spare room.
+  const blsRequests = planBlsRequests(plan)
+  for (const [i, req] of blsRequests.entries()) {
     let seriesMap: Record<string, BlsRawPoint[]>
     try {
-      seriesMap = await withRetry('bls', () => deps.fetchBls([...ids, ...natIds]))
+      seriesMap = await withRetry('bls', () => deps.fetchBls(req.ids))
     } catch (e) {
       report.failedBatches++
-      for (const a of areas) record(cpiCacheKey(a.areaCode), 'error', msg(e))
+      for (const a of req.cpiAreas) record(cpiCacheKey(a.areaCode), 'error', msg(e))
+      for (const g of req.gas) record(g.cacheKey, 'error', msg(e))
       continue
     }
-    for (const area of areas) {
+    for (const area of req.cpiAreas) {
       const key = cpiCacheKey(area.areaCode)
       try {
         const data = parseCpiResponse(seriesMap, area)
@@ -198,21 +238,31 @@ export async function runRefresh(
         record(key, /No groceries CPI data/.test(msg(e)) ? 'missing' : 'invalid', msg(e))
       }
     }
-    deps.log(`  CPI batch ${i + 1}/${cpiBatches.length} (${areas.length} areas)`)
+    for (const lookup of req.gas) {
+      try {
+        const data = parseBlsGasSeries(seriesMap[lookup.seriesId], lookup.areaName ?? lookup.areaCode)
+        if (!isValidGasSeries(data)) record(lookup.cacheKey, 'invalid', 'failed sanity validation')
+        else pending.push({ key: lookup.cacheKey, ttl: gasTtlFor(lookup), data })
+      } catch (e) {
+        record(lookup.cacheKey, /No BLS gas price data/.test(msg(e)) ? 'missing' : 'invalid', msg(e))
+      }
+    }
+    deps.log(`  BLS request ${i + 1}/${blsRequests.length} (${req.cpiAreas.length} CPI areas, ${req.gas.length} gas series, ${req.ids.length} series)`)
     if (blsPauseMs) await deps.sleep(blsPauseMs)
   }
 
   // EIA gas — one request per duoarea, small concurrency.
-  await runBounded(plan.gasLookups, eiaConcurrency, async (lookup) => {
+  const eiaLookups = plan.gasLookups.filter((l) => l.source !== 'bls')
+  await runBounded(eiaLookups, eiaConcurrency, async (lookup) => {
     try {
-      const data = await withRetry('eia', () => deps.fetchGas(lookup.duoarea))
+      const data = await withRetry('eia', () => deps.fetchGas(lookup.duoarea ?? lookup.areaCode))
       if (!isValidGasSeries(data)) record(lookup.cacheKey, 'invalid', 'failed sanity validation')
-      else pending.push({ key: lookup.cacheKey, ttl: GAS_TTL, data })
+      else pending.push({ key: lookup.cacheKey, ttl: gasTtlFor(lookup), data })
     } catch (e) {
       record(lookup.cacheKey, 'error', msg(e))
     }
   })
-  deps.log(`  EIA: ${plan.gasLookups.length} series`)
+  deps.log(`  EIA: ${eiaLookups.length} series`)
 
   // Writes: key + key:lastgood, clears key:failed (same as a runtime fetch).
   await runBounded(pending, writeConcurrency, async (p) => {

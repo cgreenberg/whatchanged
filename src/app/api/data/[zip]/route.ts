@@ -22,7 +22,11 @@ function buildAudit(snapshot: EconomicSnapshot) {
       isFallback: snapshot.tariff?.data?.isFallback,
     },
     gasSeries: {
+      source: g?.source ?? (g ? 'eia' : undefined),
+      frequency: g?.frequency ?? (g ? 'weekly' : undefined),
+      seriesId: g ? (g.seriesId ?? (g.duoarea ? eiaGasSeriesId(g.duoarea) : null)) : undefined,
       duoarea: g?.duoarea,
+      blsArea: g?.blsArea,
       geoLevel: g?.geoLevel,
       isNationalFallback: g?.isNationalFallback,
     },
@@ -61,8 +65,11 @@ function buildAudit(snapshot: EconomicSnapshot) {
         stale: cpiItemStale(snapshot, 'shelter'),
       } : null,
       gas: g ? {
-        seriesId: g.duoarea ? eiaGasSeriesId(g.duoarea) : null,
-        product: EIA_GAS_PRODUCT,
+        source: g.source ?? 'eia',
+        frequency: g.frequency ?? 'weekly',
+        seriesId: g.seriesId ?? (g.duoarea ? eiaGasSeriesId(g.duoarea) : null),
+        // EIA product code (EPMR = regular); BLS tiers use item 74714 (unleaded regular) instead
+        product: g.source === 'bls' ? null : EIA_GAS_PRODUCT,
         duoarea: g.duoarea ?? null,
         baseline: { period: g.baselineDate ?? null, value: g.baseline },
         latest: { period: g.latestDate ?? null, value: g.current },

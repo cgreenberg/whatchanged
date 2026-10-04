@@ -2,8 +2,8 @@
 import type { ChartConfig } from '@/lib/charts/chart-config'
 import type { Row } from '@/lib/charts/chart-data'
 import { cpiGeoLabel, type Provenance } from '@/lib/provenance'
-import { fmtDay, DATE_UNAVAILABLE } from '@/lib/format'
-import { HOUSING_NOTE, GAS_SOURCE, gasCaveatFor, cpiItemStale } from '@/lib/hero-cards'
+import { fmtDay, fmtMonthYear, DATE_UNAVAILABLE } from '@/lib/format'
+import { HOUSING_NOTE, gasCaveatFor, gasSourceInfo, isMonthlyGas, cpiItemStale } from '@/lib/hero-cards'
 import type { EconomicSnapshot } from '@/types'
 
 export const NOT_SA = 'not seasonally adjusted'
@@ -53,17 +53,31 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
       const series = Array.isArray(g?.series) ? g!.series : []
       const national = Array.isArray(g?.nationalSeries) ? g!.nationalSeries : []
       const latest = g?.latestDate ?? series[series.length - 1]?.date
+      // BLS tiers are monthly (dates YYYY-MM): monthly x-axis and the Jan 2025 baseline month;
+      // the national overlay is the BLS U.S. average (same source and frequency).
+      const monthly = isMonthlyGas(g)
+      const geography = g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable'
+      const src = gasSourceInfo(g)
       return {
         data: series.map(p => ({ date: p.date, price: p.price })),
         nationalData: national.map(p => ({ date: p.date, price: p.price })),
         stale: !!snapshot.gas.stale,
-        weeklyGasBaseline: true,
+        weeklyGasBaseline: !monthly,
         note: gasCaveatFor(snapshot),
+        ...(monthly
+          ? {
+              configOverrides: {
+                description: 'BLS CPI average price per gallon of regular gasoline for this metro or area, published monthly. Used where EIA publishes no weekly city series.',
+                sourceLabel: 'BLS CPI Average Price Data',
+                sourceUrl: src.sourceUrl,
+              },
+            }
+          : {}),
         provenance: {
-          source: GAS_SOURCE,
-          sourceUrl: g?.tier === 3 ? 'https://www.eia.gov/petroleum/weekly/includes/padds.php' : 'https://www.eia.gov/petroleum/gasdiesel/',
-          geography: g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable',
-          asOf: latest ? `week of ${fmtDay(latest)}` : DATE_UNAVAILABLE,
+          source: src.source,
+          sourceUrl: src.sourceUrl,
+          geography: monthly ? `${geography} · monthly` : geography,
+          asOf: latest ? (monthly ? fmtMonthYear(latest.slice(0, 7)) : `week of ${fmtDay(latest)}`) : DATE_UNAVAILABLE,
           adjustment: NOT_SA,
         },
       }

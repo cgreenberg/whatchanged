@@ -18,6 +18,7 @@ import {
   STATE_LEVEL_CODES,
   PAD_DUOAREA,
 } from '@/lib/mappings/eia-gas'
+import { BLS_GAS_PUBLISHED_AREAS } from '@/lib/mappings/bls-gas'
 import { getLausAreaFipsForZip, CT_PLANNING_REGION_NAMES } from '@/lib/mappings/laus-area'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import zipCounty from '@/lib/data/zip-county.json'
@@ -53,6 +54,7 @@ interface CountyGeo {
   cpiArea: string
   cpiTier: number
   cpiName: string
+  gasSource: string
   gasDuoarea: string
   gasTier: number
   lausFips: string
@@ -95,8 +97,11 @@ describe('exhaustive zip mappings', () => {
 
       // Gas
       const gas = getGasLookup(stateAbbr, cpi.areaCode, countyFips)
-      if (!VALID_EIA_DUOAREA_CODES.has(gas.duoarea)) {
-        failures.push(`${zip}: EIA duoarea "${gas.duoarea}" not produced by eia-gas.ts tables`)
+      if (gas.source === 'eia' && !VALID_EIA_DUOAREA_CODES.has(gas.areaCode)) {
+        failures.push(`${zip}: EIA duoarea "${gas.areaCode}" not produced by eia-gas.ts tables`)
+      }
+      if (gas.source === 'bls' && !BLS_GAS_PUBLISHED_AREAS.has(gas.areaCode)) {
+        failures.push(`${zip}: BLS gas area "${gas.areaCode}" has no published APU…74714 series`)
       }
       if (isState && gas.duoarea === 'NUS') failures.push(`${zip}: ${stateAbbr} fell back to national gas`)
 
@@ -118,10 +123,11 @@ describe('exhaustive zip mappings', () => {
         g.state !== stateAbbr ||
         g.cpiArea !== cpi.areaCode ||
         g.cpiTier !== cpi.tier ||
-        g.gasDuoarea !== gas.duoarea ||
+        g.gasSource !== gas.source ||
+        g.gasDuoarea !== gas.areaCode ||
         g.gasTier !== gas.tier
       ) {
-        failures.push(`${zip}: county-geo.json ${JSON.stringify(g)} != live ${cpi.areaCode}/${gas.duoarea}`)
+        failures.push(`${zip}: county-geo.json ${JSON.stringify(g)} != live ${cpi.areaCode}/${gas.source}:${gas.areaCode}`)
       }
 
       // Census data is optional (USPS-only zips have none), but must be sane when present

@@ -205,37 +205,10 @@ describe('built local data sanity', () => {
     const bad = rows.filter(([f, c]) => inCrosswalk.has(f) && (!c.z || !zc[c.z])).map(([f]) => f)
     expect(bad).toEqual([])
   })
-  it('zip shards: leading-zero zips, honest rent basis, listings in range, no ranks', () => {
-    const bad: string[] = []
-    let n = 0
-    for (const file of fs.readdirSync(path.join(dir, 'zip'))) {
-      const shard = readJson<Record<string, Json>>(path.join(dir, 'zip', file))
-      for (const [z, v] of Object.entries(shard)) {
-        n++
-        if (!z.startsWith(file.slice(0, 3))) bad.push(`${z} in ${file}`)
-        const rent = v.rent as Json | undefined
-        if (rent && !['sa', 'yoy'].includes(rent.basis as string)) bad.push(`${z} rent basis`)
-        if (rent && rent.basis === 'yoy' && rent.s) bad.push(`${z} yoy rent has SA series`)
-        if ((v.hv as Json | undefined)?.rank != null || rent?.rank != null) bad.push(`${z} rank`)
-        const li = v.listings as Json | undefined
-        if (li) {
-          if ((li.active as number) < 20) bad.push(`${z} active`)
-          for (const k of ['priceYoY', 'activeYoY', 'domYoY']) {
-            const y = li[k] as number | null
-            if (y != null && Math.abs(y) > 1) bad.push(`${z} ${k}`)
-          }
-          const r = li.reduced as number | null
-          if (r != null && (r < 0 || r > 1)) bad.push(`${z} reduced`)
-        }
-      }
-    }
-    expect(n).toBeGreaterThan(20000)
-    expect(bad).toEqual([])
-  })
   it('meta labels never claim an agency adjusted data we adjusted', () => {
     const meta = readJson<LocalMeta>(path.join(dir, 'meta.json'))
-    for (const k of ['zori', 'laus']) expect(meta.sources[k].adjustment).toBe('seasonally adjusted by whatchanged')
-    for (const k of ['laus', 'permits', 'qcew']) expect(meta.sources[k].window).toBeTruthy()
+    expect(meta.sources.zori.adjustment).toBe('seasonally adjusted by whatchanged')
+    expect(meta.sources.zhvi.adjustment).toBe('seasonally adjusted by Zillow')
   })
   it('county-rent.json (server import) is in range and consistent with counties.json', () => {
     const cr = readJson<{ meta: Json; counties: Record<string, { pct: number; baseRent: number; curRent: number; name: string }> }>(

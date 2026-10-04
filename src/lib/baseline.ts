@@ -16,9 +16,16 @@ export const GAS_BASELINE_EARLIEST = '2025-01-06'
 /** Monthly BLS: Jan 2025, else latest month back to this one. */
 export const CPI_BASELINE_EARLIEST = '2024-11'
 
-/** Index of the gas baseline point (last weekly reading in [Jan 6, Jan 20] 2025), or -1. */
+/**
+ * Index of the gas baseline point, or -1:
+ *  - weekly EIA series (YYYY-MM-DD): last reading in [Jan 6, Jan 20] 2025
+ *  - monthly BLS average-price series (YYYY-MM): the January 2025 month itself
+ */
 export function gasBaselineIndex(series: ReadonlyArray<{ date: string }>): number {
   let idx = -1
+  if (series.length && series[0].date.length === 7) {
+    return series.findIndex((p) => p.date === BASELINE_MONTH)
+  }
   for (let i = 0; i < series.length; i++) {
     const d = series[i].date
     if (d > BASELINE_DATE) break
@@ -56,6 +63,23 @@ export function pctChange(current: number | null | undefined, baseline: number |
   if (typeof current !== 'number' || typeof baseline !== 'number') return null
   if (!Number.isFinite(current) || !Number.isFinite(baseline) || baseline === 0) return null
   return ((current - baseline) / baseline) * 100
+}
+
+/**
+ * National gas change over the SAME period as the local figure (same source, so same frequency):
+ * monthly BLS → the national value at the local baseline month and at the local latest month
+ * (null when national lacks either); weekly EIA → the shared weekly baseline rule.
+ */
+export function gasNationalMatching(
+  g: { frequency?: 'weekly' | 'monthly'; baselineDate?: string; latestDate?: string; nationalSeries?: ReadonlyArray<{ date: string; price: number }> } | null | undefined
+): { current: number; baseline: number; change: number; latestDate: string; baselineDate: string } | null {
+  if (!g) return null
+  if (g.frequency !== 'monthly') return gasChangeSinceBaseline(g.nationalSeries)
+  const nat = g.nationalSeries ?? []
+  const b = nat.find((p) => p.date === (g.baselineDate ?? BASELINE_MONTH))
+  const l = g.latestDate ? nat.find((p) => p.date === g.latestDate) : undefined
+  if (!b || !l) return null
+  return { current: l.price, baseline: b.price, change: l.price - b.price, latestDate: l.date, baselineDate: b.date }
 }
 
 /** National gas change using the same baseline rule as the local series. */

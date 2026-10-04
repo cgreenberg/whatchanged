@@ -11,8 +11,9 @@
  *       cpiArea: 'S49D',        // BLS CPI area code (getMetroCpiAreaForCounty)
  *       cpiTier: 1,             // 1 metro | 2 division | 3 region | 4 national
  *       cpiName: 'Seattle-Tacoma-Bellevue',
- *       gasDuoarea: 'Y48SE',    // EIA duoarea (getGasLookup)
- *       gasTier: 1,             // 1 city | 2 state | 3 PADD / national
+ *       gasSource: 'eia',       // 'eia' weekly | 'bls' monthly CPI average price (getGasLookup)
+ *       gasDuoarea: 'Y48SE',    // EIA duoarea, or BLS CPI area code when gasSource is 'bls'
+ *       gasTier: 1,             // 1 city/metro | 2 state/Urban HI-AK | 3 PADD / division / national
  *       lausFips: '53033',      // FIPS used in LAUCN{fips}0000000003
  *       approx?: true           // CT legacy county → dominant 2022 planning region
  *   } }
@@ -37,6 +38,7 @@ export interface CountyGeo {
   cpiArea: string
   cpiTier: 1 | 2 | 3 | 4
   cpiName: string
+  gasSource: 'eia' | 'bls'
   gasDuoarea: string
   gasTier: 1 | 2 | 3
   lausFips: string
@@ -57,7 +59,8 @@ export function buildCountyGeo(
       cpiArea: cpi.areaCode,
       cpiTier: cpi.tier,
       cpiName: cpi.areaName,
-      gasDuoarea: gas.duoarea,
+      gasSource: gas.source,
+      gasDuoarea: gas.areaCode,
       gasTier: gas.tier,
       lausFips: laus.fips,
       ...(laus.approx ? { approx: true as const } : {}),

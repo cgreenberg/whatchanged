@@ -20,9 +20,8 @@ import { monthOlderThan } from '@/lib/hero-cards'
 import {
   getCpiCached,
   getGasSeriesCached,
-  getNationalGasCached,
+  nationalGasLookupFor,
   NATIONAL_CPI,
-  NATIONAL_GAS_LOOKUP,
   settle,
 } from './cached-sources'
 
@@ -79,14 +78,18 @@ export async function fetchSnapshot(
 
   const cpiArea = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
   const gasLookup = getGasLookup(location.stateAbbr, cpiArea.areaCode, location.countyFips)
-  const gasIsNational = gasLookup.duoarea === 'NUS'
+  // National gas comes from the same source as the local series (BLS monthly tiers → BLS U.S.
+  // average; EIA weekly tiers → EIA NUS), so comparisons never mix sources or frequencies.
+  const gasNationalLookup = nationalGasLookupFor(gasLookup)
+  const gasIsNational = gasLookup.cacheKey === gasNationalLookup.cacheKey
+  const gasLabel = gasLookup.source === 'bls' ? 'bls-gas' : 'eia-gas'
 
   // Fetch all external sources in parallel, each through its own cache key.
-  // National gas is a single shared key (used for the overlay and as fallback).
+  // National gas is a single shared key per source (used for the overlay and as fallback).
   const [cpiPrimary, gasPrimary, gasNational] = await Promise.all([
     settle(getCpiCached(cpiArea, opts), 'bls-cpi'),
-    settle(getGasSeriesCached(gasLookup, opts), 'eia-gas'),
-    gasIsNational ? Promise.resolve(null) : settle(getNationalGasCached(opts), 'eia-gas-national'),
+    settle(getGasSeriesCached(gasLookup, opts), gasLabel),
+    gasIsNational ? Promise.resolve(null) : settle(getGasSeriesCached(gasNationalLookup, opts), `${gasLabel}-national`),
   ])
 
   // CPI: if the local area failed, fall back to the shared national CPI key
@@ -108,10 +111,13 @@ export async function fetchSnapshot(
     })
     gasMeta = gasPrimary
   } else if (gasNational) {
-    gasData = { ...toGasPriceData(NATIONAL_GAS_LOOKUP, gasNational.data, { isNationalFallback: true }), fallback: 'national' }
+    gasData = { ...toGasPriceData(gasNationalLookup, gasNational.data, { isNationalFallback: true }), fallback: 'national' }
     gasMeta = gasNational
   }
-  const gasStale = !!gasData && (!!gasMeta?.stale || isGasStale(gasData.latestDate ?? ''))
+  const gasStale = !!gasData && (
+    !!gasMeta?.stale ||
+    (gasData.frequency === 'monthly' ? isBlsPeriodStale(gasData.latestDate, new Date(now)) : isGasStale(gasData.latestDate ?? ''))
+  )
 
   const nowDate = new Date(now)
   const cpiBase: CpiData | null = cpiResult?.data
@@ -134,7 +140,7 @@ export async function fetchSnapshot(
     : []
   const cpiData: CpiData | null = cpiBase ? { ...cpiBase, staleItems: [...cpiStaleItems] } : null
   const cpi: DataResult<CpiData> = wrap(cpiData, 'bls-cpi', cpiResult?.fetchedAt, now, cpiStaleItems.length > 0)
-  const gas: DataResult<GasPriceData> = wrap(gasData, 'eia-gas', gasMeta?.fetchedAt, now, gasStale)
+  const gas: DataResult<GasPriceData> = wrap(gasData, gasData?.source === 'bls' ? 'bls-gas' : 'eia-gas', gasMeta?.fetchedAt, now, gasStale)
 
   // Census is synchronous (bundled static data)
   const censusData = getCensusData(zip, city, state)

@@ -68,7 +68,21 @@ export interface GasPriceData {
   /** 'national' when the local gas series failed and the national average is shown instead (an outage, not the area's native series). */
   fallback?: 'national'
   geoLevel?: string
-  duoarea?: string  // EIA area code used for the API query
+  /**
+   * 'eia' = EIA weekly retail regular gasoline (dates YYYY-MM-DD, baseline = last week ≤ Jan 20 2025);
+   * 'bls' = BLS CPI average price, regular gasoline (monthly, dates YYYY-MM, baseline = Jan 2025).
+   * Absent on older payloads = 'eia'. Series, baseline and nationalSeries always come from this one source.
+   */
+  source?: 'eia' | 'bls'
+  /** Absent on older payloads = 'weekly'. */
+  frequency?: 'weekly' | 'monthly'
+  /** Upstream series id (EMM_EPMR_PTE_{duoarea}_DPG or APU{area}74714). */
+  seriesId?: string
+  duoarea?: string  // EIA area code used for the API query (EIA only)
+  /** BLS CPI area code (BLS only), e.g. "S12B", "S49F", "0230". */
+  blsArea?: string
+  /** BLS area name (BLS only), e.g. "Philadelphia-Camden-Wilmington", "Urban Hawaii". */
+  areaName?: string
   tier?: 1 | 2 | 3
 }
 
