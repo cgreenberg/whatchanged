@@ -4,7 +4,7 @@ import { geoPath } from 'd3-geo'
 import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
-  fetchCounties, fetchLocalMeta, METRICS, divergingColor, fmtMonth, metricFooter, moversFor, flagNote,
+  fetchCounties, fetchLocalMeta, METRICS, divergingColor, NO_DATA_COLOR, NO_DATA_PATTERN_ID, fmtMonth, metricFooter, moversFor, flagNote,
   MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type LocalMeta,
 } from '@/lib/county-data'
@@ -158,13 +158,19 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
           <div className="aspect-[975/610] flex items-center justify-center text-zinc-500 text-sm">Loading map…</div>
         ) : (
           <svg viewBox="0 0 975 610" className="w-full h-auto block" role="img" aria-label={`US county map of ${def.label}`}>
+            <defs>
+              <pattern id={NO_DATA_PATTERN_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width={4} height={4} fill="#18181b" />
+                <rect width={1.6} height={4} fill={NO_DATA_COLOR} />
+              </pattern>
+            </defs>
             <g>
               {shapes.counties.map(s => (
                 <path
                   key={s.id}
                   d={s.d}
                   data-fips={s.id}
-                  fill={divergingColor(value(s.id), def.clamp)}
+                  fill={Number.isFinite(value(s.id)) ? divergingColor(value(s.id), def.clamp) : `url(#${NO_DATA_PATTERN_ID})`}
                   stroke="#09090b"
                   strokeWidth={0.25}
                   onClick={() => setSelected(s.id)}
@@ -198,9 +204,15 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
           background: `linear-gradient(90deg, ${[-1, -0.5, 0, 0.5, 1].map(t => divergingColor(t * def.clamp, def.clamp)).join(',')})`,
         }} />
         <span>rose</span>
+        <span
+          className="ml-2 inline-block w-3 h-3 rounded-sm border border-zinc-700"
+          style={{ background: `repeating-linear-gradient(45deg, ${NO_DATA_COLOR} 0 1.5px, #18181b 1.5px 4px)` }}
+          aria-hidden
+        />
+        <span>no data</span>
       </div>
       <p className="text-[11px] text-zinc-500 mt-1" data-testid="map-source">
-        Scale ±{def.clamp}% · {metricFooter(def, meta)} · near-black = no data
+        Scale ±{def.clamp}% · {metricFooter(def, meta)} · gray hatching = no data
       </p>
 
       {/* Selected county panel */}
@@ -241,8 +253,7 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
             </div>
           ))}
           <p className="col-span-2 text-[11px] text-zinc-500">
-            Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers and counties
-            whose figures are approximated.
+            Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure.
           </p>
         </div>
       )}

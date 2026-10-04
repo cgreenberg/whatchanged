@@ -57,8 +57,26 @@ export function isPreliminary(d: BlsRawPoint): boolean {
 }
 
 /**
+ * Months (YYYY-MM) BLS lists but did not publish ("-" / non-numeric value, e.g. the Oct 2025
+ * shutdown gap), oldest first. Callers keep them as EMPTY chart rows, so the chart can mark the gap
+ * instead of silently joining the months on either side. (Months BLS never lists, such as the off
+ * months of a bimonthly metro, are not gaps and are not returned.)
+ */
+export function blsUnpublishedMonths(data: BlsRawPoint[] | undefined | null): string[] {
+  if (!Array.isArray(data)) return []
+  const published = new Set(parseBlsMonthly(data).map((p) => p.date))
+  const out = new Set<string>()
+  for (const d of data) {
+    if (!d || typeof d.year !== 'string' || typeof d.period !== 'string' || !MONTHLY_PERIOD.test(d.period)) continue
+    const date = `${d.year}-${d.period.slice(1)}`
+    if (!published.has(date)) out.add(date)
+  }
+  return [...out].sort()
+}
+
+/**
  * Parse BLS monthly data: keeps only M01–M12 (drops M13 annual averages),
- * drops "-" / non-numeric values (e.g. Oct 2025 shutdown gap), sorts oldest first.
+ * drops "-" / non-numeric values (e.g. Oct 2025 shutdown gap; see blsUnpublishedMonths), sorts oldest first.
  * Points BLS marks preliminary (footnote code "P") get `preliminary: true`.
  */
 export function parseBlsMonthly(data: BlsRawPoint[] | undefined | null): MonthlyPoint[] {

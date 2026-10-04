@@ -1,5 +1,5 @@
 import {
-  fmtPct, divergingColor, fmtMoney, moversFor, provenance, METRICS, metricFooter, fetchCounty, fetchUsHousing,
+  fmtPct, divergingColor, NO_DATA_COLOR, fmtMoney, moversFor, provenance, METRICS, metricFooter, fetchCounty, fetchUsHousing,
   clearCountyDataCache, seriesRows, seriesChangeSinceBaseline, addMonths, flagNote, FLAG_CAVEAT,
   type CountyMap, type CountyRecord, type LocalMeta, type CompactSeries,
 } from '@/lib/county-data'
@@ -21,8 +21,15 @@ describe('county-data helpers', () => {
     expect(fmtPct(-1.2)).toBe('-1.2%')
   })
   it('clamps colors and handles missing data', () => {
-    expect(divergingColor(undefined, 10)).toBe('#18181b')
+    expect(divergingColor(undefined, 10)).toBe(NO_DATA_COLOR)
     expect(divergingColor(100, 10)).toBe(divergingColor(10, 10))
+    // no-data must not look like ~0%: clearly lighter than the near-black midpoint
+    const lum = (c: string) => {
+      const m = /^#(..)(..)(..)$/.exec(c)
+      const [r, g, b] = m ? m.slice(1).map(h => parseInt(h, 16)) : c.match(/\d+/g)!.map(Number)
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    expect(lum(NO_DATA_COLOR) - lum(divergingColor(0, 10))).toBeGreaterThan(50)
   })
   it('formats money, including the $1M boundary', () => {
     expect(fmtMoney(2_967_210)).toBe('$2.97M')
@@ -82,15 +89,19 @@ describe('movers', () => {
     expect(new Set(ids).size).toBe(ids.length)
     expect(top.length).toBe(1)
   })
-  it('excludes approximated counties, flagged outliers and small counties', () => {
+  it('excludes flagged outliers, small counties and an approximated figure for the metric itself', () => {
     const data: CountyMap = {
-      a: mk(50, { flags: ['hv'] }), b: mk(40, { approx: ['ur'] }), c: mk(30, { emp: 1000 }),
+      a: mk(50, { flags: ['hv'] }), b: mk(40, { approx: ['hv'] }), c: mk(30, { emp: 1000 }),
       d: mk(5), e: mk(4), f: mk(-3), g: mk(-4),
     }
     const { top, bottom } = moversFor(data, 'hv')
     const ids = [...top, ...bottom].map(([f]) => f)
     expect(ids).not.toContain('a'); expect(ids).not.toContain('b'); expect(ids).not.toContain('c')
     expect(top[0][0]).toBe('d'); expect(bottom[0][0]).toBe('g')
+  })
+  it('an approximated jobs count (approx: emp, e.g. CT planning regions) does not exclude a price mover', () => {
+    const data: CountyMap = { h: mk(40, { approx: ['emp'] }), d: mk(5), e: mk(4), f: mk(-3), g: mk(-4) }
+    expect(moversFor(data, 'hv').top[0][0]).toBe('h')
   })
 })
 

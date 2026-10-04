@@ -130,17 +130,24 @@ test('og:url and OG image echo city/state only when they are validated against t
   expect(img).not.toContain('Evil')
 })
 
-test('BLS gas tiers: og:description tags the BLS geography (Urban Hawaii, Philadelphia metro)', async () => {
+test('BLS gas tiers: og:description tags the BLS geography and month (Honolulu metro, Philadelphia metro)', async () => {
   const s = snap()
-  s.location = { ...s.location, stateAbbr: 'HI' }
+  s.location = { ...s.location, stateAbbr: 'HI', countyFips: '15003', countyName: 'Honolulu County' }
   s.gas.data = blsGasData('S49F')
   mockFetch.mockResolvedValue(s)
   const d = (await meta({ zip: '78701' })).openGraph?.description as string
-  expect(d).toMatch(/^Since Jan 2025: Gas \+\$0\.99\/gal \(Urban Hawaii\)/) // 5.402 − 4.413 (Aug 2026 vs Jan 2025)
-  expect(d).not.toContain('no HI/AK series')
+  expect(d).toMatch(/^Since Jan 2025: Gas \+\$0\.99\/gal \(Honolulu metro, thru Aug '26\)/) // 5.402 − 4.413 (Aug 2026 vs Jan 2025)
+  expect(d).not.toContain('no BLS or EIA gas series')
+  const h = snap()
+  h.location = { ...h.location, stateAbbr: 'HI', countyFips: '15009', countyName: 'Maui County' }
+  h.gas.data = blsGasData('S49F', { standIn: true })
+  mockFetch.mockResolvedValue(h)
+  const hd = (await meta({ zip: '78701' })).openGraph?.description as string
+  expect(hd).toContain("Gas +$0.99/gal (Honolulu-area price*, thru Aug '26)")
+  expect(hd).toContain('* no BLS or EIA gas series for Maui Co.; local prices are typically higher')
   const p = snap()
   p.location = { ...p.location, stateAbbr: 'PA' }
   p.gas.data = blsGasData('S12B')
   mockFetch.mockResolvedValue(p)
-  expect((await meta({ zip: '78701' })).openGraph?.description).toContain('Gas +$0.94/gal (Philadelphia metro)')
+  expect((await meta({ zip: '78701' })).openGraph?.description).toContain("Gas +$0.94/gal (Philadelphia metro, thru Aug '26)")
 })

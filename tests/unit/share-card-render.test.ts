@@ -160,27 +160,52 @@ test('OG + share card: flagged county rent gets "†" and an unusual-value footn
   expect(share).toContain('Unusual value')
 }, 30000)
 
-test('OG + share card: BLS monthly gas tier (Urban Hawaii) — geography tag, "since Jan 2025", BLS national', async () => {
+test('OG + share card: BLS monthly gas tier (Honolulu metro) — geography, as-of month, source-tagged national', async () => {
   if (process.env.REAL_OG) return
   const s = snap()
-  s.location = { ...s.location, stateAbbr: 'HI' }
+  s.location = { ...s.location, stateAbbr: 'HI', countyFips: '15003', countyName: 'Honolulu County' }
   s.gas.data = blsGasData('S49F')
   mockFetch.mockResolvedValue(s)
   await generateShareCard('78701')
   const share = textOf(mockRendered[mockRendered.length - 1])
-  expect(share).toContain('Urban Hawaii')
+  expect(share).toContain("Honolulu metro · thru Aug '26")
   expect(share).toContain('$5.40/gal')
-  expect(share).toContain('+$0.99')
-  expect(share).toContain('+$0.99 since Jan 2025 Natl') // monthly: Jan 2025, not Jan 20
-  expect(share).toContain('Natl: +$0.99') // BLS U.S. avg 4.200 − 3.211, same months
-  expect(share).not.toContain('No EIA series')
+  expect(share).toContain('+$0.99 since Jan 2025') // monthly: Jan 2025, not Jan 20
+  expect(share).toContain("Natl (BLS Aug '26): +$0.99") // BLS U.S. avg 4.200 − 3.211, same months
+  expect(share).not.toContain('Urban Hawaii')
+  expect(share).not.toContain('No gas series')
   const { GET } = await import('@/app/api/og/route')
   const { NextRequest } = await import('next/server')
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   const og = textOf(mockRendered[mockRendered.length - 1])
-  expect(og).toContain('Urban Hawaii')
-  expect(og).toContain('since Jan 2025')
-  expect(og).not.toContain('Hawaii/Alaska series')
+  expect(og).toContain('Honolulu metro')
+  expect(og).toContain("since Jan 2025, thru Aug '26")
+  expect(og).not.toContain('no BLS or EIA gas series')
+}, 30000)
+
+test('OG + share card: HI stand-in outside the Honolulu CBSA is marked * with a footnote', async () => {
+  if (process.env.REAL_OG) return
+  const s = snap()
+  s.location = { ...s.location, stateAbbr: 'HI', countyFips: '15001', countyName: 'Hawaii County', cityName: 'Hilo' }
+  s.gas.data = blsGasData('S49F', { standIn: true })
+  mockFetch.mockResolvedValue(s)
+  await generateShareCard('78701')
+  const share = textOf(mockRendered[mockRendered.length - 1])
+  expect(share).toContain("Honolulu-area price* · thru Aug '26")
+  expect(share).toContain('* No gas series for Hawaii Co. (Big Island); local prices typically higher.')
+  const { GET } = await import('@/app/api/og/route')
+  const { NextRequest } = await import('next/server')
+  await GET(new NextRequest('http://x/api/og?zip=78701'))
+  const og = textOf(mockRendered[mockRendered.length - 1])
+  expect(og).toContain('Honolulu-area price*')
+  expect(og).toContain('* no BLS or EIA gas series for Hawaii Co. (Big Island); local prices are typically higher')
+}, 30000)
+
+test('share card: EIA national is tagged EIA', async () => {
+  if (process.env.REAL_OG) return
+  mockFetch.mockResolvedValue(snap())
+  await generateShareCard('78701')
+  expect(textOf(mockRendered[mockRendered.length - 1])).toMatch(/Natl \(EIA [A-Z][a-z]{2} \d{1,2}\): [+−-]\$\d\.\d{2}/)
 }, 30000)
 
 test('share card tariff names where the income comes from; national CPI fallback is labeled', async () => {

@@ -23,7 +23,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
-// 19103 Philadelphia (BLS metro gas), 53202 Milwaukee (BLS East North Central gas), 96813 / 99501 (BLS Urban HI / AK gas)
+// 19103 Philadelphia (BLS metro gas), 53202 Milwaukee (EIA PADD 2), 96813 / 99501 (BLS Honolulu / Anchorage gas)
 const DEFAULT_ZIPS = ['98683', '10001', '60601', '78701', '90210', '04101', '06103', '83702', '96813', '99501', '19103', '53202']
 const BASE_URL = (process.env.BASE_URL ?? 'https://www.whatchanged.us').replace(/\/$/, '')
 const BLS_URL = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'

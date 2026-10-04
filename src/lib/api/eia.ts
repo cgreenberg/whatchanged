@@ -7,8 +7,7 @@ import {
   PAD_NAMES,
   PAD_DUOAREA,
 } from '@/lib/mappings/eia-gas'
-import { BLS_GAS_STATE_AREA, BLS_GAS_DIVISIONS, isBlsGasMetro } from '@/lib/mappings/bls-gas'
-import { STATE_TO_DIVISION } from '@/lib/mappings/county-metro-cpi'
+import { BLS_GAS_STATE_AREA, isBlsGasMetro } from '@/lib/mappings/bls-gas'
 import { describeBlsGasArea, fetchBlsGasSeries } from './bls-gas'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
@@ -56,9 +55,14 @@ export interface GasLookupResult {
   /** Upstream series id: EMM_EPMR_PTE_{duoarea}_DPG (EIA) or APU{area}74714 (BLS). */
   seriesId: string
   geoLevel: string
-  /** Geographic granularity: 1 city/metro, 2 state (or Urban HI/AK), 3 PADD/division/national. */
+  /** Geographic granularity: 1 city/metro, 2 state (or HI/AK stand-in), 3 PADD/national. */
   tier: 1 | 2 | 3
   cacheKey: string
+  /**
+   * true: a HI / AK zip outside the Honolulu / Anchorage CBSA. No EIA or BLS series covers it, so
+   * the Honolulu / Anchorage series stands in (labeled as such; local prices are typically higher).
+   */
+  standIn?: boolean
 }
 
 // Fixed facts about EIA PADD duoarea codes (independent of which code each
@@ -118,7 +122,8 @@ function describeEiaCode(code: string, label?: string): Pick<GasLookupResult, 'd
 export function getGasLookup(
   stateAbbr: string,
   cpiAreaCode?: string,
-  countyFips?: string
+  countyFips?: string,
+  opts: { eiaOnly?: boolean } = {}
 ): GasLookupResult {
   // Tier 1a: county FIPS overrides (may point at a city, state or PADD series)
   if (countyFips) {
@@ -132,22 +137,24 @@ export function getGasLookup(
     if (city) return describeDuoarea(city.duoarea, city.label)
   }
 
-  // BLS monthly: CPI metro without an EIA city series (incl. Urban Hawaii/Alaska CBSAs)
-  if (isBlsGasMetro(cpiAreaCode)) return describeBlsGasArea(cpiAreaCode)
-
   const upper = stateAbbr.toUpperCase()
 
-  // BLS monthly: rest of Hawaii / Alaska → Urban Hawaii / Urban Alaska (EIA has no HI/AK series)
-  const urbanState = BLS_GAS_STATE_AREA[upper]
-  if (urbanState) return describeBlsGasArea(urbanState)
+  if (!opts.eiaOnly) {
+    // BLS monthly: CPI metro without an EIA city series (incl. Honolulu S49F, Anchorage S49G)
+    if (isBlsGasMetro(cpiAreaCode)) return describeBlsGasArea(cpiAreaCode)
+
+    // BLS monthly: rest of Hawaii / Alaska → the Honolulu / Anchorage series as a labeled stand-in
+    // (EIA publishes no HI/AK series and BLS nothing outside those two CBSAs)
+    const hiAk = BLS_GAS_STATE_AREA[upper]
+    if (hiAk) return describeBlsGasArea(hiAk, { standIn: true })
+  } else if (BLS_GAS_STATE_AREA[upper]) {
+    // EIA-only (BLS outage fallback): EIA has nothing for HI/AK; the West Coast PADD would mislead
+    return describeDuoarea('NUS')
+  }
 
   // EIA state-level
   const state = STATE_LEVEL_CODES[upper]
   if (state) return describeDuoarea(state.duoarea, state.label)
-
-  // BLS monthly: Midwest Census divisions that lie entirely inside PADD 2
-  const division = STATE_TO_DIVISION[upper]?.code
-  if (division && BLS_GAS_DIVISIONS.has(division)) return describeBlsGasArea(division)
 
   // EIA PAD district / sub-district
   const pad = STATE_TO_PAD[upper]
@@ -178,6 +185,8 @@ export interface GasSeriesData {
   change: number
   series: Array<{ date: string; price: number }>
   regionName: string
+  /** BLS monthly only: months (YYYY-MM) inside the series BLS did not publish (chart gaps). */
+  unpublished?: string[]
 }
 
 /**
@@ -285,6 +294,8 @@ export function toGasPriceData(
     seriesId: lookup.seriesId,
     ...(lookup.duoarea ? { duoarea: lookup.duoarea } : {}),
     ...(lookup.source === 'bls' ? { blsArea: lookup.areaCode, areaName: lookup.areaName } : {}),
+    ...(lookup.standIn ? { standIn: true } : {}),
+    ...(s.unpublished?.length ? { unpublished: s.unpublished } : {}),
     tier: lookup.tier,
     series: s.series,
     ...(extra.nationalSeries ? { nationalSeries: extra.nationalSeries } : {}),

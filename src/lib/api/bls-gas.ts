@@ -4,11 +4,10 @@
 // average (APU000074714) over the same months.
 
 import type { GasLookupResult, GasSeriesData } from './eia'
-import { fetchBlsSeries, parseBlsMonthly, BASELINE_PERIOD_KEY, type BlsRawPoint } from './bls-common'
+import { fetchBlsSeries, parseBlsMonthly, blsUnpublishedMonths, BASELINE_PERIOD_KEY, type BlsRawPoint } from './bls-common'
 import {
   blsGasSeriesId,
   blsGasAreaName,
-  isBlsUrbanStateArea,
   BLS_GAS_NATIONAL_AREA,
 } from '@/lib/mappings/bls-gas'
 
@@ -19,20 +18,20 @@ export function blsGasCacheKey(area: string): string {
 }
 
 /**
- * Lookup for a BLS gas area. Tier mirrors the EIA tiers by geography:
- * metro → 1, Urban Hawaii / Urban Alaska (state-wide urban average) → 2,
- * Census division / region / U.S. → 3.
+ * Lookup for a BLS gas area. Metro (incl. Honolulu S49F / Anchorage S49G) → tier 1;
+ * region / U.S. → tier 3. `standIn`: a HI / AK zip outside the Honolulu / Anchorage CBSA, shown
+ * that metro's series because no EIA or BLS series covers it → tier 2, labeled "Honolulu-area price (BLS)".
  */
-export function describeBlsGasArea(area: string): GasLookupResult {
+export function describeBlsGasArea(area: string, opts: { standIn?: boolean } = {}): GasLookupResult {
   const name = blsGasAreaName(area)
   let tier: 1 | 2 | 3
   let geoLevel: string
   if (area === BLS_GAS_NATIONAL_AREA) {
     tier = 3
     geoLevel = 'National avg'
-  } else if (isBlsUrbanStateArea(area)) {
+  } else if (opts.standIn) {
     tier = 2
-    geoLevel = `${name} avg`
+    geoLevel = `${name}-area price (BLS)`
   } else if (/^S/.test(area)) {
     tier = 1
     geoLevel = `${name} metro avg`
@@ -49,6 +48,7 @@ export function describeBlsGasArea(area: string): GasLookupResult {
     geoLevel,
     tier,
     cacheKey: blsGasCacheKey(area),
+    ...(opts.standIn ? { standIn: true } : {}),
   }
 }
 
@@ -64,6 +64,8 @@ export function parseBlsGasSeries(data: BlsRawPoint[] | undefined | null, areaNa
   const base = points.find((p) => p.date === BASELINE_PERIOD_KEY)
   if (!base) throw new Error(`No January 2025 BLS gas price for ${areaName}`)
   const latest = points[points.length - 1]
+  // Unpublished months inside the series' span (e.g. Oct 2025) stay visible as chart gaps
+  const unpublished = blsUnpublishedMonths(data).filter((d) => d > points[0].date && d < latest.date)
   return {
     current: latest.value,
     latestDate: latest.date,
@@ -72,6 +74,7 @@ export function parseBlsGasSeries(data: BlsRawPoint[] | undefined | null, areaNa
     change: parseFloat((latest.value - base.value).toFixed(3)),
     series: points.map((p) => ({ date: p.date, price: p.value })),
     regionName: areaName,
+    ...(unpublished.length ? { unpublished } : {}),
   }
 }
 

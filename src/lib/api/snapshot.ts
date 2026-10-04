@@ -22,6 +22,7 @@ import {
   getGasSeriesCached,
   nationalGasLookupFor,
   NATIONAL_CPI,
+  NATIONAL_GAS_LOOKUP,
   settle,
 } from './cached-sources'
 
@@ -110,6 +111,23 @@ export async function fetchSnapshot(
       nationalSeries: gasIsNational ? undefined : gasNational?.data.series,
     })
     gasMeta = gasPrimary
+  } else if (gasLookup.source === 'bls') {
+    // BLS outage: show the zip's EIA weekly tier (state / PADD) as a whole — local AND national
+    // from EIA, labeled as a fallback — never a BLS local against an EIA national (or vice versa).
+    const eiaLookup = getGasLookup(location.stateAbbr, cpiArea.areaCode, location.countyFips, { eiaOnly: true })
+    const eiaIsNational = eiaLookup.cacheKey === NATIONAL_GAS_LOOKUP.cacheKey
+    const [eiaLocal, eiaNational] = await Promise.all([
+      settle(getGasSeriesCached(eiaLookup, opts), 'eia-gas-fallback'),
+      eiaIsNational ? Promise.resolve(null) : settle(getGasSeriesCached(NATIONAL_GAS_LOOKUP, opts), 'eia-gas-national'),
+    ])
+    if (eiaLocal && !eiaIsNational) {
+      gasData = { ...toGasPriceData(eiaLookup, eiaLocal.data, { nationalSeries: eiaNational?.data.series }), fallback: 'eia' }
+      gasMeta = eiaLocal
+    } else if (eiaLocal ?? eiaNational) {
+      const nat = (eiaLocal ?? eiaNational)!
+      gasData = { ...toGasPriceData(NATIONAL_GAS_LOOKUP, nat.data, { isNationalFallback: true }), fallback: 'national' }
+      gasMeta = nat
+    }
   } else if (gasNational) {
     gasData = { ...toGasPriceData(gasNationalLookup, gasNational.data, { isNationalFallback: true }), fallback: 'national' }
     gasMeta = gasNational

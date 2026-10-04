@@ -7,7 +7,7 @@
 // Upstream use for a full refresh (prices only; county unemployment/LAUS is no
 // longer fetched at runtime):
 //   - BLS: CPI in batches of 15 areas (45 series + 3 national = 48); the BLS
-//     monthly gas series (APU{area}74714, ~17) fill the spare room in those
+//     monthly gas series (APU{area}74714, ~15) fill the spare room in those
 //     batches (≤ 50 series per POST) → 3 BLS calls for a full refresh
 //   - Gas: one EIA GET per EIA duoarea (~22 calls)
 
@@ -58,6 +58,11 @@ export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
     if (!cpi.has(area.areaCode)) cpi.set(area.areaCode, area)
     const lookup = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips)
     if (!gas.has(lookup.cacheKey)) gas.set(lookup.cacheKey, lookup)
+    if (lookup.source === 'bls') {
+      // The snapshot's BLS-outage fallback (the zip's EIA weekly tier) must be warm too
+      const eia = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips, { eiaOnly: true })
+      if (!gas.has(eia.cacheKey)) gas.set(eia.cacheKey, eia)
+    }
   }
   if ([...gas.values()].some((l) => l.source === 'bls')) gas.set(BLS_NATIONAL_GAS_LOOKUP.cacheKey, BLS_NATIONAL_GAS_LOOKUP)
   return {

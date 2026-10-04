@@ -12,8 +12,8 @@ export function blsGasRaw(area: string): BlsRawPoint[] {
   return s.data
 }
 
-export function blsGasData(area: string): GasPriceData {
-  const lookup = describeBlsGasArea(area)
+export function blsGasData(area: string, opts: { standIn?: boolean } = {}): GasPriceData {
+  const lookup = describeBlsGasArea(area, opts)
   const local = parseBlsGasSeries(blsGasRaw(area), lookup.areaName ?? area)
   const nat = parseBlsGasSeries(blsGasRaw('0000'), BLS_NATIONAL_GAS_LOOKUP.areaName ?? 'U.S.')
   return toGasPriceData(lookup, local, { nationalSeries: nat.series })

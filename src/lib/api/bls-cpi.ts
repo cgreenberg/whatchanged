@@ -3,6 +3,7 @@ import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 import {
   fetchBlsSeries,
   parseBlsMonthly,
+  blsUnpublishedMonths,
   findBaseline,
   findLatest,
   pctChange,
@@ -24,11 +25,14 @@ export function cpiCacheKey(areaCode: string): string {
   return `bls:cpi:${areaCode}:all`
 }
 
-function buildCpiPoints(g: MonthlyPoint[], s: MonthlyPoint[], e: MonthlyPoint[]): CpiPoint[] {
+function buildCpiPoints(g: MonthlyPoint[], s: MonthlyPoint[], e: MonthlyPoint[], unpublished: string[] = []): CpiPoint[] {
   // Union of months across the three items: an area with a gap in one series
-  // (e.g. Phoenix food-at-home 2026M02–M07) keeps the other items' months.
+  // (e.g. Phoenix food-at-home 2026M02–M07) keeps the other items' months. Months BLS listed but
+  // published for no item (e.g. Oct 2025) stay as empty rows inside the span, so charts mark the gap.
   const maps = [g, s, e].map((series) => new Map(series.map((p) => [p.date, p])))
-  const dates = [...new Set([...maps[0].keys(), ...maps[1].keys(), ...maps[2].keys()])].sort()
+  const valued = [...new Set([...maps[0].keys(), ...maps[1].keys(), ...maps[2].keys()])].sort()
+  const inSpan = unpublished.filter((d) => valued.length && d > valued[0] && d < valued[valued.length - 1])
+  const dates = [...new Set([...valued, ...inSpan])].sort()
   return dates.map((date) => {
     const [gp, sp, ep] = maps.map((m) => m.get(date))
     const preliminary = gp?.preliminary || sp?.preliminary || ep?.preliminary
@@ -81,7 +85,11 @@ export function parseCpiResponse(
     const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
     const ng = parseBlsMonthly(seriesMap[nat.groceries])
     if (ng.length) {
-      nationalSeries = buildCpiPoints(ng, parseBlsMonthly(seriesMap[nat.shelter]), parseBlsMonthly(seriesMap[nat.energy]))
+      nationalSeries = buildCpiPoints(ng, parseBlsMonthly(seriesMap[nat.shelter]), parseBlsMonthly(seriesMap[nat.energy]), [
+        ...blsUnpublishedMonths(seriesMap[nat.groceries]),
+        ...blsUnpublishedMonths(seriesMap[nat.shelter]),
+        ...blsUnpublishedMonths(seriesMap[nat.energy]),
+      ])
     }
   }
 
@@ -100,7 +108,11 @@ export function parseCpiResponse(
           shelterLatestPeriod: sLatest.period,
         }
       : {}),
-    series: buildCpiPoints(g, s, e),
+    series: buildCpiPoints(g, s, e, [
+      ...blsUnpublishedMonths(seriesMap[ids.groceries]),
+      ...blsUnpublishedMonths(seriesMap[ids.shelter]),
+      ...blsUnpublishedMonths(seriesMap[ids.energy]),
+    ]),
     metro: area.areaName,
     tier: area.tier,
     areaCode: area.areaCode,

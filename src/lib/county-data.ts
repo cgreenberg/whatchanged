@@ -213,7 +213,9 @@ export function moversFor(data: CountyMap, metric: MetricKey, n = 5) {
   const rows = Object.entries(data)
     .filter(([, c]) =>
       typeof c[metric] === 'number' && Number.isFinite(c[metric]) &&
-      (c.emp ?? 0) >= MOVERS_MIN_JOBS && !c.approx?.length && !c.flags?.includes(metric))
+      // `approx` lists approximated fields (in practice only `emp`, the jobs count used for the size
+      // cut): only an approximated figure for THIS metric excludes a county, never an estimated jobs count
+      (c.emp ?? 0) >= MOVERS_MIN_JOBS && !c.approx?.includes(metric) && !c.flags?.includes(metric))
     .sort((a, b) => (b[1][metric] as number) - (a[1][metric] as number))
   const k = Math.min(n, Math.floor(rows.length / 2))
   return { top: rows.slice(0, k), bottom: rows.slice(rows.length - k).reverse() }
@@ -236,8 +238,15 @@ export function flagNote(c: CountyRecord | null | undefined, key: string): strin
 const NEG = [59, 130, 246]
 const MID = [39, 39, 42]
 const POS = [245, 158, 11]
+/**
+ * No-data fill: a hatch of mid-gray on near-black (map SVG pattern NO_DATA_PATTERN_ID), so a missing
+ * county never reads as a ~0% change (the scale's midpoint is near-black). NO_DATA_COLOR is the
+ * solid stand-in where a pattern can't be used (it is lighter than any near-zero color).
+ */
+export const NO_DATA_COLOR = '#71717a'
+export const NO_DATA_PATTERN_ID = 'map-nodata-hatch'
 export function divergingColor(v: number | undefined, clamp: number): string {
-  if (v == null || !Number.isFinite(v)) return '#18181b'
+  if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
   const t = Math.max(-1, Math.min(1, v / clamp))
   const a = Math.pow(Math.abs(t), 0.7)
   const end = t < 0 ? NEG : POS

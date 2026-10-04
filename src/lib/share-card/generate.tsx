@@ -6,7 +6,7 @@ import {
   BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
-import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas } from '@/lib/hero-cards'
+import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
@@ -151,17 +151,28 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const natGas = gasData?.isNationalFallback ? null : gasNationalMatching(gasData)
   const gasMonthly = isMonthlyGas(gasData)
   // One line in the cell (the sparkline height assumes it): abbreviate the longest EIA name;
-  // BLS tiers use the short tag ("Philadelphia metro", "Urban Hawaii", "East North Central div.").
-  const gasGeo = gasOk
+  // BLS tiers use the short tag ("Philadelphia metro", "Honolulu-area price*") plus the month the
+  // monthly figure runs through ("thru Aug '26"), since weekly EIA figures elsewhere are weeks newer.
+  const gasThru = gasMonthly && card('gas')?.asOfPeriod ? `thru ${fmtMonthShort(card('gas')!.asOfPeriod)}` : null
+  const gasGeoName = gasOk
     ? (gasMonthly ? card('gas')?.geoTag : card('gas')?.provenance.geography?.replace('excl. California', 'excl. CA')) ?? null
     : null
+  const gasGeo = gasGeoName && gasThru ? `${gasGeoName} · ${gasThru}` : gasGeoName
+  // HI/AK outside Honolulu/Anchorage: footnote for the "*" on the stand-in label
+  const gasStandInNote = gasOk && isGasStandIn(gasData)
+    ? `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices typically higher.`
+    : null
+  // National carries its source and as-of (BLS monthly vs EIA weekly national figures differ)
+  const natGasTag = natGas
+    ? gasMonthly ? `BLS ${fmtMonthShort(natGas.latestDate)}` : `EIA ${fmtDay(natGas.latestDate).replace(/, \d{4}$/, '')}`
+    : ''
+  const natGasText = natGas ? `Natl (${natGasTag}): ${fmtSignedDollars(natGas.change)}` : null
   const rentOutlier = !!rent && card('rent')?.outlier === true
   const incomeTag = tariffOk ? tariffIncomeTag(snapshot) : undefined
   const gasSince = gasMonthly
     ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}`
     : gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
   const cpiLabel = cpiShareLabel(cpiData)
-  const natGasChange = natGas?.change
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
   // Start at the baseline week to match the hero number
@@ -221,7 +232,8 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           xMid: gasXMid,
           xRight: gasXRight,
           // Leave room for the meta row (baseline + national) under the number; less with the geography line
-          height: gasGeo ? 146 : 170,
+          // Room for the geography line, the national row and the stand-in footnote
+          height: (gasGeo ? 146 : 170) - (natGasText ? 34 : 0) - (gasStandInNote ? 16 : 0),
         })
       : null
 
@@ -310,9 +322,11 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
       >
         {label}
       </span>
-      <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
-        {sublabel}
-      </span>
+      {sublabel && (
+        <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
+          {sublabel}
+        </span>
+      )}
       {extra && (
         <span style={{ fontFamily: 'DM Mono', fontSize: 20, color: TEXT_TERTIARY, display: 'flex' }}>
           {extra}
@@ -562,7 +576,10 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             }}
           >
             {accentStrip(RED)}
-            {sectionLabel('GAS PRICES', '(regular gasoline, $/gal)', gasGeo)}
+            {/* Stand-in: the geography takes the sublabel's line so the footnote fits ("/gal" is on the big number) */}
+            {gasStandInNote
+              ? sectionLabel('GAS PRICES', '', gasGeo)
+              : sectionLabel('GAS PRICES', '(regular gasoline, $/gal)', gasGeo)}
             {gasSparkline && (
               <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>
             )}
@@ -570,10 +587,14 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A', RED)}
               {changePill(gasOk ? fmtSignedDollars(gasData!.change) : '—', RED)}
             </div>
-            {metaRow(
-              gasSince,
-              // Like-for-like with the pill: same source, same baseline rule, same months (BLS)
-              natGasChange != null ? `Natl: ${fmtSignedDollars(natGasChange)}` : null
+            {metaRow(gasSince, null)}
+            {/* Like-for-like with the pill: same source, same baseline rule, same months (BLS); own row so the
+                source + as-of fit ("Natl (BLS Aug '26)" vs "Natl (EIA Sep 28)") */}
+            {natGasText && metaRow(natGasText, null)}
+            {gasStandInNote && (
+              <span style={{ fontFamily: 'DM Mono', fontSize: 17, color: AMBER, display: 'flex', marginTop: 4 }}>
+                {gasStandInNote}
+              </span>
             )}
           </div>
 

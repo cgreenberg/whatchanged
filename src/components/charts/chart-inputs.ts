@@ -23,6 +23,14 @@ export interface ChartInput {
   note?: string
 }
 
+/** Insert an empty row for each listed date not already present (kept sorted by date). */
+export function withEmptyRows(rows: Row[], dates: readonly string[] | undefined): Row[] {
+  if (!dates?.length) return rows
+  const have = new Set(rows.map(r => r.date))
+  const extra = dates.filter(d => !have.has(d)).map(d => ({ date: d }) as Row)
+  return extra.length ? [...rows, ...extra].sort((a, b) => a.date.localeCompare(b.date)) : rows
+}
+
 /** Map chart config IDs to snapshot data + provenance. */
 export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInput {
   switch (id) {
@@ -59,15 +67,18 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
       const geography = g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable'
       const src = gasSourceInfo(g)
       return {
-        data: series.map(p => ({ date: p.date, price: p.price })),
+        // Unpublished BLS months stay as empty rows so the chart marks the gap
+        data: withEmptyRows(series.map(p => ({ date: p.date, price: p.price })), g?.unpublished),
         nationalData: national.map(p => ({ date: p.date, price: p.price })),
         stale: !!snapshot.gas.stale,
         weeklyGasBaseline: !monthly,
+        // Name the overlay's source: BLS monthly and EIA weekly U.S. averages differ
+        nationalLabel: national.length ? (monthly ? 'U.S. city avg, BLS monthly' : 'U.S. avg, EIA weekly') : undefined,
         note: gasCaveatFor(snapshot),
         ...(monthly
           ? {
               configOverrides: {
-                description: 'BLS CPI average price per gallon of regular gasoline for this metro or area, published monthly. Used where EIA publishes no weekly city series.',
+                description: 'BLS CPI average price per gallon of regular gasoline, published monthly. Used for metros where EIA publishes no weekly city series, and for Hawaii/Alaska.',
                 sourceLabel: 'BLS CPI Average Price Data',
                 sourceUrl: src.sourceUrl,
               },

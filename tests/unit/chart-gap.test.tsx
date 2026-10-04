@@ -40,23 +40,33 @@ function renderItem(item: 'groceries' | 'shelter') {
 describe('CPI chart with a data gap (recorded Phoenix food at home)', () => {
   test('gap is found from the data', () => {
     const rows = phoenix.series.map(p => ({ date: p.date, groceries: p.groceries }))
-    expect(findGaps(rows, 'groceries')).toEqual([{ from: '2026-02', to: '2026-07', before: '2026-01', after: '2026-08' }])
+    // Oct 2025: BLS lists the month with "-" (shutdown) → kept as an empty row, so it is a gap too
+    expect(findGaps(rows, 'groceries')).toEqual([
+      { from: '2025-10', to: '2025-10', before: '2025-09', after: '2025-11' },
+      { from: '2026-02', to: '2026-07', before: '2026-01', after: '2026-08' },
+    ])
     // Aug 2026 is isolated (both neighbors empty/absent) and the latest point
     expect(dotDates(rows, 'groceries').has('2026-08')).toBe(true)
   })
 
   test('renders the note, a dashed connector and a dot on the latest point', () => {
     const { container } = renderItem('groceries')
-    expect(screen.getByTestId('chart-gap-note')).toHaveTextContent('No BLS data for Feb 2026–Jul 2026')
+    expect(screen.getByTestId('chart-gap-note')).toHaveTextContent('No BLS data for Oct 2025, Feb 2026–Jul 2026')
     const connector = container.querySelector('.gap-connector path, path.gap-connector')
     expect(connector).not.toBeNull()
     expect(connector!.getAttribute('stroke-dasharray')).toBe('2 4')
     expect(container.querySelectorAll('[data-testid="point-dot"]').length).toBeGreaterThanOrEqual(1)
   })
 
-  test('shelter (no gap) has no gap note or connector', () => {
-    const { container } = renderItem('shelter')
-    expect(screen.queryByTestId('chart-gap-note')).toBeNull()
-    expect(container.querySelector('.gap-connector')).toBeNull()
+  test('shelter: only the unpublished Oct 2025 month is a gap', () => {
+    renderItem('shelter')
+    expect(screen.getByTestId('chart-gap-note')).toHaveTextContent(/^No BLS data for Oct 2025$/)
+  })
+
+  test('a month BLS never lists (bimonthly off-month) is not a gap', () => {
+    const raw = RECORDED['CUURS48ASAH1'].filter(d => !(d.year === '2025' && (d.period === 'M10' || d.period === 'M06')))
+    const s = parseCpiResponse({ ...Object.fromEntries(ids.map(id => [id, RECORDED[id]])), CUURS48ASAH1: raw, CUURS48ASAF11: raw.map(d => ({ ...d })), CUURS48ASA0E: raw.map(d => ({ ...d })) }, { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
+    expect(s.series.some(p => p.date === '2025-06')).toBe(false)
+    expect(findGaps(s.series.map(p => ({ date: p.date, shelter: p.shelter })), 'shelter')).toEqual([])
   })
 })

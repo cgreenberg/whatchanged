@@ -8,14 +8,14 @@
 //
 // Lookup order (getGasLookup, most local first):
 //   1 EIA weekly city (county override / CPI metro → EIA city)
-//   2 BLS monthly CPI metro without an EIA city (incl. Urban Hawaii/Alaska CBSAs)
-//   3 HI / AK zips outside those CBSAs → Urban Hawaii (S49F) / Urban Alaska (S49G)
-//   4 EIA weekly state (9 states)
-//   5 BLS monthly Census division, Midwest only: East North Central (0230) and
-//     West North Central (0240) lie entirely inside PADD 2, so the division is
-//     more local than the PADD 2 average. (East South Central and West South
-//     Central are mostly PADD 3 states, so KY/TN/OK keep EIA PADD 2.)
-//   6 EIA weekly PADD / sub-PADD   7 EIA national
+//   2 BLS monthly CPI metro without an EIA city (incl. Honolulu S49F, Anchorage S49G)
+//   3 HI / AK zips outside those two CBSAs → the Honolulu (S49F) / Anchorage (S49G)
+//     series as a labeled stand-in: neither EIA nor BLS publishes anything closer
+//   4 EIA weekly state (9 states)   5 EIA weekly PADD / sub-PADD   6 EIA national
+//
+// BLS Census-division gas series exist (e.g. East North Central 0230) but are
+// NOT used: they are urban averages weighted to the division's big metros, so
+// they read as more local than they are. Midwest zips keep EIA PADD 2 (R20).
 
 import { BLS_CPI_AREAS } from './county-metro-cpi'
 
@@ -34,11 +34,20 @@ export const BLS_GAS_PUBLISHED_AREAS: ReadonlySet<string> = new Set([
   'S48A', 'S48B', 'S49A', 'S49B', 'S49C', 'S49D', 'S49E', 'S49F', 'S49G',
 ])
 
-/** HI / AK zips outside the Urban Hawaii / Urban Alaska CBSAs use those urban averages (no EIA series exists). */
+/**
+ * HI / AK zips outside the Honolulu / Anchorage CBSAs: no EIA or BLS gas series covers them, so
+ * the Honolulu (S49F) / Anchorage (S49G) series is shown as a labeled stand-in (GasLookupResult.standIn).
+ */
 export const BLS_GAS_STATE_AREA: Record<string, string> = { HI: 'S49F', AK: 'S49G' }
 
-/** Midwest divisions entirely inside PADD 2 (see header). */
-export const BLS_GAS_DIVISIONS: ReadonlySet<string> = new Set(['0230', '0240'])
+/**
+ * Proper short names for gas labels. BLS titles S49F / S49G "Urban Hawaii" / "Urban Alaska", but
+ * the samples are the Urban Honolulu CBSA (county 15003) and the Anchorage CBSA (02020, 02170) only.
+ */
+const BLS_GAS_AREA_NAMES: Record<string, string> = {
+  S49F: 'Honolulu',
+  S49G: 'Anchorage',
+}
 
 /** "S12B" → "APUS12B74714". */
 export function blsGasSeriesId(area: string): string {
@@ -50,12 +59,12 @@ export function isBlsGasMetro(area: string | undefined): area is string {
   return !!area && /^S/.test(area) && !!BLS_CPI_AREAS[area] && BLS_GAS_PUBLISHED_AREAS.has(area)
 }
 
-/** Urban Hawaii / Urban Alaska (state-wide urban averages, not one metro). */
-export function isBlsUrbanStateArea(area: string): boolean {
+/** Honolulu (S49F) / Anchorage (S49G): the only BLS gas series for Hawaii / Alaska. */
+export function isBlsHiAkArea(area: string): boolean {
   return area === 'S49F' || area === 'S49G'
 }
 
 export function blsGasAreaName(area: string): string {
   if (area === BLS_GAS_NATIONAL_AREA) return 'U.S. city average'
-  return BLS_CPI_AREAS[area]?.name ?? area
+  return BLS_GAS_AREA_NAMES[area] ?? BLS_CPI_AREAS[area]?.name ?? area
 }

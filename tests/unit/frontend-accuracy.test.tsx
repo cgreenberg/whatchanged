@@ -309,3 +309,20 @@ describe('Housing graph', () => {
     await waitFor(() => expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', 'shelter'))
   })
 })
+
+describe('round 7: housing note wording and Zillow stale badge', () => {
+  test('HOUSING_NOTE says what CPI shelter measures (OER, not mortgages or home prices)', () => {
+    expect(HOUSING_NOTE).toContain("owners' equivalent rent")
+    expect(HOUSING_NOTE).toContain('not mortgage payments or home prices')
+    expect(HOUSING_NOTE).not.toContain('what all renters and homeowners pay')
+  })
+
+  test('Zillow tabs get the stale badge when the shard series ended more than 60 days ago', async () => {
+    const { zillowTabInput } = await import('@/components/charts/HousingChart')
+    const county = { n: 'Travis County, TX', rentS: { start: '2025-01', v: [1600, 1610, 1620] } } as unknown as CountyRecord
+    // series ends Mar 2025 (month end Mar 31)
+    expect(zillowTabInput('rent', county, null, 'Travis', new Date('2025-05-15T00:00:00Z')).stale).toBe(false)
+    expect(zillowTabInput('rent', county, null, 'Travis', new Date('2025-06-15T00:00:00Z')).stale).toBe(true)
+    expect(zillowTabInput('homePrices', county, null, 'Travis', new Date('2026-06-15T00:00:00Z')).stale).toBe(false) // no data → no badge
+  })
+})

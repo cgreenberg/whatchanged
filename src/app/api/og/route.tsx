@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
-import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
+import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
 import { BASELINE_DAY_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
@@ -81,9 +81,11 @@ function gridlineYPositions(series: NationalDataPoint[], height: number): { minY
  */
 function ogSublines(c: HeroCardModel): [string, string] {
   // Weekly EIA: "since Jan 13, 2025"; monthly BLS gas: "since Jan 2025"
+  const monthly = /^monthly · /.test(c.provenance.window)
   const since = c.provenance.window.replace(/^since week of /, 'since ').replace(/^monthly · /, '')
   switch (c.id) {
-    case 'gas': return [c.geoTag ?? c.provenance.geography, since]
+    // Monthly BLS gas also names its month: weekly EIA figures elsewhere run weeks newer
+    case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : since]
     case 'rent': return [c.geoTag ?? c.provenance.geography, `${since}, seas. adj.`]
     case 'tariff': return [c.geoTag ? `${c.geoTag} income` : 'income', 'estimate']
     default: return [c.geoTag ?? c.provenance.geography, since]
@@ -144,6 +146,9 @@ export async function GET(req: NextRequest) {
           }
         })
         if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
+        if (cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)) {
+          footnotes.push(GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, true)))
+        }
         latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
         throughLabel = dataThroughLabel(cards)
         degraded = cards.some(c => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)

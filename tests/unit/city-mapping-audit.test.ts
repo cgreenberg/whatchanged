@@ -5,10 +5,9 @@
  *   - CPI: S-codes = BLS CPI metro (county in the OMB 2013 CBSA BLS samples),
  *     01x0–04x0 = Census division.
  *   - Gas: county override → CPI metro → EIA city (weekly); else BLS monthly
- *     average price for a CPI metro without an EIA city ("BLS:S12B"); HI/AK →
- *     BLS Urban Hawaii/Alaska; else the state's EIA series (9 states); else BLS
- *     East/West North Central division (Midwest); else PADD / sub-PADD
- *     (non-CA PADD 5 → R5XCA).
+ *     average price for a CPI metro without an EIA city ("BLS:S12B", incl. Honolulu
+ *     S49F / Anchorage S49G); rest of HI/AK → that series as a labeled stand-in (tier 2);
+ *     else the state's EIA series (9 states); else PADD / sub-PADD (non-CA PADD 5 → R5XCA).
  * Zip-level checks (incl. LAUS areas) live in golden-zips.test.ts.
  */
 
@@ -191,31 +190,31 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === MICHIGAN ===
   ['Detroit', 'MI', '26163', 'S23B', 'BLS:S23B', 1],     // CBSA → Detroit-Warren-Dearborn
-  ['Grand Rapids', 'MI', '26081', '0230', 'BLS:0230', 3], // Grand Rapids CBSA not primary → Midwest regional
+  ['Grand Rapids', 'MI', '26081', '0230', 'R20', 3], // Grand Rapids CBSA not primary → Midwest regional
   ['Warren', 'MI', '26099', 'S23B', 'BLS:S23B', 1],
   ['Sterling Heights', 'MI', '26099', 'S23B', 'BLS:S23B', 1],
-  ['Ann Arbor', 'MI', '26161', '0230', 'BLS:0230', 3],   // Ann Arbor CBSA not primary → Midwest regional
+  ['Ann Arbor', 'MI', '26161', '0230', 'R20', 3],   // Ann Arbor CBSA not primary → Midwest regional
 
   // === INDIANA ===
-  ['Indianapolis', 'IN', '18097', '0230', 'BLS:0230', 3], // Indianapolis CBSA not primary → Midwest regional
-  ['Fort Wayne', 'IN', '18003', '0230', 'BLS:0230', 3],
-  ['Evansville', 'IN', '18163', '0230', 'BLS:0230', 3],
-  ['South Bend', 'IN', '18141', '0230', 'BLS:0230', 3],
-  ['Carmel', 'IN', '18057', '0230', 'BLS:0230', 3],      // Indianapolis CBSA not primary → Midwest regional
+  ['Indianapolis', 'IN', '18097', '0230', 'R20', 3], // Indianapolis CBSA not primary → Midwest regional
+  ['Fort Wayne', 'IN', '18003', '0230', 'R20', 3],
+  ['Evansville', 'IN', '18163', '0230', 'R20', 3],
+  ['South Bend', 'IN', '18141', '0230', 'R20', 3],
+  ['Carmel', 'IN', '18057', '0230', 'R20', 3],      // Indianapolis CBSA not primary → Midwest regional
 
   // === ILLINOIS ===
   ['Chicago', 'IL', '17031', 'S23A', 'YORD', 1],
   ['Aurora', 'IL', '17089', 'S23A', 'YORD', 1],
   ['Joliet', 'IL', '17197', 'S23A', 'YORD', 1],
   ['Naperville', 'IL', '17043', 'S23A', 'YORD', 1],
-  ['Rockford', 'IL', '17201', '0230', 'BLS:0230', 3],    // Rockford CBSA not primary → Midwest regional
+  ['Rockford', 'IL', '17201', '0230', 'R20', 3],    // Rockford CBSA not primary → Midwest regional
 
   // === WISCONSIN ===
-  ['Milwaukee', 'WI', '55079', '0230', 'BLS:0230', 3],   // Milwaukee CBSA not primary → Midwest regional
-  ['Madison', 'WI', '55025', '0230', 'BLS:0230', 3],
-  ['Green Bay', 'WI', '55009', '0230', 'BLS:0230', 3],
+  ['Milwaukee', 'WI', '55079', '0230', 'R20', 3],   // Milwaukee CBSA not primary → Midwest regional
+  ['Madison', 'WI', '55025', '0230', 'R20', 3],
+  ['Green Bay', 'WI', '55009', '0230', 'R20', 3],
   ['Kenosha', 'WI', '55059', 'S23A', 'YORD', 1],    // Kenosha County is in the 2013 Chicago CBSA (16980) that BLS CPI uses
-  ['Racine', 'WI', '55101', '0230', 'BLS:0230', 3],
+  ['Racine', 'WI', '55101', '0230', 'R20', 3],
 
   // === MINNESOTA ===
   ['Minneapolis', 'MN', '27053', 'S24A', 'BLS:S24A', 1],
@@ -225,46 +224,46 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Duluth', 'MN', '27137', '0240', 'SMN', 2],
 
   // === IOWA ===
-  ['Des Moines', 'IA', '19153', '0240', 'BLS:0240', 3],  // Des Moines CBSA not primary → Midwest regional
-  ['Cedar Rapids', 'IA', '19113', '0240', 'BLS:0240', 3], // Cedar Rapids CBSA not primary → Midwest regional
-  ['Davenport', 'IA', '19163', '0240', 'BLS:0240', 3],   // Davenport CBSA not primary → Midwest regional
-  ['Sioux City', 'IA', '19193', '0240', 'BLS:0240', 3],
-  ['Iowa City', 'IA', '19103', '0240', 'BLS:0240', 3],
+  ['Des Moines', 'IA', '19153', '0240', 'R20', 3],  // Des Moines CBSA not primary → Midwest regional
+  ['Cedar Rapids', 'IA', '19113', '0240', 'R20', 3], // Cedar Rapids CBSA not primary → Midwest regional
+  ['Davenport', 'IA', '19163', '0240', 'R20', 3],   // Davenport CBSA not primary → Midwest regional
+  ['Sioux City', 'IA', '19193', '0240', 'R20', 3],
+  ['Iowa City', 'IA', '19103', '0240', 'R20', 3],
 
   // === MISSOURI ===
-  ['Kansas City', 'MO', '29095', '0240', 'BLS:0240', 3], // Kansas City CBSA not primary → Midwest regional
+  ['Kansas City', 'MO', '29095', '0240', 'R20', 3], // Kansas City CBSA not primary → Midwest regional
   ['St. Louis', 'MO', '29510', 'S24B', 'BLS:S24B', 1],
-  ['Springfield', 'MO', '29077', '0240', 'BLS:0240', 3], // No CBSA match → Midwest regional
-  ['Columbia', 'MO', '29019', '0240', 'BLS:0240', 3],    // Columbia CBSA not primary → Midwest regional
-  ['Independence', 'MO', '29095', '0240', 'BLS:0240', 3], // Kansas City CBSA not primary → Midwest regional
+  ['Springfield', 'MO', '29077', '0240', 'R20', 3], // No CBSA match → Midwest regional
+  ['Columbia', 'MO', '29019', '0240', 'R20', 3],    // Columbia CBSA not primary → Midwest regional
+  ['Independence', 'MO', '29095', '0240', 'R20', 3], // Kansas City CBSA not primary → Midwest regional
 
   // === NORTH DAKOTA ===
-  ['Fargo', 'ND', '38017', '0240', 'BLS:0240', 3],       // Fargo CBSA not primary → Midwest regional
-  ['Bismarck', 'ND', '38015', '0240', 'BLS:0240', 3],
-  ['Grand Forks', 'ND', '38035', '0240', 'BLS:0240', 3],
-  ['Minot', 'ND', '38101', '0240', 'BLS:0240', 3],
-  ['West Fargo', 'ND', '38017', '0240', 'BLS:0240', 3],  // Fargo CBSA not primary → Midwest regional
+  ['Fargo', 'ND', '38017', '0240', 'R20', 3],       // Fargo CBSA not primary → Midwest regional
+  ['Bismarck', 'ND', '38015', '0240', 'R20', 3],
+  ['Grand Forks', 'ND', '38035', '0240', 'R20', 3],
+  ['Minot', 'ND', '38101', '0240', 'R20', 3],
+  ['West Fargo', 'ND', '38017', '0240', 'R20', 3],  // Fargo CBSA not primary → Midwest regional
 
   // === SOUTH DAKOTA ===
-  ['Sioux Falls', 'SD', '46099', '0240', 'BLS:0240', 3], // Sioux Falls CBSA not primary → Midwest regional
-  ['Rapid City', 'SD', '46103', '0240', 'BLS:0240', 3],  // No CBSA match → Midwest regional
-  ['Aberdeen', 'SD', '46013', '0240', 'BLS:0240', 3],
-  ['Brookings', 'SD', '46011', '0240', 'BLS:0240', 3],
-  ['Watertown', 'SD', '46029', '0240', 'BLS:0240', 3],
+  ['Sioux Falls', 'SD', '46099', '0240', 'R20', 3], // Sioux Falls CBSA not primary → Midwest regional
+  ['Rapid City', 'SD', '46103', '0240', 'R20', 3],  // No CBSA match → Midwest regional
+  ['Aberdeen', 'SD', '46013', '0240', 'R20', 3],
+  ['Brookings', 'SD', '46011', '0240', 'R20', 3],
+  ['Watertown', 'SD', '46029', '0240', 'R20', 3],
 
   // === NEBRASKA ===
-  ['Omaha', 'NE', '31055', '0240', 'BLS:0240', 3],       // Omaha CBSA not primary → Midwest regional
-  ['Lincoln', 'NE', '31109', '0240', 'BLS:0240', 3],
-  ['Bellevue', 'NE', '31153', '0240', 'BLS:0240', 3],    // Omaha CBSA not primary → Midwest regional
-  ['Grand Island', 'NE', '31079', '0240', 'BLS:0240', 3],
-  ['Kearney', 'NE', '31019', '0240', 'BLS:0240', 3],
+  ['Omaha', 'NE', '31055', '0240', 'R20', 3],       // Omaha CBSA not primary → Midwest regional
+  ['Lincoln', 'NE', '31109', '0240', 'R20', 3],
+  ['Bellevue', 'NE', '31153', '0240', 'R20', 3],    // Omaha CBSA not primary → Midwest regional
+  ['Grand Island', 'NE', '31079', '0240', 'R20', 3],
+  ['Kearney', 'NE', '31019', '0240', 'R20', 3],
 
   // === KANSAS ===
-  ['Wichita', 'KS', '20173', '0240', 'BLS:0240', 3],     // No CBSA match → Midwest regional
-  ['Overland Park', 'KS', '20091', '0240', 'BLS:0240', 3], // Kansas City CBSA not primary → Midwest regional
-  ['Kansas City', 'KS', '20209', '0240', 'BLS:0240', 3],   // Kansas City CBSA not primary → Midwest regional
-  ['Olathe', 'KS', '20091', '0240', 'BLS:0240', 3],        // Kansas City CBSA not primary → Midwest regional
-  ['Topeka', 'KS', '20177', '0240', 'BLS:0240', 3],
+  ['Wichita', 'KS', '20173', '0240', 'R20', 3],     // No CBSA match → Midwest regional
+  ['Overland Park', 'KS', '20091', '0240', 'R20', 3], // Kansas City CBSA not primary → Midwest regional
+  ['Kansas City', 'KS', '20209', '0240', 'R20', 3],   // Kansas City CBSA not primary → Midwest regional
+  ['Olathe', 'KS', '20091', '0240', 'R20', 3],        // Kansas City CBSA not primary → Midwest regional
+  ['Topeka', 'KS', '20177', '0240', 'R20', 3],
 
   // === TEXAS ===
   ['Houston', 'TX', '48201', 'S37B', 'Y44HO', 1],
@@ -358,15 +357,15 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Lakewood', 'CO', '08059', 'S48B', 'YDEN', 1],
 
   // === HAWAII ===
-  ['Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 2],
-  ['East Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 2],
-  ['Pearl City', 'HI', '15003', 'S49F', 'BLS:S49F', 2],
-  ['Hilo', 'HI', '15001', '0490', 'BLS:S49F', 2],        // No CBSA match → West regional
-  ['Kailua', 'HI', '15003', 'S49F', 'BLS:S49F', 2],
+  ['Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['East Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['Pearl City', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['Hilo', 'HI', '15001', '0490', 'BLS:S49F', 2],        // Outside the Honolulu CBSA → labeled Honolulu stand-in
+  ['Kailua', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
 
   // === ALASKA ===
-  ['Anchorage', 'AK', '02020', 'S49G', 'BLS:S49G', 2],
-  ['Fairbanks', 'AK', '02090', '0490', 'BLS:S49G', 2],   // No CBSA match → West regional
+  ['Anchorage', 'AK', '02020', 'S49G', 'BLS:S49G', 1],
+  ['Fairbanks', 'AK', '02090', '0490', 'BLS:S49G', 2],   // Outside the Anchorage CBSA → labeled Anchorage stand-in
   ['Juneau', 'AK', '02110', '0490', 'BLS:S49G', 2],
   ['Sitka', 'AK', '02220', '0490', 'BLS:S49G', 2],
   ['Ketchikan', 'AK', '02130', '0490', 'BLS:S49G', 2],

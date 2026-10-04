@@ -33,7 +33,7 @@ import eiaFixture from '../fixtures/eia-gas.json'
 // Zips covering: metro CPI + EIA city (10001), state gas (98683), PADD gas +
 // division CPI (04101), CT planning region (06902), PR municipio (00601),
 // Cleveland county override (44113), BLS monthly gas: Urban Hawaii (96813),
-// Philadelphia metro (19103), East North Central division (53202).
+// Philadelphia metro (19103); Milwaukee (53202) is EIA PADD 2 (no BLS division tier).
 const SAMPLE_ZIPS = ['10001', '98683', '04101', '06902', '00601', '44113', '96813', '19103', '53202']
 
 function runtimeKeysFor(zip: string): string[] {
@@ -78,10 +78,21 @@ describe('planRefresh', () => {
     const bls = plan.gasLookups.filter((g) => g.source === 'bls')
     expect(eia.map((g) => g.duoarea)).toEqual(expect.arrayContaining(['NUS', 'YCLE', 'SWA', 'R1X', 'R1Y', 'R1Z', 'R20', 'R5XCA']))
     expect(eia.every((g) => g.cacheKey.startsWith('eia:gas:epmr:'))).toBe(true)
-    // BLS monthly tiers: every CPI metro without an EIA city, Urban HI/AK, 2 Midwest divisions, + U.S.
+    // BLS monthly tiers: every CPI metro without an EIA city (incl. Honolulu/Anchorage) + U.S.; no divisions
     const metrosWithoutEiaCity = codes.filter((c) => c.startsWith('S') && !CPI_TO_EIA_CITY[c])
-    expect(bls.map((g) => g.areaCode).sort()).toEqual(['0000', '0230', '0240', ...metrosWithoutEiaCity].sort())
+    expect(bls.map((g) => g.areaCode).sort()).toEqual(['0000', ...metrosWithoutEiaCity].sort())
     expect(bls.every((g) => g.cacheKey === `bls:gas:${g.areaCode}` && g.seriesId === `APU${g.areaCode}74714`)).toBe(true)
+  })
+
+  test('BLS-tier zips: their EIA outage fallback (state / PADD; NUS for HI/AK) is warmed too', () => {
+    const keys = new Set(plan.gasLookups.map((g) => g.cacheKey))
+    for (const zip of ['19103', '20001', '30303', '96720', '99701']) {
+      const l = lookupZip(zip)!
+      const area = getMetroCpiAreaForCounty(l.countyFips, l.stateAbbr)
+      expect(getGasLookup(l.stateAbbr, area.areaCode, l.countyFips).source).toBe('bls')
+      expect(keys.has(getGasLookup(l.stateAbbr, area.areaCode, l.countyFips, { eiaOnly: true }).cacheKey)).toBe(true)
+    }
+    expect(getGasLookup('HI', '0490', '15001', { eiaOnly: true }).duoarea).toBe('NUS')
   })
 
   test('BLS gas series ride along in the CPI batches: still 3 BLS requests, each ≤ 50 series', () => {

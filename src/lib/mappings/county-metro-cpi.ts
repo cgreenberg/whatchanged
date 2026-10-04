@@ -47,6 +47,28 @@ export const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   '0400': { code: '0400', name: 'West Urban' },
 }
 
+/**
+ * Proper short names for CPI metros in short labels ("Washington DC metro", "Dallas-Fort Worth metro").
+ * Never derive these by cutting the CBSA title at the first hyphen: "Washington-Arlington-Alexandria"
+ * would read as Washington State.
+ */
+export const CPI_METRO_SHORT_NAMES: Record<string, string> = {
+  S11A: 'Boston', S12A: 'New York', S12B: 'Philadelphia',
+  S23A: 'Chicago', S23B: 'Detroit', S24A: 'Minneapolis-St. Paul', S24B: 'St. Louis',
+  S35A: 'Washington DC', S35B: 'Miami', S35C: 'Atlanta', S35D: 'Tampa', S35E: 'Baltimore',
+  S37A: 'Dallas-Fort Worth', S37B: 'Houston',
+  S48A: 'Phoenix', S48B: 'Denver', S49A: 'Los Angeles', S49B: 'San Francisco',
+  S49C: 'Riverside-San Bernardino', S49D: 'Seattle', S49E: 'San Diego',
+  S49F: 'Urban Hawaii', S49G: 'Urban Alaska',
+}
+
+/** Short name for a CPI metro, by area code or (older payloads) by its full BLS name; else the full name. */
+export function cpiMetroShortName(code: string | undefined, name: string): string {
+  if (code && CPI_METRO_SHORT_NAMES[code]) return CPI_METRO_SHORT_NAMES[code]
+  const byName = Object.values(BLS_CPI_AREAS).find((a) => a.name === name)
+  return (byName && CPI_METRO_SHORT_NAMES[byName.code]) || name
+}
+
 export const STATE_TO_REGION: Record<string, string> = {
   CT: '0100', ME: '0100', MA: '0100', NH: '0100', NJ: '0100',
   NY: '0100', PA: '0100', RI: '0100', VT: '0100',

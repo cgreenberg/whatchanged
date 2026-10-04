@@ -97,7 +97,8 @@ describe('parseCpiResponse (recorded CPI)', () => {
     expect(d.shelterBaselinePeriod).toBe('2025-01')
     expect(d.seriesIds).toEqual({ groceries: 'CUUR0490SAF11', shelter: 'CUUR0490SAH1', energy: 'CUUR0490SA0E' })
     expect(d.nationalSeries?.length).toBeGreaterThan(0)
-    expect(d.series.find((p) => p.date === '2025-10')).toBeUndefined()
+    // Oct 2025 (shutdown, "-") is kept as an empty row so charts mark the gap
+    expect(d.series.find((p) => p.date === '2025-10')).toEqual({ date: '2025-10', groceries: null, shelter: null, energy: null })
   })
 
   test('each series uses its own latest month (no -100% when shelter lags groceries)', () => {

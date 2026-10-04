@@ -8,9 +8,9 @@
  *    otherwise the state's Census division; territories → U.S. city average)
  *  - gas (most local first): EIA weekly city series where EIA publishes one for that
  *    metro; else BLS monthly average price (APU{area}74714) for the CPI metro ("BLS:S12B");
- *    HI/AK → BLS Urban Hawaii/Alaska; else one of EIA's 9 state series; else BLS
- *    East/West North Central division (Midwest states entirely in PADD 2); else the
- *    PADD / sub-PADD (non-CA PADD 5 → R5XCA)
+ *    (incl. Honolulu S49F, Anchorage S49G); rest of HI/AK → the Honolulu / Anchorage series
+ *    as a labeled stand-in; else one of EIA's 9 state series; else the PADD / sub-PADD
+ *    (non-CA PADD 5 → R5XCA). No BLS Census-division gas tier (Midwest keeps R20).
  *  - LAUS: county FIPS, except CT → 2022 planning region containing the zip
  */
 
@@ -23,8 +23,10 @@ const NE = 'New England (PADD 1A) avg'
 const ROCKY = 'Rocky Mountain (PADD 4) avg'
 const W5XCA = 'West Coast excl. California (PADD 5) avg'
 const MW = 'Midwest (PADD 2) avg'
-const URBAN_HI = 'Urban Hawaii avg'
-const URBAN_AK = 'Urban Alaska avg'
+const HNL = 'Honolulu metro avg'
+const ANC = 'Anchorage metro avg'
+const HNL_AREA = 'Honolulu-area price (BLS)'
+const ANC_AREA = 'Anchorage-area price (BLS)'
 
 // [zip, county FIPS, CPI area, CPI tier, gas (EIA duoarea or "BLS:{area}"), gas tier, gas label, LAUS FIPS, note]
 type Golden = [string, string, string, number, string, number, string, string, string]
@@ -55,16 +57,17 @@ const GOLDEN: Golden[] = [
   ['83702', '16001', '0480', 2, 'R40', 3, ROCKY, '16001', 'Boise — Rocky Mountain PADD, not Seattle'],
   ['85004', '04013', 'S48A', 1, 'BLS:S48A', 1, 'Phoenix-Mesa-Scottsdale metro avg', '04013', 'Phoenix — no EIA city series → BLS metro'],
   ['97201', '41051', '0490', 2, 'R5XCA', 3, W5XCA, '41051', 'Portland OR'],
-  ['96813', '15003', 'S49F', 1, 'BLS:S49F', 2, URBAN_HI, '15003', 'Honolulu — BLS Urban Hawaii (EIA has no HI series)'],
-  ['96720', '15001', '0490', 2, 'BLS:S49F', 2, URBAN_HI, '15001', 'Hilo — outside the Urban Hawaii CBSA, closest available'],
-  ['99501', '02020', 'S49G', 1, 'BLS:S49G', 2, URBAN_AK, '02020', 'Anchorage — BLS Urban Alaska (EIA has no AK series)'],
-  ['99701', '02090', '0490', 2, 'BLS:S49G', 2, URBAN_AK, '02090', 'Fairbanks — outside the Urban Alaska CBSA, closest available'],
-  ['99686', '02063', '0490', 2, 'BLS:S49G', 2, URBAN_AK, '02063', 'Valdez — Chugach Census Area (2019 split of Valdez-Cordova)'],
+  ['96813', '15003', 'S49F', 1, 'BLS:S49F', 1, HNL, '15003', 'Honolulu — BLS S49F = Urban Honolulu CBSA (EIA has no HI series)'],
+  ['96720', '15001', '0490', 2, 'BLS:S49F', 2, HNL_AREA, '15001', 'Hilo — outside the Honolulu CBSA: labeled stand-in'],
+  ['99501', '02020', 'S49G', 1, 'BLS:S49G', 1, ANC, '02020', 'Anchorage — BLS S49G = Anchorage CBSA (EIA has no AK series)'],
+  ['99701', '02090', '0490', 2, 'BLS:S49G', 2, ANC_AREA, '02090', 'Fairbanks — outside the Anchorage CBSA: labeled stand-in'],
+  ['99686', '02063', '0490', 2, 'BLS:S49G', 2, ANC_AREA, '02063', 'Valdez — Chugach Census Area (2019 split of Valdez-Cordova)'],
   ['19103', '42101', 'S12B', 1, 'BLS:S12B', 1, 'Philadelphia-Camden-Wilmington metro avg', '42101', 'Philadelphia — no EIA city series → BLS metro'],
   ['30303', '13121', 'S35C', 1, 'BLS:S35C', 1, 'Atlanta-Sandy Springs-Roswell metro avg', '13121', 'Atlanta'],
   ['55401', '27053', 'S24A', 1, 'BLS:S24A', 1, 'Minneapolis-St. Paul-Bloomington metro avg', '27053', 'Minneapolis — BLS metro beats EIA Minnesota state'],
-  ['53202', '55079', '0230', 2, 'BLS:0230', 3, 'East North Central division avg', '55079', 'Milwaukee WI — division inside PADD 2 beats R20'],
-  ['50309', '19153', '0240', 2, 'BLS:0240', 3, 'West North Central division avg', '19153', 'Des Moines IA'],
+  ['53202', '55079', '0230', 2, 'R20', 3, MW, '55079', 'Milwaukee WI — no BLS division gas tier: EIA PADD 2'],
+  ['50309', '19153', '0240', 2, 'R20', 3, MW, '19153', 'Des Moines IA — EIA PADD 2'],
+  ['46204', '18097', '0230', 2, 'R20', 3, MW, '18097', 'Indianapolis IN — EIA PADD 2'],
   ['37203', '47037', '0360', 2, 'R20', 3, MW, '47037', 'Nashville TN — East South Central is mostly PADD 3 → keeps R20'],
   ['73102', '40109', '0370', 2, 'R20', 3, MW, '40109', 'Oklahoma City — West South Central is mostly PADD 3 → keeps R20'],
   ['00601', '72001', '0000', 4, 'NUS', 3, 'National avg', '72001', 'Adjuntas PR — national fallbacks'],

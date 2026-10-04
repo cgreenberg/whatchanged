@@ -2,7 +2,7 @@ name: Refresh local data (Zillow home values and rent)
 
 on:
   schedule:
-    - cron: '0 15 20 * *' # 20th of each month: after Zillow (~mid-month) and BLS CPI/LAUS releases
+    - cron: '0 15 20 * *' # 20th of each month: after Zillow's mid-month ZHVI/ZORI release
   workflow_dispatch:
 
 permissions:

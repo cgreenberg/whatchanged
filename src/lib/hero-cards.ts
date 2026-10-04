@@ -6,6 +6,7 @@ import type { Provenance } from '@/lib/provenance'
 import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
+import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
 import {
   BASELINE_MONTH,
   BASELINE_MONTH_LABEL,
@@ -21,6 +22,7 @@ import {
   fmtSignedPct,
   fmtMonthYear,
   fmtDay,
+  fmtMonthShort,
   directionOf,
   monthsBetween,
   DATE_UNAVAILABLE,
@@ -55,12 +57,29 @@ export const OUTLIER_MARK = '†'
 export const OUTLIER_FOOTNOTE = '† unusual value: far outside most U.S. counties; treat with caution'
 
 /**
- * Hawaii / Alaska gas is the BLS Urban Hawaii / Urban Alaska average price (EIA publishes no HI/AK
- * series). Honest note: an urban average, so prices in rural parts of the state may differ.
+ * Hawaii / Alaska outside the Honolulu / Anchorage CBSAs: EIA publishes no HI/AK series and BLS only
+ * Honolulu (S49F) and Anchorage (S49G), so that metro's series stands in — said plainly.
  */
-export const URBAN_HI_AK_GAS_NOTE = (state: 'HI' | 'AK') => {
-  const name = state === 'HI' ? 'Hawaii' : 'Alaska'
-  return `Urban ${name} average (BLS); prices in rural ${name} may differ.`
+export const HI_AK_STANDIN_GAS_NOTE = (metro: string, place: string) =>
+  `${metro}-area price — no BLS or EIA series for ${place}; local prices are typically higher.`
+/** Short marker + footnote for the stand-in on the share card, OG image and og:description. */
+export const GAS_STANDIN_MARK = '*'
+export const GAS_STANDIN_FOOTNOTE = (place: string) =>
+  `${GAS_STANDIN_MARK} no BLS or EIA gas series for ${place}; local prices are typically higher`
+/** BLS monthly gas series failed: the zip's EIA weekly tier is shown instead (local and national both EIA). */
+export const GAS_EIA_FALLBACK_NOTE = 'Local BLS monthly gas price unavailable right now; showing the EIA weekly regional average instead.'
+
+/** "Hawaii County (Big Island)", "Fairbanks North Star Borough": the place a HI/AK stand-in does not cover. */
+export function standInPlace(location: { countyName?: string; countyFips?: string } | null | undefined, short = false): string {
+  const name = (location?.countyName ?? '').replace(/,\s*[A-Z]{2}$/, '').trim()
+  if (!name) return 'this area'
+  if (location?.countyFips === '15001') return short ? 'Hawaii Co. (Big Island)' : 'Hawaii County (Big Island)'
+  return short ? shortCountyName(name) : name
+}
+
+/** true when the gas series is a HI / AK stand-in (see HI_AK_STANDIN_GAS_NOTE). */
+export function isGasStandIn(g: GasPriceData | null | undefined): boolean {
+  return !!g && g.standIn === true && g.source === 'bls' && !g.fallback
 }
 
 /** Territories (PR, VI, GU, …) have no EIA retail gasoline series; their native gas series is the U.S. average. */
@@ -74,7 +93,8 @@ export function gasCaveatFor(s: Pick<EconomicSnapshot, 'gas' | 'location'>): str
   const g = s.gas?.data
   const st = s.location?.stateAbbr
   if (!g || !st) return undefined
-  if ((st === 'HI' || st === 'AK') && g.source === 'bls' && (g.blsArea === 'S49F' || g.blsArea === 'S49G')) return URBAN_HI_AK_GAS_NOTE(st)
+  if (g.fallback === 'eia') return GAS_EIA_FALLBACK_NOTE
+  if (isGasStandIn(g)) return HI_AK_STANDIN_GAS_NOTE(g.areaName ?? g.region, standInPlace(s.location))
   if (TERRITORY_NAMES[st] && g.duoarea === 'NUS' && g.fallback !== 'national') return TERRITORY_GAS_CAVEAT(TERRITORY_NAMES[st])
   return undefined
 }
@@ -94,7 +114,7 @@ export function cpiShortGeo(c: CpiData | null | undefined): string | undefined {
   if (tier === 4) return 'U.S. avg'
   if (tier === 3) return `${name.replace(/ Urban$/, '')} region`
   if (tier === 2) return `${name} div.`
-  if (tier === 1) return /^Urban /.test(name) ? name : `${name.split('-')[0]} metro`
+  if (tier === 1) return /^Urban /.test(name) ? name : `${cpiMetroShortName(c.areaCode, name)} metro`
   return name || undefined
 }
 
@@ -109,7 +129,8 @@ export function isNativeNationalGas(g: GasPriceData | null | undefined, stateAbb
 
 /**
  * Short gas geography: "Lower Atlantic avg", "West Coast excl. CA avg", "Texas state avg";
- * BLS tiers: "Philadelphia metro", "Urban Hawaii", "East North Central div.".
+ * BLS tiers: "Philadelphia metro", "Washington DC metro", "Honolulu metro", and for a HI/AK
+ * stand-in "Honolulu-area price*" (the share card, OG image and og:description add the footnote).
  */
 export function gasShortGeo(g: GasPriceData | null | undefined, stateAbbr?: string | null): string | undefined {
   if (!g) return undefined
@@ -119,8 +140,9 @@ export function gasShortGeo(g: GasPriceData | null | undefined, stateAbbr?: stri
   if (g.isNationalFallback || g.duoarea === 'NUS') return isNativeNationalGas(g, stateAbbr) ? 'U.S. avg' : 'U.S. avg; local n/a'
   if (g.source === 'bls' && g.blsArea) {
     const name = (g.areaName ?? g.region ?? g.blsArea).trim()
-    if (/^S/.test(g.blsArea)) return /^Urban /.test(name) ? name : `${name.split('-')[0]} metro`
-    return /^0\d00$/.test(g.blsArea) ? `${name.replace(/ Urban$/, '')} region` : `${name} div.`
+    if (isGasStandIn(g)) return `${name}-area price${GAS_STANDIN_MARK}`
+    if (/^S/.test(g.blsArea)) return `${g.blsArea === 'S49F' || g.blsArea === 'S49G' ? name : cpiMetroShortName(g.blsArea, name)} metro`
+    return /^0\d00$/.test(g.blsArea) ? `${name.replace(/ Urban$/, '')} region` : name
   }
   return (g.geoLevel ?? g.region)
     .replace(/\s*\(PADD [^)]*\)/, '')
@@ -135,12 +157,12 @@ export function cpiItemStale(s: Pick<EconomicSnapshot, 'cpi'>, item: 'groceries'
 }
 
 /**
- * true when a local series failed and the shared national series is shown in
- * its place (an outage). Callers treat this as degraded: short CDN TTL so the
+ * true when a local series failed and a stand-in is shown in its place (an outage): the shared
+ * national series, or for a BLS gas tier the zip's EIA weekly tier. Callers treat this as degraded: short CDN TTL so the
  * page self-heals when the local series is back.
  */
 export function usesNationalFallback(s: Pick<EconomicSnapshot, 'gas' | 'cpi'>): boolean {
-  return s.gas?.data?.fallback === 'national' || s.cpi?.data?.fallback === 'national'
+  return !!s.gas?.data?.fallback || s.cpi?.data?.fallback === 'national'
 }
 
 /** Optional county context from the static county shard (flags/notes for displayed county metrics). */
@@ -162,11 +184,12 @@ const NOT_SA = 'not seasonally adjusted'
 
 /** Shown under the hero cards when the Zillow Rent card is shown. */
 export const SHELTER_VS_RENT_NOTE =
-  'CPI shelter covers all renters and homeowners and lags market rents by about a year; the Rent card shows new-lease asking rents (Zillow).'
+  'CPI shelter (rent, plus owners\' equivalent rent for homeowners) lags market rents by about a year; the Rent card shows new-lease asking rents (Zillow).'
 /** Shown with the Housing graph (all three tabs): how the Zillow series differ from CPI shelter. */
 export const HOUSING_NOTE =
   'Rent and Home prices are Zillow market measures for your county: asking rents on new leases and the typical home value. ' +
-  'Shelter (CPI) is the BLS index of what all renters and homeowners pay, including existing leases, so it trails new-lease rents by about a year.'
+  'Shelter (CPI) is the BLS index of rent, plus owners\' equivalent rent for homeowners — not mortgage payments or home prices — ' +
+  'and includes existing leases, so it trails new-lease rents by about a year.'
 /** EIA tiers: weekly retail regular gasoline. */
 export const GAS_SOURCE = 'EIA weekly retail regular gasoline'
 /** BLS tiers: CPI average price data, gasoline (unleaded regular), monthly. */
@@ -273,6 +296,16 @@ export const ACCENTS = {
 
 // ---------------------------------------------------------------- Gas
 
+/**
+ * Source + as-of for the national gas comparison, so two zips' "National" figures are never read as
+ * one number: "U.S. city avg, BLS, Aug 2026" (BLS monthly tiers) vs "U.S. avg, EIA, week of Sep 28".
+ */
+export function gasNationalSourceTag(g: Pick<GasPriceData, 'frequency' | 'source'>, natLatest: string | undefined): string {
+  if (isMonthlyGas(g)) return `U.S. city avg, BLS${natLatest ? `, ${fmtMonthYear(natLatest.slice(0, 7))}` : ''}`
+  return `U.S. avg, EIA${natLatest ? `, week of ${fmtDay(natLatest).replace(/, \d{4}$/, '')}` : ''}`
+}
+
+
 export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
   const g = s.gas.data
   const geography = g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable'
@@ -304,8 +337,10 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     value: `$${g.current.toFixed(2)}/gal`,
     change: `${fmtSignedDollars(g.change)}/gal since ${BASELINE_MONTH_LABEL}`,
     direction: directionOf(g.change, 2),
+    // Monthly BLS figures run weeks behind the weekly EIA ones: say so on the card itself.
+    detail: monthly && latestDate ? `through ${fmtMonthYear(latestDate.slice(0, 7))} (monthly)` : undefined,
     nationalValue: nat && inRange(nat.current, SANITY.gasPrice)
-      ? `National: $${nat.current.toFixed(2)}/gal (${fmtSignedDollars(nat.change)})`
+      ? `National: $${nat.current.toFixed(2)}/gal (${fmtSignedDollars(nat.change)}) · ${gasNationalSourceTag(g, nat.latestDate)}`
       : undefined,
     asOfPeriod: latestDate?.slice(0, 7),
   }
@@ -575,7 +610,11 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
   for (const c of cards) {
     if (c.status !== 'ok') continue
     if (c.id === 'gas' && snapshot.gas.data) {
-      parts.push(`Gas ${fmtSignedDollars(snapshot.gas.data.change)}/gal${tag(c)}`)
+      // Monthly BLS gas runs weeks behind weekly EIA: name its month ("Philadelphia metro, thru Aug '26")
+      const g = snapshot.gas.data
+      const thru = isMonthlyGas(g) && c.asOfPeriod ? `thru ${fmtMonthShort(c.asOfPeriod)}` : ''
+      const gtag = c.geoTag ? ` (${c.geoTag}${thru ? `, ${thru}` : ''})` : thru ? ` (${thru})` : ''
+      parts.push(`Gas ${fmtSignedDollars(g.change)}/gal${gtag}`)
     }
     if (c.id === 'rent') parts.push(`Rent ${c.value}${mark(c)}${tag(c)}`)
     if (c.id === 'shelter') parts.push(`Shelter CPI ${c.value}${tag(c)}`)
@@ -583,6 +622,8 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
     if (c.id === 'tariff') parts.push(`Tariffs ${c.value} est.${c.geoTag ? ` (${c.geoTag} income)` : ''}`)
   }
   const head = parts.length ? `Since ${BASELINE_MONTH_LABEL}: ` : ''
-  const foot = cards.some(c => c.status === 'ok' && c.outlier) ? ` · ${OUTLIER_MARK}unusual value` : ''
+  const gasStandIn = cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)
+  const foot = (cards.some(c => c.status === 'ok' && c.outlier) ? ` · ${OUTLIER_MARK}unusual value` : '') +
+    (gasStandIn ? ` · ${GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, true))}` : '')
   return `${head}${parts.join(' · ')}${foot} · whatchanged.us`
 }

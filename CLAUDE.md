@@ -91,24 +91,34 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
   `src/lib/mappings/bls-gas.ts` (BLS). Most local first:
   1. EIA weekly city: county override (Cleveland only) or CPI metro → EIA city (`CPI_TO_EIA_CITY`)
   2. **BLS monthly** CPI average price `APU{area}74714` for a CPI metro **without** an EIA city (Philadelphia, Detroit,
-     Minneapolis, St. Louis, DC, Atlanta, Tampa, Baltimore, Dallas, Phoenix, Riverside, San Diego, Urban HI/AK)
-  3. HI / AK zips outside those CBSAs → BLS Urban Hawaii `S49F` / Urban Alaska `S49G` (EIA has no HI/AK series;
-     the card notes it is an urban average and rural prices may differ)
+     Minneapolis, St. Louis, DC, Atlanta, Tampa, Baltimore, Dallas, Phoenix, Riverside, San Diego, Honolulu `S49F`,
+     Anchorage `S49G`). BLS titles S49F/S49G "Urban Hawaii/Alaska", but they are the Urban Honolulu CBSA (15003) and
+     the Anchorage CBSA (02020, 02170) only: label them "Honolulu metro" / "Anchorage metro".
+  3. HI / AK zips outside those CBSAs → the same S49F / S49G series as a **labeled stand-in** (`standIn: true`):
+     "Honolulu-area price (BLS)"; card + gas chart caveat "Honolulu-area price — no BLS or EIA series for {county};
+     local prices are typically higher" (`HI_AK_STANDIN_GAS_NOTE`); share card / OG / og:description use
+     "Honolulu-area price*" plus a footnote (`GAS_STANDIN_FOOTNOTE`). Anchorage analog for AK.
   4. one of EIA's 9 state series
-  5. **BLS monthly** Census division, Midwest only: East North Central `0230` (IL, IN, MI, WI; OH has `SOH`) and West
-     North Central `0240` (IA, KS, MO, NE, ND, SD; MN has `SMN`) — both divisions lie entirely in PADD 2. KY/TN/OK
-     keep `R20` (their divisions are mostly PADD 3 states)
-  6. EIA PADD/sub-PADD (1A `R1X`, 1B `R1Y`, 1C `R1Z`, `R20`/`R30`/`R40`; PADD 5 → `R5XCA` "West Coast excl.
-     California", because CA and WA always use their state series)  7. `NUS`.
+  5. EIA PADD/sub-PADD (1A `R1X`, 1B `R1Y`, 1C `R1Z`, `R20`/`R30`/`R40`; PADD 5 → `R5XCA` "West Coast excl.
+     California", because CA and WA always use their state series)  6. `NUS`.
+  BLS Census-division gas series (e.g. East North Central `0230`) are deliberately **not** used: they are urban averages
+  weighted to the division's big metros and read as more local than they are; Midwest zips keep EIA `R20`.
+  BLS outage: the snapshot falls back to the zip's EIA weekly tier as a whole (`getGasLookup(…, { eiaOnly: true })`:
+  state / PADD; `NUS` for HI/AK), local and national both EIA, `fallback: 'eia'`, captioned; the refresh plan warms
+  those keys too.
   `GasLookupResult`/`GasPriceData` carry `source: 'eia' | 'bls'` and `frequency: 'weekly' | 'monthly'`; one series per
   location — baseline, current and national comparison always come from the same source (BLS → `APU000074714` over the
   same months; EIA → `NUS`). EIA tier/key/label come from the duoarea prefix (`describeDuoarea`); BLS from the area
-  code (`describeBlsGasArea`: metro tier 1, Urban HI/AK tier 2, division tier 3). EIA product is **`EPMR` (regular
+  code (`describeBlsGasArea`: metro tier 1, HI/AK stand-in tier 2, region/national tier 3). EIA product is **`EPMR` (regular
   gasoline)**, `EIA_GAS_PRODUCT` in `eia.ts`; series `EMM_EPMR_PTE_{duoarea}_DPG`. (EPM0 "all grades" ran ~10–15¢
   above regular.) BLS average prices exist monthly (also for bimonthly CPI metros, ~2–6 week lag) with Jan 2025 values
   for every area in `BLS_GAS_PUBLISHED_AREAS`; since 2021 they come from crowdsourced station data and run ~10¢ above
-  EIA. Zip coverage: EIA city 10.1%, BLS metro 9.5%, BLS Urban HI/AK 1.0%, EIA state 21.5%, BLS division 19.2%,
-  EIA PADD 38.2%, national 0.5%.
+  EIA. Zip coverage: EIA city 10.1%, BLS metro 9.8% (incl. Honolulu/Anchorage), BLS HI/AK stand-in 0.7%, EIA state
+  21.5%, EIA PADD 57.4%, national 0.5%.
+  Monthly BLS figures lag weekly EIA by weeks, so BLS tiers always name their month and source: card detail
+  "through Aug 2026 (monthly)"; "National: $x (+$y) · U.S. city avg, BLS, Aug 2026" vs "· U.S. avg, EIA, week of
+  Sep 28" (`gasNationalSourceTag`); share card "Philadelphia metro · thru Aug '26" and "Natl (BLS): …"; OG "since Jan
+  2025, thru Aug '26"; the gas chart's dashed overlay is labeled by source (`nationalLabel`).
 - **CT planning regions** `src/lib/mappings/laus-area.ts`: Connecticut zip / legacy county → 2022 planning region
   (09110–09190), data in `ct-planning-regions.json`. Used for CT county income (tariff card) and by the static pipeline.
 - **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas.
@@ -135,8 +145,10 @@ is national): national CPI % is never applied to local rent; the card says why.
 Share card, OG image and `og:description` tag every number with a short geography (`geoTag`: "Buncombe Co.",
 "South Atlantic region", "Lower Atlantic avg", "U.S. avg; local n/a"); flagged county rent (outliers, bundled as
 `flagged`/`note` in `county-rent.json`) gets "†" plus an "unusual value" footnote. BLS gas tiers are tagged
-"Philadelphia metro", "Urban Hawaii", "East North Central div." with "since Jan 2025"; HI/AK cards carry
-`URBAN_HI_AK_GAS_NOTE` (urban average; rural prices may differ). The gas chart for BLS tiers is monthly.
+"Philadelphia metro", "Washington DC metro", "Honolulu metro" (short names from `CPI_METRO_SHORT_NAMES`, never the CBSA
+title cut at a hyphen) with "since Jan 2025" and "thru {Mon 'YY}"; HI/AK stand-ins get "Honolulu-area price*" and the
+`GAS_STANDIN_FOOTNOTE`. The gas chart for BLS tiers is monthly; unpublished BLS months (e.g. Oct 2025) stay as empty
+rows (`blsUnpublishedMonths`) so charts mark the gap.
 
 Dollar amounts are computed server-side in `snapshot.ts` → `dollarImpact`. The frontend never recomputes them or
 substitutes national stand-ins. Sanity ranges (`src/lib/api/validate.ts`, mirrored in `hero-cards.ts`): price %
@@ -192,7 +204,7 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
 releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
-every CPI area (33; 15 per POST, national series ride along), every BLS gas series (17 `APU…74714`, packed into the
+every CPI area (33; 15 per POST, national series ride along), every BLS gas series (15 `APU…74714`, packed into the
 spare room of the CPI POSTs by `planBlsRequests`, ≤ 50 series each) and every EIA gas series (27), then writes them
 with the runtime's own parsers, validators, keys and `writeEnvelope`. A full run is still **3 BLS requests** (of
 500/day) and ~27 EIA requests (`--only=gas` also needs `BLS_API_KEY`); BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
@@ -287,8 +299,9 @@ the refresh-cache workflow once (Actions → workflow_dispatch) **before or righ
 
 ## Known issues
 
-- HI and AK gas use BLS Urban Hawaii / Urban Alaska average prices (monthly). Rural parts of those states (e.g. the
-  outer islands, interior Alaska) can differ; the gas card says so.
+- HI and AK gas: BLS publishes only Honolulu (S49F) and Anchorage (S49G), monthly; EIA nothing. Elsewhere in HI/AK
+  (Hilo, Maui, Kauai, Fairbanks, Juneau…) the Honolulu / Anchorage price is a labeled stand-in; local prices are
+  typically higher, and every surface (card, chart, share, OG, og:description) says so.
 - PO-box/unique zips (`zcta: false`) have no ACS data of their own; they borrow a donor zip's ACS values: the largest
   residential zip in the same city (`donorScope: 'city'`), else the most populous in the county (`'county'`) — not
   necessarily the nearest zip.

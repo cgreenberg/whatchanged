@@ -65,8 +65,12 @@ export interface GasPriceData {
   series: Array<{ date: string; price: number }>
   nationalSeries?: Array<{ date: string; price: number }>
   isNationalFallback?: boolean
-  /** 'national' when the local gas series failed and the national average is shown instead (an outage, not the area's native series). */
-  fallback?: 'national'
+  /**
+   * Outage stand-ins (not the area's native series): 'national' = the local series failed and the
+   * national average is shown; 'eia' = the zip's BLS monthly series failed and its EIA weekly tier
+   * (state / PADD) is shown instead, local and national both from EIA.
+   */
+  fallback?: 'national' | 'eia'
   geoLevel?: string
   /**
    * 'eia' = EIA weekly retail regular gasoline (dates YYYY-MM-DD, baseline = last week ≤ Jan 20 2025);
@@ -79,11 +83,18 @@ export interface GasPriceData {
   /** Upstream series id (EMM_EPMR_PTE_{duoarea}_DPG or APU{area}74714). */
   seriesId?: string
   duoarea?: string  // EIA area code used for the API query (EIA only)
-  /** BLS CPI area code (BLS only), e.g. "S12B", "S49F", "0230". */
+  /** BLS CPI area code (BLS only), e.g. "S12B", "S49F". */
   blsArea?: string
-  /** BLS area name (BLS only), e.g. "Philadelphia-Camden-Wilmington", "Urban Hawaii". */
+  /** BLS area name (BLS only), e.g. "Philadelphia-Camden-Wilmington", "Honolulu". */
   areaName?: string
+  /**
+   * HI / AK zip outside the Honolulu / Anchorage CBSA: no EIA or BLS series covers it, so that
+   * metro's series stands in ("Honolulu-area price"); local prices are typically higher.
+   */
+  standIn?: boolean
   tier?: 1 | 2 | 3
+  /** BLS monthly only: months (YYYY-MM) inside the series BLS did not publish; charted as gaps. */
+  unpublished?: string[]
 }
 
 export interface CensusData {

@@ -10,6 +10,7 @@ import {
 import { fmtSignedPct, fmtMonthYear } from '@/lib/format'
 import { BASELINE_MONTH_LABEL } from '@/lib/baseline'
 import type { EconomicSnapshot } from '@/types'
+import { monthOlderThan, RENT_STALE_DAYS } from '@/lib/hero-cards'
 
 export type HousingTab = 'rent' | 'homePrices' | 'shelter'
 
@@ -29,14 +30,20 @@ export const ZORI_NOTE =
 
 type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | null } | { status: 'error' }
 
-/** Inputs for a Zillow tab from the county shard (+ the U.S. series for "Show national"). */
-export function zillowTabInput(tab: 'rent' | 'homePrices', county: CountyRecord | null, us: UsHousing | null, geoName: string): ChartInput {
+/**
+ * Inputs for a Zillow tab from the county shard (+ the U.S. series for "Show national"). Stale badge
+ * when the series' latest month ended more than RENT_STALE_DAYS ago (same rule as the Rent card).
+ */
+export function zillowTabInput(
+  tab: 'rent' | 'homePrices', county: CountyRecord | null, us: UsHousing | null, geoName: string, now: Date = new Date(),
+): ChartInput {
   const rent = tab === 'rent'
   const data = seriesRows(rent ? county?.rentS : county?.hvS, rent ? 'rent' : 'hv')
   const nationalData = seriesRows(rent ? us?.rentS : us?.hvS, rent ? 'rent' : 'hv')
   return {
     data,
     nationalData,
+    stale: monthOlderThan(data[data.length - 1]?.date, RENT_STALE_DAYS, now),
     nationalLabel: nationalData.length ? (rent ? 'U.S. ZORI' : 'U.S. ZHVI') : undefined,
     provenance: {
       source: rent ? 'Zillow ZORI' : 'Zillow Home Value Index (ZHVI)',
