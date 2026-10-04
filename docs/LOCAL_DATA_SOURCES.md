@@ -57,7 +57,7 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
 
 | Metric | Rule | Effect (2026-10 build) |
 |---|---|---|
-| County rent | Own seasonal factors for series with ≥36 in-sample months; series with ≥12 months before Jan 2025 but too short for their own factors use their state's pooled pattern (median factors of that state's self-adjusted counties, ≥5; else the U.S. pool), labeled `saPool` on the card/graph. Newer series are dropped (never shown raw as "adjusted"). Levels shown are observed (unadjusted). | 877 counties (288 pooled) |
+| County rent | Own seasonal factors for series with ≥2 leak-free seasonal ratios (ratio months ≤ 2024-06, so no 2025+ value enters a factor) for every calendar month; series with ≥12 months before Jan 2025 but too short for their own factors use their state's pooled pattern (median factors of that state's self-adjusted counties, ≥5; else the U.S. pool), labeled `saPool` on the card/graph. Newer series are dropped (never shown raw as "adjusted"). Levels shown are observed (unadjusted). | 877 counties (243 pooled) |
 | Metro rent | Same SA method (pooled pattern by the principal city's state), sanity range (−30%..+60%), Jan 2025 + latest month, outlier flag vs the county distribution; only for counties with no county row | 205 metros, 461 counties |
 | All Zillow series | Must reach the file's latest month (no stale values mixed in) | — |
 | Movers lists | ≥ 75k jobs, not `approx`, not flagged as a robust outlier (abs(z) > 5 vs counties with ≥20k jobs) for that metric; top/bottom never overlap | — |

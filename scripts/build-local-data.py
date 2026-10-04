@@ -22,8 +22,9 @@ Outputs
 Methodology notes (details in docs/LOCAL_DATA_SOURCES.md)
   * Baseline is the Jan 2025 monthly value (matches the rest of the site).
   * ZHVI is published seasonally adjusted by Zillow. ZORI is NOT, so we seasonally adjust it here (classical
-    decomposition, factors fit on 2016-2024). A series is only published if it has >= 36 months of history to
-    fit factors; shorter series are dropped (never shown raw as if adjusted). Rent levels shown to users are
+    decomposition, factors fit on 2016-2024). A series keeps its own factors if every calendar month has >= 2
+    leak-free seasonal ratios (ratio months <= 2024-06); shorter series with >= 12 months before Jan 2025 use
+    their state's pooled pattern; newer ones are dropped (never shown raw as if adjusted). Rent levels shown to users are
     the observed (unadjusted) latest values.
   * Every series must reach the common latest month of its file; stale series are dropped.
   * Connecticut legacy counties take their jobs count from a planning region (same mapping as bls.ts);
@@ -39,7 +40,9 @@ import pandas as pd
 
 BASE = "2025-01"
 SERIES_START = "2016-01"
-MIN_SA_HISTORY = 36  # months of in-sample seasonal ratios needed before we adjust (or publish) a series
+# A series keeps its OWN seasonal pattern when every calendar month has at least this many in-sample (leak-free,
+# ratio months <= 2024-06) seasonal ratios; otherwise it takes its state's pooled pattern (pooled_adjust).
+MIN_RATIOS_PER_MONTH = 2
 
 # Sanity filters (see docs/LOCAL_DATA_SOURCES.md)
 OUTLIER_Z = 5.0
@@ -75,7 +78,8 @@ def seasonal_adjust(mat, months, additive=False, fit_end="2024-12", return_facto
     Factors use only data through fit_end: a ratio month t needs the centered 13-month window t-6..t+6, so only
     ratio months <= fit_end - 6 (2024-06) are used and no 2025+ value ever enters a factor (the Jan 2025
     baseline never revises when Zillow publishes a new month).
-    Returns (SA matrix, ok mask). Series with < MIN_SA_HISTORY in-sample ratios come back as NaN rows
+    Returns (SA matrix, ok mask). Series with < MIN_RATIOS_PER_MONTH in-sample ratios for any calendar month
+    come back as NaN rows
     (ok=False), so raw data can never be published under an "adjusted" label. With return_factors, also
     the (n_series, 12) calendar-month factors (valid where ok) for pooled_adjust."""
     assert months == month_range(months[0], months[-1]), "seasonal_adjust needs contiguous months"
@@ -97,8 +101,8 @@ def seasonal_adjust(mat, months, additive=False, fit_end="2024-12", return_facto
         factors -= np.nanmean(factors, axis=1, keepdims=True)
     else:
         factors /= np.nanmean(factors, axis=1, keepdims=True)
-    nhist = np.isfinite(ratio[:, fit]).sum(axis=1)
-    ok = (nhist >= MIN_SA_HISTORY) & np.isfinite(factors).all(axis=1)
+    per_month = np.stack([np.isfinite(ratio[:, fit & (cal == k)]).sum(axis=1) for k in range(1, 13)], axis=1)
+    ok = (per_month.min(axis=1) >= MIN_RATIOS_PER_MONTH) & np.isfinite(factors).all(axis=1)
     f = factors[:, cal - 1]
     sa = (mat - f) if additive else (mat / f)
     sa[~ok] = np.nan

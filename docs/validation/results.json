@@ -10,11 +10,11 @@
   "section": "1. Built JSON matches raw source",
   "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all counties)",
   "status": "PASS",
-  "detail": "median |adj| 1.47 pts, mean -1.45, p95 |adj| 2.85",
+  "detail": "median |adj| 1.47 pts, mean -1.43, p95 |adj| 3.06",
   "metrics": {
    "n": 877,
    "median_abs": 1.47,
-   "mean": -1.45
+   "mean": -1.43
   }
  },
  {
@@ -84,14 +84,14 @@
   "section": "4. Rent \u2014 independent source (Apartment List)",
   "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
   "status": "PASS",
-  "detail": "{'n': 370, 'pearson': 0.846, 'spearman': 0.765, 'mae': 2.29, 'bias': 0.66, 'sign_agree': 0.822}",
+  "detail": "{'n': 370, 'pearson': 0.845, 'spearman': 0.764, 'mae': 2.29, 'bias': 0.67, 'sign_agree': 0.824}",
   "metrics": {
    "n": 370,
-   "pearson": 0.846,
-   "spearman": 0.765,
+   "pearson": 0.845,
+   "spearman": 0.764,
    "mae": 2.29,
-   "bias": 0.66,
-   "sign_agree": 0.822
+   "bias": 0.67,
+   "sign_agree": 0.824
   }
  },
  {
@@ -107,7 +107,7 @@
   "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "rent %",
   "status": "WARN",
-  "detail": "4 flagged: Taylor County, TX +47.9, San Francisco County, CA +33.6, Ouachita Parish, LA +26.0, Calcasieu Parish, LA +23.8",
+  "detail": "4 flagged: Taylor County, TX +47.9, San Francisco County, CA +33.6, Ouachita Parish, LA +25.8, Calcasieu Parish, LA +23.8",
   "metrics": {
    "flagged": [
     [
@@ -123,7 +123,7 @@
     [
      "22073",
      "Ouachita Parish, LA",
-     26.0
+     25.8
     ],
     [
      "22019",
@@ -270,7 +270,7 @@
   "section": "6. Shipped data invariants",
   "check": "County rent seasonally adjusted with a pooled (state / U.S.) seasonal pattern (series too short for their own)",
   "status": "INFO",
-  "detail": "308 of 877 counties, e.g. ['01001', '01015', '01033', '01043', '01045', '01051']",
+  "detail": "243 of 877 counties, e.g. ['01015', '01033', '01043', '01045', '01051', '01069']",
   "metrics": {}
  },
  {
@@ -361,7 +361,7 @@
   "section": "6. Shipped data invariants",
   "check": "Metro rent seasonal adjustment size (built SA - raw NSA)",
   "status": "PASS",
-  "detail": "median |adj| 1.45 pts over 205 metros",
+  "detail": "median |adj| 1.42 pts over 205 metros",
   "metrics": {}
  },
  {
