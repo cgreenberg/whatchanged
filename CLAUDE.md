@@ -52,6 +52,8 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 `?audit=true` adds `_audit` (series IDs, baseline/latest observations, formulas); `verify:live` uses it.
 `src/lib/api/national.ts` (OG image) reuses the same cached accessors and keys.
 
+**Feature flag:** `SHOW_LOCAL_PULSE = false` in `src/lib/features.ts` hides the Local Pulse section (code/data kept; Rent card, unemployment headline, national map unaffected).
+
 **2. Static monthly pipeline** (Local Pulse cards, county map, unemployment headline, rent hero data)
 
 ```

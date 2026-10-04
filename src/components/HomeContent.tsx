@@ -9,6 +9,7 @@ import { HeroCards } from '@/components/HeroCards'
 import { ChartsSection } from '@/components/charts/ChartsSection'
 import { ShareButton } from '@/components/ShareButton'
 import { LocalPulse } from '@/components/pulse/LocalPulse'
+import { SHOW_LOCAL_PULSE } from '@/lib/features'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CityGrid } from '@/components/CityGrid'
 import { LazyMount } from '@/components/LazyMount'
@@ -116,17 +117,19 @@ export default function HomeContent() {
             <HeroCards snapshot={snapshot} />
             <ShareButton snapshot={snapshot} place={place} />
           </section>
-          <ErrorBoundary>
-            <LocalPulse
-              key={snapshot.zip}
-              zip={snapshot.zip}
-              countyFips={snapshot.location.countyFips}
-              countyName={snapshot.location.countyName}
-              cityName={snapshot.location.cityName}
-              stateAbbr={snapshot.location.stateAbbr}
-              heroShowsCountyRent={!!snapshot.rent}
-            />
-          </ErrorBoundary>
+          {SHOW_LOCAL_PULSE && (
+            <ErrorBoundary>
+              <LocalPulse
+                key={snapshot.zip}
+                zip={snapshot.zip}
+                countyFips={snapshot.location.countyFips}
+                countyName={snapshot.location.countyName}
+                cityName={snapshot.location.cityName}
+                stateAbbr={snapshot.location.stateAbbr}
+                heroShowsCountyRent={!!snapshot.rent}
+              />
+            </ErrorBoundary>
+          )}
           <ErrorBoundary>
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>

@@ -20,14 +20,12 @@ test.describe('National county map', () => {
     await expect(map.getByTestId('map-error')).toBeVisible({ timeout: 15000 })
   })
 
-  test('highlights the searched county and leads local pulse with the county', async ({ page }) => {
+  test('highlights the searched county on the map (local pulse hidden by flag)', async ({ page }) => {
     await mockDataApi(page)
     await enterZip(page, '98683')
-    const pulse = page.getByTestId('local-pulse')
-    await expect(pulse).toBeVisible({ timeout: 20000 })
-    await expect(pulse).toContainText('Clark County')
-    await expect(pulse).not.toContainText(/neighborhood-level/i)
-    await expect(pulse).not.toContainText(/US zips/)
+    // SHOW_LOCAL_PULSE=false: the pulse section must not render
+    await expect(page.getByTestId('location-banner')).toBeVisible({ timeout: 20000 })
+    await expect(page.getByTestId('local-pulse')).toHaveCount(0)
     const map = page.getByTestId('national-map')
     await map.scrollIntoViewIfNeeded()
     await expect(map.getByText('Clark County, WA')).toBeVisible({ timeout: 15000 })

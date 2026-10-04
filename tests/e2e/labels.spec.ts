@@ -7,7 +7,8 @@ test.describe('Geography and concept labels', () => {
   })
 
   for (const zip of ['78701', '98683', '06902']) {
-    test(`${zip}: local pulse county equals the banner county`, async ({ page }) => {
+    // Local Pulse is hidden behind SHOW_LOCAL_PULSE (src/lib/features.ts); re-enable with the flag.
+    test.skip(`${zip}: local pulse county equals the banner county`, async ({ page }) => {
       await enterZip(page, zip)
       const banner = (await page.getByTestId('location-banner').textContent()) ?? ''
       const county = banner.split('—').pop()!.split(',')[0].trim()
@@ -27,7 +28,7 @@ test.describe('Geography and concept labels', () => {
     await expect(shelter.getByTestId('provenance')).toContainText('BLS CPI shelter · division: West South Central')
     // Distinct sources, distinct labels, and the pulse doesn't repeat the county rent
     expect(await rent.textContent()).not.toContain('CPI')
-    await expect(page.getByTestId('local-pulse')).not.toContainText('Rent on new leases · Travis County')
+    await expect(page.getByTestId('local-pulse')).toHaveCount(0)
   })
 
   test('every hero card has a full provenance line', async ({ page }) => {
