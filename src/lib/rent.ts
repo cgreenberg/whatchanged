@@ -24,10 +24,18 @@ interface CountyRentFile {
   counties: Record<string, CountyRentRow>
   /** Counties with a Zillow series that is too new (no data by Jan 2024) to measure since Jan 2025. */
   tooNew?: string[]
+  /** Counties whose Zillow series reaches back past Jan 2024 but has no Jan 2025 value to measure from. */
+  noBaseline?: string[]
 }
 
 const FILE = countyRent as unknown as CountyRentFile
 const TOO_NEW = new Set(FILE.tooNew ?? [])
+const NO_BASELINE = new Set(FILE.noBaseline ?? [])
+
+/** Why a county's own Zillow series isn't usable, when Zillow publishes a current row for it. */
+function countySeriesWhy(countyFips: string): 'too-new' | 'no-baseline' | null {
+  return TOO_NEW.has(countyFips) ? 'too-new' : NO_BASELINE.has(countyFips) ? 'no-baseline' : null
+}
 
 interface MetroRentFile {
   meta: { source: string; adjustment: string; baseMonth: string; asOf: string; geography: string }
@@ -54,12 +62,12 @@ export function rentMonthlyChange(curRent: number, pct: number): number {
 /** County rent lookup with the reason when there is no usable figure (for the resolution trace). */
 export type CountyRentLookup =
   | { data: RentData }
-  | { data: null; why: 'no-county' | 'no-series' | 'too-new' | 'out-of-range' | 'malformed' }
+  | { data: null; why: 'no-county' | 'no-series' | 'too-new' | 'no-baseline' | 'out-of-range' | 'malformed' }
 
 export function lookupCountyRent(countyFips: string | null | undefined): CountyRentLookup {
   if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }
   const row = FILE.counties?.[countyFips]
-  if (!row) return { data: null, why: TOO_NEW.has(countyFips) ? 'too-new' : 'no-series' }
+  if (!row) return { data: null, why: countySeriesWhy(countyFips) ?? 'no-series' }
   const bad = checkRow(row)
   if (bad) return { data: null, why: bad }
   const { pct, baseRent, curRent, asOf, name, flagged, note, saPool } = row
@@ -116,7 +124,7 @@ export function lookupMetroRent(countyFips: string | null | undefined, countyNam
     data: {
       level: 'metro',
       cbsa: m.cbsa,
-      countyWhy: TOO_NEW.has(countyFips) ? 'too-new' : 'none',
+      countyWhy: countySeriesWhy(countyFips) ?? 'none',
       ...(countyName ? { countyName } : {}),
       pct,
       baseRent,

@@ -1,4 +1,5 @@
 import { fmtSignedPct } from '@/lib/format'
+import { METRIC_COLORS } from '@/lib/theme'
 
 export type ChartType = 'area' | 'line' | 'bar'
 export type Timeframe = 'Jan 2025' | '3Y' | '5Y' | '10Y'
@@ -49,7 +50,7 @@ export const chartConfigs: ChartConfig[] = [
     description: 'EIA average retail price per gallon of regular gasoline for the closest area EIA publishes (city, state, or region), updated weekly.',
     chartType: 'line',
     series: [
-      { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
+      { dataKey: 'price', label: 'Regular gas ($/gal)', color: METRIC_COLORS.gas, type: 'monotone' },
     ],
     size: 'medium',
     order: 1,
@@ -68,7 +69,7 @@ export const chartConfigs: ChartConfig[] = [
     description: 'BLS Consumer Price Index for food purchased at grocery stores and supermarkets (food at home).',
     chartType: 'line',
     series: [
-      { dataKey: 'groceries', label: 'Groceries', color: '#EF4444', type: 'monotone' },
+      { dataKey: 'groceries', label: 'Groceries', color: METRIC_COLORS.groceries, type: 'monotone' },
     ],
     size: 'medium',
     order: 2,
@@ -88,7 +89,7 @@ export const chartConfigs: ChartConfig[] = [
     description: 'BLS CPI shelter: rent paid by all tenants (including existing leases) plus homeowners\' equivalent rent. It trails new-lease asking rents by about a year.',
     chartType: 'line',
     series: [
-      { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
+      { dataKey: 'shelter', label: 'Shelter', color: METRIC_COLORS.shelter, type: 'monotone' },
     ],
     size: 'medium',
     order: 3,
@@ -107,8 +108,8 @@ export const chartConfigs: ChartConfig[] = [
     description: "EIA average residential electricity price for your state, in cents per kWh, monthly. The bold line is seasonally adjusted by whatchanged (the basis of the card's % change); the thin line is the published monthly price.",
     chartType: 'line',
     series: [
-      { dataKey: 'sa', label: 'Seasonally adjusted', color: '#10B981', type: 'monotone' },
-      { dataKey: 'price', label: 'Published', color: '#10B981', type: 'monotone', strokeWidth: 1, strokeOpacity: 0.45 },
+      { dataKey: 'sa', label: 'Seasonally adjusted', color: METRIC_COLORS.electricity, type: 'monotone' },
+      { dataKey: 'price', label: 'Published', color: METRIC_COLORS.electricity, type: 'monotone', strokeWidth: 1, strokeOpacity: 0.45 },
     ],
     size: 'medium',
     order: 4,
@@ -130,7 +131,7 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
     title: 'Housing costs',
     description: 'Zillow Observed Rent Index (ZORI): typical asking rent on new leases in your county, seasonally adjusted by whatchanged. Same series as the Rent card.',
     chartType: 'line',
-    series: [{ dataKey: 'rent', label: 'Rent (new leases)', color: '#3B82F6', type: 'monotone' }],
+    series: [{ dataKey: 'rent', label: 'Rent (new leases)', color: METRIC_COLORS.rent, type: 'monotone' }],
     size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',
@@ -148,7 +149,7 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
     title: 'Housing costs',
     description: "Zillow Home Value Index (ZHVI): Zillow's smoothed, seasonally adjusted estimate of the typical (middle-tier) home value in your county.",
     chartType: 'line',
-    series: [{ dataKey: 'hv', label: 'Typical home value', color: '#8B5CF6', type: 'monotone' }],
+    series: [{ dataKey: 'hv', label: 'Typical home value', color: METRIC_COLORS.homePrices, type: 'monotone' }],
     size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',
@@ -181,7 +182,7 @@ export const heatingTabConfigs: Record<'oil' | 'propane', ChartConfig> = {
     title: 'Home heating fuel',
     description: 'Average residential price per gallon of No. 2 heating oil delivered to homes, weekly.',
     chartType: 'line',
-    series: [{ dataKey: 'price', label: 'Heating oil ($/gal)', color: '#F97316', type: 'monotone' }],
+    series: [{ dataKey: 'price', label: 'Heating oil ($/gal)', color: METRIC_COLORS.heating, type: 'monotone' }],
     size: 'medium',
     order: 5,
     defaultTimeframe: 'Jan 2025',
@@ -198,7 +199,7 @@ export const heatingTabConfigs: Record<'oil' | 'propane', ChartConfig> = {
     title: 'Home heating fuel',
     description: 'Average residential price per gallon of propane delivered to homes, weekly.',
     chartType: 'line',
-    series: [{ dataKey: 'price', label: 'Propane ($/gal)', color: '#F97316', type: 'monotone' }],
+    series: [{ dataKey: 'price', label: 'Propane ($/gal)', color: METRIC_COLORS.heating, type: 'monotone' }],
     size: 'medium',
     order: 5,
     defaultTimeframe: 'Jan 2025',

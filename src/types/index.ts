@@ -160,8 +160,9 @@ export interface RentData {
   /** Metro rows: OMB CBSA code and the county the zip is in (the metro series stands in for it). */
   cbsa?: string
   countyName?: string
-  /** Metro rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short). */
-  countyWhy?: 'none' | 'too-new'
+  /** Metro rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short;
+   * 'no-baseline' = it has no Jan 2025 value). */
+  countyWhy?: 'none' | 'too-new' | 'no-baseline'
   /**
    * The series is too short to estimate its own seasonal pattern, so it is adjusted with this pool's typical
    * pattern ("Maine counties", "U.S. counties").

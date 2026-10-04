@@ -24,7 +24,7 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
   return (
     <>
       {/* Cards stretch to equal height; while a card's ⓘ is open the row stops stretching, so its neighbor doesn't grow */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6 has-[[aria-expanded=true]]:items-start" data-testid="stat-cards">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 mt-5 has-[[aria-expanded=true]]:items-start" data-testid="stat-cards">
         {cards.map(c => (
           <StatCard
             key={c.id}
@@ -48,7 +48,7 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
         ))}
       </div>
       {range && (
-        <p className="mt-2 text-[11px] text-zinc-500 text-center" data-testid="asof-range">
+        <p className="tnum mt-2.5 font-mono text-[10.5px] text-ink-3" data-testid="asof-range">
           Latest data ranges {range}: each source publishes on its own schedule.
         </p>
       )}

@@ -24,10 +24,10 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return this.props.fallback ?? (
         <div className="text-center py-8">
-          <p className="text-zinc-400 font-inter">Something went wrong displaying this section.</p>
+          <p className="text-ink-2">Something went wrong displaying this section.</p>
           <button
             onClick={() => this.setState({ hasError: false })}
-            className="mt-2 text-electric-amber underline text-sm font-inter"
+            className="mt-2 text-ink underline underline-offset-4 text-sm"
           >
             Try again
           </button>

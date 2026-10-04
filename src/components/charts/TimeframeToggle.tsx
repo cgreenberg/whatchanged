@@ -10,16 +10,17 @@ const timeframes: Timeframe[] = ['Jan 2025', '3Y', '5Y', '10Y']
 
 export function TimeframeToggle({ selected, onChange }: TimeframeToggleProps) {
   return (
-    <div className="flex shrink-0 gap-0.5 sm:gap-1 bg-zinc-900 rounded-lg p-1">
+    <div className="flex shrink-0 border border-line rounded-sm overflow-hidden divide-x divide-line" role="group" aria-label="Time range">
       {timeframes.map(tf => (
         <button
           key={tf}
           onClick={() => onChange(tf)}
+          aria-pressed={selected === tf}
           data-testid={`timeframe-${tf}`}
-          className={`px-2 sm:px-3 py-1 text-xs font-inter font-medium whitespace-nowrap rounded-md transition-colors ${
+          className={`tnum px-2.5 sm:px-3 py-1 text-[11.5px] font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:bg-line ${
             selected === tf
-              ? 'bg-zinc-700 text-white'
-              : 'text-zinc-500 hover:text-zinc-300'
+              ? 'bg-ink text-desk'
+              : 'text-ink-2 hover:text-ink hover:bg-raised'
           }`}
         >
           {tf}

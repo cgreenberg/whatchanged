@@ -132,6 +132,19 @@ describe('trace semantics', () => {
     expect(buildHeroCards(lewiston)[1].info.join(' ')).toMatch(/Seasonally adjusted with the typical pattern of .* counties/)
   })
 
+  test('rent: a county series with data before Jan 2024 but no Jan 2025 value says so, not "too new" (Burnet TX)', async () => {
+    const burnet = (await fetchSnapshot('78611'))!
+    expect(burnet.location.countyFips).toBe('48053')
+    const county = burnet.trace!.rent![0]
+    expect(county).toMatchObject({ rungId: 'rent.zillow-county', status: 'not-applicable' })
+    expect(county.reason).toMatch(/^Zillow's series for Burnet County has no Jan 2025 value/)
+    expect(county.reason).not.toMatch(/too new/)
+    if (burnet.rent?.level === 'metro') {
+      expect(burnet.rent.countyWhy).toBe('no-baseline')
+      expect(buildHeroCards(burnet)[1].info.join(' ')).toMatch(/series for Burnet County has no Jan 2025 value/)
+    }
+  })
+
   test('gas: Alaska DCRA community survey (own community / nearest / region), no U.S. comparison, CC BY credit', async () => {
     for (const zip of ['99701', '99559']) {
       const s = (await fetchSnapshot(zip))!

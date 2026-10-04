@@ -11,6 +11,7 @@ import { fetchSnapshot } from '@/lib/api/snapshot'
 import { electricityCacheKey } from '@/lib/api/eia-electricity'
 import { cpiCacheKey } from '@/lib/api/bls-cpi'
 import countyGeo from '@/lib/data/county-geo.json'
+import { lookupAkGas, akGasForCounty } from '@/lib/static-gas'
 import { liveValue, liveFooter, LIVE_METRICS, MAP_METRIC_ORDER, isCountyMetric } from '@/lib/county-data'
 
 function countUpstream() {
@@ -31,7 +32,8 @@ test('empty cache: every area is "no data", nothing is fetched and no budget is 
   expect(calls).toEqual({ bls: 0, eia: 0 })
   expect(await getCached(budgetKey('bls'))).toBeNull()
   expect(await getCached(budgetKey('eia'))).toBeNull()
-  expect(m.gas.every((g) => g.change === null)).toBe(true)
+  // every cached gas area is "no data" (the bundled Alaska DCRA survey areas never depend on the cache)
+  expect(m.gas.filter((g) => g.source !== 'dcra').every((g) => g.change === null)).toBe(true)
   expect(m.groceries.every((c) => c.pct === null)).toBe(true)
   expect(m.electricity).toEqual({})
   expect(m.missing).toBeGreaterThan(100)
@@ -77,6 +79,42 @@ test('HI/AK stand-in counties are labeled as such (same Honolulu value, not call
   expect(hilo.area).toMatch(/Honolulu-area price \(BLS\) \(no series for this county\)/)
 })
 
+test('Alaska outside Anchorage: the DCRA survey value the card uses, not the Anchorage stand-in', async () => {
+  const calls = countUpstream()
+  const m = await buildMapMetrics()
+  expect(calls).toEqual({ bls: 0, eia: 0 })
+  // Fairbanks North Star Borough: every zip resolves to the Fairbanks survey → exactly the card's figure
+  const card = lookupAkGas('99701')
+  expect(card.hit?.place).toBe('Fairbanks')
+  const fbx = liveValue(m, '02090', 'gas')!
+  expect(fbx.value).toBeCloseTo(card.hit!.data.change, 3)
+  expect(fbx.area).toBe('Fairbanks survey price (Alaska DCRA)')
+  expect(fbx.area).not.toMatch(/Anchorage|no series/)
+  expect(fbx.detail).toMatch(/^\$\d+\.\d\d\/gal · Alaska DCRA survey \(twice yearly\), \w{3} \d{4} survey$/)
+  expect(fbx.detail).toContain(`$${card.hit!.data.current.toFixed(2)}/gal`)
+  // Bethel Census Area: many surveyed communities → their survey-by-survey median, labeled as such
+  const bethel = akGasForCounty('02050', 'Bethel Census Area')!
+  expect(bethel.match).toBe('median')
+  expect(bethel.places.length).toBeGreaterThan(5)
+  expect(bethel.data.change).toBeCloseTo(bethel.data.current - bethel.data.baseline, 3)
+  const bv = liveValue(m, '02050', 'gas')!
+  expect(bv.area).toBe(`Bethel Census Area: median of ${bethel.places.length} surveyed communities (Alaska DCRA)`)
+  expect(bv.value).toBeCloseTo(bethel.data.change, 3)
+  // Haines Borough: no surveyed community → the DCRA region average its zips fall back to (same as its card)
+  const haines = liveValue(m, '02100', 'gas')!
+  expect(haines.area).toBe('Southeast Alaska region avg (DCRA survey)')
+  const hainesZip = Object.keys((await import('@/lib/data/ak-gas.json')).zips).find(
+    (z) => (lookupAkGas(z).hit?.lookup.geoLevel ?? '') === haines.area,
+  )!
+  expect(haines.value).toBeCloseTo(lookupAkGas(hainesZip).hit!.data.change, 3)
+  // Anchorage and Mat-Su keep the BLS Anchorage metro series (not cached here → no data); no AK borough is a stand-in
+  expect(m.gas[m.counties['02020'][0]].id).toBe('b:S49G')
+  const akStandIns = Object.keys(m.counties).filter((f) => f.startsWith('02') && m.gas[m.counties[f][0]].standIn)
+  expect(akStandIns).toEqual([])
+  // Static values are always present, so they never count as missing cache keys
+  expect(m.gas.filter((g) => g.source === 'dcra').every((g) => g.change !== null)).toBe(true)
+})
+
 test('a last-good copy is used when the primary key expired; invalid data is ignored', async () => {
   await fetchSnapshot('04101')
   const key = electricityCacheKey('ME')
@@ -107,7 +145,7 @@ test('route: CDN-cached for an hour when complete, 5 minutes when any area is mi
   const gas = (await fetchSnapshot('04101'))!.gas.data!
   const { describeDuoarea } = await import('@/lib/api/eia')
   const { describeBlsGasArea } = await import('@/lib/api/bls-gas')
-  for (const g of m0.gas) {
+  for (const g of m0.gas.filter((a) => a.source !== 'dcra')) {
     const [src, code] = g.id.replace('*', '').split(':')
     const key = src === 'b' ? describeBlsGasArea(code).cacheKey : describeDuoarea(code).cacheKey
     writes.push(writeEnvelope(key, { ...gas, latestDate: gas.latestDate, baselineDate: gas.baselineDate, regionName: 'x' }, 60))

@@ -9,6 +9,7 @@ import {
 } from '@/lib/hero-cards'
 import type { EconomicSnapshot, HeatingFuelData } from '@/types'
 import { HEATING_NOTE, NYSERDA_NOTE } from '@/lib/charts/chart-config'
+import { METRIC_COLORS } from '@/lib/theme'
 
 export const NOT_SA = 'not seasonally adjusted'
 
@@ -99,7 +100,7 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
                 sourceUrl: src.sourceUrl,
                 // Two points a year: straight segments between surveys (a smoothed curve would invent in-between prices)
                 ...(g?.source === 'dcra'
-                  ? { series: [{ dataKey: 'price', label: 'Regular gas ($/gal), survey', color: '#F59E0B', type: 'linear' as const }] }
+                  ? { series: [{ dataKey: 'price', label: 'Regular gas ($/gal), survey', color: METRIC_COLORS.gas, type: 'linear' as const }] }
                   : {}),
               },
             }

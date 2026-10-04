@@ -509,9 +509,16 @@ def main():
             # Monthly ZHVI levels since SERIES_START for the Housing graph (Zillow-adjusted; 1 decimal so the graph reproduces `hv`)
             counties[f]["hvS"] = compact_series(chv[i], cm, 1)
     ck, cr, crm, _ = load_zillow(R("zori_county.csv"), cfips)
-    # ZORI rows whose first value comes after POOL_MAX_START: "too new" (others unpublished for other reasons, e.g. no Jan 2025 value)
+    # Why a county with a current ZORI row may still go unpublished (the trace and the metro stand-in name the reason):
+    #   "too new"     = its first value comes after POOL_MAX_START (too short to adjust or measure since Jan 2025);
+    #   "no baseline" = it reaches back past POOL_MAX_START but has no Jan 2025 value (e.g. Burnet County TX 48053).
+    # Rows unpublished for any other reason fall back to the generic "no usable series" wording.
     _first_ok = crm.index(POOL_MAX_START)
-    zori_rows = {f for i, f in enumerate(ck) if np.isfinite(cr[i]).any() and not np.isfinite(cr[i, :_first_ok + 1]).any() and np.isfinite(cr[i, -1])}
+    _bi = crm.index(BASE)
+    _current = lambda i: np.isfinite(cr[i]).any() and np.isfinite(cr[i, -1])
+    _early = lambda i: np.isfinite(cr[i, :_first_ok + 1]).any()
+    zori_rows = {f for i, f in enumerate(ck) if _current(i) and not _early(i)}
+    zori_nobase = {f for i, f in enumerate(ck) if _current(i) and _early(i) and not np.isfinite(cr[i, _bi])}
     cr_sa, cr_ok, cr_factors = seasonal_adjust(cr, crm, return_factors=True)
     # Short series (Zillow coverage that starts in 2022-2023, e.g. Androscoggin ME) get their state's typical
     # seasonal pattern instead of being dropped; labeled wherever they are shown (rentSaPool / saPool).
@@ -651,7 +658,9 @@ def main():
                    "counties": dict(sorted(cr_out.items())),
                    # Counties Zillow publishes a ZORI row for, but whose series is too new to measure since Jan 2025
                    # (needs data from POOL_MAX_START): the trace and the metro stand-in say so instead of "no series".
-                   "tooNew": sorted(f for f in zori_rows if f in counties and f not in cr_out and "rent" not in counties[f])},
+                   "tooNew": sorted(f for f in zori_rows if f in counties and f not in cr_out and "rent" not in counties[f]),
+                   # Counties whose ZORI row reaches back past POOL_MAX_START but has no Jan 2025 value to measure from
+                   "noBaseline": sorted(f for f in zori_nobase if f in counties and f not in cr_out and "rent" not in counties[f])},
                   fh, separators=(",", ":"))
     zc_cov = sum(1 for v in zip_county.values() if v["countyFips"] in cr_out)
     print(f"county-rent.json: {len(cr_out)} counties, covers {zc_cov}/{len(zip_county)} crosswalk zips ({zc_cov / len(zip_county):.1%})")

@@ -34,17 +34,17 @@ export function CityGrid({ onCitySelect }: CityGridProps) {
   const cities = GRID_CITIES
 
   return (
-    <div className="mt-4">
-      <p className="text-sm text-zinc-500 mb-3">Or explore a city →</p>
+    <div className="mt-10">
+      <p className="kicker text-ink-3 mb-3">Or explore a city</p>
       <div
         data-testid="city-grid"
-        className="flex flex-wrap justify-center gap-2"
+        className="flex flex-wrap justify-center gap-1.5 max-w-3xl mx-auto"
       >
         {cities.map((city) => (
             <button
               key={city.zip}
               onClick={() => onCitySelect(city.zip, city.city, city.state)}
-              className="rounded-full px-4 py-1.5 text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+              className="rounded-sm px-3 py-1.5 text-[13px] text-ink-2 border border-line hover:text-ink hover:border-ink-3 hover:bg-surface transition-colors"
             >
               {city.label}
             </button>

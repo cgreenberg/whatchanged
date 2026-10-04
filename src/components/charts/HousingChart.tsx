@@ -108,9 +108,14 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
       ? `No Zillow ${missing.map(k => (k === 'rent' ? 'rent' : 'home price')).join(' or ')} data for ${geoName}.`
       : null
 
+  const tabColor: Record<HousingTab, string> = {
+    rent: housingTabConfigs.rent.series[0].color,
+    homePrices: housingTabConfigs.homePrices.series[0].color,
+    shelter: shelterConfig.series[0]?.color ?? '#F1EFEA',
+  }
   const tabs = (
     <div className="mb-3">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Housing measure">
+      <div className="flex flex-wrap gap-x-5 border-b border-line" role="tablist" aria-label="Housing measure">
         {TABS.map(t => (
           <button
             key={t.key}
@@ -119,25 +124,26 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
             disabled={!available[t.key]}
             onClick={() => setChoice(t.key)}
             data-testid={`housing-tab-${t.key}`}
-            className={`px-3 py-1 rounded-full text-xs border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-              active === t.key ? 'bg-blue-500 text-white border-blue-500 font-semibold' : 'border-zinc-700 text-zinc-300'
+            className={`-mb-px pb-1.5 pt-0.5 text-[13px] border-b-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:text-ink ${
+              active === t.key ? 'text-ink font-semibold' : 'border-transparent text-ink-3 hover:text-ink-2'
             }`}
+            style={active === t.key ? { borderColor: tabColor[t.key] } : undefined}
           >
             {t.label}
           </button>
         ))}
       </div>
-      {missingNote && <p className="text-[11px] text-zinc-500 mt-1" data-testid="housing-missing-note">{missingNote}</p>}
+      {missingNote && <p className="text-[11px] text-ink-3 mt-1.5" data-testid="housing-missing-note">{missingNote}</p>}
     </div>
   )
 
   // Zillow tab whose county shard is still loading: hold the space instead of flashing "Data unavailable".
   if (active !== 'shelter' && county.status === 'loading') {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4" data-testid="housing-chart" data-tab={active}>
-        <h3 className="text-sm font-inter font-medium text-zinc-300 mb-2">{shelterConfig.title}</h3>
+      <div className="bg-surface border border-line rounded-md p-4 sm:p-5" data-testid="housing-chart" data-tab={active}>
+        <h3 className="font-display font-semibold text-[19px] leading-tight tracking-tight text-ink mb-3">{shelterConfig.title}</h3>
         {tabs}
-        <div className="h-64 rounded-lg bg-zinc-800/40 animate-pulse" />
+        <div className="h-72 rounded-sm bg-line/40 animate-pulse" />
       </div>
     )
   }

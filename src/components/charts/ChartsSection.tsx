@@ -6,6 +6,7 @@ import { EraChart, ChartHeadline } from './EraChart'
 import { HousingChart } from './HousingChart'
 import { HeatingChart } from './HeatingChart'
 import { getChartInput } from './chart-inputs'
+import { BASELINE_DAY_LABEL } from '@/lib/baseline'
 import type { EconomicSnapshot } from '@/types'
 import type { TraceMetric } from '@/lib/resolution/types'
 
@@ -47,13 +48,21 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="mt-12"
+      className="mt-14"
       data-testid="charts-section"
     >
-      <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
+      <div className="border-t border-line pt-5 mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
+        <div>
+          <p className="kicker text-ink-3">The record</p>
+          <h2 className="mt-1 font-display font-semibold text-3xl sm:text-[34px] leading-none tracking-tight text-ink">Trends over time</h2>
+        </div>
+        <p className="text-[12px] text-ink-3 max-w-sm">
+          Gray field: since the {BASELINE_DAY_LABEL} baseline. Labels at right: latest value.
+        </p>
+      </div>
       {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Electricity, by config order), then Home heating
           where it has data; one column under 768px */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="charts-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" data-testid="charts-grid">
         {sortedCharts.map(config =>
           config.id === 'cpi-shelter'
             ? <HousingChart key={`housing-${snapshot.location.countyFips}`} snapshot={snapshot} shelterConfig={config} />

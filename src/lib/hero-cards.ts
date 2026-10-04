@@ -2,6 +2,7 @@
 // API snapshot (no frontend dollar fallbacks, no national stand-ins shown as local).
 
 import type { EconomicSnapshot, CensusData, CpiData, GasPriceData, ElectricityData, RentData } from '@/types'
+import { METRIC_COLORS } from '@/lib/theme'
 import type { Provenance } from '@/lib/provenance'
 import { RENT_STALE_DAYS, monthOlderThan } from '@/lib/staleness'
 import type { TraceMetric } from '@/lib/resolution/types'
@@ -361,11 +362,11 @@ function sinceMonth(period: string | null | undefined): string {
 }
 
 export const ACCENTS = {
-  gas: '#F59E0B',
-  rent: '#3B82F6',
-  shelter: '#3B82F6',
-  groceries: '#EF4444',
-  electricity: '#10B981',
+  gas: METRIC_COLORS.gas,
+  rent: METRIC_COLORS.rent,
+  shelter: METRIC_COLORS.shelter,
+  groceries: METRIC_COLORS.groceries,
+  electricity: METRIC_COLORS.electricity,
 } as const
 
 // ---------------------------------------------------------------- Gas
@@ -597,7 +598,9 @@ export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'coun
   const county = r.countyName ? countyOnly(r.countyName) : 'this county'
   const why = r.countyWhy === 'too-new'
     ? `Zillow's series for ${county} is too new (it needs data from Jan 2024) to measure since Jan 2025`
-    : `Zillow publishes no rent series for ${county}`
+    : r.countyWhy === 'no-baseline'
+      ? `Zillow's series for ${county} has no Jan 2025 value, so its change since Jan 2025 can't be measured`
+      : `Zillow publishes no rent series for ${county}`
   return `${why}; this is the ${r.geoName} series (the county's metro area).`
 }
 

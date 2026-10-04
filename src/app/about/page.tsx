@@ -15,15 +15,17 @@ export const metadata: Metadata = {
   description: 'Data sources, methodology, and transparency information for What Changed.',
 }
 
-const inter = { fontFamily: 'var(--font-inter, sans-serif)' }
-const bebas = { fontFamily: 'var(--font-bebas, sans-serif)' }
+// Data-desk styling (tokens in globals.css / src/lib/theme.ts): charcoal cards, hairline rules,
+// condensed display headings, mono kickers.
+const sectionClass = 'bg-surface border border-line rounded-md p-5 sm:p-6 mb-6'
+const h2Class = 'font-display font-semibold text-[24px] leading-tight tracking-tight text-ink mb-4'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-      <h2 className="text-2xl text-white mb-4" style={bebas}>{title}</h2>
-      <div className="text-zinc-300 text-sm leading-relaxed space-y-3" style={inter}>{children}</div>
-    </div>
+    <section className={sectionClass}>
+      <h2 className={h2Class}>{title}</h2>
+      <div className="text-ink-2 text-sm leading-relaxed space-y-3 [&_strong]:text-ink [&_strong]:font-semibold">{children}</div>
+    </section>
   )
 }
 
@@ -31,9 +33,9 @@ function Row({ metric, source, geo, freq, children, last }: {
   metric: string; source: string; geo: ReactNode; freq: string; children: ReactNode; last?: boolean
 }) {
   return (
-    <tr className={last ? '' : 'border-b border-zinc-800'}>
-      <td className="py-3 pr-4 font-medium text-white whitespace-nowrap align-top">{metric}</td>
-      <td className="py-3 pr-4 text-zinc-300 align-top">{source}</td>
+    <tr className={last ? '' : 'border-b border-line'}>
+      <td className="py-3 pr-4 font-semibold text-ink whitespace-nowrap align-top">{metric}</td>
+      <td className="py-3 pr-4 text-ink align-top">{source}</td>
       <td className="py-3 pr-4 align-top">{geo}</td>
       <td className="py-3 pr-4 whitespace-nowrap align-top">{freq}</td>
       <td className="py-3 align-top">{children}</td>
@@ -43,36 +45,37 @@ function Row({ metric, source, geo, freq, children, last }: {
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
+    <main className="min-h-screen px-4 py-10 sm:py-12 max-w-4xl mx-auto">
       {/* Page Header */}
       <div className="mb-10">
-        <Link href="/" className="text-sm text-zinc-400 hover:text-white transition-colors mb-6 inline-block">
+        <Link href="/" className="kicker text-ink-2 hover:text-ink transition-colors mb-8 inline-block">
           ← Back to dashboard
         </Link>
-        <h1 className="text-5xl md:text-7xl text-white leading-none mb-3" style={bebas}>
-          About the Data
+        <p className="kicker text-ink-3 mb-2">Sources &amp; methods</p>
+        <h1 className="font-display font-semibold text-[44px] md:text-[60px] tracking-tight text-ink leading-none mb-3">
+          About the data
         </h1>
-        <p className="text-zinc-400 text-lg" style={inter}>
+        <p className="text-ink-2 text-lg">
           How we collect, calculate, and display local price data.
         </p>
-        <p className="text-zinc-400 text-sm mt-3" style={inter} data-testid="about-last-updated">
-          <span className="text-zinc-500">Last updated: </span>
+        <p className="font-mono text-[12px] text-ink-2 mt-4 tnum" data-testid="about-last-updated">
+          <span className="text-ink-3">Last updated: </span>
           <time dateTime={ABOUT_LAST_UPDATED}>{fmtDay(ABOUT_LAST_UPDATED)}</time>
         </p>
-        <p className="text-zinc-500 text-sm mt-1" style={inter}>
+        <p className="text-ink-3 text-sm mt-1">
           That is when this page was last revised. Each number&apos;s own data date (the month or week its
           latest figure covers) is shown on its card, because every source publishes on its own schedule.
         </p>
       </div>
 
-      <Section title="What the Page Shows">
+      <Section title="What the page shows">
         <p>
           Enter a zip code to see how local prices changed since January 20, 2025. Four summary cards
-          come first: <strong className="text-white">Gas</strong> (regular gasoline, $/gal),{' '}
-          <strong className="text-white">Rent</strong> (asking rents on new leases, Zillow; where Zillow
-          has no county rent, the card shows <strong className="text-white">Shelter (CPI)</strong> instead),{' '}
-          <strong className="text-white">Groceries</strong> (CPI food at home) and{' '}
-          <strong className="text-white">Electricity</strong> (your state&apos;s average residential price
+          come first: <strong>Gas</strong> (regular gasoline, $/gal),{' '}
+          <strong>Rent</strong> (asking rents on new leases, Zillow; where Zillow
+          has no county rent, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
+          <strong>Groceries</strong> (CPI food at home) and{' '}
+          <strong>Electricity</strong> (your state&apos;s average residential price
           per kWh). Each card shows the number, a short dollar translation where one applies, the
           comparison window and the U.S. figure where one exists, and a short source line (area · source ·
           month). Tap the ⓘ on a card for everything else: the full source line with a link, the
@@ -96,17 +99,17 @@ export default function AboutPage() {
       </Section>
 
       {/* Data Sources */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-        <h2 className="text-2xl text-white mb-5" style={bebas}>Data Sources</h2>
+      <section className={sectionClass}>
+        <h2 className={h2Class}>Data sources</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-300" style={inter}>
+          <table className="w-full text-left text-sm text-ink-2 leading-relaxed">
             <thead>
               <tr>
-                <th className="text-zinc-500 uppercase text-xs font-medium pb-3 pr-4 whitespace-nowrap">Metric</th>
-                <th className="text-zinc-500 uppercase text-xs font-medium pb-3 pr-4 whitespace-nowrap">Source</th>
-                <th className="text-zinc-500 uppercase text-xs font-medium pb-3 pr-4 whitespace-nowrap">Geography</th>
-                <th className="text-zinc-500 uppercase text-xs font-medium pb-3 pr-4 whitespace-nowrap">Update Frequency</th>
-                <th className="text-zinc-500 uppercase text-xs font-medium pb-3 whitespace-nowrap">Notes</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Metric</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Source</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Geography</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Update Frequency</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 whitespace-nowrap">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -201,7 +204,7 @@ export default function AboutPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       <Section title="Methodology">
         <p>
@@ -220,28 +223,30 @@ export default function AboutPage() {
         </p>
       </Section>
 
-      <Section title="Presidential Term Shading">
+      <Section title="Graph markers">
         <p>
-          Graphs include subtle background shading for presidential terms, with labels at the inauguration
-          dates January 20, 2017, January 20, 2021, and January 20, 2025.
+          Every graph marks the January 20, 2025 baseline with a thin gray line (&ldquo;Jan 2025
+          baseline&rdquo; on monthly series). In the 3-, 5- and 10-year views the period since the baseline
+          has a light gray background, and faint dotted lines mark January 2017 and January 2021 for
+          reference. There is no party color coding.
         </p>
       </Section>
 
-      <Section title="Data Checks">
+      <Section title="Data checks">
         <p>
           Data on this site is checked by automated tests against the government source APIs (BLS and EIA),
           including the electricity prices and their January 2025 baselines for several states.
         </p>
       </Section>
 
-      <Section title="About This Project">
+      <Section title="About this project">
         <p>
           Source code is available on{' '}
           <a
             href="https://github.com/cgreenberg/whatchanged"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-amber-500 hover:text-amber-400 underline"
+            className="text-ink underline decoration-ink-3 underline-offset-2 hover:decoration-ink"
           >
             GitHub
           </a>

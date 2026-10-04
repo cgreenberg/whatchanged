@@ -524,7 +524,9 @@ const RENT = {
             ? `Zillow's figure for ${countyOnly(l)} is outside our sanity range (−20% to +50%), so it isn't shown.`
             : r.why === 'too-new'
               ? `Zillow's series for ${countyOnly(l)} is too new (it needs data from Jan 2024) to measure since Jan 2025.`
-              : `Zillow has no usable county rent series for ${countyOnly(l)} back to Jan 2025.`,
+              : r.why === 'no-baseline'
+                ? `Zillow's series for ${countyOnly(l)} has no Jan 2025 value, so its change since Jan 2025 can't be measured.`
+                : `Zillow has no usable county rent series for ${countyOnly(l)} back to Jan 2025.`,
         }
       },
     }),

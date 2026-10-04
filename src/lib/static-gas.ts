@@ -13,6 +13,7 @@ import akGas from '@/lib/data/ak-gas.json'
 import prGas from '@/lib/data/pr-gas.json'
 import type { GasLookupResult, GasSeriesData } from '@/lib/api/eia'
 import { BASELINE_MONTH } from '@/lib/baseline'
+import { lookupZip } from '@/lib/data/zip-lookup'
 
 export * from './static-gas-meta'
 
@@ -116,6 +117,74 @@ export function lookupAkGas(zip: string | null | undefined): StaticGasLookup {
       lookup: dcraLookup(m.c, `DCRA survey: ${m.c}`, nearest ? `${m.c} survey price (nearest surveyed community)` : `${m.c} survey price`, 1),
     },
   }
+}
+
+/**
+ * The county map's Alaska gas value for a borough / census area (outside the Anchorage CBSA), following the
+ * same ladder as the card, applied to the county's zips: the surveyed communities its zips resolve to (own or
+ * nearest community) — one community → that community's series (exactly the card's figure); several → the
+ * survey-by-survey median of those communities' prices (labeled "median of N surveyed communities") — else the
+ * DCRA region average its zips fall back to. null when no zip in the county has a DCRA series (the map then
+ * keeps the Anchorage stand-in, labeled as such).
+ */
+export interface AkCountyGas {
+  data: GasSeriesData
+  match: 'community' | 'median' | 'region'
+  /** "Bethel survey price (Alaska DCRA)", "Bethel Census Area: median of 12 surveyed communities (Alaska DCRA)". */
+  label: string
+  /** Communities (or the one region) behind the value. */
+  places: string[]
+}
+
+let akByCounty: Map<string, Array<{ k: 'c' | 'n'; c: string } | { k: 'r'; r: string }>> | null = null
+function akZipsByCounty() {
+  if (akByCounty) return akByCounty
+  akByCounty = new Map()
+  for (const [zip, m] of Object.entries(AK.zips ?? {})) {
+    const f = lookupZip(zip)?.countyFips
+    if (!f) continue
+    const list = akByCounty.get(f) ?? []
+    list.push(m)
+    akByCounty.set(f, list)
+  }
+  return akByCounty
+}
+
+const median = (xs: number[]): number => {
+  const s = [...xs].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 ? s[mid] : Number(((s[mid - 1] + s[mid]) / 2).toFixed(3))
+}
+
+export function akGasForCounty(countyFips: string, countyName?: string): AkCountyGas | null {
+  const zips = akZipsByCounty().get(countyFips)
+  if (!zips?.length) return null
+  const dates = (n: number) => semiannualDates(AK.meta.start, n)
+  const communities = [...new Set(zips.flatMap((m) => (m.k === 'r' ? [] : [m.c])))].filter((c) => AK.communities[c]).sort()
+  if (communities.length === 1) {
+    const c = communities[0]
+    const v = AK.communities[c].v
+    const data = toSeries(v, dates(v.length), AK.meta.baseSurvey, c, STATIC_GAS_RANGE.dcra)
+    if (data) return { data, match: 'community', label: `${c} survey price (Alaska DCRA)`, places: [c] }
+  } else if (communities.length > 1) {
+    const n = Math.max(...communities.map((c) => AK.communities[c].v.length))
+    const v = Array.from({ length: n }, (_, i) => {
+      const xs = communities.map((c) => AK.communities[c].v[i]).filter((x): x is number => inRange(x, STATIC_GAS_RANGE.dcra))
+      return xs.length ? median(xs) : null
+    })
+    const where = countyName ?? 'This area'
+    const data = toSeries(v, dates(n), AK.meta.baseSurvey, `${where} (median of ${communities.length} surveyed communities)`, STATIC_GAS_RANGE.dcra)
+    if (data) {
+      return { data, match: 'median', label: `${where}: median of ${communities.length} surveyed communities (Alaska DCRA)`, places: communities }
+    }
+  }
+  // No usable community: the region average the county's zips fall back to (most zips' region if several)
+  const counts = new Map<string, number>()
+  for (const m of zips) if (m.k === 'r') counts.set(m.r, (counts.get(m.r) ?? 0) + 1)
+  const region = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0]
+  const r = region ? AK.regions[region] : undefined
+  const data = r && toSeries(r.v, dates(r.v.length), AK.meta.baseSurvey, `${region} region`, STATIC_GAS_RANGE.dcra)
+  return data ? { data, match: 'region', label: `${region} Alaska region avg (DCRA survey)`, places: [region!] } : null
 }
 
 function dcraLookup(area: string, seriesId: string, geoLevel: string, tier: 1 | 3): GasLookupResult {

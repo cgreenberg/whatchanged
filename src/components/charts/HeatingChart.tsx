@@ -30,7 +30,7 @@ export function HeatingChart({ snapshot }: { snapshot: EconomicSnapshot }) {
   const input = getHeatingInput(active, snapshot)
   const tabs = (
     <div className="mb-3">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Heating fuel">
+      <div className="flex flex-wrap gap-x-5 border-b border-line" role="tablist" aria-label="Heating fuel">
         {TABS.filter(t => available.includes(t.key)).map(t => (
           <button
             key={t.key}
@@ -38,9 +38,10 @@ export function HeatingChart({ snapshot }: { snapshot: EconomicSnapshot }) {
             aria-selected={active === t.key}
             onClick={() => setChoice(t.key)}
             data-testid={`heating-tab-${t.key}`}
-            className={`px-3 py-1 rounded-full text-xs border transition ${
-              active === t.key ? 'bg-orange-500 text-white border-orange-500 font-semibold' : 'border-zinc-700 text-zinc-300'
+            className={`-mb-px pb-1.5 pt-0.5 text-[13px] border-b-2 transition-colors focus:outline-none focus-visible:text-ink ${
+              active === t.key ? 'text-ink font-semibold' : 'border-transparent text-ink-3 hover:text-ink-2'
             }`}
+            style={active === t.key ? { borderColor: heatingTabConfigs[t.key].series[0].color } : undefined}
           >
             {t.label}
           </button>

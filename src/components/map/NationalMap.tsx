@@ -125,6 +125,9 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
   const window_ = def.scope === 'county' ? def.window(meta) : sinceBaseline(meta)
   const footer = def.scope === 'county' ? metricFooter(def, meta) : liveFooter(def.key, liveData)
   const scale = def.scope === 'live' && def.unit === 'usd' ? `±$${def.clamp.toFixed(2)}/gal` : `±${def.clamp}%`
+  const scaleEnd = (sign: 1 | -1) => (def.scope === 'live' && def.unit === 'usd'
+    ? `${sign < 0 ? '−' : '+'}$${def.clamp.toFixed(2)}`
+    : `${sign < 0 ? '−' : '+'}${def.clamp}%`)
 
   const sel = selected ? data[selected] : undefined
   const selShape = shapes?.counties.find(s => s.id === selected)
@@ -152,32 +155,35 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
     : []
 
   return (
-    <section ref={ref} className="mt-12" data-testid="national-map">
-      <h2 className="text-3xl text-white" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}>
+    <section ref={ref} className="mt-16 border-t border-line pt-5" data-testid="national-map">
+      <p className="kicker text-ink-3">The nation</p>
+      <h2 className="mt-1 font-display font-semibold text-3xl sm:text-[34px] leading-none tracking-tight text-ink">
         How every county changed
       </h2>
-      <p className="text-sm text-zinc-400 mb-3">
+      <p className="text-sm text-ink-2 mt-2 mb-4 max-w-2xl">
         Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}. Tap one to see all five measures.
       </p>
 
       {/* Controls sit above the map, never on top of it, so every county stays tappable */}
-      <div className="flex flex-wrap items-center gap-2 pb-2">
+      <div className="flex flex-wrap items-center gap-2 pb-3">
+        <div className="flex max-w-full overflow-x-auto border border-line rounded-sm divide-x divide-line" role="group" aria-label="Map measure">
         {DEFS.map(m => (
           <button
             key={m.key}
             onClick={() => { setFrame(null); setMetric(m.key) }}
             aria-pressed={metric === m.key}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition ${metric === m.key ? 'bg-amber-500 text-black border-amber-500 font-semibold' : 'border-zinc-700 text-zinc-300'}`}
+            className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-[12.5px] sm:text-[13px] transition-colors focus:outline-none focus-visible:bg-line ${metric === m.key ? 'bg-ink text-desk font-semibold' : 'text-ink-2 hover:text-ink hover:bg-raised'}`}
           >
             {m.short}
           </button>
         ))}
+        </div>
         {/* Time-lapse only where there is a county-by-county monthly history (Zillow rent and home prices) */}
         {shapes && !error && countyKey && (
           <button
             onClick={play}
             data-testid="map-play"
-            className="ml-auto shrink-0 bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs px-3 py-1.5 rounded-full"
+            className="ml-auto shrink-0 border border-line text-ink-2 hover:text-ink hover:border-ink-3 text-xs px-3 py-1.5 rounded-sm tnum transition-colors"
           >
             {timelineError
               ? 'Time-lapse unavailable, retry'
@@ -186,19 +192,19 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
         )}
       </div>
 
-      <div className="relative bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="relative bg-desk border border-line rounded-md overflow-hidden">
         {error ? (
-          <div className="aspect-[975/610] flex flex-col gap-2 items-center justify-center text-zinc-500 text-sm" data-testid="map-error">
+          <div className="aspect-[975/610] flex flex-col gap-2 items-center justify-center text-ink-3 text-sm" data-testid="map-error">
             <p>{error}</p>
-            <button onClick={() => { setError(null); setAttempt(a => a + 1) }} className="text-amber-400 underline text-xs">Try again</button>
+            <button onClick={() => { setError(null); setAttempt(a => a + 1) }} className="text-ink underline underline-offset-4 text-xs">Try again</button>
           </div>
         ) : !shapes ? (
-          <div className="aspect-[975/610] flex items-center justify-center text-zinc-500 text-sm">Loading map…</div>
+          <div className="aspect-[975/610] flex items-center justify-center text-ink-3 text-sm">Loading map…</div>
         ) : (
           <svg viewBox="0 0 975 610" className="w-full h-auto block" role="img" aria-label={`US county map of ${def.label}`}>
             <defs>
               <pattern id={NO_DATA_PATTERN_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width={4} height={4} fill="#18181b" />
+                <rect width={4} height={4} fill="#171A1E" />
                 <rect width={1.6} height={4} fill={NO_DATA_COLOR} />
               </pattern>
             </defs>
@@ -209,74 +215,85 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
                   d={s.d}
                   data-fips={s.id}
                   fill={Number.isFinite(value(s.id)) ? divergingColor(value(s.id), def.clamp) : `url(#${NO_DATA_PATTERN_ID})`}
-                  stroke="#09090b"
-                  strokeWidth={0.25}
+                  stroke="#111316"
+                  strokeWidth={0.3}
                   onClick={() => setSelected(s.id)}
                   style={{ transition: 'fill 300ms linear', cursor: 'pointer' }}
                 />
               ))}
             </g>
             {/* Decorations never take clicks: they must not shadow the counties under them */}
-            <path d={shapes.states} fill="none" stroke="#0a0a0a" strokeWidth={1.1} pointerEvents="none" />
+            <path d={shapes.states} fill="none" stroke="#111316" strokeWidth={1.3} strokeLinejoin="round" pointerEvents="none" />
             {selShape && (
               <g pointerEvents="none" data-testid="map-highlight">
-                <path d={selShape.d} fill="none" stroke="#fff" strokeWidth={2} />
-                <circle cx={selShape.c[0]} cy={selShape.c[1]} r={9} fill="none" stroke="#fff" strokeWidth={1.5} opacity={0.6}>
-                  <animate attributeName="r" values="6;16;6" dur="2s" repeatCount="indefinite" />
-                </circle>
+                <path d={selShape.d} fill="none" stroke="#111316" strokeWidth={4} strokeLinejoin="round" />
+                <path d={selShape.d} fill="none" stroke="#F1EFEA" strokeWidth={1.75} strokeLinejoin="round" />
+                <line x1={selShape.c[0]} y1={selShape.c[1] - 9} x2={selShape.c[0]} y2={selShape.c[1] - 26} stroke="#F1EFEA" strokeWidth={1} />
+                <circle cx={selShape.c[0]} cy={selShape.c[1] - 28} r={2} fill="#F1EFEA" />
               </g>
             )}
           </svg>
         )}
         {frame != null && timeline && countyKey && (
-          <div className="pointer-events-none absolute top-2 left-3 text-white text-2xl" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }} data-testid="map-frame">
+          <div className="pointer-events-none absolute top-2.5 left-3 tnum font-display font-semibold text-ink text-2xl tracking-tight" data-testid="map-frame">
             {fmtMonth(timelineMonths(timeline, countyKey)[frame])}
           </div>
         )}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-2 mt-2 text-[11px] text-zinc-400">
-        <span>fell</span>
-        <div className="flex-1 h-2 rounded-full" style={{
-          background: `linear-gradient(90deg, ${[-1, -0.5, 0, 0.5, 1].map(t => divergingColor(t * def.clamp, def.clamp)).join(',')})`,
-        }} />
-        <span>rose</span>
-        <span
-          className="ml-2 inline-block w-3 h-3 rounded-sm border border-zinc-700"
-          style={{ background: `repeating-linear-gradient(45deg, ${NO_DATA_COLOR} 0 1.5px, #18181b 1.5px 4px)` }}
-          aria-hidden
-        />
-        <span>no data</span>
+      {/* Legend: a stepped diverging key with its end values, plus the no-data swatch */}
+      <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div className="w-full max-w-xs">
+          <p className="kicker !text-[10px] text-ink-3 mb-1">Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}</p>
+          <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{
+            background: `linear-gradient(90deg, ${Array.from({ length: 21 }, (_, i) => divergingColor((i / 10 - 1) * def.clamp, def.clamp)).join(',')})`,
+          }}>
+            <span className="absolute left-1/2 -top-0.5 -bottom-0.5 w-px bg-ink-3" />
+          </div>
+          <div className="tnum flex justify-between mt-1 font-mono text-[10px] text-ink-3">
+            <span>{scaleEnd(-1)} fell</span>
+            <span>0</span>
+            <span>rose {scaleEnd(1)}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4">
+          <span
+            className="inline-block w-3 h-3 rounded-[1px] border border-line"
+            style={{ background: `repeating-linear-gradient(45deg, ${NO_DATA_COLOR} 0 1.5px, #171A1E 1.5px 4px)` }}
+            aria-hidden
+          />
+          <span>no data</span>
+        </div>
       </div>
-      <p className="text-[11px] text-zinc-500 mt-1" data-testid="map-source">
+      <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
         Scale {scale} · {footer} · gray hatching = no data
       </p>
       {def.scope === 'live' && (
-        <p className="text-[11px] text-zinc-400 mt-1" data-testid="map-scope-note">
+        <p className="text-[12px] text-ink-2 mt-1" data-testid="map-scope-note">
           {def.scopeNote}{liveError ? ' Live prices are unavailable right now.' : ''}
         </p>
       )}
 
       {/* Selected county panel: all five measures, each with the area its number covers */}
       {sel && (
-        <div ref={panelRef} className="mt-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4" data-testid="map-selection" data-fips={selected}>
-          <p className="text-white font-semibold">{sel.n}</p>
-          <dl className="mt-2 space-y-1.5 text-sm">
+        <div ref={panelRef} className="mt-4 bg-surface border border-line rounded-md p-4 sm:p-5" data-testid="map-selection" data-fips={selected}>
+          <p className="kicker text-ink-3">Selected county</p>
+          <p className="mt-1 font-display font-semibold text-xl leading-tight tracking-tight text-ink">{sel.n}</p>
+          <dl className="tnum mt-3 text-[13px] divide-y divide-line border-y border-line">
             {rows.map(r => (
-              <div key={r.key} className={r.key === metric ? 'text-zinc-100' : 'text-zinc-400'} data-testid={`map-value-${r.key}`}>
-                <dt className={`inline ${r.key === metric ? 'font-semibold text-white' : 'text-zinc-500'}`}>{r.short}: </dt>
-                <dd className="inline">
+              <div key={r.key} className={`grid grid-cols-[6.5rem_1fr] gap-3 py-1.5 ${r.key === metric ? 'text-ink' : 'text-ink-2'}`} data-testid={`map-value-${r.key}`}>
+                <dt className={r.key === metric ? 'font-semibold text-ink' : 'text-ink-3'}>{r.short}: </dt>
+                <dd>
                   {r.text}
-                  {r.area && <span className="text-zinc-500"> · {r.area}</span>}
-                  {r.caveat && r.key !== metric && <span className="text-amber-300/80" title={r.caveat}> (unusual value)</span>}
+                  {r.area && <span className="text-ink-3"> · {r.area}</span>}
+                  {r.caveat && r.key !== metric && <span className="text-caution/90" title={r.caveat}> (unusual value)</span>}
                 </dd>
               </div>
             ))}
           </dl>
-          {selCaveat && <p className="text-[11px] text-amber-300/80 mt-1" data-testid="map-flag-note">{selCaveat}</p>}
+          {selCaveat && <p className="text-[11px] text-caution/90 mt-1.5" data-testid="map-flag-note">{selCaveat}</p>}
           {sel.z && selected !== countyFips && (
-            <button onClick={() => onZipSelect(sel.z!)} className="mt-3 text-sm font-semibold text-amber-400" data-testid="map-see-place">
+            <button onClick={() => onZipSelect(sel.z!)} className="mt-3 text-sm font-semibold text-ink underline decoration-ink-3 underline-offset-4 hover:decoration-ink" data-testid="map-see-place">
               See everything that changed here →
             </button>
           )}
@@ -285,24 +302,24 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
 
       {/* Movers */}
       {!countyKey && (
-        <p className="mt-3 text-[11px] text-zinc-500" data-testid="map-no-movers">{NO_MOVERS_NOTE}</p>
+        <p className="mt-3 text-[11px] text-ink-3" data-testid="map-no-movers">{NO_MOVERS_NOTE}</p>
       )}
       {countyKey && movers.top.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
           {([['Biggest increases', movers.top], ['Biggest decreases', movers.bottom]] as const).map(([title, rows]) => (
-            <div key={title} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-              <p className="text-[11px] uppercase tracking-widest text-zinc-500 mb-1.5">{title}</p>
+            <div key={title} className="bg-surface border border-line rounded-md px-4 py-3">
+              <p className="kicker text-ink-3 mb-1.5">{title}</p>
               {rows.map(([f, c]) => (
-                <button key={f} onClick={() => setSelected(f, true)} className="flex justify-between w-full text-left text-xs py-0.5 gap-2" data-testid="map-mover">
-                  <span className="text-zinc-300 truncate">{c.n}</span>
-                  <span className="text-zinc-400 tabular-nums shrink-0">
+                <button key={f} onClick={() => setSelected(f, true)} className="flex justify-between w-full text-left text-[13px] py-1 gap-2 border-t border-line first-of-type:border-t-0 hover:bg-raised -mx-1 px-1 rounded-[2px]" data-testid="map-mover">
+                  <span className="text-ink-2 truncate">{c.n}</span>
+                  <span className="text-ink tabular-nums font-medium shrink-0">
                     {(c[countyKey] as number) > 0 ? '+' : ''}{(c[countyKey] as number).toFixed(1)}%
                   </span>
                 </button>
               ))}
             </div>
           ))}
-          <p className="col-span-2 text-[11px] text-zinc-500">
+          <p className="sm:col-span-2 text-[11px] text-ink-3">
             Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure and counties whose job counts are approximated (Connecticut).
           </p>
         </div>

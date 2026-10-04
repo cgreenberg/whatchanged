@@ -39,14 +39,14 @@ test.describe('Charts section', () => {
   })
 
   test('"Jan 2025" is the default view and CPI charts say what the % is relative to', async ({ page }) => {
-    await expect(page.getByTestId('timeframe-Jan 2025').first()).toHaveClass(/bg-zinc-700/)
+    await expect(page.getByTestId('timeframe-Jan 2025').first()).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByTestId('chart-cpi-groceries').getByTestId('chart-window')).toHaveText('% change since Jan 2025')
   })
 
   test('switching to 3Y re-bases the % label', async ({ page }) => {
     const chart = page.getByTestId('chart-cpi-groceries')
     await chart.getByTestId('timeframe-3Y').click()
-    await expect(chart.getByTestId('timeframe-3Y')).toHaveClass(/bg-zinc-700/)
+    await expect(chart.getByTestId('timeframe-3Y')).toHaveAttribute('aria-pressed', 'true')
     await expect(chart.getByTestId('chart-window')).not.toHaveText('% change since Jan 2025')
     await expect(chart.getByTestId('chart-window')).toHaveText(/^% change since \w{3} \d{4}$/)
   })

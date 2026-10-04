@@ -46,13 +46,13 @@ export function StatCard({
   const [open, setOpen] = useState(false)
   const panelId = useId()
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const inter = { fontFamily: 'var(--font-inter, sans-serif)' }
+  const accent = accentColor ?? '#F1EFEA'
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 sm:p-5 flex flex-col gap-1.5 min-w-0"
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="relative bg-surface border border-line rounded-md px-3 pt-3 pb-2.5 sm:px-4 sm:pt-4 sm:pb-3 flex flex-col gap-1.5 min-w-0 overflow-hidden"
       data-testid={testId}
       data-status={unavailable ? 'unavailable' : 'ok'}
       data-direction={unavailable ? undefined : direction}
@@ -63,14 +63,16 @@ export function StatCard({
         }
       }}
     >
+      {/* Metric key: the same accent as this metric's graph line */}
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: unavailable ? '#2A2F36' : accent }} />
       <div className="flex items-start justify-between gap-1.5">
-        <p className="text-xs font-medium text-zinc-400 uppercase tracking-widest pt-1" style={inter}>
+        <p className="kicker text-ink-2 pt-1.5">
           {label}
         </p>
         <div className="flex items-center gap-1 shrink-0">
           {stale && !unavailable && (
             <span
-              className="text-[10px] font-semibold uppercase tracking-wide text-amber-300 border border-amber-300/40 rounded px-1.5 py-0.5"
+              className="kicker !text-[10px] text-caution border border-caution/40 rounded-sm px-1.5 py-0.5"
               title="The source hasn't updated recently or the latest refresh failed; showing the last good data."
               data-testid="stale-badge"
             >
@@ -80,7 +82,7 @@ export function StatCard({
           <button
             ref={buttonRef}
             type="button"
-            className={`-mr-1.5 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-base leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${open ? 'text-white bg-zinc-800' : 'text-zinc-500 hover:text-zinc-200'}`}
+            className={`-mr-1.5 -mt-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[15px] leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-2 ${open ? 'text-ink bg-line' : 'text-ink-3 hover:text-ink'}`}
             aria-expanded={open}
             aria-controls={panelId}
             aria-label={`${open ? 'Hide' : 'Show'} sources and details for ${label}`}
@@ -92,40 +94,39 @@ export function StatCard({
         </div>
       </div>
       {unavailable ? (
-        <p className="text-lg sm:text-xl text-zinc-500 leading-tight" data-testid="stat-value">Data unavailable</p>
+        <p className="font-display font-medium text-xl sm:text-2xl text-ink-3 leading-tight mt-1" data-testid="stat-value">Data unavailable</p>
       ) : (
         <>
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <p className="text-2xl sm:text-4xl leading-none" style={{ fontFamily: 'var(--font-bebas, sans-serif)', color: accentColor ?? 'white' }} data-testid="stat-value">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-0.5">
+            <p className="tnum font-display font-semibold text-[32px] sm:text-[44px] leading-[0.9] tracking-tight text-ink" data-testid="stat-value">
               {value}
             </p>
             {inline && (
-              <p className="text-xs sm:text-sm font-semibold" style={{ ...inter, color: accentColor ?? '#F59E0B' }} data-testid="stat-inline">
+              <p className="tnum text-[13px] sm:text-[15px] font-semibold" style={{ color: accent }} data-testid="stat-inline">
                 {inline}
               </p>
             )}
           </div>
           {change && (
-            <p className="text-xs sm:text-sm font-medium" style={{ ...inter, color: accentColor ?? '#F59E0B' }} data-testid="stat-change">
+            <p className="tnum text-[13px] sm:text-[15px] font-semibold" style={{ color: accent }} data-testid="stat-change">
               {change}
             </p>
           )}
           {(secondary || !!tags?.length) && (
-            <p className="text-xs text-zinc-300" style={inter} data-testid="stat-secondary">
+            <p className="tnum text-xs sm:text-[13px] leading-snug text-ink-2" data-testid="stat-secondary">
               {secondary}
               {tags?.map(t => (
-                <span key={t} className="ml-1.5 whitespace-nowrap text-[11px] font-semibold text-amber-300" data-testid="stat-tag">{t}</span>
+                <span key={t} className="ml-1.5 whitespace-nowrap text-[11px] font-semibold text-caution" data-testid="stat-tag">{t}</span>
               ))}
             </p>
           )}
         </>
       )}
-      <p className="mt-auto pt-1.5 text-[11px] text-zinc-500" style={inter} data-testid="stat-source">{sourceLine}</p>
+      <p className="mt-auto pt-2 border-t border-line/70 font-mono text-[10.5px] leading-snug text-ink-3" data-testid="stat-source">{sourceLine}</p>
       <div
         id={panelId}
         hidden={!open}
-        className="mt-1 border-t border-zinc-800 pt-2 space-y-1.5 text-[11px] leading-snug text-zinc-400"
-        style={inter}
+        className="mt-0.5 pt-2 border-t border-line space-y-1.5 text-[11.5px] leading-snug text-ink-2"
         data-testid="stat-info"
       >
         {info.map((line, i) => <p key={i} data-testid="stat-info-line">{line}</p>)}

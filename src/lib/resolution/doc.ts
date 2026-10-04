@@ -20,7 +20,11 @@ export interface LadderPill {
   covers: string
 }
 
-const shortFrequency = (f: string) => f.split(' ')[0]
+/** "weekly", "monthly", "twice yearly" (first word, or two for "twice …"; no trailing punctuation). */
+const shortFrequency = (f: string) => {
+  const w = f.split(/[\s,(]+/).filter(Boolean)
+  return (w[0] === 'twice' ? w.slice(0, 2) : w.slice(0, 1)).join(' ')
+}
 
 export function ladderPills(metric: MetricId): LadderPill[] {
   return (LADDERS[metric].rungs as AnyRung[]).map((r) => ({

@@ -16,22 +16,24 @@ import { buildLineSparklineV3 } from '@/lib/share-card/sparklines'
 import { CELL_PADDING, FS, GAP, monoLines, sparklineBudget } from '@/lib/share-card/layout'
 
 // ── Design Tokens ─────────────────────────────────────────────────
-const BG = '#0b0c0f'
+const BG = '#111316' // data-desk charcoal (src/lib/theme.ts)
 const BORDER = 'rgba(255,255,255,0.10)'
-const TEXT_PRIMARY = '#F0EBE1'
-const TEXT_SECONDARY = '#A89F93'
-const TEXT_TERTIARY = '#6B6560'
-const AMBER = '#F0A500'
-const BLUE = '#3D9EFF'
-const GREEN = '#2BD99F'
-const RED = '#F04040'
+const TEXT_PRIMARY = '#F1EFEA'
+const TEXT_SECONDARY = '#B3B8C0'
+const TEXT_TERTIARY = '#8C929B'
+// Metric accents match the site (src/lib/theme.ts METRIC_COLORS); AMBER is also the brand accent
+const AMBER = '#F2A93B'
+const GAS = AMBER
+const GROCERIES = '#F07D62'
+const BLUE = '#5EA8F2'
+const GREEN = '#3EC4A6'
 
 // RGB equivalents for use in rgba() strings
 const ACCENT_RGB: Record<string, string> = {
-  [AMBER]: '240,165,0',
-  [BLUE]: '61,158,255',
-  [GREEN]: '43,217,159',
-  [RED]: '240,64,64',
+  [AMBER]: '242,169,59',
+  [GROCERIES]: '240,125,98',
+  [BLUE]: '94,168,242',
+  [GREEN]: '62,196,166',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -270,7 +272,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
   // ── Build Sparklines ─────────────────────────────────────────────
   const gasSparkline =
     gasOk && gasValues.length >= 2
-      ? buildLineSparklineV3(gasValues, RED, 'grad-gas', {
+      ? buildLineSparklineV3(gasValues, GAS, 'grad-gas', {
           yMin: `$${gasMin.toFixed(2)}`,
           yMid: `$${gasMid.toFixed(2)}`,
           yMax: `$${gasMax.toFixed(2)}`,
@@ -299,7 +301,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
 
   const grocerySparkline =
     groceriesOk && groceryValues.length >= 2
-      ? buildLineSparklineV3(groceryValues, AMBER, 'grad-groceries', {
+      ? buildLineSparklineV3(groceryValues, GROCERIES, 'grad-groceries', {
           yMin: `${groceryBoundsMin.toFixed(1)}%`,
           yMid: `${groceryBoundsMid.toFixed(1)}%`,
           yMax: `${groceryBoundsMax.toFixed(1)}%`,
@@ -693,14 +695,14 @@ export async function generateShareCard(zip: string): Promise<Response> {
               borderRight: `1px solid ${BORDER}`,
             }}
           >
-            {accentStrip(RED)}
+            {accentStrip(GAS)}
             {sectionLabel('GAS PRICES', gasSublabel, gasGeo)}
             {gasSparkline && (
               <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{gasSparkline}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A', RED)}
-              {changePill(gasOk ? fmtSignedDollars(gasData!.change) : '—', RED)}
+              {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A', GAS)}
+              {changePill(gasOk ? fmtSignedDollars(gasData!.change) : '—', GAS)}
             </div>
             {metaRow(gasSince, null)}
             {/* Like-for-like with the pill: same source, same baseline rule, same months (BLS); own row so the
@@ -724,7 +726,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
               overflow: 'hidden',
             }}
           >
-            {accentStrip(AMBER)}
+            {accentStrip(GROCERIES)}
             {sectionLabel('GROCERIES', GROCERIES_SUBLABEL)}
             {grocerySparkline && (
               <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>
@@ -732,8 +734,8 @@ export async function generateShareCard(zip: string): Promise<Response> {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(groceriesOk ? fmtSignedPct(cpiData!.groceriesChange) : 'N/A', AMBER)}
-              {changePill(groceriesDollars != null ? `${fmtSignedDollars(groceriesDollars, 0)}/yr` : '—', AMBER)}
+              {bigNumber(groceriesOk ? fmtSignedPct(cpiData!.groceriesChange) : 'N/A', GROCERIES)}
+              {changePill(groceriesDollars != null ? `${fmtSignedDollars(groceriesDollars, 0)}/yr` : '—', GROCERIES)}
             </div>
             {metaRow(sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat)}
             {groceriesBasis && basisNote(groceriesBasis)}

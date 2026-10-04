@@ -11,7 +11,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CityGrid } from '@/components/CityGrid'
 import { LazyMount } from '@/components/LazyMount'
-import { BASELINE_MONTH_LONG } from '@/lib/baseline'
+import { BASELINE_MONTH_LONG, BASELINE_DAY_LABEL } from '@/lib/baseline'
 import { pagePath, parsePlaceQuery, type PlaceQuery } from '@/lib/share-url'
 import type { EconomicSnapshot } from '@/types'
 
@@ -22,7 +22,7 @@ const NationalMap = dynamic(
 )
 
 function MapPlaceholder() {
-  return <div className="mt-12 aspect-[975/610] bg-zinc-900 rounded-xl" />
+  return <div className="mt-16 aspect-[975/610] bg-surface rounded-md" />
 }
 
 type PageState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -78,13 +78,26 @@ export default function HomeContent() {
   const loaded = state === 'loaded' && snapshot
 
   return (
-    <main className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
+    <>
+    {/* Masthead: quiet wordmark + standing dateline */}
+    <header className="border-b border-line">
+      <div className="max-w-[70rem] mx-auto px-4 sm:px-6 h-12 flex items-center justify-between gap-4">
+        {/* Full reload on purpose: resets the page to its idle state */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="font-display font-semibold text-ink text-lg tracking-tight leading-none">
+          What Changed<span className="text-ink-3">.us</span>
+        </a>
+        <p className="kicker text-ink-3 hidden sm:block">Local prices since {BASELINE_DAY_LABEL}</p>
+      </div>
+    </header>
+    <main className="min-h-screen px-4 sm:px-6 pt-10 sm:pt-14 pb-12 max-w-[70rem] mx-auto">
       {/* Hero */}
-      <section className="text-center mb-12">
-        <h1 className="text-5xl md:text-7xl text-white leading-none mb-4" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}>
+      <section className="text-center mb-10 sm:mb-12">
+        <p className="kicker text-ink-3 mb-3">Public data · BLS · EIA · Zillow · Census</p>
+        <h1 className="font-display font-semibold text-5xl md:text-7xl text-ink leading-[0.95] tracking-tight mb-4">
           Enter your zip code
         </h1>
-        <p className="text-lg md:text-xl text-zinc-400 mb-8" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
+        <p className="text-base md:text-lg text-ink-2 mb-8 max-w-xl mx-auto">
           See what changed in your town since {BASELINE_MONTH_LONG}.
         </p>
         <ZipInput onSubmit={handleZipSubmit} isLoading={state === 'loading'} />
@@ -94,7 +107,7 @@ export default function HomeContent() {
       {/* Results */}
       {state === 'loading' && (
         <section aria-busy>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6" data-testid="stat-cards-loading">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 mt-6" data-testid="stat-cards-loading">
             <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
@@ -120,11 +133,10 @@ export default function HomeContent() {
 
       {state === 'error' && (
         <div className="text-center mt-8">
-          <p className="text-danger-red mb-4" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>{errorMsg}</p>
+          <p className="text-groceries mb-4">{errorMsg}</p>
           <button
             onClick={() => setState('idle')}
-            className="text-zinc-400 underline text-sm"
-            style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+            className="text-ink-2 underline underline-offset-4 text-sm hover:text-ink"
           >
             Try again
           </button>
@@ -139,32 +151,28 @@ export default function HomeContent() {
       </ErrorBoundary>
 
       {/* Footer */}
-      <footer className="mt-16 mb-4 text-center text-sm" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
-        <Link
-          href="/about"
-          className="text-[#888] hover:text-white hover:underline transition-colors"
-        >
-          About the Data
+      <footer className="mt-16 pt-5 border-t border-line flex flex-wrap items-center justify-center gap-x-5 gap-y-2 kicker">
+        <Link href="/about" className="text-ink-3 hover:text-ink transition-colors">
+          About the data
         </Link>
-        <span className="text-[#888] mx-2">·</span>
         <a
           href="https://github.com/cgreenberg/whatchanged"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#888] hover:text-white hover:underline transition-colors"
+          className="text-ink-3 hover:text-ink transition-colors"
         >
           View on GitHub
         </a>
-        <span className="text-[#888] mx-2">·</span>
         <a
           href="https://github.com/cgreenberg/whatchanged/issues/new"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#888] hover:text-white hover:underline transition-colors"
+          className="text-ink-3 hover:text-ink transition-colors"
         >
-          Report an Issue
+          Report an issue
         </a>
       </footer>
     </main>
+    </>
   )
 }

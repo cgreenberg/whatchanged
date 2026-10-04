@@ -5,9 +5,9 @@ import { provenanceParts } from '@/lib/provenance'
 export function ProvenanceLine({ provenance, className = '' }: { provenance: Provenance; className?: string }) {
   const [source, ...rest] = provenanceParts(provenance)
   return (
-    <p className={`text-[11px] text-zinc-500 ${className}`} data-testid="provenance">
+    <p className={`tnum font-mono text-[10.5px] leading-relaxed text-ink-3 ${className}`} data-testid="provenance">
       {provenance.sourceUrl ? (
-        <a href={provenance.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
+        <a href={provenance.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline decoration-ink-3/50 underline-offset-2 hover:text-ink-2 hover:decoration-ink-2">
           {source}
         </a>
       ) : source}

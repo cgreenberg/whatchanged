@@ -169,13 +169,12 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
                 ? `city-option-${activeIndex}`
                 : undefined
             }
-            className={`w-full text-center text-3xl tracking-widest bg-zinc-900 border-2 border-zinc-700 focus:border-electric-amber rounded-xl py-4 text-white placeholder:text-zinc-600 outline-none transition-colors disabled:opacity-50 ${showSpinner ? 'pl-6 pr-12' : 'px-6'}`}
-            style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}
+            className={`tnum w-full text-center font-display font-medium text-2xl sm:text-3xl tracking-wide bg-surface border border-line hover:border-ink-3 focus:border-ink focus:ring-1 focus:ring-ink rounded-md py-3.5 text-ink placeholder:text-ink-3 placeholder:font-normal outline-none transition-colors disabled:opacity-50 ${showSpinner ? 'pl-6 pr-12' : 'px-6'}`}
           />
           {showSpinner && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg
-                className="animate-spin h-5 w-5 text-zinc-400"
+                className="animate-spin h-5 w-5 text-ink-3"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -198,11 +197,10 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
             <ul
               id={listboxId}
               role="listbox"
-              className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg z-50 overflow-hidden shadow-xl"
-              style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+              className="absolute top-full left-0 right-0 mt-1 bg-raised border border-line rounded-md z-50 overflow-hidden shadow-2xl shadow-black/50 text-left"
             >
               {status === 'error' && results.length === 0 ? (
-                <li className="px-4 py-3 text-zinc-500 text-sm">
+                <li className="px-4 py-3 text-ink-3 text-sm">
                   No results — try entering your zip code directly
                 </li>
               ) : (
@@ -216,15 +214,15 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
                     onMouseEnter={() => setActiveIndex(i)}
                     className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors text-sm ${
                       i === activeIndex
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-zinc-100 hover:bg-zinc-800'
+                        ? 'bg-line text-ink'
+                        : 'text-ink-2 hover:bg-line/60'
                     }`}
                   >
                     <span>
                       {result.source === 'census' ? '📍 ' : ''}
                       {result.display}
                     </span>
-                    <span className="text-zinc-500 text-xs ml-2">{result.zip}</span>
+                    <span className="tnum font-mono text-ink-3 text-xs ml-2">{result.zip}</span>
                   </li>
                 ))
               )}
@@ -234,8 +232,7 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
 
         {error && (
           <p
-            className="text-danger-red text-sm mt-2 text-center"
-            style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+            className="text-groceries text-sm mt-2 text-center"
             role="alert"
           >
             {error}
@@ -244,10 +241,9 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full mt-3 py-3 px-6 bg-electric-amber text-black font-semibold rounded-xl disabled:opacity-40 opacity-100 transition-opacity"
+          className="w-full mt-2.5 py-3 px-6 bg-ink text-desk font-semibold tracking-tight rounded-md hover:bg-white disabled:opacity-40 opacity-100 transition-[opacity,background-color] focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-desk"
           style={{
-            fontFamily: 'var(--font-inter, sans-serif)',
-            opacity: isLoading ? undefined : value.length === 0 ? 0.4 : 1,
+            opacity: isLoading ? undefined : value.length === 0 ? 0.45 : 1,
           }}
         >
           {isLoading ? 'Loading...' : 'See What Changed'}
@@ -260,14 +256,16 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
           data-testid="geo-button"
           disabled={geoLoading || isLoading}
           onClick={handleGeoClick}
-          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
+          className="inline-flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span className={geoLoading ? 'animate-pulse' : ''}>📍</span>{' '}
+          <svg aria-hidden="true" viewBox="0 0 16 16" className={`h-3.5 w-3.5 ${geoLoading ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="8" r="4.5" /><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
+            <path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15" />
+          </svg>
           {geoLoading ? 'Detecting location...' : 'Use my location'}
         </button>
         {geoError && (
-          <p className="text-xs text-red-400" role="alert">
+          <p className="text-xs text-groceries max-w-sm text-center" role="alert">
             {geoError}
           </p>
         )}

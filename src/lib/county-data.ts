@@ -285,11 +285,14 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
   if (key === 'gas') {
     const g = m.gas?.[row[0]]
     if (!g || g.change == null || g.current == null) return null
-    const when = g.asOf ? (g.frequency === 'weekly' ? `week of ${fmtDay(g.asOf)}` : fmtMonthYear(g.asOf)) : ''
+    const when = g.asOf
+      ? g.frequency === 'weekly' ? `week of ${fmtDay(g.asOf)}` : g.frequency === 'semiannual' ? `${fmtMonthYear(g.asOf)} survey` : fmtMonthYear(g.asOf)
+      : ''
+    const how = g.source === 'dcra' ? 'Alaska DCRA survey (twice yearly)' : g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'
     return {
       value: g.change, text: `${fmtSignedDollars(g.change)}/gal ${sinceBaseline(null)}`,
       area: g.standIn ? `${g.label} (no series for this county)` : g.label,
-      detail: `$${g.current.toFixed(2)}/gal · ${g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'}${when ? `, ${when}` : ''}`,
+      detail: `$${g.current.toFixed(2)}/gal · ${how}${when ? `, ${when}` : ''}`,
       asOf: g.asOf,
     }
   }
@@ -314,7 +317,7 @@ export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): 
 export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined): string {
   const asOf = liveAsOf(m, key)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
-  if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline · metro, state or region · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
+  if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   return `EIA average residential electricity price · statewide · ${sinceBaseline(null)} · ${latest} · seasonally adjusted by whatchanged`
 }
@@ -354,10 +357,11 @@ export function flagNote(c: CountyRecord | null | undefined, key: string): strin
   return null
 }
 
-// Neutral diverging scale (not good/bad coded): blue = fell, amber = rose.
-const NEG = [59, 130, 246]
-const MID = [39, 39, 42]
-const POS = [245, 158, 11]
+// Neutral diverging scale (not good/bad coded, colorblind-safe): blue = fell, orange = rose; the
+// midpoint is the page's charcoal surface so near-zero counties recede.
+const NEG = [74, 144, 217]
+const MID = [36, 40, 46]
+const POS = [236, 146, 58]
 /**
  * No-data fill: a hatch of mid-gray on near-black (map SVG pattern NO_DATA_PATTERN_ID), so a missing
  * county never reads as a ~0% change (the scale's midpoint is near-black). NO_DATA_COLOR is the

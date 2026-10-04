@@ -4,7 +4,9 @@
 // takes the value of the series the zip lookups assign it (src/lib/data/county-geo.json, built
 // from the same lookup functions the snapshot uses). The endpoint never calls BLS/EIA and never
 // spends the runtime upstream budget: a key missing from the cache (and its :lastgood copy) is
-// simply "no data" on the map until the next refresh writes it.
+// simply "no data" on the map until the next refresh writes it. Exception: Alaska boroughs outside the
+// Anchorage CBSA take the bundled DCRA community-survey value (src/lib/static-gas.ts akGasForCounty), the
+// same series the gas card's ladder uses there, instead of the Anchorage stand-in.
 
 import countyGeoJson from '@/lib/data/county-geo.json'
 import { getCachedEnvelope, lastGoodKey } from '@/lib/cache/kv'
@@ -16,6 +18,8 @@ import { electricityCacheKey, ELECTRICITY_STATES, type ElectricitySeriesData } f
 import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES } from '@/lib/mappings/eia-gas'
 import { cpiShortGeo } from '@/lib/hero-cards'
+import { akGasForCounty } from '@/lib/static-gas'
+import countyCentroids from '@/lib/data/county-centroids.json'
 
 interface CountyGeo {
   state: string
@@ -27,13 +31,17 @@ interface CountyGeo {
   gasTier: 1 | 2 | 3
 }
 const COUNTY_GEO = countyGeoJson as unknown as Record<string, CountyGeo>
+const COUNTY_NAMES = countyCentroids as unknown as Record<string, { name?: string } | undefined>
 
 export interface MapGasArea {
-  /** "e:R1X" (EIA duoarea) or "b:S35C" (BLS area); "*" suffix = HI/AK stand-in for a county with no series. */
+  /**
+   * "e:R1X" (EIA duoarea), "b:S35C" (BLS area; "*" suffix = HI/AK stand-in for a county with no series), or
+   * "d:02050" (an Alaska borough / census area priced from the DCRA community fuel survey, bundled, never cached).
+   */
   id: string
   label: string
-  source: 'eia' | 'bls'
-  frequency: 'weekly' | 'monthly'
+  source: 'eia' | 'bls' | 'dcra'
+  frequency: 'weekly' | 'monthly' | 'semiannual'
   standIn?: true
   /** $/gal since the baseline (same figure as the gas card), current $/gal and the latest date; null = not cached. */
   change: number | null
@@ -106,7 +114,27 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   const cpiAreas: CountyGeo[] = []
   const counties: Record<string, [number, number]> = {}
 
+  // Alaska outside the Anchorage CBSA: the DCRA survey value the card's ladder picks for the county's zips
+  // (bundled static data, so it is always present), instead of the Anchorage stand-in
+  const staticGas = new Map<string, MapGasArea>()
+
   for (const [fips, g] of Object.entries(COUNTY_GEO)) {
+    const ak = g.state === 'AK' && g.gasSource === 'bls' && g.gasTier === 2 ? akGasForCounty(fips, COUNTY_NAMES[fips]?.name) : null
+    if (ak) {
+      const id = `d:${fips}`
+      staticGas.set(id, {
+        id, label: ak.label, source: 'dcra', frequency: 'semiannual',
+        change: Number(ak.data.change.toFixed(3)), current: ak.data.current, asOf: ak.data.latestDate,
+      })
+      gasIdx.set(id, gasAreas.length)
+      gasAreas.push({ id, lookup: { source: 'dcra', frequency: 'semiannual', areaCode: fips, seriesId: ak.label, geoLevel: ak.label, tier: 1, cacheKey: `static:dcra:county:${fips}` } })
+      if (!cpiIdx.has(g.cpiArea)) {
+        cpiIdx.set(g.cpiArea, cpiAreas.length)
+        cpiAreas.push(g)
+      }
+      counties[fips] = [gasIdx.get(id)!, cpiIdx.get(g.cpiArea)!]
+      continue
+    }
     const gas = gasLookupFor(g)
     if (!gasIdx.has(gas.id)) {
       gasIdx.set(gas.id, gasAreas.length)
@@ -120,7 +148,7 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   }
 
   // One read per distinct cache key (stand-in ids share their metro's key)
-  const gasKeys = [...new Set(gasAreas.map((a) => a.lookup.cacheKey))]
+  const gasKeys = [...new Set(gasAreas.filter((a) => !staticGas.has(a.id)).map((a) => a.lookup.cacheKey))]
   const [gasData, cpiData, elecData] = await Promise.all([
     Promise.all(gasKeys.map((k) => readCacheOnly<GasSeriesData>(k, isValidGasSeries))),
     Promise.all(cpiAreas.map((a) => readCacheOnly<CpiData>(cpiCacheKey(a.cpiArea), isValidCpi))),
@@ -130,11 +158,13 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   let missing = 0
 
   const gas: MapGasArea[] = gasAreas.map(({ id, lookup }) => {
+    const fixed = staticGas.get(id)
+    if (fixed) return fixed
     const d = gasByKey.get(lookup.cacheKey) ?? null
     return {
       id,
       label: lookup.geoLevel,
-      // selectGasLookup / getGasLookup return live rungs only (EIA or BLS); static sources are per-zip
+      // Cached areas are live rungs only (EIA or BLS); the static DCRA areas returned above
       source: lookup.source as MapGasArea['source'],
       frequency: lookup.frequency as MapGasArea['frequency'],
       ...(lookup.standIn ? { standIn: true as const } : {}),

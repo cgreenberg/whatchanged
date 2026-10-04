@@ -65,7 +65,7 @@ export function ShareButton({ snapshot, place }: ShareButtonProps) {
   }
 
   const btnBase =
-    'flex-1 py-4 font-inter font-bold text-lg rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
+    'flex-1 inline-flex items-center justify-center gap-2 py-3 font-sans font-semibold text-[15px] tracking-tight rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-desk'
 
   return (
     <motion.div
@@ -79,20 +79,30 @@ export function ShareButton({ snapshot, place }: ShareButtonProps) {
           onClick={shareImage}
           disabled={isSharing}
           data-testid="share-button"
-          className={`${btnBase} bg-electric-amber text-black hover:bg-amber-400`}
+          className={`${btnBase} bg-ink text-desk hover:bg-white`}
         >
-          {isSharing ? 'Preparing...' : '↗ Share Image'}
+          {!isSharing && (
+            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M8 10V2M5 5l3-3 3 3M3 9v4.5h10V9" />
+            </svg>
+          )}
+          {isSharing ? 'Preparing…' : 'Share image'}
         </button>
         <button
           onClick={copyLink}
           data-testid="copy-link-button"
-          className={`${btnBase} bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 hover:text-white`}
+          className={`${btnBase} bg-transparent text-ink border border-line hover:border-ink-3 hover:bg-surface`}
         >
-          {copied ? 'Copied! ✓' : '🔗 Copy Link'}
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+            {copied
+              ? <path d="M3 8.5l3 3 7-7" />
+              : <path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.6 2.6 0 013.7 3.7L10.7 8.2M9 11.5l-1.2 1.2a2.6 2.6 0 01-3.7-3.7L5.3 7.8" />}
+          </svg>
+          {copied ? 'Copied' : 'Copy link'}
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-xs text-red-400 text-center break-all" data-testid="share-error">{error}</p>
+        <p role="alert" className="mt-2 text-xs text-groceries text-center break-all" data-testid="share-error">{error}</p>
       )}
     </motion.div>
   )

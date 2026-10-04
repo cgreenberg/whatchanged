@@ -13,15 +13,17 @@ import { monoLines } from '@/lib/share-card/layout'
 export const runtime = 'nodejs'
 
 // ── Design Tokens (match share card) ────────────────────────────────
-const BG = '#0b0c0f'
+const BG = '#111316' // data-desk charcoal (src/lib/theme.ts)
 const BORDER = 'rgba(255,255,255,0.10)'
-const TEXT_PRIMARY = '#F0EBE1'
-const TEXT_SECONDARY = '#A89F93'
-const TEXT_TERTIARY = '#6B6560'
-const AMBER = '#F0A500'
-const BLUE = '#3D9EFF'
-const GREEN = '#2BD99F'
-const RED = '#F04040'
+const TEXT_PRIMARY = '#F1EFEA'
+const TEXT_SECONDARY = '#B3B8C0'
+const TEXT_TERTIARY = '#8C929B'
+// Metric accents match the site (src/lib/theme.ts METRIC_COLORS); AMBER is also the brand accent
+const AMBER = '#F2A93B'
+const GAS = AMBER
+const GROCERIES = '#F07D62'
+const BLUE = '#5EA8F2'
+const GREEN = '#3EC4A6'
 
 
 function buildSparklinePath(data: NationalDataPoint[], width: number, height: number): string {
@@ -113,7 +115,7 @@ const OG_LABELS: Record<HeroCardModel['id'], string> = {
   electricity: 'ELECTRICITY',
 }
 const OG_COLORS: Record<HeroCardModel['id'], string> = {
-  gas: RED, rent: BLUE, shelter: BLUE, groceries: AMBER, electricity: GREEN,
+  gas: GAS, rent: BLUE, shelter: BLUE, groceries: GROCERIES, electricity: GREEN,
 }
 
 export async function GET(req: NextRequest) {
@@ -213,9 +215,9 @@ export async function GET(req: NextRequest) {
 
     // RGB lookup for dynamic pill colors
     const RGB: Record<string, string> = {
-      [RED]: '240,64,64',
-      [AMBER]: '240,165,0',
-      [BLUE]: '61,158,255',
+      [AMBER]: '242,169,59',
+      [GROCERIES]: '240,125,98',
+      [BLUE]: '94,168,242',
     }
 
     const gasYLabels = yLabels(national.gas.series, 'dollar')
@@ -231,8 +233,8 @@ export async function GET(req: NextRequest) {
     const sheltGrid = gridlineYPositions(national.shelter.series, sparkH)
 
     const panels = [
-      { label: 'GAS PRICES', sublabel: '(regular gasoline, $/gal)', value: `$${national.gas.current.toFixed(2)}/gal`, pill: gasChange, color: RED, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), firstDate: national.gas.series[0]?.date, since: national.gas.series[0]?.date ? `since ${fmtDay(national.gas.series[0].date)}` : `since ${BASELINE_DAY_LABEL}`, yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
-      { label: 'GROCERIES', sublabel: '(CPI: food at home)', value: grocChange, pill: national.groceries.change >= 0 ? 'rising' : 'falling', color: AMBER, points: grocPoints, area: grocArea, startDotX: computeDotX(national.groceries.series, 0, sparkW), startDotY: computeDotY(national.groceries.series, 0, sparkH), endDotX: computeDotX(national.groceries.series, -1, sparkW), endDotY: computeDotY(national.groceries.series, -1, sparkH), firstDate: national.groceries.series[0]?.date, since: `since ${fmtMonthYear(national.groceries.baselinePeriod)}`, yMin: grocYLabels.yMin, yMid: grocYLabels.yMid, yMax: grocYLabels.yMax, midDate: grocMidDate, gridMinY: grocGrid.minY, gridMidY: grocGrid.midY },
+      { label: 'GAS PRICES', sublabel: '(regular gasoline, $/gal)', value: `$${national.gas.current.toFixed(2)}/gal`, pill: gasChange, color: GAS, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), firstDate: national.gas.series[0]?.date, since: national.gas.series[0]?.date ? `since ${fmtDay(national.gas.series[0].date)}` : `since ${BASELINE_DAY_LABEL}`, yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
+      { label: 'GROCERIES', sublabel: '(CPI: food at home)', value: grocChange, pill: national.groceries.change >= 0 ? 'rising' : 'falling', color: GROCERIES, points: grocPoints, area: grocArea, startDotX: computeDotX(national.groceries.series, 0, sparkW), startDotY: computeDotY(national.groceries.series, 0, sparkH), endDotX: computeDotX(national.groceries.series, -1, sparkW), endDotY: computeDotY(national.groceries.series, -1, sparkH), firstDate: national.groceries.series[0]?.date, since: `since ${fmtMonthYear(national.groceries.baselinePeriod)}`, yMin: grocYLabels.yMin, yMid: grocYLabels.yMid, yMax: grocYLabels.yMax, midDate: grocMidDate, gridMinY: grocGrid.minY, gridMidY: grocGrid.midY },
       { label: 'SHELTER', sublabel: "(rent & owners' equiv.)", value: sheltChange, pill: national.shelter.change >= 0 ? 'rising' : 'falling', color: BLUE, points: sheltPoints, area: sheltArea, startDotX: computeDotX(national.shelter.series, 0, sparkW), startDotY: computeDotY(national.shelter.series, 0, sparkH), endDotX: computeDotX(national.shelter.series, -1, sparkW), endDotY: computeDotY(national.shelter.series, -1, sparkH), firstDate: national.shelter.series[0]?.date, since: `since ${fmtMonthYear(national.shelter.baselinePeriod)}`, yMin: sheltYLabels.yMin, yMid: sheltYLabels.yMid, yMax: sheltYLabels.yMax, midDate: sheltMidDate, gridMinY: sheltGrid.minY, gridMidY: sheltGrid.midY },
     ]
 
@@ -257,7 +259,7 @@ export async function GET(req: NextRequest) {
               left: 0,
               right: 0,
               height: 4,
-              background: `linear-gradient(90deg, ${AMBER} 0%, #E8557A 50%, ${BLUE} 100%)`,
+              background: `linear-gradient(90deg, ${AMBER} 0%, #F07D62 50%, ${BLUE} 100%)`,
               display: 'flex',
             }}
           />
