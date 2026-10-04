@@ -99,12 +99,20 @@ export function gasCaveatFor(s: Pick<EconomicSnapshot, 'gas' | 'location'>): str
   return undefined
 }
 
-/** "Buncombe County, NC" → "Buncombe Co."; "Calcasieu Parish, LA" → "Calcasieu"; "Fairbanks North Star Borough, AK" → "Fairbanks North Star". */
+/**
+ * County-equivalent with its type abbreviated like "Co." (so it never reads as a city name):
+ * "Buncombe County, NC" → "Buncombe Co."; "Lafayette Parish, LA" → "Lafayette Par.";
+ * "Fairbanks North Star Borough, AK" / "Juneau City and Borough" → "… Bor."; "Anchorage Municipality" →
+ * "Anchorage Muni."; "Yukon-Koyukuk Census Area" → "Yukon-Koyukuk C.A." (keeps the share-card footnote to 2 lines).
+ */
 export function shortCountyName(name: string | null | undefined): string {
   if (!name) return 'county'
-  return name.replace(/,\s*[A-Z]{2}$/, '').replace(/ County$/, ' Co.')
-    .replace(/ (City and Borough|Census Area|Municipality|Borough|Parish)$/, '')
-    .trim()
+  return name.replace(/,\s*[A-Z]{2}$/, '').trim()
+    .replace(/ County$/, ' Co.')
+    .replace(/ Parish$/, ' Par.')
+    .replace(/ (City and Borough|Borough)$/, ' Bor.')
+    .replace(/ Census Area$/, ' C.A.')
+    .replace(/ Municipality$/, ' Muni.')
 }
 
 /** Short CPI geography: "Chicago metro", "South Atlantic div.", "South region", "U.S. avg". */
@@ -424,7 +432,8 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
   }
   const base = {
     id: 'shelter' as const,
-    label: "Shelter prices (CPI: rents + owners' equivalent rent)",
+    // BLS shelter also has lodging away from home and tenants'/household insurance (~5% of the index)
+    label: "Shelter prices (CPI: mainly rents + owners' equivalent rent)",
     accentColor: ACCENTS.shelter,
     provenance,
     stale: cpiItemStale(s, 'shelter'),

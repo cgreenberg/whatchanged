@@ -203,11 +203,13 @@ describe('refresh-cache safety', () => {
 describe('hero-card geography tags and caveats', () => {
   test('short geography names', () => {
     expect(shortCountyName('Buncombe County, NC')).toBe('Buncombe Co.')
-    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu')
-    expect(shortCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star')
-    expect(shortCountyName('Yukon-Koyukuk Census Area, AK')).toBe('Yukon-Koyukuk')
-    expect(shortCountyName('Anchorage Municipality, AK')).toBe('Anchorage')
-    expect(shortCountyName('Juneau City and Borough, AK')).toBe('Juneau')
+    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu Par.')
+    expect(shortCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star Bor.')
+    expect(shortCountyName('Yukon-Koyukuk Census Area, AK')).toBe('Yukon-Koyukuk C.A.')
+    expect(shortCountyName('Anchorage Municipality, AK')).toBe('Anchorage Muni.')
+    expect(shortCountyName('Juneau City and Borough, AK')).toBe('Juneau Bor.')
+    expect(shortCountyName('Lafayette Parish, LA')).toBe('Lafayette Par.')
+    expect(shortCountyName('Lafayette Parish')).toBe('Lafayette Par.')
     const cpi = (o: Partial<CpiData>) => ({ ...snap().cpi.data!, ...o }) as CpiData
     expect(cpiShortGeo(cpi({ tier: 2, metro: 'South Atlantic', areaCode: '0350' }))).toBe('South Atlantic div.')
     expect(cpiShortGeo(cpi({ tier: 1, metro: 'Chicago-Naperville-Elgin', areaCode: 'S23A' }))).toBe('Chicago metro')

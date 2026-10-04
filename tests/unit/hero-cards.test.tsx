@@ -70,7 +70,7 @@ describe('CPI shelter fallback when the county has no Zillow rent', () => {
     snap.rent = null
     render(<HeroCards snapshot={snap} />)
     const c = card('shelter')
-    expect(c).toHaveTextContent("Shelter prices (CPI: rents + owners' equivalent rent)")
+    expect(c).toHaveTextContent("Shelter prices (CPI: mainly rents + owners' equivalent rent)")
     const pct = snap.cpi.data!.shelterChange!
     const rent = snap.census.data!.medianRent
     const expected = Math.round((rent * 12 * pct) / 100)

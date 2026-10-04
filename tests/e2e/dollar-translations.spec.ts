@@ -47,7 +47,7 @@ test('CPI shelter fallback: local rent × 12 × % change', async ({ page }) => {
   await enterZip(page, '98683')
   const expected = Math.round((fx.census.data.medianRent * 12 * fx.cpi.data.shelterChange) / 100)
   const card = page.getByTestId('stat-card-shelter')
-  await expect(card).toContainText("Shelter prices (CPI: rents + owners' equivalent rent)")
+  await expect(card).toContainText("Shelter prices (CPI: mainly rents + owners' equivalent rent)")
   await expect(card).toContainText(`${usd(expected)}/yr on local median rent`)
 })
 

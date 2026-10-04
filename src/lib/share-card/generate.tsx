@@ -12,6 +12,7 @@ import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-me
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { buildLineSparklineV3 } from '@/lib/share-card/sparklines'
+import { CELL_PADDING, FS, GAP, monoLines, sparklineBudget } from '@/lib/share-card/layout'
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const BG = '#0b0c0f'
@@ -109,6 +110,19 @@ export function sinceLabel(period: string | null | undefined): string {
   return `since ${period ? fmtMonthYear(period) : BASELINE_MONTH_LABEL}`
 }
 
+/** Quadrant sublabels (24px DM Mono): each must fit one line of the quadrant (tests/unit/share-card-fit.test.ts). */
+export const GAS_SUBLABEL = '(regular gasoline, $/gal)'
+export const GROCERIES_SUBLABEL = '(CPI: food at home)'
+/** BLS shelter is mainly rents + owners' equivalent rent (plus lodging away from home, insurance). */
+export const SHELTER_SUBLABEL = "(CPI: rent + owners' eq. rent)"
+export const RENT_SUBLABEL = '(new leases, Zillow, county)'
+export const TARIFF_SUBLABEL = '(est. annual cost to household)'
+
+/** Share-card footnote for a HI/AK gas stand-in ("*" on "Honolulu-area price*"); two lines at most. */
+export function shareGasStandInNote(location: Parameters<typeof standInPlace>[0]): string {
+  return `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices usually higher, may differ.`
+}
+
 // ── Main Export ───────────────────────────────────────────────────
 export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
   const snapshot = await fetchSnapshot(zip, city, state)
@@ -151,18 +165,19 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   // National from the same source over the same period (BLS monthly → same months; EIA weekly → NUS)
   const natGas = gasData?.isNationalFallback ? null : gasNationalMatching(gasData)
   const gasMonthly = isMonthlyGas(gasData)
-  // One line in the cell (the sparkline height assumes it): abbreviate the longest EIA name;
+  // One line in the cell (else the sparkline shrinks to make room): abbreviate the longest EIA name;
   // BLS tiers use the short tag ("Philadelphia metro", "Honolulu-area price*") plus the month the
   // monthly figure runs through ("thru Aug '26"), since weekly EIA figures elsewhere are weeks newer.
+  // A long metro ("Riverside-San Bernardino metro") moves the month to the baseline row instead.
   const gasThru = gasMonthly && card('gas')?.asOfPeriod ? `thru ${fmtMonthShort(card('gas')!.asOfPeriod)}` : null
   const gasGeoName = gasOk
     ? (gasMonthly ? card('gas')?.geoTag : card('gas')?.provenance.geography?.replace('excl. California', 'excl. CA')) ?? null
     : null
-  const gasGeo = gasGeoName && gasThru ? `${gasGeoName} · ${gasThru}` : gasGeoName
+  const gasGeoThru = gasGeoName && gasThru ? `${gasGeoName} · ${gasThru}` : null
+  const thruOnGeo = !!gasGeoThru && monoLines(gasGeoThru, FS.extra) <= 1
+  const gasGeo = thruOnGeo ? gasGeoThru : gasGeoName
   // HI/AK outside Honolulu/Anchorage: footnote for the "*" on the stand-in label
-  const gasStandInNote = gasOk && isGasStandIn(gasData)
-    ? `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices typically higher, may have changed differently.`
-    : null
+  const gasStandInNote = gasOk && isGasStandIn(gasData) ? shareGasStandInNote(location) : null
   // National carries its source and as-of (BLS monthly vs EIA weekly national figures differ)
   const natGasTag = natGas
     ? gasMonthly ? `BLS ${fmtMonthShort(natGas.latestDate)}` : `EIA ${fmtDay(natGas.latestDate).replace(/, \d{4}$/, '')}`
@@ -171,9 +186,13 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const rentOutlier = !!rent && card('rent')?.outlier === true
   const incomeTag = tariffOk ? tariffIncomeTag(snapshot) : undefined
   const gasSince = gasMonthly
-    ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}`
+    ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}${gasThru && !thruOnGeo ? `, ${gasThru}` : ''}`
     : gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
   const cpiLabel = cpiShareLabel(cpiData)
+  // Stand-in: the geography takes the sublabel's line so the footnote fits ("/gal" is on the big number)
+  const gasSublabel = gasStandInNote ? '' : GAS_SUBLABEL
+  const groceriesNat = natGroceriesChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natGroceriesChange)}` : null
+  const shelterNat = natShelterChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natShelterChange)}` : null
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
   // Start at the baseline week to match the hero number
@@ -232,9 +251,13 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           xLeft: gasXLeft,
           xMid: gasXMid,
           xRight: gasXRight,
-          // Leave room for the meta row (baseline + national) under the number; less with the geography line
-          // Room for the geography line, the national row and the stand-in footnote
-          height: (gasGeo ? 146 : 170) - (natGasText ? 34 : 0) - (gasStandInNote ? 16 : 0),
+          // What the heading (+ geography line), meta rows and stand-in footnote leave over
+          height: sparklineBudget({
+            sublabel: gasSublabel,
+            extra: gasGeo,
+            metaRows: natGasText ? [[gasSince], [natGasText]] : [[gasSince]],
+            note: gasStandInNote,
+          }),
         })
       : null
 
@@ -257,7 +280,10 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           xLeft: cpiXLeft,
           xMid: cpiXMid,
           xRight: cpiXRight,
-          height: 170,
+          height: sparklineBudget({
+            sublabel: GROCERIES_SUBLABEL,
+            metaRows: [[sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat]],
+          }),
           bounds: groceryPadded,
           xFractions: groceryAxis.xFractions,
           gapAfter: groceryAxis.gapAfter,
@@ -284,7 +310,11 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           xLeft: shelterXLeft,
           xMid: shelterXMid,
           xRight: shelterXRight,
-          height: 170,
+          // A sublabel that wraps shrinks the sparkline rather than pushing the meta row under the footer
+          height: sparklineBudget({
+            sublabel: SHELTER_SUBLABEL,
+            metaRows: [[sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat]],
+          }),
           bounds: shelterPadded,
           xFractions: shelterAxis.xFractions,
           gapAfter: shelterAxis.gapAfter,
@@ -310,12 +340,12 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   )
 
   const sectionLabel = (label: string, sublabel: string, extra?: string | null) => (
-    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: GAP.labelBottom, flexShrink: 0 }}>
       <span
         style={{
           fontFamily: 'Barlow Condensed',
           fontWeight: 600,
-          fontSize: 40,
+          fontSize: FS.label,
           color: TEXT_SECONDARY,
           display: 'flex',
           letterSpacing: '0.10em',
@@ -324,12 +354,12 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
         {label}
       </span>
       {sublabel && (
-        <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
+        <span style={{ fontFamily: 'DM Mono', fontSize: FS.sublabel, color: TEXT_TERTIARY, display: 'flex' }}>
           {sublabel}
         </span>
       )}
       {extra && (
-        <span style={{ fontFamily: 'DM Mono', fontSize: 20, color: TEXT_TERTIARY, display: 'flex' }}>
+        <span style={{ fontFamily: 'DM Mono', fontSize: FS.extra, color: TEXT_TERTIARY, display: 'flex' }}>
           {extra}
         </span>
       )}
@@ -340,7 +370,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
     <span
       style={{
         fontFamily: 'Bebas Neue',
-        fontSize: 96,
+        fontSize: FS.big,
         color: accent,
         lineHeight: 1,
         display: 'flex',
@@ -389,17 +419,18 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 6,
+        marginTop: GAP.metaTop,
+        flexShrink: 0,
       }}
     >
-      <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex' }}>
+      <span style={{ fontFamily: 'DM Mono', fontSize: FS.meta, color: TEXT_SECONDARY, display: 'flex' }}>
         {left}
       </span>
       {right && (
         <span
           style={{
             fontFamily: 'DM Mono',
-            fontSize: 26,
+            fontSize: FS.meta,
             color: TEXT_SECONDARY,
             display: 'flex',
             fontStyle: 'italic',
@@ -571,18 +602,15 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               flexDirection: 'column',
               flex: 1,
               position: 'relative',
-              padding: '16px 28px 24px 36px',
+              padding: CELL_PADDING,
               overflow: 'hidden',
               borderRight: `1px solid ${BORDER}`,
             }}
           >
             {accentStrip(RED)}
-            {/* Stand-in: the geography takes the sublabel's line so the footnote fits ("/gal" is on the big number) */}
-            {gasStandInNote
-              ? sectionLabel('GAS PRICES', '', gasGeo)
-              : sectionLabel('GAS PRICES', '(regular gasoline, $/gal)', gasGeo)}
+            {sectionLabel('GAS PRICES', gasSublabel, gasGeo)}
             {gasSparkline && (
-              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>
+              <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{gasSparkline}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A', RED)}
@@ -593,7 +621,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
                 source + as-of fit ("Natl (BLS Aug '26)" vs "Natl (EIA Sep 28)") */}
             {natGasText && metaRow(natGasText, null)}
             {gasStandInNote && (
-              <span style={{ fontFamily: 'DM Mono', fontSize: 17, color: AMBER, display: 'flex', marginTop: 4 }}>
+              <span style={{ fontFamily: 'DM Mono', fontSize: FS.note, color: AMBER, display: 'flex', marginTop: GAP.noteTop, flexShrink: 0 }}>
                 {gasStandInNote}
               </span>
             )}
@@ -606,14 +634,14 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               flexDirection: 'column',
               flex: 1,
               position: 'relative',
-              padding: '16px 28px 24px 36px',
+              padding: CELL_PADDING,
               overflow: 'hidden',
             }}
           >
             {accentStrip(AMBER)}
-            {sectionLabel('GROCERIES', '(CPI: food at home)')}
+            {sectionLabel('GROCERIES', GROCERIES_SUBLABEL)}
             {grocerySparkline && (
-              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
+              <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>
                 {grocerySparkline}
               </div>
             )}
@@ -626,10 +654,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
                 AMBER
               )}
             </div>
-            {metaRow(
-              sinceLabel(cpiData?.groceriesBaselinePeriod),
-              natGroceriesChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natGroceriesChange)}` : null
-            )}
+            {metaRow(sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat)}
           </div>
         </div>
 
@@ -648,7 +673,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               flexDirection: 'column',
               flex: 1,
               position: 'relative',
-              padding: '16px 28px 24px 36px',
+              padding: CELL_PADDING,
               overflow: 'hidden',
               borderRight: `1px solid ${BORDER}`,
             }}
@@ -656,7 +681,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             {accentStrip(BLUE)}
             {rent ? (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {sectionLabel('RENT', '(new leases, Zillow, county)')}
+                {sectionLabel('RENT', RENT_SUBLABEL)}
                 <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_SECONDARY, display: 'flex' }}>
                     {`Asking rent: ${fmtDollars(rent.curRent)}/mo (${fmtMonthShort(rent.asOf)})`}
@@ -679,9 +704,9 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {sectionLabel('SHELTER', "(CPI: rents + owners' equiv. rent)")}
+                {sectionLabel('SHELTER', SHELTER_SUBLABEL)}
                 {shelterSparkline && (
-                  <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>
                     {shelterSparkline}
                   </div>
                 )}
@@ -694,10 +719,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
                     BLUE
                   )}
                 </div>
-                {metaRow(
-                  sinceLabel(cpiData?.shelterBaselinePeriod),
-                  natShelterChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natShelterChange)}` : null
-                )}
+                {metaRow(sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat)}
               </div>
             )}
           </div>
@@ -709,12 +731,12 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               flexDirection: 'column',
               flex: 1,
               position: 'relative',
-              padding: '16px 28px 24px 36px',
+              padding: CELL_PADDING,
               overflow: 'hidden',
             }}
           >
             {accentStrip(PURPLE)}
-            {sectionLabel('TARIFFS', '(est. annual cost to household)')}
+            {sectionLabel('TARIFFS', TARIFF_SUBLABEL)}
             {/* Centered number block — fills the chart zone */}
             <div
               style={{
