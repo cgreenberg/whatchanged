@@ -14,64 +14,6 @@
    "adjustment": "seasonally adjusted by whatchanged",
    "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases",
    "url": "https://www.zillow.com/research/data/"
-  },
-  "realtor": {
-   "latest": "2026-09",
-   "short": "Realtor.com",
-   "adjustment": "not seasonally adjusted",
-   "label": "Realtor.com\u00ae Economic Research",
-   "url": "https://www.realtor.com/research/data/"
-  },
-  "laus": {
-   "latest": "2026-07",
-   "preliminaryExcluded": "2026-08",
-   "baseWindow": "Dec 2024\u2013Feb 2025",
-   "curWindow": "May 2026\u2013Jul 2026",
-   "window": "3-month average, May 2026\u2013Jul 2026 vs Dec 2024\u2013Feb 2025",
-   "short": "BLS LAUS",
-   "adjustment": "seasonally adjusted by whatchanged",
-   "label": "BLS Local Area Unemployment Statistics",
-   "url": "https://www.bls.gov/lau/"
-  },
-  "qcew": {
-   "latest": "2026-Q1",
-   "window": "12-month averages, Q2 2025\u2013Q1 2026 vs a year earlier",
-   "short": "BLS QCEW + CPI",
-   "adjustment": "not seasonally adjusted (12-month averages)",
-   "label": "BLS QCEW average weekly wage vs CPI-U all items",
-   "url": "https://www.bls.gov/cew/"
-  },
-  "permits": {
-   "latest": "2026-08",
-   "window": "Jan\u2013Aug 2026 vs Jan\u2013Aug 2025",
-   "short": "Census BPS",
-   "adjustment": "not seasonally adjusted (same months both years)",
-   "label": "Census Building Permits Survey, year to date",
-   "url": "https://www.census.gov/construction/bps/"
-  },
-  "electricity": {
-   "latest": "2026-07",
-   "short": "EIA",
-   "adjustment": "seasonally adjusted by whatchanged",
-   "label": "EIA residential electricity price (state)",
-   "url": "https://www.eia.gov/electricity/data/browser/"
-  },
-  "indeed": {
-   "latest": "2026-09-25",
-   "short": "Indeed Hiring Lab",
-   "adjustment": "seasonally adjusted by Indeed",
-   "label": "Indeed Hiring Lab job postings index (metro, CC BY 4.0)",
-   "url": "https://github.com/hiring-lab/job_postings_tracker",
-   "metros_matched": 580,
-   "metros_total": 595
-  },
-  "aca": {
-   "latest": "plan year 2026 vs 2025",
-   "short": "CMS Marketplace",
-   "adjustment": "",
-   "label": "CMS Marketplace Open Enrollment county PUF (HealthCare.gov states only)",
-   "url": "https://www.cms.gov/data-research/statistics-trends-reports/marketplace-products"
   }
- },
- "paycheckWindow": "12-month averages, Q2 2025\u2013Q1 2026 vs a year earlier"
+ }
 }

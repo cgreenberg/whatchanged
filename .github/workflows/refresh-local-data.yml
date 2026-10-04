@@ -1,4 +1,4 @@
-name: Refresh local data (Zillow, Realtor.com, QCEW, LAUS, CPI, permits)
+name: Refresh local data (Zillow home values and rent)
 
 on:
   schedule:
@@ -23,18 +23,7 @@ jobs:
       #   uv pip compile scripts/requirements-local-data.in --generate-hashes --python-version 3.12 \
       #     --python-platform x86_64-unknown-linux-gnu -o scripts/requirements-local-data.txt
       - run: pip install --require-hashes --no-deps -r scripts/requirements-local-data.txt
-      - name: Require BLS_CONTACT_EMAIL
-        env:
-          BLS_CONTACT_EMAIL: ${{ secrets.BLS_CONTACT_EMAIL }}
-        run: |
-          if [ -z "$BLS_CONTACT_EMAIL" ]; then
-            echo "::error::Repository secret BLS_CONTACT_EMAIL is not set. download.bls.gov returns 403 without a contact email in the User-Agent; set it to a monitored inbox."
-            exit 1
-          fi
       - run: scripts/fetch-local-data.sh /tmp/raw
-        env:
-          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
-          BLS_CONTACT_EMAIL: ${{ secrets.BLS_CONTACT_EMAIL }}
       - run: python3 scripts/build-local-data.py --raw /tmp/raw --out public/data
       - name: Validate (fails the run on any FAIL check)
         run: python3 scripts/validate-local-data.py --raw /tmp/raw --data public/data --out docs/validation
