@@ -65,16 +65,23 @@ export const HI_AK_STANDIN_GAS_NOTE = (metro: string, place: string) =>
 /** Short marker + footnote for the stand-in on the share card, OG image and og:description. */
 export const GAS_STANDIN_MARK = '*'
 export const GAS_STANDIN_FOOTNOTE = (place: string) =>
-  `${GAS_STANDIN_MARK} no BLS or EIA gas series for ${place}; local prices are typically higher and may have changed differently`
+  `${GAS_STANDIN_MARK} no BLS or EIA gas series for ${place} — local prices are typically higher and may have changed differently`
 /** BLS monthly gas series failed: the zip's EIA weekly tier is shown instead (local and national both EIA). */
 export const GAS_EIA_FALLBACK_NOTE = 'Local BLS monthly gas price unavailable right now; showing the EIA weekly regional average instead.'
 
-/** "Hawaii County (Big Island)", "Fairbanks North Star Borough": the place a HI/AK stand-in does not cover. */
-export function standInPlace(location: { countyName?: string; countyFips?: string } | null | undefined, short = false): string {
+/**
+ * The place a HI/AK stand-in does not cover: 'full' for the website ("Hawaii County (Big Island)",
+ * "Fairbanks North Star Borough"), 'text' for og:description ("Maui Co."), 'image' for the share card
+ * and OG image ("Fairbanks North Star Bor.", "Bethel area").
+ */
+export function standInPlace(
+  location: { countyName?: string; countyFips?: string } | null | undefined,
+  style: 'full' | 'text' | 'image' = 'full',
+): string {
   const name = (location?.countyName ?? '').replace(/,\s*[A-Z]{2}$/, '').trim()
   if (!name) return 'this area'
-  if (location?.countyFips === '15001') return short ? 'Hawaii Co. (Big Island)' : 'Hawaii County (Big Island)'
-  return short ? shortCountyName(name) : name
+  if (location?.countyFips === '15001') return style === 'full' ? 'Hawaii County (Big Island)' : 'Hawaii Co. (Big Island)'
+  return style === 'full' ? name : style === 'text' ? shortCountyName(name) : imageCountyName(name)
 }
 
 /** true when the gas series is a HI / AK stand-in (see HI_AK_STANDIN_GAS_NOTE). */
@@ -100,19 +107,26 @@ export function gasCaveatFor(s: Pick<EconomicSnapshot, 'gas' | 'location'>): str
 }
 
 /**
- * County-equivalent with its type abbreviated like "Co." (so it never reads as a city name):
- * "Buncombe County, NC" → "Buncombe Co."; "Lafayette Parish, LA" → "Lafayette Par.";
- * "Fairbanks North Star Borough, AK" / "Juneau City and Borough" → "… Bor."; "Anchorage Municipality" →
- * "Anchorage Muni."; "Yukon-Koyukuk Census Area" → "Yukon-Koyukuk C.A." (keeps the share-card footnote to 2 lines).
+ * County-equivalent for text (website, og:description): only "County" is shortened, so it never reads
+ * as a city name; other types stay whole. "Buncombe County, NC" → "Buncombe Co."; "Lafayette Parish" /
+ * "Bethel Census Area" / "Fairbanks North Star Borough" / "Anchorage Municipality" unchanged.
  */
 export function shortCountyName(name: string | null | undefined): string {
   if (!name) return 'county'
-  return name.replace(/,\s*[A-Z]{2}$/, '').trim()
-    .replace(/ County$/, ' Co.')
-    .replace(/ Parish$/, ' Par.')
+  return name.replace(/,\s*[A-Z]{2}$/, '').trim().replace(/ County$/, ' Co.')
+}
+
+/**
+ * County-equivalent for space-limited images (share card, OG image): "Bethel Census Area" → "Bethel area"
+ * (never "C.A.", which reads as California), "… Borough" / "City and Borough" → "… Bor.", "… Municipality"
+ * → "… Muni."; a parish stays "Parish" when `fits` says it fits its slot, else "Par.".
+ */
+export function imageCountyName(name: string | null | undefined, fits: (text: string) => boolean = () => true): string {
+  const s = shortCountyName(name)
     .replace(/ (City and Borough|Borough)$/, ' Bor.')
-    .replace(/ Census Area$/, ' C.A.')
+    .replace(/ Census Area$/, ' area')
     .replace(/ Municipality$/, ' Muni.')
+  return / Parish$/.test(s) && !fits(s) ? s.replace(/ Parish$/, ' Par.') : s
 }
 
 /** Short CPI geography: "Chicago metro", "South Atlantic div.", "South region", "U.S. avg". */
@@ -635,6 +649,6 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
   const head = parts.length ? `Since ${BASELINE_MONTH_LABEL}: ` : ''
   const gasStandIn = cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)
   const foot = (cards.some(c => c.status === 'ok' && c.outlier) ? ` · ${OUTLIER_MARK}unusual value` : '') +
-    (gasStandIn ? ` · ${GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, true))}` : '')
+    (gasStandIn ? ` · ${GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, 'text'))}` : '')
   return `${head}${parts.join(' · ')}${foot} · whatchanged.us`
 }

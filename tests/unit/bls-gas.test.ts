@@ -183,7 +183,7 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     expect(getChartInput('gas', s).note).toBe(c.caveat)
     const d = metadataDescription(s)
     expect(d).toContain("Gas +$0.99/gal (Honolulu-area price*, thru Aug '26)")
-    expect(d).toContain('* no BLS or EIA gas series for Hawaii Co. (Big Island); local prices are typically higher and may have changed differently')
+    expect(d).toContain('* no BLS or EIA gas series for Hawaii Co. (Big Island) — local prices are typically higher and may have changed differently')
     s.location = { ...s.location, stateAbbr: 'AK', countyFips: '02090', countyName: 'Fairbanks North Star Borough' }
     s.gas.data = blsGasData('S49G', { standIn: true })
     expect(gasCaveatFor(s)).toBe('Anchorage-area price — no BLS or EIA series for Fairbanks North Star Borough; local prices are typically higher and may have changed differently.')

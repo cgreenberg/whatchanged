@@ -80,6 +80,8 @@ const Y_LABEL_BOX = 24
 const VIEW_H = 50
 const SPARK_Y_TOP = 5
 const SPARK_Y_BOTTOM = 46
+/** Minimum centre-to-centre gap (px) between y-labels; a shorter plot shows only max/min (no mid tick). */
+export const MIN_Y_LABEL_GAP = Y_LABEL_BOX + 4
 
 /**
  * Pixel geometry of a V3 sparkline (exported for tests): where each value is
@@ -106,6 +108,8 @@ export function sparklineGeometry(values: number[], opts: { bounds?: { min: numb
     pointYs: values.map((v) => toPx(toY(v))),
     /** Centre y (px from top of the plot) of the max/mid/min labels. */
     labelYs: { max: toPx(toY(maxVal)), mid: toPx(toY((minVal + maxVal) / 2)), min: toPx(toY(minVal)) },
+    /** false when the plot is too short for three labels without them touching (e.g. the HI/AK gas cell). */
+    showMid: toPx(toY((minVal + maxVal) / 2)) - toPx(toY(maxVal)) >= MIN_Y_LABEL_GAP,
   }
 }
 
@@ -135,7 +139,7 @@ export function buildLineSparklineV3(
   if (values.length < 2) return null;
 
   const geo = sparklineGeometry(values, opts)
-  const { minVal, maxVal, toY, labelYs, plotHeight } = geo
+  const { minVal, maxVal, toY, labelYs, plotHeight, showMid } = geo
 
   const pts = values.map((v, i) => ({
     x: 4 + (opts.xFractions?.[i] ?? i / (values.length - 1)) * 90,
@@ -186,7 +190,7 @@ export function buildLineSparklineV3(
       {/* Y-axis labels — 72px wide, same height as the plot so each label sits on its value */}
       <div style={{ display: 'flex', position: 'relative', width: 72, paddingRight: 6, height: plotHeight }}>
         {yLabel(opts.yMax, labelYs.max)}
-        {yLabel(opts.yMid, labelYs.mid)}
+        {showMid && yLabel(opts.yMid, labelYs.mid)}
         {yLabel(opts.yMin, labelYs.min)}
       </div>
 
@@ -203,7 +207,7 @@ export function buildLineSparklineV3(
             </defs>
             {/* Dashed gridlines */}
             <line x1="0" y1={yMax} x2="100" y2={yMax} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            <line x1="0" y1={yMid} x2="100" y2={yMid} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
+            {showMid && <line x1="0" y1={yMid} x2="100" y2={yMid} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />}
             {/* Zero reference line — only when range spans zero */}
             {minVal < 0 && maxVal > 0 && (
               <line x1="0" y1={toY(0)} x2="94" y2={toY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" strokeDasharray="2,2" />

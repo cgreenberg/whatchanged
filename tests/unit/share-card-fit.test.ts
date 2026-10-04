@@ -5,6 +5,8 @@
 // and every quadrant's rendered content (estimated from the actual element tree, DM Mono being
 // monospaced) fits inside the quadrant — so a long footnote or sublabel shrinks the sparkline
 // instead of overlapping the heading or slipping under the footer.
+import fs from 'fs'
+import path from 'path'
 import type { EconomicSnapshot } from '@/types'
 import austin from '../fixtures/snapshots/78701.json'
 import zipCounty from '@/lib/data/zip-county.json'
@@ -25,16 +27,18 @@ jest.mock('next/og', () => ({
 
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import {
-  generateShareCard, shareGasStandInNote, cpiShareLabel,
+  generateShareCard, shareGasStandInNote, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
   GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, TARIFF_SUBLABEL,
 } from '@/lib/share-card/generate'
 import {
-  monoLines, monoLineHeight, sparklineBudget, CELL_CONTENT_H, CELL_TEXT_WIDTH, CARD_SIZE, ROW_H, FS,
+  monoLines, monoLineHeight, monoCharsPerLine, sparklineBudget, CELL_CONTENT_H, CELL_TEXT_WIDTH, CARD_SIZE, ROW_H, FS,
 } from '@/lib/share-card/layout'
+import { sparklineGeometry } from '@/lib/share-card/sparklines'
+import { fmtSignedDollars } from '@/lib/format'
 import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES, STATE_LEVEL_CODES, PAD_DUOAREA } from '@/lib/mappings/eia-gas'
 import { describeDuoarea, toGasPriceData, type GasSeriesData } from '@/lib/api/eia'
-import { gasShortGeo } from '@/lib/hero-cards'
+import { gasShortGeo, dataThroughLabel, type HeroCardModel } from '@/lib/hero-cards'
 import { BLS_GAS_PUBLISHED_AREAS } from '@/lib/mappings/bls-gas'
 import { describeBlsGasArea } from '@/lib/api/bls-gas'
 import type { CpiData } from '@/types'
@@ -50,6 +54,40 @@ const hiAkCounties: Loc[] = [
       .map((v) => [v.countyFips, v] as const),
   ).values(),
 ]
+
+/** Advance width (px) of `text` in a bundled TTF (cmap format 4 + hmtx; no kerning). */
+function ttfMeasure(file: string) {
+  const b = fs.readFileSync(path.join(process.cwd(), 'public', 'fonts', file))
+  const tables: Record<string, number> = {}
+  for (let i = 0; i < b.readUInt16BE(4); i++) tables[b.toString('latin1', 12 + 16 * i, 16 + 16 * i)] = b.readUInt32BE(20 + 16 * i)
+  const upm = b.readUInt16BE(tables.head + 18)
+  const nHMetrics = b.readUInt16BE(tables.hhea + 34)
+  const cmap = tables.cmap
+  let sub = -1
+  for (let i = 0; i < b.readUInt16BE(cmap + 2) && sub < 0; i++) {
+    const off = cmap + b.readUInt32BE(cmap + 8 + 8 * i)
+    if (b.readUInt16BE(off) === 4) sub = off
+  }
+  const segX2 = b.readUInt16BE(sub + 6)
+  const ends = sub + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2
+  const glyph = (cp: number): number => {
+    for (let i = 0; i < segX2 / 2; i++) {
+      if (cp > b.readUInt16BE(ends + 2 * i)) continue
+      const start = b.readUInt16BE(starts + 2 * i)
+      if (cp < start) return 0
+      const delta = b.readInt16BE(deltas + 2 * i), ro = b.readUInt16BE(ranges + 2 * i)
+      if (!ro) return (cp + delta) & 0xffff
+      const g = b.readUInt16BE(ranges + 2 * i + ro + 2 * (cp - start))
+      return g ? (g + delta) & 0xffff : 0
+    }
+    return 0
+  }
+  return (text: string, size: number, letterSpacing = 0) => [...text].reduce((w, ch) => {
+    const g = glyph(ch.codePointAt(0)!)
+    if (!g) throw new Error(`${file} has no glyph for "${ch}"`)
+    return w + (b.readUInt16BE(tables.hmtx + 4 * Math.min(g, nHMetrics - 1)) / upm) * size + letterSpacing
+  }, 0)
+}
 
 // ── Text-slot budgets ────────────────────────────────────────────────────────────
 
@@ -76,8 +114,13 @@ describe('share-card text slots stay within their line budgets', () => {
     expect(hiAkCounties.length).toBeGreaterThan(30)
     const notes = hiAkCounties.map((c) => shareGasStandInNote(c))
     const worst = notes.reduce((a, b) => (b.length > a.length ? b : a))
-    expect(worst).toContain('Prince of Wales-Hyder C.A.')
-    for (const n of notes) expect([n, monoLines(n, FS.note) <= 2]).toEqual([n, true])
+    expect(worst).toContain('Prince of Wales-Hyder area')
+    for (const n of notes) {
+      expect([n, monoLines(n, FS.note) <= 2]).toEqual([n, true])
+      expect(n).not.toContain('C.A.') // reads as California
+      expect(n).not.toMatch(/\.[;,]/) // no "Bor.;" punctuation stacking
+      expect(n).toContain('trend may differ') // same change caveat as the website / OG
+    }
   })
 
   test('gas geography line (+ BLS "thru" month) fits one line for every gas tier', () => {
@@ -105,14 +148,56 @@ describe('share-card text slots stay within their line budgets', () => {
   })
 
   test('header CPI label fits one line beside the date badge for every CPI area and tier', () => {
-    // 1080 − 2×40 padding − date badge (~208px: "JAN 20, 2025" 22px + 0.06em spacing + 2×16 padding)
-    const headerWidth = CARD_SIZE - 80 - 220
+    // Widest data-through badge: a span across a year end ("DEC 2026–JAN 2027")
+    const card = (asOfPeriod: string) => ({ status: 'ok', asOfPeriod }) as HeroCardModel
+    const months = Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`)
+    const badges = [...months.map((lo) => dataThroughLabel([card(lo), card('2027-01')])!), ...months.map((hi) => dataThroughLabel([card(hi)])!)]
+    expect(badges).toContain('DEC 2026–JAN 2027')
+    // DM Mono 22px + 0.06em letter spacing, 2×16 padding + 2×1 border; the badge is as wide as its widest line
+    const mono = ttfMeasure('DMMono-Regular.ttf')
+    const badgeW = Math.max(...[...badges, 'JAN 20, 2025'].map((t) => mono(t, 22, 0.06 * 22))) + 2 * 16 + 2
+    expect(badgeW).toBeGreaterThan(270)
+    const headerWidth = CARD_SIZE - 80 - Math.ceil(badgeW)
     const base = snap().cpi.data!
-    const labels = Object.values(BLS_CPI_AREAS).flatMap((a) =>
-      [1, 2, 3, 4].map((tier) => cpiShareLabel({ ...base, areaCode: a.code, metro: a.name, tier } as CpiData)!),
+    // Each area at its own tier (S… metro = 1, 0110–0490 division = 2, 0100–0400 region = 3, 0000 = 4)
+    const tierOf = (code: string) => (/^S/.test(code) ? 1 : code === '0000' ? 4 : /^0[1-4]00$/.test(code) ? 3 : 2)
+    const labels = Object.values(BLS_CPI_AREAS).map((a) =>
+      cpiShareLabel({ ...base, areaCode: a.code, metro: a.name, tier: tierOf(a.code) } as CpiData)!,
     )
+    expect(labels).toContain('CPI: Miami-Fort Lauderdale-West Palm Beach (metro)')
+    expect(labels).toContain('CPI: East South Central (Census division)')
     labels.push(cpiShareLabel({ ...base, fallback: 'national' } as CpiData)!)
     for (const l of labels) expect([l, monoLines(l, 20, headerWidth)]).toEqual([l, 1])
+  })
+
+  test('gas big number + change pill fit one row at the widest realistic values', () => {
+    const bebas = ttfMeasure('BebasNeue-Regular.ttf')
+    const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
+    const big = bebas('$9.99/gal', FS.big)
+    for (const pill of [fmtSignedDollars(4.44), fmtSignedDollars(-4.44)]) {
+      // pill: Barlow 40 text + 2×20 padding + 2×1.5 border + 12 margin
+      const row = big + barlow(pill, 40) + 2 * 20 + 2 * 1.5 + 12
+      expect([pill, row <= CELL_TEXT_WIDTH]).toEqual([pill, true])
+    }
+  })
+
+  test('no real string combination reaches the 60px sparkline floor', () => {
+    const oneLineGeo = 'x'.repeat(monoCharsPerLine(FS.extra)) // any gas geography (each fits one line, above)
+    const gasRows: Array<[string, (string | null)?]> = [["since Jan 2025, thru Sep '26"], [`Natl (BLS Sep '26): ${fmtSignedDollars(-4.44)}`]]
+    const worstNote = hiAkCounties.map((c) => shareGasStandInNote(c)).reduce((a, b) => (monoLines(b, FS.note) > monoLines(a, FS.note) ? b : a))
+    const budgets = {
+      gas: sparklineBudget({ sublabel: GAS_SUBLABEL, extra: oneLineGeo, metaRows: gasRows }, 0),
+      // a stand-in gives the sublabel's line to its footnote
+      gasStandIn: sparklineBudget({ sublabel: '', extra: oneLineGeo, metaRows: gasRows, note: worstNote }, 0),
+      groceries: sparklineBudget({ sublabel: GROCERIES_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: groceriesBasisNote() }, 0),
+      shelter: sparklineBudget({ sublabel: SHELTER_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: shelterBasisNote(12345) }, 0),
+    }
+    for (const [k, h] of Object.entries(budgets)) expect([k, h > 60]).toEqual([k, true])
+    expect(monoLines(shelterBasisNote(12345), FS.note)).toBe(1)
+    expect(monoLines(groceriesBasisNote(), FS.note)).toBe(1)
+    // the short stand-in gas plot drops the mid y-label so max/mid/min never touch; taller plots keep it
+    expect(sparklineGeometry([1, 2], { height: budgets.gasStandIn }).showMid).toBe(false)
+    expect(sparklineGeometry([1, 2], { height: budgets.gas }).showMid).toBe(true)
   })
 
   test('sparkline keeps a usable height in the worst case (HI/AK stand-in, wrapped geography)', () => {

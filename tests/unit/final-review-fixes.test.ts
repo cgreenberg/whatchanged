@@ -25,6 +25,7 @@ import {
   buildRentCard,
   buildHeroCards,
   shortCountyName,
+  imageCountyName,
   cpiShortGeo,
   gasShortGeo,
   tariffIncomeTag,
@@ -203,13 +204,20 @@ describe('refresh-cache safety', () => {
 describe('hero-card geography tags and caveats', () => {
   test('short geography names', () => {
     expect(shortCountyName('Buncombe County, NC')).toBe('Buncombe Co.')
-    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu Par.')
-    expect(shortCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star Bor.')
-    expect(shortCountyName('Yukon-Koyukuk Census Area, AK')).toBe('Yukon-Koyukuk C.A.')
-    expect(shortCountyName('Anchorage Municipality, AK')).toBe('Anchorage Muni.')
-    expect(shortCountyName('Juneau City and Borough, AK')).toBe('Juneau Bor.')
-    expect(shortCountyName('Lafayette Parish, LA')).toBe('Lafayette Par.')
-    expect(shortCountyName('Lafayette Parish')).toBe('Lafayette Par.')
+    // Text (website, og:description): full county-equivalent types; only "County" is shortened
+    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu Parish')
+    expect(shortCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star Borough')
+    expect(shortCountyName('Yukon-Koyukuk Census Area, AK')).toBe('Yukon-Koyukuk Census Area')
+    expect(shortCountyName('Anchorage Municipality, AK')).toBe('Anchorage Municipality')
+    expect(shortCountyName('Juneau City and Borough, AK')).toBe('Juneau City and Borough')
+    // Images (share card, OG): abbreviated, never "C.A." (reads as California); "Parish" when it fits
+    expect(imageCountyName('Buncombe County, NC')).toBe('Buncombe Co.')
+    expect(imageCountyName('Bethel Census Area, AK')).toBe('Bethel area')
+    expect(imageCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star Bor.')
+    expect(imageCountyName('Juneau City and Borough, AK')).toBe('Juneau Bor.')
+    expect(imageCountyName('Anchorage Municipality, AK')).toBe('Anchorage Muni.')
+    expect(imageCountyName('Lafayette Parish, LA')).toBe('Lafayette Parish')
+    expect(imageCountyName('St. John the Baptist Parish', (t) => t.length <= 25)).toBe('St. John the Baptist Par.')
     const cpi = (o: Partial<CpiData>) => ({ ...snap().cpi.data!, ...o }) as CpiData
     expect(cpiShortGeo(cpi({ tier: 2, metro: 'South Atlantic', areaCode: '0350' }))).toBe('South Atlantic div.')
     expect(cpiShortGeo(cpi({ tier: 1, metro: 'Chicago-Naperville-Elgin', areaCode: 'S23A' }))).toBe('Chicago metro')

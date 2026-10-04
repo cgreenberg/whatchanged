@@ -2,12 +2,13 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
-import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
+import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, imageCountyName, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
 import { BASELINE_DAY_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
+import { monoLines } from '@/lib/share-card/layout'
 
 export const runtime = 'nodejs'
 
@@ -75,6 +76,11 @@ function gridlineYPositions(series: NationalDataPoint[], height: number): { minY
   return { minY, midY }
 }
 
+/** Text width of one of the four OG stat columns: 1200 − 2×40 padding − 3×24 gaps, ÷ 4, − 16 left padding. */
+const OG_STAT_TEXT_W = (1200 - 2 * 40 - 3 * 24) / 4 - 16
+/** OG stat geography line (16px): "Lafayette Parish" when it fits one line (DM Mono model: conservative for the OG sans), else "… Par."; "Bethel area". */
+const ogPlace = (tag: string) => imageCountyName(tag, (t) => monoLines(t, 16, OG_STAT_TEXT_W) <= 1)
+
 /**
  * Context under each OG stat: line 1 = short geography (every number comes from a different
  * area: county rent, regional CPI, regional gas), line 2 = baseline window.
@@ -86,7 +92,7 @@ function ogSublines(c: HeroCardModel): [string, string] {
   switch (c.id) {
     // Monthly BLS gas also names its month: weekly EIA figures elsewhere run weeks newer
     case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : since]
-    case 'rent': return [c.geoTag ?? c.provenance.geography, `${since}, seas. adj.`]
+    case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, seas. adj.`]
     case 'tariff': return [c.geoTag ? `${c.geoTag} income` : 'income', 'estimate']
     default: return [c.geoTag ?? c.provenance.geography, since]
   }
@@ -147,7 +153,7 @@ export async function GET(req: NextRequest) {
         })
         if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
         if (cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)) {
-          footnotes.push(GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, true)))
+          footnotes.push(GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, 'image')))
         }
         latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
         throughLabel = dataThroughLabel(cards)

@@ -8,6 +8,7 @@ import {
 } from '@/lib/baseline'
 import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
+import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
@@ -114,14 +115,22 @@ export function sinceLabel(period: string | null | undefined): string {
 export const GAS_SUBLABEL = '(regular gasoline, $/gal)'
 export const GROCERIES_SUBLABEL = '(CPI: food at home)'
 /** BLS shelter is mainly rents + owners' equivalent rent (plus lodging away from home, insurance). */
-export const SHELTER_SUBLABEL = "(CPI: rent + owners' eq. rent)"
+export const SHELTER_SUBLABEL = '(CPI: rent + owner-equiv. rent)'
 export const RENT_SUBLABEL = '(new leases, Zillow, county)'
 export const TARIFF_SUBLABEL = '(est. annual cost to household)'
 
-/** Share-card footnote for a HI/AK gas stand-in ("*" on "Honolulu-area price*"); two lines at most. */
+/**
+ * Share-card footnote for a HI/AK gas stand-in ("*" on "Honolulu-area price*"); two lines at most
+ * for every HI/AK county (tests/unit/share-card-fit.test.ts). An em dash, not ";", follows the place
+ * so an abbreviation ("… Bor.") never stacks punctuation.
+ */
 export function shareGasStandInNote(location: Parameters<typeof standInPlace>[0]): string {
-  return `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices usually higher, may differ.`
+  return `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, 'image')} — local prices often higher; trend may differ.`
 }
+
+/** Basis lines for the $/yr pills (same bases as the website's hero cards). */
+export const groceriesBasisNote = () => `$/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries`
+export const shelterBasisNote = (medianRent: number) => `$/yr on local median rent (${fmtDollars(medianRent)}/mo)`
 
 // ── Main Export ───────────────────────────────────────────────────
 export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
@@ -193,6 +202,12 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const gasSublabel = gasStandInNote ? '' : GAS_SUBLABEL
   const groceriesNat = natGroceriesChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natGroceriesChange)}` : null
   const shelterNat = natShelterChange !== undefined && cpiData?.tier !== 4 ? `Natl: ${fmtSignedPct(natShelterChange)}` : null
+  // Each $/yr pill carries its basis in the quadrant (no pill when its basis can't be shown)
+  const groceriesDollars = groceriesOk ? snapshot.dollarImpact?.groceries ?? null : null
+  const groceriesBasis = groceriesDollars != null ? groceriesBasisNote() : null
+  const medianRent = snapshot.census.data?.medianRent ?? 0
+  const shelterDollars = shelterOk && card('shelter')?.change && medianRent > 0 ? snapshot.dollarImpact?.shelter ?? null : null
+  const shelterBasis = shelterDollars != null ? shelterBasisNote(medianRent) : null
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
   // Start at the baseline week to match the hero number
@@ -283,6 +298,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           height: sparklineBudget({
             sublabel: GROCERIES_SUBLABEL,
             metaRows: [[sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat]],
+            note: groceriesBasis,
           }),
           bounds: groceryPadded,
           xFractions: groceryAxis.xFractions,
@@ -314,6 +330,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
           height: sparklineBudget({
             sublabel: SHELTER_SUBLABEL,
             metaRows: [[sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat]],
+            note: shelterBasis,
           }),
           bounds: shelterPadded,
           xFractions: shelterAxis.xFractions,
@@ -440,6 +457,13 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
         </span>
       )}
     </div>
+  )
+
+  /** Small grey line under a quadrant's meta row: the basis of its $/yr pill. */
+  const basisNote = (text: string) => (
+    <span style={{ fontFamily: 'DM Mono', fontSize: FS.note, color: TEXT_TERTIARY, display: 'flex', marginTop: GAP.noteTop, flexShrink: 0 }}>
+      {text}
+    </span>
   )
 
   // ── JSX ──────────────────────────────────────────────────────────
@@ -647,14 +671,10 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
               {bigNumber(groceriesOk ? fmtSignedPct(cpiData!.groceriesChange) : 'N/A', AMBER)}
-              {changePill(
-                groceriesOk && snapshot.dollarImpact?.groceries != null
-                  ? `${fmtSignedDollars(snapshot.dollarImpact.groceries, 0)}/yr`
-                  : '—',
-                AMBER
-              )}
+              {changePill(groceriesDollars != null ? `${fmtSignedDollars(groceriesDollars, 0)}/yr` : '—', AMBER)}
             </div>
             {metaRow(sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat)}
+            {groceriesBasis && basisNote(groceriesBasis)}
           </div>
         </div>
 
@@ -712,14 +732,10 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
                 )}
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
                   {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A', BLUE)}
-                  {changePill(
-                    shelterOk && card('shelter')?.change && snapshot.dollarImpact?.shelter != null
-                      ? `≈ ${fmtSignedDollars(snapshot.dollarImpact.shelter, 0)}/yr`
-                      : '—',
-                    BLUE
-                  )}
+                  {changePill(shelterDollars != null ? `≈ ${fmtSignedDollars(shelterDollars, 0)}/yr` : '—', BLUE)}
                 </div>
                 {metaRow(sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat)}
+                {shelterBasis && basisNote(shelterBasis)}
               </div>
             )}
           </div>
