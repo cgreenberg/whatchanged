@@ -202,7 +202,8 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
 
   const hasLocal = displayData.some(d => typeof d[mainKey] === 'number' || typeof d[`${mainKey}${PRELIM_SUFFIX}`] === 'number')
   const hasNationalData = (nationalData?.length ?? 0) > 0
-  const sizeClass = config.size === 'large' ? 'col-span-full' : config.size === 'medium' ? 'sm:col-span-1' : ''
+  // 'large' spans the whole charts grid; 'medium' (all four price charts) takes one cell of the 2 × 2 grid
+  const sizeClass = config.size === 'large' ? 'col-span-full min-w-0' : 'min-w-0'
 
   const firstDate = firstDateOf(chartData, mainKey)
   const lastDate = lastDateOf(chartData, mainKey)

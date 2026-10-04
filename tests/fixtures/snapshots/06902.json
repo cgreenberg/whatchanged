@@ -645,7 +645,8 @@
    "seriesIds": {
     "groceries": "CUUR0110SAF11",
     "shelter": "CUUR0110SAH1",
-    "energy": "CUUR0110SA0E"
+    "energy": "CUUR0110SA0E",
+    "rent": "CUUR0110SEHA"
    },
    "nationalSeries": [
     {
@@ -1417,6 +1418,11 @@
    "shelterCurrent": 141.141,
    "shelterBaselinePeriod": "2025-01",
    "shelterLatestPeriod": "2026-08",
+   "rentIndexChange": 7.7,
+   "rentIndexCurrent": 145.198,
+   "rentIndexBaseline": 134.792,
+   "rentIndexBaselinePeriod": "2025-01",
+   "rentIndexLatestPeriod": "2026-08",
    "areaCode": "0110"
   },
   "error": null,
@@ -5633,7 +5639,7 @@
  },
  "dollarImpact": {
   "groceries": 186,
-  "shelter": 1617,
+  "shelter": 1976,
   "gas": 1.347,
   "tariff": 1897
  },

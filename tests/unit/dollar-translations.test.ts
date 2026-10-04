@@ -27,7 +27,7 @@ describe('computeGroceryImpact = $6,000/yr × % change (signed)', () => {
   })
 })
 
-describe('computeShelterImpact = local median rent × 12 × % change (signed)', () => {
+describe('computeShelterImpact = local median rent × 12 × rent-of-primary-residence % change (signed)', () => {
   test('rent $1,400, +3.5% → +$588', () => {
     expect(computeShelterImpact(3.5, 1400)).toBe(588)
   })
@@ -42,8 +42,14 @@ describe('computeShelterImpact = local median rent × 12 × % change (signed)', 
     expect(computeShelterImpact(3.5, 0)).toBeNull()
   })
 
-  test('missing change → null', () => {
+  test('missing rent index change → null (never falls back to the CPI shelter %)', () => {
     expect(computeShelterImpact(undefined, 1400)).toBeNull()
+    expect(computeShelterImpact(NaN, 1400)).toBeNull()
+  })
+
+  test('computeDollarImpact ignores any shelter % — only the rent index drives the shelter $', () => {
+    const opts = { rentIndexChangePct: undefined, medianRent: 1400, shelterChangePct: 5 } as Parameters<typeof computeDollarImpact>[0]
+    expect(computeDollarImpact(opts).shelter).toBeNull()
   })
 })
 
@@ -64,7 +70,7 @@ describe('computeDollarImpact', () => {
   test('combines the individual functions', () => {
     const r = computeDollarImpact({
       groceriesChangePct: -2.6,
-      shelterChangePct: 3.5,
+      rentIndexChangePct: 3.5,
       gasChange: -0.52,
       tariffEstimatedCost: 1278,
       medianRent: 1400,

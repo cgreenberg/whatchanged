@@ -10,21 +10,58 @@ test.describe('Geography and concept labels', () => {
     await enterZip(page, '78701')
     const rent = page.getByTestId('stat-card-rent')
     await expect(rent).toContainText('Rent (new leases)')
+    await expect(rent.getByTestId('stat-source')).toHaveText('Travis County · Zillow · Aug 2026')
+    // full provenance is one tap away
+    await expect(rent.getByTestId('provenance')).toBeHidden()
+    await rent.getByTestId('stat-info-toggle').click()
+    await expect(rent.getByTestId('provenance')).toBeVisible()
     await expect(rent.getByTestId('provenance')).toContainText('Zillow ZORI · Travis County, TX')
     const housing = page.getByTestId('housing-chart')
     await expect(housing).toHaveAttribute('data-tab', 'rent', { timeout: 15000 })
     await housing.getByTestId('housing-tab-shelter').click()
     await expect(housing).toContainText('Shelter (CPI)')
     await expect(housing.getByTestId('provenance').last()).toContainText('BLS CPI shelter · division: West South Central')
-    // Distinct sources, distinct labels
-    expect(await rent.textContent()).not.toContain('CPI')
+    // Distinct sources, distinct labels (the card face; its ⓘ explains how it differs from CPI shelter)
+    await rent.getByTestId('stat-info-toggle').click()
+    await expect(rent.getByTestId('stat-info')).toBeHidden()
+    expect(await rent.innerText()).not.toContain('CPI')
   })
 
-  test('every hero card has a full provenance line', async ({ page }) => {
+  test('every hero card: short source line visible, full provenance line in its ⓘ disclosure', async ({ page }) => {
     await enterZip(page, '10001')
-    const lines = page.getByTestId('stat-cards').getByTestId('provenance')
-    await expect(lines).toHaveCount(4)
-    for (const t of await lines.allTextContents()) expect(t.split(' · ').length).toBeGreaterThanOrEqual(5)
+    const cards = page.getByTestId('stat-cards').locator('[data-testid^="stat-card-"]')
+    await expect(cards).toHaveCount(4)
+    for (const card of await cards.all()) {
+      await expect(card.getByTestId('stat-source')).toBeVisible()
+      const toggle = card.getByTestId('stat-info-toggle')
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      await expect(card.getByTestId('stat-info')).toBeHidden()
+      await toggle.click()
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      const line = card.getByTestId('stat-info').getByTestId('provenance').first()
+      await expect(line).toBeVisible()
+      expect((await line.textContent())!.split(' · ').length).toBeGreaterThanOrEqual(5)
+    }
+  })
+
+  test('ⓘ works from the keyboard: Enter opens, Escape closes', async ({ page }) => {
+    await enterZip(page, '10001')
+    const card = page.getByTestId('stat-card-groceries')
+    const toggle = card.getByTestId('stat-info-toggle')
+    await toggle.focus()
+    await page.keyboard.press('Enter')
+    await expect(card.getByTestId('stat-info')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(card.getByTestId('stat-info')).toBeHidden()
+    await expect(toggle).toBeFocused()
+  })
+
+  test('card faces stay short (≤ 120 characters outside the ⓘ disclosure)', async ({ page }) => {
+    await enterZip(page, '10001')
+    for (const card of await page.getByTestId('stat-cards').locator('[data-testid^="stat-card-"]').all()) {
+      const visible = (await card.innerText()).replace(/\s+/g, ' ').trim()
+      expect(visible.length, visible).toBeLessThanOrEqual(120)
+    }
   })
 })
 

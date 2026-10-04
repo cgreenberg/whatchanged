@@ -3,7 +3,7 @@ import '@testing-library/jest-dom'
  * Render-level check of the hero cards: the dollars a user SEES equal the stated
  * formulas applied to the API numbers, and bad/missing sources render "Data unavailable".
  */
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, fireEvent } from '@testing-library/react'
 import { HeroCards } from '@/components/HeroCards'
 import { fmtSignedDollars, fmtDollars, fmtSignedPct, fmtMonthYear } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
@@ -33,10 +33,12 @@ describe.each([
     expect(screen.queryByTestId('stat-card-shelter')).toBeNull()
   })
 
-  test('gas: price and signed $/gal change from the API', () => {
+  test('gas: price and signed $ change from the API, window on the card', () => {
     const g = snap.gas.data!
     expect(text(card('gas'), 'stat-value')).toBe(`$${g.current.toFixed(2)}/gal`)
-    expect(text(card('gas'), 'stat-change')).toContain(`${fmtSignedDollars(g.change)}/gal`)
+    expect(text(card('gas'), 'stat-change')).toBe(`${fmtSignedDollars(g.change)} since Jan 2025`)
+    // the full $/gal wording is one tap away
+    expect(text(card('gas'), 'stat-info')).toContain(`${fmtSignedDollars(g.change)}/gal since`)
   })
 
   test('groceries: $6,000/yr × API % change', () => {
@@ -44,40 +46,72 @@ describe.each([
     const expected = Math.round((6000 * pct) / 100)
     expect(snap.dollarImpact!.groceries).toBe(expected)
     expect(text(card('groceries'), 'stat-value')).toBe(fmtSignedPct(pct))
-    expect(text(card('groceries'), 'stat-change')).toContain(`${fmtSignedDollars(expected, 0)}/yr on $6,000/yr`)
+    expect(text(card('groceries'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/yr`)
+    expect(text(card('groceries'), 'stat-secondary')).toMatch(/^since (Jan 2025|Dec 2024)( · U\.S\. [+−]?\d+\.\d%)?$/)
+    // the basis is in the ⓘ disclosure
+    expect(text(card('groceries'), 'stat-info')).toContain(`${fmtSignedDollars(expected, 0)}/yr on $6,000/yr of groceries`)
   })
 
   test('rent: $/mo = curRent − curRent / (1 + pct/100)', () => {
     const r = snap.rent!
     const expected = Math.round(r.curRent - r.curRent / (1 + r.pct / 100))
     expect(text(card('rent'), 'stat-value')).toBe(fmtSignedPct(r.pct))
-    // $ is the seasonally adjusted change in dollars, worded so it can't be read as a raw then-vs-now gap
-    expect(text(card('rent'), 'stat-change')).toContain(`≈ ${fmtSignedDollars(expected, 0)}/mo vs Jan 2025, after adjusting for the usual seasonal`)
+    expect(text(card('rent'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
+    expect(text(card('rent'), 'stat-secondary')).toContain('since Jan 2025')
+    // ⓘ: $ is the seasonally adjusted change in dollars, worded so it can't be read as a raw then-vs-now gap;
     // the raw level is shown only as a level, with its month — never as a comparison
-    expect(text(card('rent'), 'stat-detail')).toBe(`Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`)
+    const info = text(card('rent'), 'stat-info')
+    expect(info).toContain(`≈ ${fmtSignedDollars(expected, 0)}/mo vs Jan 2025, after adjusting for the usual seasonal`)
+    expect(info).toContain(`Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`)
   })
 
   test('tariff: median income × 0.0205', () => {
     const income = snap.tariff.data!.medianIncome
     expect(text(card('tariff'), 'stat-value')).toBe(`~${fmtDollars(Math.round(income * 0.0205))}/yr`)
-    expect(text(card('tariff'), 'stat-change')).toContain(fmtDollars(income))
+    expect(text(card('tariff'), 'stat-secondary')).toMatch(/^2\.05% of .*income$/)
+    expect(text(card('tariff'), 'stat-info')).toContain(`2.05% of ${fmtDollars(income)} median household income`)
   })
 })
 
 describe('CPI shelter fallback when the county has no Zillow rent', () => {
-  test('labels the concept and uses local Census rent × 12 × %', () => {
+  test('headline % is CPI shelter; $ = local Census rent × 12 × BLS rent-of-primary-residence %', () => {
     const snap = clone(austin)
     snap.rent = null
     render(<HeroCards snapshot={snap} />)
     const c = card('shelter')
-    expect(c).toHaveTextContent("Shelter prices (CPI: mainly rents + owners' equivalent rent)")
+    expect(within(c).getByText('Shelter (CPI)')).toBeInTheDocument()
     const pct = snap.cpi.data!.shelterChange!
+    const rentIdx = snap.cpi.data!.rentIndexChange!
+    expect(rentIdx).not.toBe(pct)
     const rent = snap.census.data!.medianRent
-    const expected = Math.round((rent * 12 * pct) / 100)
+    const expected = Math.round((rent * 12 * rentIdx) / 100)
     expect(snap.dollarImpact!.shelter).toBe(expected)
     expect(text(c, 'stat-value')).toBe(fmtSignedPct(pct))
-    expect(text(c, 'stat-change')).toContain(`${fmtSignedDollars(expected, 0)}/yr`)
-    expect(text(c, 'stat-detail')).toContain(`${fmtDollars(rent)}/mo median rent`)
+    expect(text(c, 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/yr in rent`)
+    const info = text(c, 'stat-info')
+    expect(info).toContain('rent of primary residence (BLS) applied to local median rent')
+    expect(info).toContain(`${fmtDollars(rent)}/mo median rent`)
+    expect(info).toContain(`rent of primary residence (BLS) ${fmtSignedPct(rentIdx)}`)
+    // both series are cited with links: CPI shelter (headline) and CPI rent of primary residence ($)
+    fireEvent.click(within(c).getByTestId('stat-info-toggle'))
+    const lines = within(within(c).getByTestId('stat-info')).getAllByTestId('provenance')
+    expect(lines.map(l => l.textContent)).toEqual([
+      expect.stringMatching(/^BLS CPI shelter · /),
+      expect.stringMatching(/^BLS CPI rent of primary residence · /),
+    ])
+    expect(within(lines[1]).getByRole('link')).toHaveAttribute('href', 'https://data.bls.gov/timeseries/CUUR0370SEHA')
+  })
+
+  test('rent index missing (e.g. an older cached payload) → no $ at all, never the shelter % on rent', () => {
+    const snap = clone(austin)
+    snap.rent = null
+    delete snap.cpi.data!.rentIndexChange
+    // even if a stale API response still carries an old-method figure
+    snap.dollarImpact!.shelter = Math.round((snap.census.data!.medianRent * 12 * snap.cpi.data!.shelterChange!) / 100)
+    render(<HeroCards snapshot={snap} />)
+    expect(within(card('shelter')).queryByTestId('stat-inline')).toBeNull()
+    expect(card('shelter')).not.toHaveTextContent('/yr')
+    expect(text(card('shelter'), 'stat-info')).toContain('rent-of-primary-residence index for this area is unavailable')
   })
 
   test('no local rent → no dollar figure (never a national stand-in)', () => {
@@ -86,8 +120,8 @@ describe('CPI shelter fallback when the county has no Zillow rent', () => {
     snap.dollarImpact!.shelter = null
     snap.census.data!.isRentFallback = true
     render(<HeroCards snapshot={snap} />)
-    expect(within(card('shelter')).queryByTestId('stat-change')).toBeNull()
-    expect(text(card('shelter'), 'stat-detail')).toContain('No local rent figure for a dollar estimate')
+    expect(within(card('shelter')).queryByTestId('stat-inline')).toBeNull()
+    expect(text(card('shelter'), 'stat-info')).toContain('No local rent figure for a dollar estimate')
     expect(card('shelter')).not.toHaveTextContent('/yr')
   })
 })
@@ -141,23 +175,23 @@ describe('missing or out-of-range sources render "Data unavailable"', () => {
   })
 })
 
-describe('signs and arrows', () => {
+describe('signs and direction', () => {
   test('negative gas change renders "−$" (minus sign), never "$-"', () => {
     const snap = clone(austin)
     snap.gas.data!.change = -0.12
     render(<HeroCards snapshot={snap} />)
     const t = text(card('gas'), 'stat-change')
-    expect(t).toContain('−$0.12/gal')
+    expect(t).toBe('−$0.12 since Jan 2025')
     expect(t).not.toContain('$-')
-    expect(t.startsWith('↓')).toBe(true)
+    expect(card('gas')).toHaveAttribute('data-direction', 'down')
   })
 
-  test('zero change shows no arrow', () => {
+  test('zero change is neutral', () => {
     const snap = clone(austin)
     snap.cpi.data!.groceriesChange = 0.04
     render(<HeroCards snapshot={snap} />)
     expect(text(card('groceries'), 'stat-value')).toBe('0.0%')
-    expect(text(card('groceries'), 'stat-change')).not.toMatch(/^[↑↓]/)
+    expect(card('groceries')).toHaveAttribute('data-direction', 'neutral')
   })
 
   test('stale source shows a stale badge', () => {

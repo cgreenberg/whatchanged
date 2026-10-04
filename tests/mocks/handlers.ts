@@ -1,15 +1,17 @@
 import { http, HttpResponse } from 'msw'
 import blsRecorded from '../fixtures/bls-recorded-2024-2026.json'
 import blsGasRecorded from '../fixtures/bls-gas-ap-2024-2026.json'
+import blsRentRecorded from '../fixtures/bls-cpi-rent-seha.json'
 import eiaGas from '../fixtures/eia-gas.json'
 import eiaEpmrSWA from '../fixtures/eia-epmr-SWA.json'
 import eiaEpmrNUS from '../fixtures/eia-epmr-NUS.json'
 
 type RawPoint = { year: string; period: string; value: string }
 
-// Recorded BLS series (CPI + APU…74714 average gas prices), keyed by series ID
+// Recorded BLS series (CPI, CPI rent of primary residence SEHA for all 37 areas, APU…74714 average gas
+// prices), keyed by series ID
 const RECORDED = new Map<string, RawPoint[]>(
-  [...blsRecorded.Results.series, ...blsGasRecorded.Results.series]
+  [...blsRecorded.Results.series, ...blsGasRecorded.Results.series, ...blsRentRecorded.Results.series]
     .map((s) => [(s as { seriesID: string }).seriesID, (s as { data: RawPoint[] }).data] as [string, RawPoint[]])
 )
 
@@ -20,7 +22,7 @@ const CPI_ITEM_TEMPLATE_AREA = '0490' // Pacific division
 export function blsFixtureFor(seriesId: string): RawPoint[] {
   const recorded = RECORDED.get(seriesId)
   if (recorded) return recorded
-  const cpi = seriesId.match(/^CUUR(.{4})(SAF11|SAH1|SA0E)$/)
+  const cpi = seriesId.match(/^CUUR(.{4})(SAF11|SAH1|SA0E|SEHA)$/)
   if (cpi) return RECORDED.get(`CUUR${CPI_ITEM_TEMPLATE_AREA}${cpi[2]}`) ?? []
   return []
 }

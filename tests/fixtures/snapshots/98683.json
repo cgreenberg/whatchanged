@@ -645,7 +645,8 @@
    "seriesIds": {
     "groceries": "CUUR0490SAF11",
     "shelter": "CUUR0490SAH1",
-    "energy": "CUUR0490SA0E"
+    "energy": "CUUR0490SA0E",
+    "rent": "CUUR0490SEHA"
    },
    "nationalSeries": [
     {
@@ -1417,6 +1418,11 @@
    "shelterCurrent": 139.596,
    "shelterBaselinePeriod": "2025-01",
    "shelterLatestPeriod": "2026-08",
+   "rentIndexChange": 4.6,
+   "rentIndexCurrent": 139.819,
+   "rentIndexBaseline": 133.636,
+   "rentIndexBaselinePeriod": "2025-01",
+   "rentIndexLatestPeriod": "2026-08",
    "areaCode": "0490"
   },
   "error": null,
@@ -5633,7 +5639,7 @@
  },
  "dollarImpact": {
   "groceries": 240,
-  "shelter": 1134,
+  "shelter": 984,
   "gas": 1.663,
   "tariff": 1718
  },

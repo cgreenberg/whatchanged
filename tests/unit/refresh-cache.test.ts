@@ -19,6 +19,7 @@ import {
   runRefresh,
   summarize,
   BLS_MAX_SERIES_PER_REQUEST,
+  CPI_AREAS_PER_REQUEST,
   type RefreshDeps,
 } from '@/lib/api/refresh'
 import { fetchSnapshot } from '@/lib/api/snapshot'
@@ -95,9 +96,12 @@ describe('planRefresh', () => {
     expect(getGasLookup('HI', '0490', '15001', { eiaOnly: true }).duoarea).toBe('NUS')
   })
 
-  test('BLS gas series ride along in the CPI batches: still 3 BLS requests, each ≤ 50 series', () => {
+  test('BLS gas series ride along in the CPI batches: 4 BLS requests, each ≤ 50 series', () => {
     const reqs = planBlsRequests(plan)
-    expect(reqs.length).toBe(3)
+    // 32 local CPI areas × 4 items (incl. rent of primary residence SEHA) + national + 17 BLS gas series
+    expect(reqs.length).toBe(4)
+    // Every local CPI area's SEHA series is requested in the same batch as its other items
+    for (const r of reqs) for (const a of r.cpiAreas) expect(r.ids).toContain(`CUUR${a.areaCode}SEHA`)
     expect(reqs.every((r) => r.ids.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
     const gasIds = reqs.flatMap((r) => r.gas.map((g) => g.seriesId))
     expect(gasIds.length).toBe(plan.gasLookups.filter((g) => g.source === 'bls').length)
@@ -131,9 +135,11 @@ describe('runRefresh — full plan with mocked upstreams', () => {
     const s = summarize(report)
     expect(blsBatches.every((b) => b.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
     expect(blsBatches.every((b) => new Set(b).size === b.length)).toBe(true)
-    const expectedCalls = Math.ceil((plan.cpiAreas.length - 1) / 15)
-    expect(s.blsCalls).toBe(expectedCalls)
-    expect(s.blsCalls).toBe(3) // 32 local CPI areas (+ national) + 17 BLS gas series → 3 BLS requests per full refresh
+    // CPI batches of CPI_AREAS_PER_REQUEST areas; BLS gas series fill their spare room, overflowing into one more
+    expect(Math.ceil((plan.cpiAreas.length - 1) / CPI_AREAS_PER_REQUEST)).toBe(3)
+    expect(s.blsCalls).toBe(planBlsRequests(plan).length)
+    // 32 local CPI areas × 4 items (+ national) + 17 BLS gas series → 4 BLS requests per full refresh
+    expect(s.blsCalls).toBe(4)
     expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
     expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length)
     expect(s.errors).toBe(0)

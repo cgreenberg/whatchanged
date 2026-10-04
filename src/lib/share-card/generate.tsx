@@ -130,7 +130,8 @@ export function shareGasStandInNote(location: Parameters<typeof standInPlace>[0]
 
 /** Basis lines for the $/yr pills (same bases as the website's hero cards). */
 export const groceriesBasisNote = () => `$/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries`
-export const shelterBasisNote = (medianRent: number) => `$/yr on local median rent (${fmtDollars(medianRent)}/mo)`
+/** Shelter $/yr in rent = local median rent × 12 × BLS CPI rent of primary residence % (not the shelter %). */
+export const shelterBasisNote = (medianRent: number) => `BLS rent index × local rent (${fmtDollars(medianRent)}/mo)`
 
 // ── Main Export ───────────────────────────────────────────────────
 export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
@@ -206,7 +207,8 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const groceriesDollars = groceriesOk ? snapshot.dollarImpact?.groceries ?? null : null
   const groceriesBasis = groceriesDollars != null ? groceriesBasisNote() : null
   const medianRent = snapshot.census.data?.medianRent ?? 0
-  const shelterDollars = shelterOk && card('shelter')?.change && medianRent > 0 ? snapshot.dollarImpact?.shelter ?? null : null
+  // Same rule as the page: a $ only when the card shows one (local rent × the area's rent-of-primary-residence %)
+  const shelterDollars = shelterOk && card('shelter')?.inline && medianRent > 0 ? snapshot.dollarImpact?.shelter ?? null : null
   const shelterBasis = shelterDollars != null ? shelterBasisNote(medianRent) : null
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
@@ -397,18 +399,21 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
     </span>
   )
 
-  const changePill = (text: string, accent: string) => {
+  /** `sub` is a smaller second line inside the pill (e.g. "in rent"), so a long label never crowds the big number. */
+  const changePill = (text: string, accent: string, sub?: string) => {
     const rgb = ACCENT_RGB[accent] ?? '255,255,255'
     return (
       <div
         style={{
           display: 'flex',
+          ...(sub ? { flexDirection: 'column' as const, alignItems: 'center' as const } : {}),
           backgroundColor: `rgba(${rgb}, 0.22)`,
           borderWidth: 1.5,
           borderStyle: 'solid',
           borderColor: `rgba(${rgb}, 0.55)`,
           borderRadius: 4,
-          padding: '9px 20px',
+          // Two-line pill: tighter vertical padding keeps it no taller than the big number (96px row)
+          padding: sub ? '4px 18px' : '9px 20px',
           alignSelf: 'flex-end',
           marginLeft: 12,
           marginBottom: 16,
@@ -422,10 +427,19 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             fontSize: 40,
             color: accent,
             display: 'flex',
+            ...(sub ? { lineHeight: 1 } : {}),
           }}
         >
           {text}
         </span>
+        {/* No child at all without `sub` (an empty child would change Satori's text layout) */}
+        {...(sub
+          ? [
+              <span key="sub" style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 24, color: accent, display: 'flex', lineHeight: 1, marginTop: 2 }}>
+                {sub}
+              </span>,
+            ]
+          : [])}
       </div>
     )
   }
@@ -732,7 +746,9 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
                 )}
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
                   {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A', BLUE)}
-                  {changePill(shelterDollars != null ? `≈ ${fmtSignedDollars(shelterDollars, 0)}/yr` : '—', BLUE)}
+                  {shelterDollars != null
+                    ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, 'in rent')
+                    : changePill('—', BLUE)}
                 </div>
                 {metaRow(sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat)}
                 {shelterBasis && basisNote(shelterBasis)}

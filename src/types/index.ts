@@ -40,11 +40,22 @@ export interface CpiData {
   shelterBaseline?: number
   shelterBaselinePeriod?: string
   shelterLatestPeriod?: string
+  /**
+   * BLS CPI "Rent of primary residence" (CUUR{area}SEHA) % change since its own baseline month. Used only
+   * for the shelter card's dollar figure (local median rent × 12 × this %). Omitted when the series has no
+   * usable baseline/latest value, and absent on payloads cached before it was fetched: no dollar figure then.
+   */
+  rentIndexChange?: number
+  rentIndexCurrent?: number
+  rentIndexBaseline?: number
+  rentIndexBaselinePeriod?: string
+  rentIndexLatestPeriod?: string
   series: CpiPoint[]
   metro: string
   tier: 1 | 2 | 3 | 4
   areaCode?: string
-  seriesIds?: { groceries: string; shelter: string; energy: string }
+  /** `rent` (CUUR{area}SEHA) is absent on payloads cached before the rent index was fetched. */
+  seriesIds?: { groceries: string; shelter: string; energy: string; rent?: string }
   nationalSeries?: CpiPoint[]
   /** 'national' when the local CPI area failed and national CPI is shown instead (shelter $ impact is then null). */
   fallback?: 'national'

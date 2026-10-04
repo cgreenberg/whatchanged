@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { StatCard } from '@/components/StatCard'
-import { buildHeroCards, asOfRange, SHELTER_VS_RENT_NOTE, type HeroCountyContext } from '@/lib/hero-cards'
+import { buildHeroCards, asOfRange, type HeroCountyContext } from '@/lib/hero-cards'
 import { fetchCounty } from '@/lib/county-data'
 import type { EconomicSnapshot } from '@/types'
 
@@ -21,22 +21,25 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
 
   const cards = buildHeroCards(snapshot, county?.fips === countyFips ? county.data : null)
   const range = asOfRange(cards)
-  const showsRent = cards.some(c => c.id === 'rent')
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6" data-testid="stat-cards">
+      {/* Cards stretch to equal height; while a card's ⓘ is open the row stops stretching, so its neighbor doesn't grow */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6 has-[[aria-expanded=true]]:items-start" data-testid="stat-cards">
         {cards.map(c => (
           <StatCard
             key={c.id}
             testId={`stat-card-${c.id}`}
             label={c.label}
             value={c.value}
+            inline={c.inline}
             change={c.change}
             direction={c.direction}
-            detail={c.detail}
-            caveat={c.caveat}
-            nationalValue={c.nationalValue}
+            secondary={c.secondary}
+            sourceLine={c.sourceLine}
+            tags={c.tags}
+            info={c.info}
             provenance={c.provenance}
+            moreProvenance={c.moreProvenance}
             accentColor={c.accentColor}
             stale={c.stale}
             unavailable={c.status === 'unavailable'}
@@ -46,11 +49,6 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
       {range && (
         <p className="mt-2 text-[11px] text-zinc-500 text-center" data-testid="asof-range">
           Latest data ranges {range}: each source publishes on its own schedule.
-        </p>
-      )}
-      {showsRent && (
-        <p className="mt-1 text-[11px] text-zinc-500 text-center" data-testid="rent-vs-cpi-note">
-          {SHELTER_VS_RENT_NOTE}
         </p>
       )}
     </>

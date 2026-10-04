@@ -117,6 +117,30 @@ test('share card names gas geography, CPI geography type and each metric\'s actu
   expect(t).not.toContain('CPI source:')
 }, 30000)
 
+test('share card shelter cell: $/yr in rent from the BLS rent index on local rent; none without the index', async () => {
+  if (process.env.REAL_OG) return
+  const s = snap()
+  s.rent = null
+  mockFetch.mockResolvedValue(s)
+  await generateShareCard('78701')
+  let t = textOf(mockRendered[mockRendered.length - 1])
+  const rent = s.census.data!.medianRent
+  const expected = Math.round((rent * 12 * s.cpi.data!.rentIndexChange!) / 100)
+  expect(s.dollarImpact!.shelter).toBe(expected)
+  expect(t).toContain(`≈ +$${expected.toLocaleString('en-US')}/yr`)
+  expect(t).toContain('in rent')
+  expect(t).toContain(`BLS rent index × local rent ($${rent.toLocaleString('en-US')}/mo)`)
+  // no rent index (older cached CPI) → no dollar pill, even if a stale old-method figure is present
+  const old = snap()
+  old.rent = null
+  delete old.cpi.data!.rentIndexChange
+  mockFetch.mockResolvedValue(old)
+  await generateShareCard('78701')
+  t = textOf(mockRendered[mockRendered.length - 1])
+  expect(t).not.toContain('in rent')
+  expect(t).not.toContain('BLS rent index')
+}, 30000)
+
 test('share card rent cell: dated asking-rent level and seasonally adjusted change', async () => {
   if (process.env.REAL_OG) return
   mockFetch.mockResolvedValue(snap())

@@ -33,10 +33,10 @@ export interface ChartConfig {
 }
 
 // ORDER KEY (ChartsSection renders the Housing graph in the shelter slot, with three tabs):
-// Row 1: gas (1) + groceries (2) — side by side (medium)
-// Row 2: Housing (3): Rent | Home prices | Shelter (CPI) — full width (large)
-// Row 3: energy (4) — full width (large)
-// Mobile: stacked in same order
+// 2 × 2 grid from 768px (md), all 'medium':
+// Row 1: gas (1) | groceries (2)
+// Row 2: Housing (3): Rent | Home prices | Shelter (CPI) tabs | energy (4)
+// Under 768px: one column, same order
 
 export const chartConfigs: ChartConfig[] = [
   {
@@ -86,7 +86,7 @@ export const chartConfigs: ChartConfig[] = [
     series: [
       { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
     ],
-    size: 'large',
+    size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
@@ -105,7 +105,7 @@ export const chartConfigs: ChartConfig[] = [
     series: [
       { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
     ],
-    size: 'large',
+    size: 'medium',
     order: 4,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
@@ -126,7 +126,7 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
     description: 'Zillow Observed Rent Index (ZORI): typical asking rent on new leases in your county, seasonally adjusted by whatchanged. Same series as the Rent card.',
     chartType: 'line',
     series: [{ dataKey: 'rent', label: 'Rent (new leases)', color: '#3B82F6', type: 'monotone' }],
-    size: 'large',
+    size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
@@ -144,7 +144,7 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
     description: "Zillow Home Value Index (ZHVI): Zillow's smoothed, seasonally adjusted estimate of the typical (middle-tier) home value in your county.",
     chartType: 'line',
     series: [{ dataKey: 'hv', label: 'Typical home value', color: '#8B5CF6', type: 'monotone' }],
-    size: 'large',
+    size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,

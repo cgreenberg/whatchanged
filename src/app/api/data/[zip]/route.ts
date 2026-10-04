@@ -48,6 +48,7 @@ function buildAudit(snapshot: EconomicSnapshot) {
       cpiGroceries: c?.seriesIds?.groceries ?? null,
       cpiShelter: c?.seriesIds?.shelter ?? null,
       cpiEnergy: c?.seriesIds?.energy ?? null,
+      cpiRent: c?.seriesIds?.rent ?? null,
     },
     // Per-source series + the exact observations used for each displayed change
     sources: {
@@ -63,6 +64,12 @@ function buildAudit(snapshot: EconomicSnapshot) {
         baseline: { period: c.shelterBaselinePeriod ?? null, value: c.shelterBaseline ?? null },
         latest: { period: c.shelterLatestPeriod ?? null, value: c.shelterCurrent ?? null },
         stale: cpiItemStale(snapshot, 'shelter'),
+      } : null,
+      // Rent of primary residence: used only for the shelter card's $/yr in rent
+      cpiRent: c && c.rentIndexChange !== undefined ? {
+        seriesId: c.seriesIds?.rent ?? null,
+        baseline: { period: c.rentIndexBaselinePeriod ?? null, value: c.rentIndexBaseline ?? null },
+        latest: { period: c.rentIndexLatestPeriod ?? null, value: c.rentIndexCurrent ?? null },
       } : null,
       gas: g ? {
         source: g.source ?? 'eia',
@@ -94,6 +101,18 @@ function buildAudit(snapshot: EconomicSnapshot) {
         current: c.shelterCurrent ?? null,
         baseline: c.shelterBaseline ?? null,
         result: c.shelterChange,
+      } : null,
+      rentIndexChange: c && c.rentIndexChange !== undefined ? {
+        formula: '(rentIndexCurrent - rentIndexBaseline) / rentIndexBaseline * 100',
+        current: c.rentIndexCurrent ?? null,
+        baseline: c.rentIndexBaseline ?? null,
+        result: c.rentIndexChange,
+      } : null,
+      shelterDollars: snapshot.dollarImpact ? {
+        formula: 'Math.round(localMedianRent * 12 * rentIndexChange / 100)',
+        localMedianRent: snapshot.census?.data?.medianRent ?? null,
+        rentIndexChange: c?.rentIndexChange ?? null,
+        result: snapshot.dollarImpact.shelter,
       } : null,
       tariffEstimate: snapshot.tariff?.data ? {
         formula: 'Math.round(medianIncome * tariffRate)',

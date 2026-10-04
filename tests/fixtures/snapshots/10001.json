@@ -783,7 +783,8 @@
    "seriesIds": {
     "groceries": "CUURS12ASAF11",
     "shelter": "CUURS12ASAH1",
-    "energy": "CUURS12ASA0E"
+    "energy": "CUURS12ASA0E",
+    "rent": "CUURS12ASEHA"
    },
    "nationalSeries": [
     {
@@ -1555,6 +1556,11 @@
    "shelterCurrent": 499.903,
    "shelterBaselinePeriod": "2025-01",
    "shelterLatestPeriod": "2026-08",
+   "rentIndexChange": 6.5,
+   "rentIndexCurrent": 509.228,
+   "rentIndexBaseline": 478.226,
+   "rentIndexBaselinePeriod": "2025-01",
+   "rentIndexLatestPeriod": "2026-08",
    "areaCode": "S12A"
   },
   "error": null,
@@ -5771,7 +5777,7 @@
  },
  "dollarImpact": {
   "groceries": 294,
-  "shelter": 2431,
+  "shelter": 2359,
   "gas": 1.336,
   "tariff": 2530
  },

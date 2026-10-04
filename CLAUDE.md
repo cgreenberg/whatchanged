@@ -86,7 +86,9 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
   or regex-parse TS.
 - **CPI (4 tiers)** `getMetroCpiAreaForCounty()` in `src/lib/mappings/county-metro-cpi.ts`: 1 metro (county in
   `cbsa-cpi-crosswalk.json`, the OMB **2013** CBSAs BLS samples) → 2 Census division → 3 region (defensive only) →
-  4 national `0000` (territories). Series `CUUR{area}SAF11` / `SAH1` / `SA0E`. Only add CBSAs that BLS actually samples.
+  4 national `0000` (territories). Series `CUUR{area}SAF11` / `SAH1` / `SA0E`, plus `SEHA` (rent of primary residence,
+used only for the shelter card's dollar figure; verified monthly with a Jan 2025 value for all 37 areas, recorded in
+`tests/fixtures/bls-cpi-rent-seha.json`). Only add CBSAs that BLS actually samples.
 - **Gas** `getGasLookup()` in `src/lib/api/eia.ts`, tables in `src/lib/mappings/eia-gas.ts` (EIA) and
   `src/lib/mappings/bls-gas.ts` (BLS). Most local first:
   1. EIA weekly city: county override (Cleveland only) or CPI metro → EIA city (`CPI_TO_EIA_CITY`)
@@ -126,13 +128,23 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
   the tier from the area code for old cache entries. Gas labels always name the PADD.
 - Full rationale: `docs/MAPPING_STRATEGY.md`. Golden expectations: `tests/unit/golden-zips.test.ts`.
 
-## Hero cards (`src/lib/hero-cards.ts`, always four)
+## Hero cards (`src/lib/hero-cards.ts`, always four; rendered by `StatCard.tsx`)
+
+Cards are deliberately terse (owner rule): big number (+ inline dollar translation, always "≈"), at most ONE short
+secondary line (window "since Jan 2025" and/or "U.S. +x"; gas also has its "+$0.87 since Jan 2025" line), and ONE
+short source line `{short area} · {source} · {Mon YYYY}` (`sourceLine`: "Atlanta metro · BLS · Aug 2026", "Fulton
+County · Zillow · Aug 2026", "Honolulu-area* · BLS …", "U.S. avg (local n/a) · EIA …"). Caveats on the face are
+short tags only ("⚠ unusual", "*", "(local n/a)" / "(metro n/a)", Stale badge). Everything else — the full
+provenance line(s), adjustments, "through … (monthly)", national source tags, HI/AK stand-in and outlier
+explanations, fallback notes, income details, dollar bases, the Zillow-vs-CPI note — goes in `info` /
+`moreProvenance` and is shown in the card's ⓘ disclosure (button with `aria-expanded`/`aria-controls`, Escape
+closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx`, `tests/e2e/labels.spec.ts`).
 
 | Card | Number | Dollar line (formula source) |
 |---|---|---|
 | Gas | EIA weekly $/gal: latest vs last weekly reading in [Jan 6, Jan 20] 2025; BLS tiers: latest month vs Jan 2025 ("since Jan 2025", provenance "BLS CPI average price, regular gasoline · {area} · monthly · …") | signed `current − baseline` $/gal (`eia.ts` / `bls-gas.ts`) |
 | Rent (new leases) | Zillow ZORI county % since Jan 2025, SA by whatchanged | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
-| ↳ fallback, county has no rent | "Shelter prices (CPI, all tenants & homeowners)", CPI SAH1 % | `round(localAcsRent × 12 × pct/100)` $/yr, **null** without local ACS rent (`computeShelterImpact`) |
+| ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without local ACS rent or without SEHA (e.g. older cached CPI) (`computeShelterImpact`) |
 | Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`) |
 | Tariff (est.) | Yale Budget Lab | `round(localMedianIncome × 0.0205)` $/yr (`src/lib/tariff.ts`). Income (`census-acs.ts`, provenance in `source`/`incomeGeo`/`year`/`donorZip`/`donorScope`/`sourceLabel`): city ACS (only if the city contains the zip) → zip ACS → donor zip (USPS-only zips) → ACS county median (`county-income.json`) → national $74,580 (Census **CPS ASEC 2022**, not ACS), flagged |
 
@@ -164,6 +176,9 @@ shading and "Show national". 4. National county map (`src/components/map/Nationa
 - **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %).
 - **Home prices**: Zillow ZHVI county `hvS` ("Zillow's smoothed, seasonally adjusted typical home value").
 - **Shelter (CPI)**: BLS CPI shelter `SAH1` from the snapshot (all tenants and homeowners).
+
+Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Energy (all configs `size: 'medium'`); one
+column below.
 Default = Rent when the county shard has `rentS`, else Shelter (CPI). Tabs without data are disabled with "No Zillow
 … data for {county}". Zillow tabs compare against `us-housing.json`. `HOUSING_NOTE` (CPI vs Zillow) sits with the graph.
 
@@ -204,10 +219,10 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
 releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
-every CPI area (33; 15 per POST, national series ride along), every BLS gas series (15 `APU…74714`, packed into the
-spare room of the CPI POSTs by `planBlsRequests`, ≤ 50 series each) and every EIA gas series (27), then writes them
-with the runtime's own parsers, validators, keys and `writeEnvelope`. A full run is still **3 BLS requests** (of
-500/day) and ~27 EIA requests (`--only=gas` also needs `BLS_API_KEY`); BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
+every CPI area (33; 4 items each incl. `SEHA`, 11 areas per POST, the 3 national overlay series ride along in each),
+every BLS gas series (17 `APU…74714`, packed into the spare room of the CPI POSTs by `planBlsRequests`, ≤ 50 series
+each) and every EIA gas series (27), then writes them with the runtime's own parsers, validators, keys and
+`writeEnvelope`. A full run is **4 BLS requests** (of 500/day; was 3 before `SEHA` was added) and ~27 EIA requests (`--only=gas` also needs `BLS_API_KEY`); BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
 a full run that starts < 12 h after it is skipped (two schedules can land on the same day) unless `--force`
 (workflow_dispatch input `force`). Each full run also writes `refresh:last-attempt` at start; another unforced full
 run within 2 h is skipped, so a failed run plus a coinciding cron can't spend the quota twice. Unknown CLI args

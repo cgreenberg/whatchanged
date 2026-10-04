@@ -35,15 +35,32 @@ export interface HeroCardModel {
   label: string
   accentColor: string
   status: 'ok' | 'unavailable'
+  /** Big number on the card. */
   value?: string
+  /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent". */
+  inline?: string
+  /** Gas only: its signed $ change since the baseline, shown under the big number ("+$0.87 since Jan 2025"). */
   change?: string
   direction?: 'up' | 'down' | 'neutral'
+  /** The one short secondary line on the card: the window and/or the national comparison, or the basis. */
+  secondary?: string
+  /** Short source line on the card: "{short area} · {source} · {Mon YYYY}" ("Atlanta metro · BLS · Aug 2026"). */
+  sourceLine: string
+  /** Short caveat tags on the card, e.g. "⚠ unusual" (the explanation is in the ⓘ disclosure). */
+  tags?: string[]
+  /** Everything else, shown in the card's ⓘ disclosure above the full provenance line(s). */
+  info: string[]
+  /** Longer notes kept as named fields (also included in `info`). */
   detail?: string
   nationalValue?: string
-  provenance: Provenance
-  stale?: boolean
-  /** Shown in amber under the value: e.g. an outlier flag or a documented data note. */
+  /** Outlier flag text, HI/AK stand-in or fallback explanation (in `info`; the card shows a short tag). */
   caveat?: string
+  /** Full dollar-translation wording (in `info`; the card shows `inline`). */
+  dollarNote?: string
+  provenance: Provenance
+  /** Extra provenance lines for the ⓘ disclosure (e.g. the rent index behind the shelter dollar figure). */
+  moreProvenance?: Provenance[]
+  stale?: boolean
   /** YYYY-MM of the latest data point (for the page-level "as of" range). */
   asOfPeriod?: string
   /** Short geography tag for share card / OG / meta text, e.g. "Buncombe Co.", "South Atlantic region". */
@@ -51,6 +68,17 @@ export interface HeroCardModel {
   /** Statistical outlier (county flag): share/OG/meta mark the number with "†" and a footnote. */
   outlier?: boolean
 }
+
+/** Short on-card tag for a flagged (outlier) figure; the full explanation is in the ⓘ disclosure. */
+export const OUTLIER_TAG = '⚠ unusual'
+
+/** "{short area} · {source} · {Mon YYYY}", skipping empty parts. */
+export function sourceLineOf(...parts: Array<string | null | undefined>): string {
+  return parts.filter((p): p is string => !!p && p.trim().length > 0).join(' · ')
+}
+
+const compact = (xs: Array<string | null | undefined | false>): string[] =>
+  xs.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
 
 /** Marker + footnote used wherever a flagged (outlier) figure is shown without the full caveat. */
 export const OUTLIER_MARK = '†'
@@ -329,6 +357,24 @@ export function gasNationalSourceTag(g: Pick<GasPriceData, 'frequency' | 'source
   return `U.S. avg, EIA${natLatest ? `, week of ${fmtDay(natLatest).replace(/, \d{4}$/, '')}` : ''}`
 }
 
+/**
+ * Short gas area for the card's source line: "Atlanta metro", "Midwest avg", "Honolulu-area*" (HI/AK
+ * stand-in), "U.S. avg (local n/a)" (national outage stand-in), "Lower Atlantic avg (metro n/a)" (the
+ * BLS metro series failed and the zip's EIA tier is shown).
+ */
+export function gasCardArea(g: GasPriceData | null | undefined, stateAbbr?: string | null): string | undefined {
+  const geo = gasShortGeo(g, stateAbbr)
+  if (!g || !geo) return undefined
+  if (geo === 'U.S. avg; local n/a') return 'U.S. avg (local n/a)'
+  const short = geo.replace(/-area price\*$/, `-area${GAS_STANDIN_MARK}`)
+  return g.fallback === 'eia' ? `${short} (metro n/a)` : short
+}
+
+/** Short CPI area for the card's source line ("Atlanta metro", "South Atlantic div.", "U.S. avg (local n/a)"). */
+export function cpiCardArea(c: CpiData | null | undefined): string | undefined {
+  const geo = cpiShortGeo(c)
+  return geo === 'U.S. avg; local n/a' ? 'U.S. avg (local n/a)' : geo
+}
 
 export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
   const g = s.gas.data
@@ -347,25 +393,42 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     asOf: latestDate ? (monthly ? fmtMonthYear(latestDate.slice(0, 7)) : `week of ${fmtDay(latestDate)}`) : DATE_UNAVAILABLE,
     adjustment: NOT_SA,
   }
-  const base = { id: 'gas' as const, label: 'Gas (regular)', accentColor: ACCENTS.gas, provenance, stale: !!s.gas.stale }
+  const sourceName = g ? (monthly ? 'BLS' : 'EIA') : 'EIA / BLS'
+  const shortDate = latestDate ? (monthly ? fmtMonthYear(latestDate.slice(0, 7)) : fmtDay(latestDate)) : undefined
+  const base = {
+    id: 'gas' as const,
+    label: 'Gas (regular)',
+    accentColor: ACCENTS.gas,
+    provenance,
+    stale: !!s.gas.stale,
+    sourceLine: sourceLineOf(gasCardArea(g, s.location?.stateAbbr), sourceName, shortDate),
+  }
   if (!g || !inRange(g.current, SANITY.gasPrice) || !inRange(g.baseline, SANITY.gasPrice) || !Number.isFinite(g.change)) {
-    return { ...base, status: 'unavailable' }
+    return { ...base, status: 'unavailable', info: [] }
   }
   // National from the same source over the same period (BLS monthly → same months).
   const nat = g.isNationalFallback ? null : gasNationalMatching(g)
+  const natOk = !!nat && inRange(nat.current, SANITY.gasPrice)
+  const caveat = gasCaveatFor(s)
+  // Monthly BLS figures run weeks behind the weekly EIA ones: said in the ⓘ and by the source-line month.
+  const detail = monthly && latestDate ? `through ${fmtMonthYear(latestDate.slice(0, 7))} (monthly)` : undefined
+  const nationalValue = natOk
+    ? `National: $${nat!.current.toFixed(2)}/gal (${fmtSignedDollars(nat!.change)}) · ${gasNationalSourceTag(g, nat!.latestDate)}`
+    : undefined
+  const dollarNote = `${fmtSignedDollars(g.change)}/gal since ${baselineDate ? (monthly ? fmtMonthYear(baselineDate) : `the week of ${fmtDay(baselineDate)}`) : BASELINE_MONTH_LABEL}`
   return {
     ...base,
     status: 'ok',
     geoTag: gasShortGeo(g, s.location?.stateAbbr),
-    caveat: gasCaveatFor(s),
+    caveat,
     value: `$${g.current.toFixed(2)}/gal`,
-    change: `${fmtSignedDollars(g.change)}/gal since ${BASELINE_MONTH_LABEL}`,
+    change: `${fmtSignedDollars(g.change)} since ${BASELINE_MONTH_LABEL}`,
     direction: directionOf(g.change, 2),
-    // Monthly BLS figures run weeks behind the weekly EIA ones: say so on the card itself.
-    detail: monthly && latestDate ? `through ${fmtMonthYear(latestDate.slice(0, 7))} (monthly)` : undefined,
-    nationalValue: nat && inRange(nat.current, SANITY.gasPrice)
-      ? `National: $${nat.current.toFixed(2)}/gal (${fmtSignedDollars(nat.change)}) · ${gasNationalSourceTag(g, nat.latestDate)}`
-      : undefined,
+    secondary: natOk ? `U.S. ${fmtSignedDollars(nat!.change)}` : undefined,
+    detail,
+    nationalValue,
+    dollarNote,
+    info: compact([`${dollarNote}${detail ? `, ${detail}` : ''}.`, nationalValue, caveat]),
     asOfPeriod: latestDate?.slice(0, 7),
   }
 }
@@ -376,6 +439,11 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
 function seasonalWord(asOf: string): string {
   const m = Number(asOf.slice(5, 7))
   return m >= 3 && m <= 9 ? 'rise' : 'swing'
+}
+
+/** "Fulton County", "Lafayette Parish": the county name without its state. */
+function countyOnly(name: string | null | undefined): string {
+  return (name ?? '').replace(/,\s*[A-Z]{2}$/, '').trim()
 }
 
 export function buildRentCard(
@@ -408,25 +476,35 @@ export function buildRentCard(
     accentColor: ACCENTS.rent,
     provenance,
     stale: monthOlderThan(r.asOf, RENT_STALE_DAYS, now),
+    sourceLine: sourceLineOf(countyOnly(r.geoName), 'Zillow', fmtMonthYear(r.asOf)),
   }
   if (!inRange(r.pct, SANITY.pctChange) || !(r.curRent > 0) || !Number.isFinite(r.monthlyChange)) {
-    return { ...base, status: 'unavailable' }
+    return { ...base, status: 'unavailable', info: [SHELTER_VS_RENT_NOTE] }
   }
   // The $ figure is the seasonally adjusted change expressed in dollars, never a raw then-vs-now gap;
   // the raw level is shown only as a level, with its month.
+  const dollarNote = `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
+  const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
   return {
     ...base,
     status: 'ok',
     value: fmtSignedPct(r.pct),
-    change: `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`,
+    inline: `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo`,
     direction: directionOf(r.pct),
-    detail: `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`,
+    secondary: sinceMonth(r.baseMonth),
+    tags: caveat ? [OUTLIER_TAG] : undefined,
+    dollarNote,
+    detail,
     caveat,
+    info: compact([`${dollarNote}.`, detail, caveat, SHELTER_VS_RENT_NOTE]),
     asOfPeriod: r.asOf,
     geoTag: shortCountyName(r.geoName),
     ...(caveat ? { outlier: true } : {}),
   }
 }
+
+/** Wording for the shelter card's dollar figure (owner-approved). */
+export const SHELTER_DOLLAR_BASIS = 'rent of primary residence (BLS) applied to local median rent'
 
 export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
   const c = s.cpi.data
@@ -446,40 +524,66 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
   }
   const base = {
     id: 'shelter' as const,
-    // BLS shelter also has lodging away from home and tenants'/household insurance (~5% of the index)
-    label: "Shelter prices (CPI: mainly rents + owners' equivalent rent)",
+    label: 'Shelter (CPI)',
     accentColor: ACCENTS.shelter,
     provenance,
     stale: cpiItemStale(s, 'shelter'),
+    sourceLine: sourceLineOf(cpiCardArea(c), 'BLS', latest ? fmtMonthYear(latest) : undefined),
   }
+  // BLS shelter also has lodging away from home and tenants'/household insurance (~5% of the index)
+  const CONCEPT = "CPI shelter is mainly rents plus owners' equivalent rent for homeowners, and covers existing leases, so new-lease rents can differ."
   const pct = c?.shelterChange
-  if (!c || !inRange(pct, SANITY.pctChange)) return { ...base, status: 'unavailable' }
+  if (!c || !inRange(pct, SANITY.pctChange)) return { ...base, status: 'unavailable', info: [CONCEPT] }
 
   const census = s.census.data
   const hasLocalRent = !!census && !census.isFallback && !census.isRentFallback && census.medianRent > 0
   // National CPI (fallback during an outage, or a territory with no local CPI) is never applied to
   // local rent: no dollar figure, and say why.
   const cpiIsNational = c.fallback === 'national' || cpiTierOf(c) === 4
+  // The $ uses the same area's rent-of-primary-residence index; without it (e.g. an older cached
+  // payload) there is no dollar figure — never the shelter % applied to rent.
+  const rentIdx = inRange(c.rentIndexChange, SANITY.pctChange) ? c.rentIndexChange : null
   const rawDollars = s.dollarImpact?.shelter
-  const dollars = !cpiIsNational && hasLocalRent && typeof rawDollars === 'number' && Number.isFinite(rawDollars)
+  const dollars = !cpiIsNational && hasLocalRent && rentIdx !== null && typeof rawDollars === 'number' && Number.isFinite(rawDollars)
     ? rawDollars
     : null
   const nat = nationalChangeMatching(c.nationalSeries, shelterOf, c.shelterBaselinePeriod, latest)
+  const natOk = !!nat && c.tier !== 4
   const donor = donorPhrase(census)
-  const COVERS = 'Covers existing leases and homeowners; new-lease rents can differ.'
+  const rentIdxSince = sinceMonth(c.rentIndexBaselinePeriod ?? BASELINE_MONTH)
+  const detail = dollars !== null
+    ? `Base: ${fmtDollars(census!.medianRent)}/mo median rent (${censusLabel(census!)}${donor ? `, ${donor}` : ''}) × 12 × ` +
+      `rent of primary residence (BLS) ${fmtSignedPct(rentIdx!)} ${rentIdxSince}.`
+    : cpiIsNational
+      ? `No dollar estimate: ${c.fallback === 'national' ? 'local shelter CPI is unavailable, so this is the national figure' : 'BLS publishes no local shelter CPI here, so this is the national figure'}, which is not applied to local rent.`
+      : !hasLocalRent
+        ? 'No local rent figure for a dollar estimate.'
+        : 'No dollar estimate: the BLS rent-of-primary-residence index for this area is unavailable right now.'
+  const dollarNote = dollars !== null ? `≈ ${fmtSignedDollars(dollars, 0)}/yr in rent: ${SHELTER_DOLLAR_BASIS}` : undefined
+  const nationalValue = natOk ? `National: ${fmtSignedPct(nat!.pct)} (U.S. city avg, BLS CPI shelter)` : undefined
+  const moreProvenance: Provenance[] | undefined = rentIdx !== null && !cpiIsNational
+    ? [{
+        source: 'BLS CPI rent of primary residence',
+        sourceUrl: c.seriesIds?.rent ? `https://data.bls.gov/timeseries/${c.seriesIds.rent}` : 'https://data.bls.gov/cgi-bin/surveymost?cu',
+        geography: cpiGeoLabel(c),
+        window: rentIdxSince,
+        asOf: fmtMonthYear(c.rentIndexLatestPeriod),
+        adjustment: NOT_SA,
+      }]
+    : undefined
   return {
     ...base,
     status: 'ok',
     geoTag: cpiShortGeo(c),
     value: fmtSignedPct(pct),
-    change: dollars !== null ? `≈ ${fmtSignedDollars(dollars, 0)}/yr on local median rent` : undefined,
+    inline: dollars !== null ? `≈ ${fmtSignedDollars(dollars, 0)}/yr in rent` : undefined,
     direction: directionOf(pct),
-    detail: dollars !== null
-      ? `Base: ${fmtDollars(census!.medianRent)}/mo median rent (${censusLabel(census!)}${donor ? `, ${donor}` : ''}) × 12. ${COVERS}`
-      : cpiIsNational
-        ? `No dollar estimate: ${c.fallback === 'national' ? 'local shelter CPI is unavailable, so this is the national figure' : 'BLS publishes no local shelter CPI here, so this is the national figure'}, which is not applied to local rent. ${COVERS}`
-        : `No local rent figure for a dollar estimate. ${COVERS}`,
-    nationalValue: nat && c.tier !== 4 ? `National: ${fmtSignedPct(nat.pct)}` : undefined,
+    secondary: sourceLineOf(sinceMonth(c.shelterBaselinePeriod ?? BASELINE_MONTH), natOk ? `U.S. ${fmtSignedPct(nat!.pct)}` : undefined),
+    dollarNote,
+    detail,
+    nationalValue,
+    info: compact([dollarNote && `${dollarNote}.`, detail, CONCEPT, nationalValue]),
+    moreProvenance,
     asOfPeriod: latest,
   }
 }
@@ -500,27 +604,51 @@ export function buildGroceryCard(s: EconomicSnapshot): HeroCardModel {
     asOf: fmtMonthYear(latest),
     adjustment: NOT_SA,
   }
-  const base = { id: 'groceries' as const, label: 'Grocery Prices', accentColor: ACCENTS.groceries, provenance, stale: cpiItemStale(s, 'groceries') }
+  const base = {
+    id: 'groceries' as const,
+    label: 'Groceries',
+    accentColor: ACCENTS.groceries,
+    provenance,
+    stale: cpiItemStale(s, 'groceries'),
+    sourceLine: sourceLineOf(cpiCardArea(c), 'BLS', latest ? fmtMonthYear(latest) : undefined),
+  }
   const pct = c?.groceriesChange
-  if (!c || !inRange(pct, SANITY.pctChange)) return { ...base, status: 'unavailable' }
+  if (!c || !inRange(pct, SANITY.pctChange)) return { ...base, status: 'unavailable', info: [] }
   const dollars = s.dollarImpact?.groceries
+  const hasDollars = typeof dollars === 'number' && Number.isFinite(dollars)
   const nat = nationalChangeMatching(c.nationalSeries, p => p.groceries, c.groceriesBaselinePeriod, latest)
+  const natOk = !!nat && c.tier !== 4
+  const dollarNote = hasDollars
+    ? `≈ ${fmtSignedDollars(dollars, 0)}/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries (typical household food-at-home spending)`
+    : undefined
+  const nationalValue = natOk ? `National: ${fmtSignedPct(nat!.pct)} (U.S. city avg, BLS CPI food at home)` : undefined
+  const detail = hasDollars ? undefined : 'Dollar estimate unavailable'
   return {
     ...base,
     status: 'ok',
     geoTag: cpiShortGeo(c),
     value: fmtSignedPct(pct),
-    change: typeof dollars === 'number' && Number.isFinite(dollars)
-      ? `≈ ${fmtSignedDollars(dollars, 0)}/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries`
-      : undefined,
+    inline: hasDollars ? `≈ ${fmtSignedDollars(dollars, 0)}/yr` : undefined,
     direction: directionOf(pct),
-    detail: typeof dollars === 'number' && Number.isFinite(dollars) ? undefined : 'Dollar estimate unavailable',
-    nationalValue: nat && c.tier !== 4 ? `National: ${fmtSignedPct(nat.pct)}` : undefined,
+    secondary: sourceLineOf(sinceMonth(c.groceriesBaselinePeriod ?? BASELINE_MONTH), natOk ? `U.S. ${fmtSignedPct(nat!.pct)}` : undefined),
+    dollarNote,
+    detail,
+    nationalValue,
+    info: compact([dollarNote && `${dollarNote}.`, detail, nationalValue]),
     asOfPeriod: latest,
   }
 }
 
 // ---------------------------------------------------------------- Tariff
+
+/** "local income", "city income", "county income", "nearby-zip income", "U.S. median income". */
+function tariffIncomePhrase(s: EconomicSnapshot): string {
+  const tag = tariffIncomeTag(s)
+  if (tag === 'U.S.') return 'U.S. median income'
+  if (tag === 'city' || tag === 'county') return `${tag} income`
+  if (tag === 'nearby zip') return 'nearby-zip income'
+  return 'local income'
+}
 
 export function buildTariffCard(s: EconomicSnapshot): HeroCardModel {
   const t = s.tariff.data
@@ -553,15 +681,20 @@ export function buildTariffCard(s: EconomicSnapshot): HeroCardModel {
     asOf: incomeAsOf,
     adjustment: 'estimate, not a measured change',
   }
-  const base = { id: 'tariff' as const, label: 'Tariff Impact (est.)', accentColor: ACCENTS.tariff, provenance }
-  if (!t || !(t.medianIncome > 0) || !(t.estimatedCost > 0)) return { ...base, status: 'unavailable' }
+  const base = { id: 'tariff' as const, label: 'Tariff (est.)', accentColor: ACCENTS.tariff, provenance, sourceLine: 'Yale Budget Lab' }
+  const ESTIMATE = "Estimate: median household income × 2.05%, Yale Budget Lab's estimate of the average household cost of tariffs as a share of income. Not a measured change."
+  if (!t || !(t.medianIncome > 0) || !(t.estimatedCost > 0)) return { ...base, status: 'unavailable', info: [ESTIMATE] }
+  const rate = `${(t.tariffRate * 100).toFixed(2)}%`
+  const dollarNote = `${rate} of ${fmtDollars(t.medianIncome)} median household income`
   return {
     ...base,
     status: 'ok',
     geoTag: tariffIncomeTag(s),
     value: `~${fmtDollars(t.estimatedCost)}/yr`,
-    change: `${(t.tariffRate * 100).toFixed(2)}% of ${fmtDollars(t.medianIncome)} median household income`,
     direction: 'neutral',
+    secondary: `${rate} of ${tariffIncomePhrase(s)}`,
+    dollarNote,
+    info: [`${dollarNote}.`, ESTIMATE],
   }
 }
 

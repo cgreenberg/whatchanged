@@ -196,16 +196,17 @@ export async function fetchSnapshot(
   }
 
   // Dollar impact (centralized computation for hero cards).
-  // Shelter uses LOCAL rent × LOCAL shelter CPI only: no national fallback rent,
-  // and no national CPI % applied to local rent (national CPI fallback, or a territory whose only
-  // CPI is national, e.g. Puerto Rico → null).
+  // Shelter $ = LOCAL median rent × 12 × the LOCAL CPI area's "rent of primary residence" (SEHA) % —
+  // not the CPI shelter % (mostly owners' equivalent rent). No national fallback rent, no national
+  // CPI applied to local rent (national CPI fallback, or a territory whose only CPI is national, e.g.
+  // Puerto Rico → null), and no figure when the rent index is missing (e.g. older cached CPI).
   const cpiIsNational = cpiIsNationalFallback || cpiArea.areaCode === NATIONAL_CPI_AREA
   const localRent = censusData && !censusData.isFallback && !censusData.isRentFallback && !cpiIsNational
     ? censusData.medianRent
     : null
   const dollarImpact = computeDollarImpact({
     groceriesChangePct: cpi.data?.groceriesChange,
-    shelterChangePct: cpi.data?.shelterChange,
+    rentIndexChangePct: cpi.data?.rentIndexChange,
     gasChange: gas.data?.change,
     tariffEstimatedCost: tariffData?.estimatedCost,
     medianRent: localRent,

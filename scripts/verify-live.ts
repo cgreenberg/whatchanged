@@ -210,6 +210,30 @@ async function checkZip(zip: string, bls: Map<string, Map<string, number>>, snap
         add(zip, 'shelter math', near(c.shelterChange, exp, 0.11) ? 'PASS' : 'FAIL', `change ${c.shelterChange}% vs ${exp}% (BLS ${base} -> ${cur})`)
       }
     }
+    // Rent of primary residence (CUUR{area}SEHA): drives the shelter card's $/yr in rent
+    const rentId: string | undefined = ids?.rent ?? get(audit, 'blsSeriesIds.cpiRent') ?? undefined
+    const ri = rentId ? bls.get(rentId) : undefined
+    if (!rentId || !isNum(c.rentIndexChange)) add(zip, 'rent index', 'SKIP', 'no rent-of-primary-residence series/change exposed')
+    else if (!ri) add(zip, 'rent index', 'FAIL', `${rentId} not returned by BLS`)
+    else {
+      const bp: string = c.rentIndexBaselinePeriod ?? `${BASELINE_YEAR}-01`
+      const lp: string | undefined = c.rentIndexLatestPeriod
+      const base = ri.get(bp)
+      const cur = lp ? ri.get(lp) : undefined
+      add(zip, 'rent index baseline', bp === `${BASELINE_YEAR}-01` ? 'PASS' : 'WARN', bp)
+      if (base === undefined || cur === undefined) add(zip, 'rent index math', 'SKIP', `BLS missing ${bp} or ${lp}`)
+      else {
+        const exp = round1(((cur - base) / base) * 100)
+        add(zip, 'rent index math', near(c.rentIndexChange, exp, 0.11) ? 'PASS' : 'FAIL', `change ${c.rentIndexChange}% vs ${exp}% (BLS ${base} -> ${cur})`)
+      }
+      // $/yr in rent = local median rent × 12 × rent index %
+      const rent = get(snap, 'census.data.medianRent')
+      const dollars = get(snap, 'dollarImpact.shelter')
+      if (isNum(dollars) && isNum(rent)) {
+        const expD = Math.round((rent * 12 * c.rentIndexChange) / 100)
+        add(zip, 'shelter $ (rent index)', Math.abs(dollars - expD) <= 1 ? 'PASS' : 'FAIL', `$${dollars} vs $${expD} (${rent} × 12 × ${c.rentIndexChange}%)`)
+      }
+    }
   }
 
   const g = get(snap, 'gas.data')
@@ -299,10 +323,15 @@ async function checkCodes() {
   }
 
   const areas = [...Object.keys(cpiMap.BLS_CPI_AREAS), '0000']
-  const ids = areas.flatMap((a) => [`CUUR${a}SAF11`, `CUUR${a}SAH1`, `CUUR${a}SA0E`])
+  const ids = areas.flatMap((a) => [`CUUR${a}SAF11`, `CUUR${a}SAH1`, `CUUR${a}SA0E`, `CUUR${a}SEHA`])
   try {
     const res = await fetchBls(ids)
-    for (const id of ids) add('codes', `BLS ${id}`, res.get(id)?.size ? 'PASS' : 'FAIL', res.get(id)?.size ? `latest ${latestKey(res.get(id)!)}` : 'no data')
+    for (const id of ids) {
+      const m = res.get(id)
+      // Rent of primary residence also needs a Jan 2025 value (the shelter $ baseline)
+      const ok = !!m?.size && (!id.endsWith('SEHA') || m.has('2025-01'))
+      add('codes', `BLS ${id}`, ok ? 'PASS' : 'FAIL', m?.size ? `latest ${latestKey(m)}${id.endsWith('SEHA') ? `, Jan 2025 ${m.get('2025-01') ?? 'missing'}` : ''}` : 'no data')
+    }
   } catch (e) {
     add('codes', 'BLS CPI areas', 'FAIL', (e as Error).message)
   }
@@ -350,8 +379,8 @@ async function main() {
   const ids = new Set<string>()
   for (const snap of snaps.values()) {
     const a = snap._audit?.blsSeriesIds ?? {}
-    for (const id of [snap.cpi?.data?.seriesIds?.groceries, snap.cpi?.data?.seriesIds?.shelter,
-      a.cpiGroceries, a.cpiShelter]) if (typeof id === 'string') ids.add(id)
+    for (const id of [snap.cpi?.data?.seriesIds?.groceries, snap.cpi?.data?.seriesIds?.shelter, snap.cpi?.data?.seriesIds?.rent,
+      a.cpiGroceries, a.cpiShelter, a.cpiRent]) if (typeof id === 'string') ids.add(id)
     if (snap.gas?.data?.source === 'bls' && typeof snap.gas.data.seriesId === 'string') {
       ids.add(snap.gas.data.seriesId)
       ids.add('APU000074714') // BLS national gas (the comparison for BLS tiers)

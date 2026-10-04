@@ -112,7 +112,7 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
   // Zillow tab whose county shard is still loading: hold the space instead of flashing "Data unavailable".
   if (active !== 'shelter' && county.status === 'loading') {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 col-span-full" data-testid="housing-chart" data-tab={active}>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4" data-testid="housing-chart" data-tab={active}>
         <h3 className="text-sm font-inter font-medium text-zinc-300 mb-2">{shelterConfig.title}</h3>
         {tabs}
         <div className="h-64 rounded-lg bg-zinc-800/40 animate-pulse" />
@@ -155,7 +155,7 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
   }
 
   return (
-    <div className="col-span-full" data-testid="housing-chart" data-tab={active}>
+    <div className="min-w-0" data-testid="housing-chart" data-tab={active}>
       <EraChart
         key={active}
         config={config}

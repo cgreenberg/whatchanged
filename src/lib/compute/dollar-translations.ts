@@ -16,7 +16,11 @@ export const ANNUAL_GROCERY_BASE = 6000
 export interface DollarImpact {
   /** $/yr: ANNUAL_GROCERY_BASE × groceries % change (signed). null if CPI unavailable. */
   groceries: number | null
-  /** $/yr: local median rent × 12 × shelter % change (signed). null if CPI or local rent unavailable. */
+  /**
+   * $/yr in rent: local median rent × 12 × the BLS CPI "rent of primary residence" (SEHA) % change for the
+   * same CPI area (signed). Shown on the Shelter (CPI) card, whose headline % is CPI shelter. null when the
+   * rent index or local rent is unavailable — never the CPI shelter % (mostly owners' equivalent rent).
+   */
   shelter: number | null
   /** $/gallon change since the Jan 20 2025 baseline (signed). Per gallon, NOT annual. */
   gas: number | null
@@ -30,13 +34,14 @@ export function computeGroceryImpact(groceriesChangePct: number | null | undefin
   return Object.is(v, -0) ? 0 : v
 }
 
+/** $/yr in rent: local median rent × 12 × rent-of-primary-residence % change (signed). */
 export function computeShelterImpact(
-  shelterChangePct: number | null | undefined,
+  rentIndexChangePct: number | null | undefined,
   medianRent: number | null | undefined
 ): number | null {
-  if (typeof shelterChangePct !== 'number' || !Number.isFinite(shelterChangePct)) return null
+  if (typeof rentIndexChangePct !== 'number' || !Number.isFinite(rentIndexChangePct)) return null
   if (typeof medianRent !== 'number' || !Number.isFinite(medianRent) || medianRent <= 0) return null
-  const v = Math.round((medianRent * 12 * shelterChangePct) / 100)
+  const v = Math.round((medianRent * 12 * rentIndexChangePct) / 100)
   return Object.is(v, -0) ? 0 : v
 }
 
@@ -45,7 +50,8 @@ const finiteOrNull = (v: number | null | undefined): number | null =>
 
 export function computeDollarImpact(opts: {
   groceriesChangePct?: number | null
-  shelterChangePct?: number | null
+  /** BLS CPI rent of primary residence (SEHA) % change for the zip's CPI area. */
+  rentIndexChangePct?: number | null
   gasChange?: number | null
   tariffEstimatedCost?: number | null
   /** LOCAL median rent only — pass null/undefined when the zip has no Census rent. */
@@ -53,7 +59,7 @@ export function computeDollarImpact(opts: {
 }): DollarImpact {
   return {
     groceries: computeGroceryImpact(opts.groceriesChangePct),
-    shelter: computeShelterImpact(opts.shelterChangePct, opts.medianRent),
+    shelter: computeShelterImpact(opts.rentIndexChangePct, opts.medianRent),
     gas: finiteOrNull(opts.gasChange),
     tariff: finiteOrNull(opts.tariffEstimatedCost),
   }

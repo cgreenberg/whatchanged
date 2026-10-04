@@ -7,13 +7,16 @@ import { clearMemCache } from '@/lib/cache/kv'
 import { parseCpiResponse, fetchCpiArea } from '@/lib/api/bls-cpi'
 import { parseBlsMonthly, findBaseline, findLatest, pctChange, type BlsRawPoint } from '@/lib/api/bls-common'
 import recorded from '../fixtures/bls-recorded-2024-2026.json'
+import recordedRent from '../fixtures/bls-cpi-rent-seha.json'
+import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 
 // ---------------------------------------------------------------------------
 // Recorded fixture helpers
 // ---------------------------------------------------------------------------
 
 const RECORDED: Record<string, BlsRawPoint[]> = Object.fromEntries(
-  (recorded.Results.series as Array<{ seriesID: string; data: BlsRawPoint[] }>).map((s) => [s.seriesID, s.data])
+  ([...recorded.Results.series, ...recordedRent.Results.series] as Array<{ seriesID: string; data: BlsRawPoint[] }>)
+    .map((s) => [s.seriesID, s.data])
 )
 
 function seriesMap(ids: string[], mutate?: (id: string, data: BlsRawPoint[]) => BlsRawPoint[]) {
@@ -26,7 +29,7 @@ function seriesMap(ids: string[], mutate?: (id: string, data: BlsRawPoint[]) => 
 }
 
 const PACIFIC = { areaCode: '0490', areaName: 'Pacific', tier: 2 as const }
-const PACIFIC_IDS = ['CUUR0490SAF11', 'CUUR0490SAH1', 'CUUR0490SA0E', 'CUUR0000SAF11', 'CUUR0000SAH1', 'CUUR0000SA0E']
+const PACIFIC_IDS = ['CUUR0490SAF11', 'CUUR0490SAH1', 'CUUR0490SA0E', 'CUUR0490SEHA', 'CUUR0000SAF11', 'CUUR0000SAH1', 'CUUR0000SA0E']
 
 describe('parseBlsMonthly (real parser, recorded data)', () => {
   test('drops "-" values (Oct 2025 shutdown gap) and sorts oldest first', () => {
@@ -95,7 +98,12 @@ describe('parseCpiResponse (recorded CPI)', () => {
     // (139.596 - 132.606) / 132.606 * 100 = 5.27
     expect(d.shelterChange).toBe(5.3)
     expect(d.shelterBaselinePeriod).toBe('2025-01')
-    expect(d.seriesIds).toEqual({ groceries: 'CUUR0490SAF11', shelter: 'CUUR0490SAH1', energy: 'CUUR0490SA0E' })
+    expect(d.seriesIds).toEqual({ groceries: 'CUUR0490SAF11', shelter: 'CUUR0490SAH1', energy: 'CUUR0490SA0E', rent: 'CUUR0490SEHA' })
+    // Rent of primary residence (recorded SEHA): (139.819 - 133.636) / 133.636 * 100 = 4.63
+    expect(d.rentIndexChange).toBe(4.6)
+    expect(d.rentIndexBaseline).toBe(133.636)
+    expect(d.rentIndexBaselinePeriod).toBe('2025-01')
+    expect(d.rentIndexLatestPeriod).toBe('2026-08')
     expect(d.nationalSeries?.length).toBeGreaterThan(0)
     // Oct 2025 (shutdown, "-") is kept as an empty row so charts mark the gap
     expect(d.series.find((p) => p.date === '2025-10')).toEqual({ date: '2025-10', groceries: null, shelter: null, energy: null })
@@ -128,6 +136,22 @@ describe('parseCpiResponse (recorded CPI)', () => {
     expect(d.shelterBaselinePeriod).toBe('2024-12')
   })
 
+  test('rent index (SEHA) missing → rent index fields omitted (no shelter $), everything else unchanged', () => {
+    const d = parseCpiResponse(seriesMap(PACIFIC_IDS, (id, data) => (id === 'CUUR0490SEHA' ? [] : data)), PACIFIC)
+    expect(d.rentIndexChange).toBeUndefined()
+    expect(d.rentIndexBaseline).toBeUndefined()
+    expect(d.shelterChange).toBe(5.3)
+    expect(d.groceriesChange).toBe(4.0)
+  })
+
+  test('rent index without a Jan 2025 (or Nov–Dec 2024) value → omitted, never measured from a later month', () => {
+    const d = parseCpiResponse(
+      seriesMap(PACIFIC_IDS, (id, data) => (id === 'CUUR0490SEHA' ? data.filter((x) => x.year === '2026') : data)),
+      PACIFIC
+    )
+    expect(d.rentIndexChange).toBeUndefined()
+  })
+
   test('shelter missing → shelter fields omitted, groceries still returned', () => {
     const d = parseCpiResponse(seriesMap(PACIFIC_IDS, (id, data) => (id === 'CUUR0490SAH1' ? [] : data)), PACIFIC)
     expect(d.shelterChange).toBeUndefined()
@@ -144,10 +168,24 @@ describe('parseCpiResponse (recorded CPI)', () => {
   })
 })
 
+describe('recorded SEHA fixture: rent of primary residence for every CPI area the app uses', () => {
+  // One batched BLS call (37 series) recorded 2026-10-03: every metro, division, region and national.
+  test.each(Object.keys(BLS_CPI_AREAS).concat('0000'))('CUUR%sSEHA is monthly with a Jan 2025 value', (area) => {
+    const pts = parseBlsMonthly(RECORDED[`CUUR${area}SEHA`])
+    expect(pts.length).toBeGreaterThanOrEqual(20)
+    expect(findBaseline(pts)?.period).toBe('2025-01')
+    const latest = findLatest(pts)!
+    expect(latest.period >= '2026-07').toBe(true)
+    const pct = pctChange(latest.value, findBaseline(pts)!.value)!
+    expect(pct).toBeGreaterThan(-20)
+    expect(pct).toBeLessThan(50)
+  })
+})
+
 describe('fetchers request the right series (MSW, recorded fixture)', () => {
   beforeEach(() => clearMemCache())
 
-  test('fetchCpiArea batches area + national series in one call', async () => {
+  test('fetchCpiArea batches area (incl. rent of primary residence) + national series in one call', async () => {
     let calls = 0
     let requested: string[] = []
     server.use(

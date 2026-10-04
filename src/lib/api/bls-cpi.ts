@@ -18,6 +18,8 @@ export function cpiSeriesIds(areaCode: string) {
     groceries: `CUUR${areaCode}SAF11`,
     shelter: `CUUR${areaCode}SAH1`,
     energy: `CUUR${areaCode}SA0E`,
+    /** Rent of primary residence: used only for the shelter card's dollar figure (not charted). */
+    rent: `CUUR${areaCode}SEHA`,
   }
 }
 
@@ -80,6 +82,12 @@ export function parseCpiResponse(
   const sLatest = findLatest(s)
   const shelterChange = sBase && sLatest ? pctChange(sLatest.value, sBase.value) : null
 
+  // Rent of primary residence (SEHA): its own baseline and latest month, like every other item.
+  const r = parseBlsMonthly(seriesMap[ids.rent])
+  const rBase = findBaseline(r)
+  const rLatest = findLatest(r)
+  const rentIndexChange = rBase && rLatest ? pctChange(rLatest.value, rBase.value) : null
+
   let nationalSeries: CpiPoint[] | undefined
   if (area.areaCode !== NATIONAL_CPI_AREA) {
     const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
@@ -108,6 +116,15 @@ export function parseCpiResponse(
           shelterLatestPeriod: sLatest.period,
         }
       : {}),
+    ...(rentIndexChange !== null && rBase && rLatest
+      ? {
+          rentIndexChange,
+          rentIndexCurrent: rLatest.value,
+          rentIndexBaseline: rBase.value,
+          rentIndexBaselinePeriod: rBase.period,
+          rentIndexLatestPeriod: rLatest.period,
+        }
+      : {}),
     series: buildCpiPoints(g, s, e, [
       ...blsUnpublishedMonths(seriesMap[ids.groceries]),
       ...blsUnpublishedMonths(seriesMap[ids.shelter]),
@@ -121,7 +138,10 @@ export function parseCpiResponse(
   }
 }
 
-/** Fetch CPI (groceries, shelter, energy + national overlay) for one BLS CPI area in a single batched call. */
+/**
+ * Fetch CPI (groceries, shelter, energy, rent of primary residence + national overlay) for one BLS CPI
+ * area in a single batched call (8 series).
+ */
 export async function fetchCpiArea(area: {
   areaCode: string
   areaName: string
@@ -130,7 +150,7 @@ export async function fetchCpiArea(area: {
   const ids = cpiSeriesIds(area.areaCode)
   const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
   const allSeriesIds = [...new Set([
-    ids.groceries, ids.shelter, ids.energy,
+    ids.groceries, ids.shelter, ids.energy, ids.rent,
     nat.groceries, nat.shelter, nat.energy,
   ])]
   const seriesMap = await fetchBlsSeries(allSeriesIds, { label: 'BLS CPI' })

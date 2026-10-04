@@ -645,7 +645,8 @@
    "seriesIds": {
     "groceries": "CUUR0370SAF11",
     "shelter": "CUUR0370SAH1",
-    "energy": "CUUR0370SA0E"
+    "energy": "CUUR0370SA0E",
+    "rent": "CUUR0370SEHA"
    },
    "nationalSeries": [
     {
@@ -1417,6 +1418,11 @@
    "shelterCurrent": 135.692,
    "shelterBaselinePeriod": "2025-01",
    "shelterLatestPeriod": "2026-08",
+   "rentIndexChange": 2.1,
+   "rentIndexCurrent": 136.678,
+   "rentIndexBaseline": 133.907,
+   "rentIndexBaselinePeriod": "2025-01",
+   "rentIndexLatestPeriod": "2026-08",
    "areaCode": "0370"
   },
   "error": null,
@@ -5633,7 +5639,7 @@
  },
  "dollarImpact": {
   "groceries": 186,
-  "shelter": 754,
+  "shelter": 688,
   "gas": 1.197,
   "tariff": 3175
  },

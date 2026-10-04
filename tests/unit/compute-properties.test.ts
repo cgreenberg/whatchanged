@@ -113,9 +113,10 @@ describe('compute properties', () => {
   })
 
   describe('sanity validators (src/lib/api/validate.ts)', () => {
-    const cpi = (groceriesChange: number, shelterChange?: number): CpiData => ({
+    const cpi = (groceriesChange: number, shelterChange?: number, rentIndexChange?: number): CpiData => ({
       groceriesCurrent: 110, groceriesBaseline: 100, groceriesChange,
       ...(shelterChange !== undefined ? { shelterChange } : {}),
+      ...(rentIndexChange !== undefined ? { rentIndexChange } : {}),
       series: [], metro: 'X', tier: 2,
     })
     const gas = (current: number, baseline = 3): GasSeriesData => ({
@@ -124,13 +125,15 @@ describe('compute properties', () => {
     })
 
     it('CPI change in [-20, 50] passes, outside fails', () => {
-      fc.assert(fc.property(fc.double({ min: -20, max: 50, noNaN: true }), (v) => expect(isValidCpi(cpi(v))).toBe(true)))
+      fc.assert(fc.property(fc.double({ min: -20, max: 50, noNaN: true }), (v) => expect(isValidCpi(cpi(v, v, v))).toBe(true)))
       fc.assert(
         fc.property(
           fc.oneof(fc.double({ min: 50.0001, max: 500, noNaN: true }), fc.double({ min: -500, max: -20.0001, noNaN: true })),
           (v) => {
             expect(isValidCpi(cpi(v))).toBe(false)
             expect(isValidCpi(cpi(1, v))).toBe(false)
+            // rent of primary residence (drives the shelter $) gets the same sanity range
+            expect(isValidCpi(cpi(1, 1, v))).toBe(false)
           }
         )
       )

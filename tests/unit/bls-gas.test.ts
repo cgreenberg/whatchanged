@@ -132,7 +132,13 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     s.gas.data = blsGasData('S12B')
     const c = buildGasCard(s)
     expect(c.value).toBe('$4.08/gal')
-    expect(c.change).toBe('+$0.94/gal since Jan 2025')
+    expect(c.change).toBe('+$0.94 since Jan 2025')
+    // Short card lines: national comparison and "{area} · {source} · {Mon YYYY}"
+    expect(c.secondary).toBe('U.S. +$0.99')
+    expect(c.sourceLine).toBe('Philadelphia metro · BLS · Aug 2026')
+    // The full wording moves into the ⓘ disclosure
+    expect(c.info).toContain('+$0.94/gal since Jan 2025, through Aug 2026 (monthly).')
+    expect(c.info).toContain('National: $4.20/gal (+$0.99) · U.S. city avg, BLS, Aug 2026')
     expect(provenanceText(c.provenance)).toBe(
       'BLS CPI average price, regular gasoline · Philadelphia-Camden-Wilmington metro avg · monthly · since Jan 2025 · Aug 2026 · not seasonally adjusted'
     )
@@ -180,6 +186,9 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     const c = buildGasCard(s)
     expect(c.caveat).toBe('Honolulu-area price — no BLS or EIA series for Hawaii County (Big Island); local prices are typically higher and may have changed differently.')
     expect(c.provenance.geography).toBe('Honolulu-area price (BLS)')
+    // On the card: a short "*" after the area; the explanation is in the ⓘ disclosure
+    expect(c.sourceLine).toBe('Honolulu-area* · BLS · Aug 2026')
+    expect(c.info).toContain(c.caveat)
     expect(getChartInput('gas', s).note).toBe(c.caveat)
     const d = metadataDescription(s)
     expect(d).toContain("Gas +$0.99/gal (Honolulu-area price*, thru Aug '26)")
@@ -253,6 +262,8 @@ describe('snapshot: BLS outage falls back to the zip\'s EIA weekly tier as a who
     expect(c.status).toBe('ok')
     expect(c.caveat).toMatch(/BLS monthly gas price unavailable/)
     expect(c.nationalValue).toMatch(/U\.S\. avg, EIA/)
+    expect(c.sourceLine).toMatch(/^Central Atlantic avg \(metro n\/a\) · EIA · [A-Z][a-z]{2} \d{1,2}, \d{4}$/)
+    expect(c.info).toContain(c.caveat)
   })
 
   test('96720 (Hilo): EIA has no HI series → labeled U.S. average, not the West Coast PADD', async () => {
@@ -260,5 +271,6 @@ describe('snapshot: BLS outage falls back to the zip\'s EIA weekly tier as a who
     const g = s!.gas.data!
     expect(g).toMatchObject({ source: 'eia', duoarea: 'NUS', fallback: 'national' })
     expect(gasShortGeo(g, 'HI')).toBe('U.S. avg; local n/a')
+    expect(buildGasCard(s!).sourceLine).toMatch(/^U\.S\. avg \(local n\/a\) · EIA · /)
   })
 })

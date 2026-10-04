@@ -6,7 +6,7 @@ import '@testing-library/jest-dom'
  */
 import fs from 'fs'
 import path from 'path'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { HeroCards } from '@/components/HeroCards'
 import { EraChart } from '@/components/charts/EraChart'
 import { getChartInput } from '@/components/charts/ChartsSection'
@@ -84,7 +84,10 @@ describe('rent hero', () => {
   test('dollar line is the SA change in dollars; raw level shown only as a dated level', () => {
     const s = clone()
     const m = buildRentCard(s, null, new Date('2026-10-02'))!
-    expect(m.change).toMatch(/^≈ [+−]\$\d+\/mo vs Jan 2025, after adjusting for the usual seasonal (rise|swing)$/)
+    expect(m.inline).toMatch(/^≈ [+−]\$\d+\/mo$/)
+    expect(m.dollarNote).toMatch(/^≈ [+−]\$\d+\/mo vs Jan 2025, after adjusting for the usual seasonal (rise|swing)$/)
+    expect(m.info).toContain(`${m.dollarNote}.`)
+    expect(m.info).toContain(m.detail)
     expect(m.detail).toBe(`Typical asking rent: ${fmtDollars(s.rent!.curRent)}/mo (${fmtMonthYear(s.rent!.asOf)})`)
     expect(m.detail).not.toMatch(/now|then|was/)
   })
@@ -180,9 +183,9 @@ describe('CPI shelter vs Zillow rent explanation', () => {
     expect(screen.getByTestId('chart-note')).toHaveTextContent('trails new-lease rents by about a year')
   })
 
-  test('hero cards show the note when the Rent card is shown', () => {
+  test('the Rent card carries the CPI-vs-Zillow note in its ⓘ disclosure', () => {
     render(<HeroCards snapshot={clone()} />)
-    expect(screen.getByTestId('rent-vs-cpi-note')).toHaveTextContent(SHELTER_VS_RENT_NOTE)
+    expect(within(screen.getByTestId('stat-card-rent')).getByTestId('stat-info')).toHaveTextContent(SHELTER_VS_RENT_NOTE)
   })
 })
 

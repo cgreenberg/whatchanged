@@ -15,6 +15,7 @@ export function isValidCpi(d: CpiData | null | undefined): boolean {
   if (!(d.groceriesBaseline > 0) || !(d.groceriesCurrent > 0)) return false
   if (!inRange(d.groceriesChange, CPI_CHANGE_RANGE)) return false
   if (d.shelterChange !== undefined && !inRange(d.shelterChange, CPI_CHANGE_RANGE)) return false
+  if (d.rentIndexChange !== undefined && !inRange(d.rentIndexChange, CPI_CHANGE_RANGE)) return false
   return true
 }
 

@@ -104,10 +104,14 @@ describe('fetchSnapshot', () => {
     expect(g.latestDate).toBe('2026-09-28')
     expect(g.nationalSeries?.length).toBeGreaterThan(0)
     expect(snapshot!.gas.stale ?? false).toBe(isGasStale(g.latestDate!))
-    // Dollar translations: $6,000 × 4.0% = $240; local rent × 12 × 5.3%
+    // Rent of primary residence (recorded SEHA, Pacific): 133.636 → 139.819 = +4.6%
+    expect(c.seriesIds?.rent).toBe('CUUR0490SEHA')
+    expect(c.rentIndexChange).toBe(4.6)
+    // Dollar translations: $6,000 × 4.0% = $240; shelter $ = local rent × 12 × rent-index 4.6% (not shelter 5.3%)
     expect(snapshot!.dollarImpact!.groceries).toBe(240)
     const rent = snapshot!.census.data!.medianRent
-    expect(snapshot!.dollarImpact!.shelter).toBe(Math.round((rent * 12 * 5.3) / 100))
+    expect(snapshot!.dollarImpact!.shelter).toBe(Math.round((rent * 12 * 4.6) / 100))
+    expect(snapshot!.dollarImpact!.shelter).not.toBe(Math.round((rent * 12 * 5.3) / 100))
   })
 
   test('out-of-range values are rejected → source unavailable, not cached', async () => {

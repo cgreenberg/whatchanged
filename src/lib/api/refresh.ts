@@ -6,9 +6,11 @@
 //
 // Upstream use for a full refresh (prices only; county unemployment/LAUS is no
 // longer fetched at runtime):
-//   - BLS: CPI in batches of 15 areas (45 series + 3 national = 48); the BLS
-//     monthly gas series (APU{area}74714, ~15) fill the spare room in those
-//     batches (≤ 50 series per POST) → 3 BLS calls for a full refresh
+//   - BLS: CPI in batches of 11 areas × 4 items (food at home, shelter, energy,
+//     rent of primary residence) + the 3 national overlay items = 47 series (the
+//     batch carrying the national area adds its rent series: 48); the BLS monthly
+//     gas series (APU{area}74714, ~15) fill the spare room in those batches
+//     (≤ 50 series per POST) → 4 BLS calls for a full refresh (37 CPI areas)
 //   - Gas: one EIA GET per EIA duoarea (~22 calls)
 
 import zipCountyData from '@/lib/data/zip-county.json'
@@ -31,7 +33,9 @@ import {
 
 /** BLS API v2 with a registration key: max 50 series and 20 years per request. */
 export const BLS_MAX_SERIES_PER_REQUEST = 50
-export const CPI_AREAS_PER_REQUEST = 15 // 15 × 3 items + 3 national items = 48 series
+/** Series per local CPI area: food at home, shelter, energy, rent of primary residence. */
+export const CPI_ITEMS_PER_AREA = 4
+export const CPI_AREAS_PER_REQUEST = 11 // 11 × 4 items + 3 national overlay items (+1 national rent) ≤ 48 series
 
 // --- Plan --------------------------------------------------------------------
 
@@ -77,7 +81,7 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return out
 }
 
-/** One BLS POST: CPI areas (their 3 items each, plus the 3 national items) and BLS gas series. */
+/** One BLS POST: CPI areas (their 4 items each, plus the 3 national overlay items) and BLS gas series. */
 export interface BlsRequest {
   ids: string[]
   cpiAreas: CpiArea[]
@@ -98,14 +102,16 @@ export function planBlsRequests(plan: RefreshPlan): BlsRequest[] {
     ids: [
       ...batch.flatMap((a) => {
         const s = cpiSeriesIds(a.areaCode)
-        return [s.groceries, s.shelter, s.energy]
+        return [s.groceries, s.shelter, s.energy, s.rent]
       }),
       ...natIds,
+      // The national area's own cache entry also carries its rent index
+      ...(i === 0 && hasNational ? [nat.rent] : []),
     ],
     cpiAreas: i === 0 && hasNational ? [...batch, NATIONAL_CPI] : batch,
     gas: [],
   }))
-  if (hasNational && !requests.length) requests.push({ ids: [...natIds], cpiAreas: [NATIONAL_CPI], gas: [] })
+  if (hasNational && !requests.length) requests.push({ ids: [...natIds, nat.rent], cpiAreas: [NATIONAL_CPI], gas: [] })
   for (const lookup of plan.gasLookups.filter((l) => l.source === 'bls')) {
     let req = requests.find((r) => r.ids.length < BLS_MAX_SERIES_PER_REQUEST)
     if (!req) {

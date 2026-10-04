@@ -20,6 +20,23 @@ test.describe('Charts section', () => {
     await expect(page.getByText(/unemployment/i)).toHaveCount(0)
   })
 
+  test('2 × 2 grid on desktop (Gas | Groceries, Housing | Energy); one column at phone width', async ({ page }) => {
+    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
+    await page.setViewportSize({ width: 1280, height: 900 })
+    let [gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-cpi-energy'].map(box))
+    expect(Math.abs(gas.y - groc.y)).toBeLessThan(2)
+    expect(groc.x).toBeGreaterThan(gas.x + gas.width - 1)
+    expect(Math.abs(housing.y - energy.y)).toBeLessThan(2)
+    expect(housing.y).toBeGreaterThan(gas.y + gas.height - 1)
+    expect(energy.x).toBeGreaterThan(housing.x + housing.width - 1)
+    await page.setViewportSize({ width: 390, height: 844 })
+    ;[gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-cpi-energy'].map(box))
+    expect(groc.y).toBeGreaterThan(gas.y + gas.height - 1)
+    expect(housing.y).toBeGreaterThan(groc.y + groc.height - 1)
+    expect(energy.y).toBeGreaterThan(housing.y + housing.height - 1)
+    expect(Math.abs(gas.x - energy.x)).toBeLessThan(2)
+  })
+
   test('"Jan 2025" is the default view and CPI charts say what the % is relative to', async ({ page }) => {
     await expect(page.getByTestId('timeframe-Jan 2025').first()).toHaveClass(/bg-zinc-700/)
     await expect(page.getByTestId('chart-cpi-groceries').getByTestId('chart-window')).toHaveText('% change since Jan 2025')

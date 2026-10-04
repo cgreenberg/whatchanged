@@ -42,7 +42,8 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
       data-testid="charts-section"
     >
       <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Energy, by config order); one column under 768px */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="charts-grid">
         {sortedCharts.map(config =>
           config.id === 'cpi-shelter'
             ? <HousingChart key={`housing-${snapshot.location.countyFips}`} snapshot={snapshot} shelterConfig={config} />
