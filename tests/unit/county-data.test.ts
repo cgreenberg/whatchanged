@@ -1,24 +1,20 @@
 import {
-  fmtPct, divergingColor, fmtMoney, moversFor, provenance, METRICS, metricFooter, fetchZipPulse, fetchCounty,
-  fetchCity, clearPulseCache, approxNote,
-  type CountyMap, type CountyPulse, type PulseMeta,
-} from '@/lib/local-pulse'
+  fmtPct, divergingColor, fmtMoney, moversFor, provenance, METRICS, metricFooter, fetchCounty, fetchUsHousing,
+  clearCountyDataCache, seriesRows, seriesChangeSinceBaseline, addMonths, flagNote, FLAG_CAVEAT,
+  type CountyMap, type CountyRecord, type LocalMeta, type CompactSeries,
+} from '@/lib/county-data'
 import fs from 'fs'
 import path from 'path'
 
-const META: PulseMeta = {
+const META: LocalMeta = {
   baseline: '2025-01',
-  paycheckWindow: '12-month averages, Q2 2025–Q1 2026 vs a year earlier',
   sources: {
     zhvi: { latest: '2026-08', label: 'Zillow Home Value Index', url: '', short: 'Zillow ZHVI', adjustment: 'seasonally adjusted by Zillow' },
     zori: { latest: '2026-08', label: 'ZORI', url: '', short: 'Zillow ZORI', adjustment: 'seasonally adjusted by whatchanged' },
-    qcew: { latest: '2026-Q1', label: 'QCEW', url: '', short: 'BLS QCEW + CPI', window: '12-month averages, Q2 2025–Q1 2026 vs a year earlier' },
-    laus: { latest: '2026-07', label: 'LAUS', url: '', short: 'BLS LAUS', adjustment: 'seasonally adjusted by whatchanged', window: '3-month average, May 2026–Jul 2026 vs Dec 2024–Feb 2025' },
-    permits: { latest: '2026-08', label: 'BPS', url: '', short: 'Census BPS', window: 'Jan–Aug 2026 vs Jan–Aug 2025' },
   },
 }
 
-describe('local-pulse helpers', () => {
+describe('county-data helpers', () => {
   it('formats percentages without "-0.0%"', () => {
     expect(fmtPct(-0.04)).toBe('0%')
     expect(fmtPct(3.25)).toBe('+3.3%')
@@ -40,31 +36,45 @@ describe('local-pulse helpers', () => {
     )
     expect(provenance(null, 'zori', 'Travis County')).toBe('Travis County')
   })
-  it('takes every metric window from meta, not from code', () => {
-    for (const m of METRICS) {
-      const footer = metricFooter(m, META)
-      const years = footer.match(/20\d\d/g) ?? []
-      const metaText = JSON.stringify(META)
-      for (const y of years) expect(metaText).toContain(y)
-      // Without meta, only the site baseline constant may appear
-      expect(m.window(null).replace(/since Jan 2025/, '')).not.toMatch(/20\d\d/)
-    }
-    expect(metricFooter(METRICS.find(m => m.key === 'permits')!, META)).toContain('Jan–Aug 2026 vs Jan–Aug 2025')
-    expect(metricFooter(METRICS.find(m => m.key === 'ur')!, META)).toContain('3-month average')
+  it('offers price metrics only on the map', () => {
+    expect(METRICS.map(m => m.key)).toEqual(['hv', 'rent'])
+    for (const m of METRICS) expect(m.window(null).replace(/since Jan 2025/, '')).not.toMatch(/20\d\d/)
+    expect(metricFooter(METRICS[0], META)).toBe('Zillow ZHVI · county · since Jan 2025 · Aug 2026 · seasonally adjusted by Zillow')
   })
   it('describes counties without dates', () => {
-    const c: CountyPulse = { n: 'X County, ST', hv: 2, hvCur: 300000, rent: -1, rentCur: 1500, ur: 0.4, urBase: 4, urCur: 4.4, wage: 3, cpi: 2.5, real: 0.5, permits: 10, permitsCur: 100 }
+    const c: CountyRecord = { n: 'X County, ST', hv: 2, hvCur: 300000, rent: -1, rentCur: 1500 }
     for (const m of METRICS) expect(m.describe(c) ?? '').not.toMatch(/20\d\d|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/)
   })
-  it('shows an approximation note only for approximated counties', () => {
-    expect(approxNote({ n: 'A, CT' })).toBeNull()
-    expect(approxNote({ n: 'Fairfield County, CT', approx: ['ur'], approxFrom: 'Greater Bridgeport Planning Region' }))
-      .toMatch(/Greater Bridgeport/)
+  it('flags outliers with the documented note, else a generic caveat', () => {
+    expect(flagNote({ n: 'a' }, 'rent')).toBeNull()
+    expect(flagNote({ n: 'a', flags: ['rent'] }, 'rent')).toBe(FLAG_CAVEAT)
+    expect(flagNote({ n: 'a', note: { rent: 'why' } }, 'rent')).toBe('Unusual value: why')
+  })
+})
+
+describe('compact series', () => {
+  const s: CompactSeries = { start: '2024-11', v: [100, null, 110, 120, 99] }
+  it('steps months across year ends', () => {
+    expect(addMonths('2024-11', 0)).toBe('2024-11')
+    expect(addMonths('2024-11', 2)).toBe('2025-01')
+    expect(addMonths('2016-01', 127)).toBe('2026-08')
+  })
+  it('turns a series into chart rows, skipping unpublished months', () => {
+    expect(seriesRows(s, 'rent')).toEqual([
+      { date: '2024-11', rent: 100 }, { date: '2025-01', rent: 110 }, { date: '2025-02', rent: 120 }, { date: '2025-03', rent: 99 },
+    ])
+    expect(seriesRows(undefined, 'rent')).toEqual([])
+    expect(seriesRows({ start: 'bad', v: [1] }, 'rent')).toEqual([])
+  })
+  it('computes the change since the Jan 2025 baseline (latest month vs Jan 2025)', () => {
+    expect(seriesChangeSinceBaseline(s)).toBe(-10)
+    expect(seriesChangeSinceBaseline({ start: '2025-02', v: [1, 2] })).toBeNull() // no baseline month
+    expect(seriesChangeSinceBaseline({ start: '2024-12', v: [1, 2] })).toBeNull() // nothing after baseline
   })
 })
 
 describe('movers', () => {
-  const mk = (v: number, extra: Partial<CountyPulse> = {}): CountyPulse => ({ n: `C${v}`, hv: v, emp: 100000, ...extra })
+  const mk = (v: number, extra: Partial<CountyRecord> = {}): CountyRecord => ({ n: `C${v}`, hv: v, emp: 100000, ...extra })
   it('never overlaps top and bottom when few counties qualify', () => {
     const data: CountyMap = { a: mk(1), b: mk(2), c: mk(3) }
     const { top, bottom } = moversFor(data, 'hv')
@@ -86,36 +96,32 @@ describe('movers', () => {
 
 describe('fetch error handling', () => {
   const realFetch = global.fetch
-  afterEach(() => { global.fetch = realFetch; clearPulseCache() })
+  afterEach(() => { global.fetch = realFetch; clearCountyDataCache() })
   const res = (ok: boolean, status: number, body: unknown = {}) =>
     ({ ok, status, json: () => Promise.resolve(body) }) as unknown as Response
 
   it('rejects on server errors and does not cache the failure', async () => {
     const f = jest.fn()
       .mockResolvedValueOnce(res(false, 500))
-      .mockResolvedValueOnce(res(true, 200, { '98683': { hv: { pct: 1 } } }))
+      .mockResolvedValueOnce(res(true, 200, { '48453': { n: 'Travis County, TX', hv: 1 } }))
     global.fetch = f as unknown as typeof fetch
-    await expect(fetchZipPulse('98683')).rejects.toThrow(/500/)
-    await expect(fetchZipPulse('98683')).resolves.toEqual({ hv: { pct: 1 } })
+    await expect(fetchCounty('48453')).rejects.toThrow(/500/)
+    await expect(fetchCounty('48453')).resolves.toEqual({ n: 'Travis County, TX', hv: 1 })
     expect(f).toHaveBeenCalledTimes(2)
   })
   it('treats a missing shard (404) as "no data", not an error', async () => {
     global.fetch = jest.fn().mockResolvedValue(res(false, 404)) as unknown as typeof fetch
-    await expect(fetchZipPulse('00000')).resolves.toBeNull()
     await expect(fetchCounty('99999')).resolves.toBeNull()
+    await expect(fetchCounty('abc')).resolves.toBeNull()
   })
-  it('matches a Zillow city only within the same county, and only if unambiguous', async () => {
-    global.fetch = jest.fn().mockResolvedValue(res(true, 200, {
-      '1': { n: 'Springfield', county: 'Greene County', hv: { pct: 1, cur: 1, asOf: '' } },
-      '2': { n: 'Springfield', county: 'Clark County', hv: { pct: 2, cur: 2, asOf: '' } },
-    })) as unknown as typeof fetch
-    await expect(fetchCity('OH', 'Springfield', 'Clark County')).resolves.toMatchObject({ hv: { pct: 2 } })
-    await expect(fetchCity('OH', 'Springfield', 'Miami County')).resolves.toBeNull()
+  it('loads the U.S. housing series', async () => {
+    global.fetch = jest.fn().mockResolvedValue(res(true, 200, { hvS: { start: '2016-01', v: [1] } })) as unknown as typeof fetch
+    await expect(fetchUsHousing()).resolves.toEqual({ hvS: { start: '2016-01', v: [1] } })
   })
 })
 
-describe('no hard-coded dates in user-facing pulse code', () => {
-  const files = ['src/lib/local-pulse.ts', 'src/components/pulse/LocalPulse.tsx', 'src/components/pulse/NationalMap.tsx']
+describe('no hard-coded dates in user-facing county code', () => {
+  const files = ['src/lib/county-data.ts', 'src/components/map/NationalMap.tsx', 'src/components/charts/HousingChart.tsx']
   it.each(files)('%s has no year or month literals outside comments and the baseline constant', file => {
     const src = fs.readFileSync(path.join(process.cwd(), file), 'utf8')
     const offenders = src.split('\n')
@@ -160,15 +166,7 @@ describe('built local data sanity', () => {
         const v = (c as unknown as Json)[k]
         if (v != null && !(typeof v === 'number' && v >= lo && v <= hi)) bad.push(`${f}.${k}=${v}`)
       }
-      if (c.ur != null && c.urBase != null && c.urCur != null) {
-        if (Math.abs(c.urCur - c.urBase - c.ur) > 0.11) bad.push(`${f}.ur inconsistent`)
-      }
     }
-    expect(bad).toEqual([])
-  })
-  it('only publishes paychecks for counties that pass the job floor (or approximated CT/AK counties)', () => {
-    // emp is last-quarter jobs; the floor uses the 4-quarter average, so allow slack.
-    const bad = rows.filter(([, c]) => c.wage != null && !c.approx?.length && (c.emp ?? 0) < 4000).map(([f]) => f)
     expect(bad).toEqual([])
   })
   it('resolves every zip in the zip-county crosswalk (Census 2020 housing-unit-weighted) to a county record', () => {
@@ -178,11 +176,34 @@ describe('built local data sanity', () => {
     const missing = [...new Set(Object.values(zc).map(v => v.countyFips))].filter(f => !counties[f] && !noDataOk(f))
     expect(missing).toEqual([])
   })
-  it('county shards match the full county file', () => {
+  it('county shards match the full county file, plus the monthly Zillow series', () => {
     for (const f of ['48453', '09001', '51590', '02063']) {
       const shard = readJson<CountyMap>(path.join(dir, 'county', `${f.slice(0, 2)}.json`))
-      expect(shard[f]).toEqual(counties[f])
+      const { hvS, rentS, ...rest } = shard[f]
+      expect(rest).toEqual(counties[f])
+      if (counties[f].hv != null) expect(hvS?.v.length).toBeGreaterThan(24)
+      if (counties[f].rent != null) expect(rentS?.v.length).toBeGreaterThan(24)
     }
+    expect(Object.values(counties).some(c => c.hvS || c.rentS)).toBe(false)
+  })
+  it('Rent graph series reproduce the Rent card % for every county (and Home prices the map %)', () => {
+    const cr = readJson<{ counties: Record<string, { pct: number }> }>(path.join(process.cwd(), 'src/lib/data/county-rent.json'))
+    const shards: CountyMap = {}
+    for (const file of fs.readdirSync(path.join(dir, 'county'))) Object.assign(shards, readJson<CountyMap>(path.join(dir, 'county', file)))
+    const badRent = Object.entries(cr.counties).filter(([f, v]) => seriesChangeSinceBaseline(shards[f]?.rentS) !== v.pct)
+    expect(badRent).toEqual([])
+    const badHv = Object.entries(shards).filter(([, c]) => c.hv != null && seriesChangeSinceBaseline(c.hvS) !== c.hv)
+    expect(badHv).toEqual([])
+    const us = readJson<{ hvS: CompactSeries; rentS: CompactSeries }>(path.join(dir, 'us-housing.json'))
+    expect(seriesRows(us.hvS, 'v').length).toBeGreaterThan(100)
+    expect(seriesRows(us.rentS, 'v').length).toBeGreaterThan(100)
+  })
+  it('every county the crosswalk resolves to carries a zip so a map tap can load the place', () => {
+    const zc = readJson<Record<string, { countyFips: string }>>(path.join(process.cwd(), 'src/lib/data/zip-county.json'))
+    // (A few small Virginia independent cities have no zip of their own in the housing-weighted crosswalk.)
+    const inCrosswalk = new Set(Object.values(zc).map(v => v.countyFips))
+    const bad = rows.filter(([f, c]) => inCrosswalk.has(f) && (!c.z || !zc[c.z])).map(([f]) => f)
+    expect(bad).toEqual([])
   })
   it('zip shards: leading-zero zips, honest rent basis, listings in range, no ranks', () => {
     const bad: string[] = []
@@ -212,7 +233,7 @@ describe('built local data sanity', () => {
     expect(bad).toEqual([])
   })
   it('meta labels never claim an agency adjusted data we adjusted', () => {
-    const meta = readJson<PulseMeta>(path.join(dir, 'meta.json'))
+    const meta = readJson<LocalMeta>(path.join(dir, 'meta.json'))
     for (const k of ['zori', 'laus']) expect(meta.sources[k].adjustment).toBe('seasonally adjusted by whatchanged')
     for (const k of ['laus', 'permits', 'qcew']) expect(meta.sources[k].window).toBeTruthy()
   })

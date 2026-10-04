@@ -800,5 +800,26 @@
   "status": "PASS",
   "detail": "none",
   "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "County rentS series reproduce county-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "County hvS series reproduce the county home-value % (Home prices tab = map)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "counties.json carries no monthly series (kept in the per-state shards)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
  }
 ]

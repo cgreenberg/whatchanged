@@ -54,6 +54,7 @@ for g in Zip County City; do
   bg dl zori_${lg}.csv $Z/zori/${g}_zori_uc_sfrcondomfr_sm_month.csv
 done
 bg dl zori_metro.csv $Z/zori/Metro_zori_uc_sfrcondomfr_sm_month.csv
+bg dl zhvi_metro.csv $Z/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv  # U.S. row for the Housing graph
 bg dl rdc_zip.csv https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Zip.csv
 for y in $QY $((QY-1)) $((QY-2)); do bg dl qcew_$y.zip https://data.bls.gov/cew/data/files/$y/csv/${y}_qtrly_singlefile.zip; done
 bg dl permits_cur.txt  https://www2.census.gov/econ/bps/County/co${BPS_M}y.txt

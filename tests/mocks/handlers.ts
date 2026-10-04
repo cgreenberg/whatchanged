@@ -13,13 +13,11 @@ const RECORDED = new Map<string, RawPoint[]>(
 
 // Template for series IDs that weren't recorded: same measure, keyed by item —
 // never by position in the request array.
-const COUNTY_LAUS_TEMPLATE = 'LAUCN530110000000003'
 const CPI_ITEM_TEMPLATE_AREA = '0490' // Pacific division
 
 export function blsFixtureFor(seriesId: string): RawPoint[] {
   const recorded = RECORDED.get(seriesId)
   if (recorded) return recorded
-  if (seriesId.startsWith('LAUCN')) return RECORDED.get(COUNTY_LAUS_TEMPLATE) ?? []
   const cpi = seriesId.match(/^CUUR(.{4})(SAF11|SAH1|SA0E)$/)
   if (cpi) return RECORDED.get(`CUUR${CPI_ITEM_TEMPLATE_AREA}${cpi[2]}`) ?? []
   return []

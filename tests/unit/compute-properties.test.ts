@@ -2,8 +2,8 @@ import fc from 'fast-check'
 import { estimateTariffCost } from '@/lib/tariff'
 import { pctChange } from '@/lib/api/bls-common'
 import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
-import { isValidCpi, isValidUnemployment, isValidGasSeries } from '@/lib/api/validate'
-import type { CpiData, UnemploymentData } from '@/types'
+import { isValidCpi, isValidGasSeries } from '@/lib/api/validate'
+import type { CpiData } from '@/types'
 import type { GasSeriesData } from '@/lib/api/eia'
 
 // Property tests of REAL code (no re-implemented formulas).
@@ -118,9 +118,6 @@ describe('compute properties', () => {
       ...(shelterChange !== undefined ? { shelterChange } : {}),
       series: [], metro: 'X', tier: 2,
     })
-    const unemp = (current: number): UnemploymentData => ({
-      current, baseline: 4, change: current - 4, series: [], countyFips: '00000',
-    })
     const gas = (current: number, baseline = 3): GasSeriesData => ({
       current, baseline, change: current - baseline, baselineDate: '2025-01-20', latestDate: '2025-02-24',
       series: [{ date: '2025-01-20', price: baseline }], regionName: 'X',
@@ -135,16 +132,6 @@ describe('compute properties', () => {
             expect(isValidCpi(cpi(v))).toBe(false)
             expect(isValidCpi(cpi(1, v))).toBe(false)
           }
-        )
-      )
-    })
-
-    it('unemployment in [0, 25] passes, outside fails', () => {
-      fc.assert(fc.property(fc.double({ min: 0, max: 25, noNaN: true }), (v) => expect(isValidUnemployment(unemp(v))).toBe(true)))
-      fc.assert(
-        fc.property(
-          fc.oneof(fc.double({ min: 25.0001, max: 100, noNaN: true }), fc.double({ min: -100, max: -0.0001, noNaN: true })),
-          (v) => expect(isValidUnemployment(unemp(v))).toBe(false)
         )
       )
     })

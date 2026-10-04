@@ -73,6 +73,13 @@ export default function AboutPage() {
                 <td className="py-3">Asking rents on new leases. The % change since January 2025 is seasonally adjusted by whatchanged. The $/mo figure is that adjusted % expressed in dollars at today&apos;s typical rent (current rent − current rent ÷ (1 + %)), so it removes the usual seasonal rise and is not the raw difference between two months&apos; listed rents. The typical asking rent is shown separately, as listed for its month.</td>
               </tr>
               <tr className="border-b border-zinc-800">
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Home Prices</td>
+                <td className="py-3 pr-4 text-zinc-300">Zillow Home Value Index (ZHVI)</td>
+                <td className="py-3 pr-4">County</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
+                <td className="py-3">Zillow&apos;s smoothed, seasonally adjusted estimate of the typical (middle-tier) home value. Shown in the housing graph and on the county map.</td>
+              </tr>
+              <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Shelter Prices</td>
                 <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index (shelter)</td>
                 <td className="py-3 pr-4">Metro area, Census division, or region</td>
@@ -92,13 +99,6 @@ export default function AboutPage() {
                 <td className="py-3 pr-4">Metro area, Census division, or region</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
                 <td className="py-3">BLS &ldquo;Energy&rdquo; combines household energy (electricity and utility natural gas, plus fuel oil) with motor fuel (gasoline), which is roughly half its weight, so it moves with gas prices as well as utility bills. Not seasonally adjusted.</td>
-              </tr>
-              <tr className="border-b border-zinc-800">
-                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Unemployment Rate</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS Local Area Unemployment Statistics</td>
-                <td className="py-3 pr-4">County (Connecticut: planning region)</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Headline change: the average of the latest 3 complete months vs the December 2024 – February 2025 average, both seasonally adjusted by whatchanged; the newest (preliminary) month is excluded. Chart: monthly county and U.S. rates as published, not seasonally adjusted, with the preliminary month marked. Counties with unusual values carry a note.</td>
               </tr>
               <tr>
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Tariff Impact</td>
@@ -129,9 +129,7 @@ export default function AboutPage() {
           publishes: for gas (EIA, weekly), the last weekly reading on or before January 20, 2025;
           for BLS consumer prices, the January 2025 index, or the nearest earlier month for areas
           BLS doesn&apos;t publish every month (for example December 2024); for county rent and home
-          values (Zillow), January 2025; for the unemployment headline, the December 2024 –
-          February 2025 average compared with the latest 3 complete months, seasonally adjusted by
-          whatchanged. Every card shows its source, geography, baseline, the date of its latest
+          values (Zillow), January 2025. Every card shows its source, geography, baseline, the date of its latest
           data, and whether the figures are seasonally adjusted. National comparisons use the same
           BLS and EIA series at the national level over the same months as the local figure.
         </p>

@@ -1,13 +1,12 @@
-name: Refresh data cache (BLS LAUS + CPI, EIA gas → Upstash)
+name: Refresh data cache (BLS CPI, EIA gas → Upstash)
 
 # Preloads every series the site can request, so user requests are cache hits
 # and runtime never has to spend the BLS 500/day quota. Runtime TTLs (BLS 21d,
 # EIA 10d) are longer than this schedule, so keys never expire between runs.
 #   - weekly, Tuesday 15:00 UTC: EIA publishes weekly retail gas Monday evening
-#   - 16th and 28th: after the BLS CPI (~10th–15th) and county LAUS (~end of
-#     month) releases
-# A full run uses ~70 BLS requests and ~28 EIA requests (worst case with 2
-# retries per batch ~210). A scheduled run that starts < 12h after a successful
+#   - 16th and 28th: after the BLS CPI release (~10th–15th)
+# A full run uses 3 BLS requests and ~28 EIA requests (worst case with 2
+# retries per request: 9 BLS / ~84 EIA). A scheduled run that starts < 12h after a successful
 # full refresh (Redis key refresh:last-success) is skipped; manual runs can
 # pass force=true.
 

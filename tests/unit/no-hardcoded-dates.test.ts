@@ -1,5 +1,5 @@
 /**
- * User-facing strings in src/components and src/lib/local-pulse.ts must not hard-code a
+ * User-facing strings in src/components and src/lib/county-data.ts must not hard-code a
  * year or month: dates come from the data (API fields, meta.json). The only exception is
  * the Jan 2025 baseline, which lives in named constants (src/lib/baseline.ts) or is a
  * baseline literal such as "Jan 2025" / "2025-01".
@@ -18,7 +18,7 @@ function walk(dir: string): string[] {
   })
 }
 
-const FILES = [...walk(path.join(ROOT, 'src/components')), path.join(ROOT, 'src/lib/local-pulse.ts')]
+const FILES = [...walk(path.join(ROOT, 'src/components')), path.join(ROOT, 'src/lib/county-data.ts')]
 
 /** Baseline references that are allowed to appear verbatim. */
 const BASELINE_TOKENS = [

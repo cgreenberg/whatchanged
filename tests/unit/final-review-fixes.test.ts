@@ -33,7 +33,7 @@ import {
 import { cpiGeoLabel } from '@/lib/provenance'
 import { getCountyRent } from '@/lib/rent'
 import { firstParam } from '@/lib/share-url'
-import { moversFor, timelineMonths, type CountyMap } from '@/lib/local-pulse'
+import { moversFor, timelineMonths, type CountyMap } from '@/lib/county-data'
 import { filterByTimeframe } from '@/lib/charts/chart-data'
 import { chartConfigs as CHART_CONFIGS } from '@/lib/charts/chart-config'
 import type { EconomicSnapshot, CpiData, GasPriceData } from '@/types'
@@ -136,20 +136,19 @@ describe('BLS data-age staleness', () => {
   const now = new Date('2026-10-02T12:00:00Z')
   test(`latest month ended more than ${BLS_STALE_DAYS} days ago → stale`, () => {
     expect(isBlsPeriodStale('2026-08', now)).toBe(false) // ended Aug 31: 32 days
-    expect(isBlsPeriodStale('2026-07', now)).toBe(false) // ended Jul 31: 63 days (normal LAUS lag)
+    expect(isBlsPeriodStale('2026-07', now)).toBe(false) // ended Jul 31: 63 days
     expect(isBlsPeriodStale('2026-06', now)).toBe(true) // ended Jun 30: 94 days
     expect(isBlsPeriodStale(undefined, now)).toBe(false)
     expect(isBlsPeriodStale('garbage', now)).toBe(false)
   })
 
-  test('snapshot marks CPI/LAUS stale when the recorded data stops moving', async () => {
+  test('snapshot marks CPI stale when the recorded data stops moving', async () => {
     clearMemCache()
     jest.useFakeTimers({ now: new Date('2030-01-15T00:00:00Z'), doNotFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'nextTick', 'queueMicrotask'] })
     try {
       const s = await fetchSnapshot('98683')
       expect(s!.cpi.data).not.toBeNull()
       expect(s!.cpi.stale).toBe(true)
-      expect(s!.unemployment.stale).toBe(true)
       expect(buildHeroCards(s!).find(c => c.id === 'groceries')!.stale).toBe(true)
     } finally {
       jest.useRealTimers()
@@ -179,7 +178,7 @@ describe('refresh-cache safety', () => {
     expect(parseRefreshArgs(['--only=gas', '--zips=98683,10001', '--force'])).toEqual({
       dryRun: false, force: true, only: 'gas', zips: ['98683', '10001'],
     })
-    expect(planSize({ lausAreas: [], cpiAreas: [], gasLookups: [] })).toBe(0)
+    expect(planSize({ cpiAreas: [], gasLookups: [] })).toBe(0)
   })
 
   test('BLS retries default to 2 (3 attempts per batch at most)', async () => {
@@ -309,17 +308,17 @@ describe('misc', () => {
     }
   })
 
-  test('paycheck movers exclude counties flagged on wages as well as real pay', () => {
-    const row = (real: number, flags?: string[]) => ({ n: 'x', real, emp: 100000, ...(flags ? { flags } : {}) })
+  test('rent movers exclude counties flagged on rent', () => {
+    const row = (rent: number, flags?: string[]) => ({ n: 'x', rent, emp: 100000, ...(flags ? { flags } : {}) })
     const data: CountyMap = {
-      '00001': row(9, ['wage']),
+      '00001': row(9, ['rent']),
       '00002': row(5),
       '00003': row(4),
       '00004': row(-3),
       '00005': row(-4),
-      '00006': row(-9, ['real']),
+      '00006': row(-9, ['rent']),
     }
-    const { top, bottom } = moversFor(data, 'real', 2)
+    const { top, bottom } = moversFor(data, 'rent', 2)
     const ids = [...top, ...bottom].map(([f]) => f)
     expect(ids).not.toContain('00001')
     expect(ids).not.toContain('00006')

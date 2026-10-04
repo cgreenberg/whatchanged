@@ -5,13 +5,11 @@
 // Live upstream checks run only with `Authorization: Bearer ${CRON_SECRET}`.
 
 import { NextResponse } from 'next/server'
-import { blsSource, blsCpiSource, eiaSource } from '@/lib/api/source-registry'
+import { blsCpiSource, eiaSource } from '@/lib/api/source-registry'
 import { getCached, getCachedEnvelope, lastGoodKey, failedKey } from '@/lib/cache/kv'
 import { isCronAuthorized } from '@/lib/api/cron-auth'
-import { unemploymentCacheKey } from '@/lib/api/cached-sources'
 import { cpiCacheKey, fetchCpiArea, NATIONAL_CPI_AREA } from '@/lib/api/bls-cpi'
 import { getGasLookup, NATIONAL_GAS_CACHE_KEY, fetchGasSeries } from '@/lib/api/eia'
-import { fetchUnemployment } from '@/lib/api/bls'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 
 export const dynamic = 'force-dynamic'
@@ -69,7 +67,6 @@ export async function GET(req: Request) {
   const cpiArea = getMetroCpiAreaForCounty(SAMPLE_COUNTY, SAMPLE_STATE)
   const gasLookup = getGasLookup(SAMPLE_STATE, cpiArea.areaCode, SAMPLE_COUNTY)
   const keys = [
-    unemploymentCacheKey(SAMPLE_COUNTY),
     cpiCacheKey(cpiArea.areaCode),
     cpiCacheKey(NATIONAL_CPI_AREA),
     gasLookup.cacheKey,
@@ -89,7 +86,6 @@ export async function GET(req: Request) {
   if (isCronAuthorized(req)) {
     live = {}
     const checks = [
-      { source: blsSource, run: () => fetchUnemployment(SAMPLE_COUNTY) },
       { source: blsCpiSource, run: () => fetchCpiArea({ areaCode: NATIONAL_CPI_AREA, areaName: 'National', tier: 4 }) },
       { source: eiaSource, run: () => fetchGasSeries('NUS') },
     ]
@@ -127,7 +123,7 @@ export async function GET(req: Request) {
     },
     {
       status: ok ? 200 : 207,
-      // Public (unauthenticated) checks do ~16 Redis reads: let the CDN absorb
+      // Public (unauthenticated) checks do ~13 Redis reads: let the CDN absorb
       // repeated hits for a minute. Authenticated live checks are never cached.
       headers: live
         ? { 'Cache-Control': 'no-cache, no-store' }

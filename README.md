@@ -4,7 +4,7 @@
 
 [whatchanged.us](https://www.whatchanged.us)
 
-What Changed is a free, nonpartisan web app that shows how local economic conditions have shifted since January 20, 2025. Enter a US zip code or city to see gas prices, rent, grocery prices, an estimated tariff cost, unemployment and other local indicators, all from official statistics and published research.
+What Changed is a free, nonpartisan web app that shows how local prices have shifted since January 20, 2025. Enter a US zip code or city to see gas prices, rent, home prices, grocery and energy prices, and an estimated tariff cost, all from official statistics and published research.
 
 Every number shows its source, geography, time window, as-of date and whether it is seasonally adjusted. Estimates are labeled as estimates. The data speaks for itself.
 
@@ -18,22 +18,21 @@ Every number shows its source, geography, time window, as-of date and whether it
 |---|---|---|
 | Gas prices | [EIA](https://www.eia.gov/petroleum/gasdiesel/) weekly retail gasoline | EIA city, state, or PADD region |
 | Grocery, shelter, energy prices | [BLS CPI](https://www.bls.gov/cpi/) | CPI metro area, Census division, or national |
-| Unemployment rate (chart) | [BLS LAUS](https://www.bls.gov/lau/) | County (Connecticut: planning region) |
 
 **Bundled (rebuilt by scripts):**
 
 | Metric | Source | Geography |
 |---|---|---|
 | Rent on new leases | [Zillow ZORI](https://www.zillow.com/research/data/), seasonally adjusted by whatchanged | County |
+| Home prices | [Zillow ZHVI](https://www.zillow.com/research/data/) (smoothed, seasonally adjusted by Zillow) | County |
 | Income and rent levels | [Census ACS](https://www.census.gov/programs-surveys/acs) 5-year | ZIP (ZCTA), city |
 | Tariff cost estimate | [Yale Budget Lab](https://budgetlab.yale.edu/) (2.05% of local median household income) | ZIP |
 | Zip → county | Census 2020 ZCTA/block relationship files (housing-unit weighted) + GeoNames for PO-box zips | ZIP |
-| Local Pulse: home values, listings, paychecks, unemployment, permits, job postings, health premiums | Zillow, Realtor.com, BLS QCEW/LAUS/CPI, Census, Indeed Hiring Lab, CMS | County, city, ZIP |
 
 Changes are measured from a **January 2025 baseline**: the January 2025 monthly value for monthly data, and the last weekly reading on or before January 20, 2025 for gas.
 
 More detail:
-- [docs/MAPPING_STRATEGY.md](docs/MAPPING_STRATEGY.md): how a zip maps to county, CPI area, gas region and LAUS area
+- [docs/MAPPING_STRATEGY.md](docs/MAPPING_STRATEGY.md): how a zip maps to county, CPI area and gas region
 - [docs/LOCAL_DATA_SOURCES.md](docs/LOCAL_DATA_SOURCES.md): the monthly local-data pipeline, its sources and methods
 - [docs/validation/FINDINGS.md](docs/validation/FINDINGS.md): cross-source validation results and caveats
 
@@ -42,9 +41,8 @@ More detail:
 ## Features
 
 - **Hero cards:** gas, rent (or CPI shelter where Zillow has no county rent), groceries and tariff estimate, each with a dollar translation and a provenance line
-- **Charts:** gas, groceries, shelter, energy and unemployment, with Jan 2025 / 3Y / 5Y / 10Y ranges, a national overlay and era shading
-- **Local Pulse:** county-level home values, rent, listings, paychecks vs prices and more
-- **National county map:** how every county changed, per metric
+- **Graphs:** gas, groceries, housing and energy, with Jan 2025 / 3Y / 5Y / 10Y ranges, a national overlay and era shading. The housing graph has three tabs: Rent (Zillow ZORI, the same county series as the Rent card), Home prices (Zillow ZHVI) and Shelter (BLS CPI, all tenants and homeowners)
+- **National county map:** how home prices and rent changed in every county, with biggest movers and a month-by-month time-lapse; tap a county to load it
 - **Share images:** auto-generated PNG cards for social media
 
 ---

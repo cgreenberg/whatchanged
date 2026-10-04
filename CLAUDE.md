@@ -5,8 +5,9 @@ Read fully before touching code. Also read `.claude/rules/orchestration.md` (del
 
 ## Purpose
 
-Enter a zip code and see how local prices, rent, gas and jobs changed since **Jan 20, 2025**, with every number
-sourced and dated, plus a shareable image. Live: https://www.whatchanged.us · repo: github.com/cgreenberg/whatchanged.
+Enter a zip code and see how local **prices** (gas, rent, home prices, groceries, energy, tariff cost) changed since
+**Jan 20, 2025**, with every number sourced and dated, plus a shareable image. The site is prices-only (no jobs or
+unemployment data on the page). Live: https://www.whatchanged.us · repo: github.com/cgreenberg/whatchanged.
 **No partisan framing:** show the data, its source, geography and window, and let the numbers speak. Never imply more
 than the data supports: approximations are labeled, estimates are called estimates.
 
@@ -21,13 +22,13 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 | `npm test` | Jest (unit + integration, MSW mocks, no network) |
 | `npx playwright test` (`npm run test:e2e`) | E2E; `/api/data` is mocked from `tests/fixtures/snapshots/`. `PW_PORT=3107` uses another port (parallel worktrees) |
 | `npm run verify:live [-- --codes] [zips]` | Deployed site vs BLS/EIA for 10 fixed zips; `--codes` also checks every mapped EIA/CPI code (~100 calls, uses BLS quota) |
-| `npm run audit:mappings` | Offline audit of every zip's county/CPI/gas/LAUS mapping (no API calls) |
+| `npm run audit:mappings` | Offline audit of every zip's county/CPI/gas mapping (no API calls; also checks the CT planning-region lookup used for county income) |
 | `npm run build:zip-county` | Rebuild `zip-county.json` + `ct-planning-regions.json` (`NODE_OPTIONS=--max-old-space-size=6144`; caches downloads in `$GEO_CACHE_DIR`) |
 | `npm run build:cbsa-crosswalk` | Rebuild `cbsa-cpi-crosswalk.json` (OMB 2013 delineation) |
 | `npm run build:county-geo` | Rebuild `county-geo.json` from the TS lookup functions; run after either build above |
 | `npm run build:census-acs` | Rebuild `census-acs.json`. City incomes: `npx tsx scripts/build-census-places.ts` (`CENSUS_API_KEY`) |
 | `npm run data:local` | Fetch → build → validate the static local-data pipeline (`RAW=/path` for the download dir) |
-| `npm run cache:refresh [-- --dry-run] [--only=laus\|cpi\|gas] [--zips=a,b] [--force]` | Fetch every LAUS/CPI/gas series and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
+| `npm run cache:refresh [-- --dry-run] [--only=cpi\|gas] [--zips=a,b] [--force]` | Fetch every CPI/gas series and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
 | `npm run cache:flush -- '<glob>' [--yes] [--include-lastgood]` | List (dry run) or delete matching Redis keys; `:lastgood` copies kept unless flagged |
 | `npm run cache:warm -- <zip...>` | Hit `/api/data/{zip}` sequentially (`BASE_URL` https, or http://localhost) |
 | `npx tsx scripts/build-county-income.ts` | Rebuild `county-income.json` (ACS 5-yr B19013 county median income, bulk file, no key) |
@@ -40,8 +41,8 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 ```
 /api/data/[zip] → src/lib/api/snapshot.ts fetchSnapshot()
   zip → lookupZip (zip-county.json) → county FIPS
-  ├─ BLS LAUS  bls.ts      ┐ through cached-sources.ts → kv.ts getCachedOrFetch (validate, last-good, dedupe)
-  ├─ BLS CPI   bls-cpi.ts  │ local CPI failed → shared national CPI key (labeled national)
+  ├─ BLS CPI   bls-cpi.ts  ┐ through cached-sources.ts → kv.ts getCachedOrFetch (validate, last-good, dedupe)
+  │                        │ local CPI failed → shared national CPI key (labeled national)
   ├─ EIA gas   eia.ts      ┘ + shared national gas key (overlay, or labeled fallback)
   ├─ Census ACS  src/lib/data/census-acs.ts (bundled JSON, no runtime API)
   ├─ Rent      src/lib/rent.ts ← src/lib/data/county-rent.json (built by path 2)
@@ -52,20 +53,27 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 `?audit=true` adds `_audit` (series IDs, baseline/latest observations, formulas); `verify:live` uses it.
 `src/lib/api/national.ts` (OG image) reuses the same cached accessors and keys.
 
-**Feature flag:** `SHOW_LOCAL_PULSE = false` in `src/lib/features.ts` hides the Local Pulse section (code/data kept; Rent card, unemployment headline, national map unaffected).
-
-**2. Static monthly pipeline** (Local Pulse cards, county map, unemployment headline, rent hero data)
+**2. Static monthly pipeline** (Rent card data, Housing graph Zillow tabs, county map)
 
 ```
 scripts/fetch-local-data.sh RAW → scripts/build-local-data.py → scripts/validate-local-data.py
-  → public/data/{counties.json, meta.json, county/{stateFips}.json, zip/{zip3}.json, cities/{ST}.json}
+  → public/data/{counties.json, counties-timeline.json, meta.json, us-housing.json, county/{stateFips}.json}
+    (also zip/{zip3}.json and cities/{ST}.json, which the page no longer reads)
   → src/lib/data/county-rent.json
   → docs/validation/{report.md, results.json}
 ```
 
 `.github/workflows/refresh-local-data.yml` runs on the 20th of each month and opens a PR to `main`. Any FAIL from the
 validator fails the run. Sources, methods and sanity filters: `docs/LOCAL_DATA_SOURCES.md`. The client reads these files
-through `src/lib/local-pulse.ts` (no keys, no Redis).
+through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still computes LAUS, QCEW, permits, etc. into
+`counties.json`; nothing in the UI shows them.
+
+- `county/{stateFips}.json` rows carry `hvS` (monthly ZHVI levels since 2016, 1 decimal) and `rentS` (monthly ZORI
+  levels seasonally adjusted by whatchanged, 2 decimals) as `{start: 'YYYY-MM', v: [...]}`. `counties.json` (map) omits
+  them. The validator FAILs unless every `rentS` reproduces `county-rent.json` `pct` (Rent tab % = Rent card %) and
+  every `hvS` reproduces `hv`.
+- `us-housing.json`: U.S. ZHVI and SA ZORI (Zillow metro files' United States row) for the Housing graph's
+  "Show national".
 
 ## Geography (single source of truth)
 
@@ -84,10 +92,9 @@ through `src/lib/local-pulse.ts` (no keys, no Redis).
   → `NUS`. Tier, cache key and label come from the duoarea prefix (`describeDuoarea`). Product is **`EPMR`
   (regular gasoline)**, `EIA_GAS_PRODUCT` in `eia.ts`; series `EMM_EPMR_PTE_{duoarea}_DPG`. (EPM0 "all grades" ran
   ~10–15¢ above regular; EPMR was verified for all 27 reachable duoareas on 2026-10-02.)
-- **LAUS** `src/lib/mappings/laus-area.ts`: county FIPS, except Connecticut → 2022 planning region (09110–09190).
-  Per zip: the region with most of the zip's housing units. Per legacy county: the dominant region, flagged `approx`.
-  Data is in `ct-planning-regions.json`. Series `LAUCN{fips}0000000003`.
-- **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas, no LAUS.
+- **CT planning regions** `src/lib/mappings/laus-area.ts`: Connecticut zip / legacy county → 2022 planning region
+  (09110–09190), data in `ct-planning-regions.json`. Used for CT county income (tariff card) and by the static pipeline.
+- **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas.
 - Labels: `cpiGeoLabel()` in `src/lib/provenance.ts` (`metro: …` / `division: …` / `region: …` / `national`) infers
   the tier from the area code for old cache entries. Gas labels always name the PADD.
 - Full rationale: `docs/MAPPING_STRATEGY.md`. Golden expectations: `tests/unit/golden-zips.test.ts`.
@@ -114,15 +121,31 @@ Share card, OG image and `og:description` tag every number with a short geograph
 `HI_AK_GAS_CAVEAT` on the card and share/OG images.
 
 Dollar amounts are computed server-side in `snapshot.ts` → `dollarImpact`. The frontend never recomputes them or
-substitutes national stand-ins. Sanity ranges (`src/lib/api/validate.ts`, mirrored in `hero-cards.ts`): unemployment
-0–25%, price % change −20 to +50, gas $1–$10. Anything outside shows "Data unavailable".
+substitutes national stand-ins. Sanity ranges (`src/lib/api/validate.ts`, mirrored in `hero-cards.ts`): price %
+change −20 to +50, gas $1–$10. Anything outside shows "Data unavailable".
 
-**Unemployment:** the headline uses pipeline 3-month averages (`counties.json` `ur/urBase/urCur`; Dec 2024–Feb 2025 base,
-latest preliminary month excluded; the 3 months must be calendar-consecutive, never bridging a gap like Oct 2025), labeled "3-month avg, seasonally adjusted by whatchanged". The chart shows monthly
-NSA county LAUS plus NSA national `LNU04000000`, labeled "not seasonally adjusted".
+## Page layout (`src/components/HomeContent.tsx`)
+
+1. Zip input + location banner. 2. The four hero cards. 3. Graphs (`ChartsSection.tsx`, configs in
+`src/lib/charts/chart-config.ts`): Gas, Groceries, **Housing**, Energy — each with Jan 2025 | 3Y | 5Y | 10Y, era
+shading and "Show national". 4. National county map (`src/components/map/NationalMap.tsx`).
+
+**Housing graph** (`src/components/charts/HousingChart.tsx`) has three tabs:
+- **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %).
+- **Home prices**: Zillow ZHVI county `hvS` ("Zillow's smoothed, seasonally adjusted typical home value").
+- **Shelter (CPI)**: BLS CPI shelter `SAH1` from the snapshot (all tenants and homeowners).
+Default = Rent when the county shard has `rentS`, else Shelter (CPI). Tabs without data are disabled with "No Zillow
+… data for {county}". Zillow tabs compare against `us-housing.json`. `HOUSING_NOTE` (CPI vs Zillow) sits with the graph.
+
+**County map:** price metrics only (Home prices, Rent), movers, time-lapse (`counties-timeline.json`). Controls
+(metric chips, Play) sit above the map, never over it: an absolutely positioned Play button used to cover the
+top-right counties (Maine/New England, much of the upper Midwest on phones) and swallowed those taps. Decorations
+(state mesh, highlight ring, month label) are `pointer-events: none`. Every county record has a zip `z` (most
+populous Zillow zip, else any crosswalk zip) for "See everything that changed here"; a few small VA independent
+cities have no crosswalk zip and no button. `tests/e2e/map.spec.ts` clicks counties by screen point (real hit-testing).
 
 **Baselines** (`src/lib/baseline.ts`, `src/lib/api/bls-common.ts`): CPI uses Jan 2025, else the latest month back to
-Nov 2024, else null. LAUS uses Jan 2025 only. Gas uses the last weekly reading on or before Jan 20 2025, no earlier than
+Nov 2024, else null. Zillow series use Jan 2025. Gas uses the last weekly reading on or before Jan 20 2025, no earlier than
 Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 shutdown gap) are dropped.
 
 ## Data-mixing rules
@@ -132,8 +155,8 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
    data, never today.
 2. No hard-coded dates in UI strings except the baseline constants in `src/lib/baseline.ts`
    (`tests/unit/no-hardcoded-dates.test.ts` enforces this).
-3. County (then same-county Zillow city) leads; zip figures are labeled "Estimate for zip X". No percentile ranks.
-4. Approximations (CT legacy counties, Valdez-Cordova, national fallbacks) carry an `approx` flag or note in the UI.
+3. County figures lead (zip-vs-zip differences inside a county are not corroborated). No percentile ranks.
+4. Approximations (Valdez-Cordova, national fallbacks) carry an `approx` flag or note in the UI.
 5. Zillow rent (asking rent on new leases) and CPI shelter (all tenants + owners' equivalent rent, trails the market
    by ~1 yr) measure different things. Always label which one is shown; never pair one's % with the other's $ base.
 6. When the hero cards' as-of months differ by more than one month, show the page-level range (`asOfRange`).
@@ -143,31 +166,28 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 
 - Zip-vs-zip differences inside a county are not corroborated (r≈0.06–0.11); county comparisons are.
 - CPI shelter trails Zillow by about a year (r=0.50 over the same window, 0.80 lagged a year): Austin CPI is up while rents fell.
-- Single QCEW quarters are mostly bonus timing, so paychecks use the trailing 4 quarters vs the prior 4.
-- The latest LAUS month is preliminary (e.g. Ohio Aug 2026 anomalies). Oct 2025 is missing. Buncombe NC's baseline is inflated by Helene.
-- HUD SAFMR is not a rent-change measure. Permit bases under 200 units are dropped.
+- Oct 2025 BLS data is missing (shutdown gap).
+- HUD SAFMR is not a rent-change measure.
 
 ## Cache (`src/lib/cache/kv.ts`, accessors in `src/lib/api/cached-sources.ts`)
 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
-`src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI and
-county LAUS releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
-every LAUS area (~3,230: counties, CT planning regions, PR municipios; 49 areas + national per POST), every CPI area
-(33; 15 per POST) and every EIA gas series (27), then writes them with the runtime's own parsers, validators, keys and
-`writeEnvelope`. A full run is **~69 BLS requests** (of 500/day), ~27 EIA requests and ~10k Redis commands; BLS
-batches retry at most 2 times (worst case ~210 calls). A successful full run writes `refresh:last-success` (ISO time);
+`src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
+releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
+every CPI area (33; 15 per POST, national series ride along) and every EIA gas series (27), then writes them with the
+runtime's own parsers, validators, keys and `writeEnvelope`. A full run is **3 BLS requests** (of 500/day) and
+~27 EIA requests; BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
 a full run that starts < 12 h after it is skipped (two schedules can land on the same day) unless `--force`
 (workflow_dispatch input `force`). Each full run also writes `refresh:last-attempt` at start; another unforced full
 run within 2 h is skipped, so a failed run plus a coinciding cron can't spend the quota twice. Unknown CLI args
 (`--only gas`, `--dryrun`, …) are rejected, never treated as a full run. Keys with no usable upstream data
 (status missing/invalid) get a `{key}:missing` marker (21 days) that the runtime honors (no upstream fetch:
 last-good copy or "Data unavailable"); the next successful write clears it. It exits
-non-zero on any fetch/write error, any CPI/gas gap, >2% of LAUS areas without data, or an empty plan. Secrets: `BLS_API_KEY`,
+non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `BLS_API_KEY`,
 `EIA_API_KEY`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`. There are no Vercel crons and no `/api/warm-cache`.
 
 | Key | Runtime TTL |
 |---|---|
-| `bls:unemployment:{lausFips}` (county, or CT planning region) | 21 days |
 | `bls:cpi:{areaCode}:all` (`0000` = national, shared) | 21 days |
 | `eia:gas:epmr:city:{duoarea}` · `eia:gas:epmr:state:{ST}` · `eia:gas:epmr:pad:{1A,1B,1C,2,3,4,5XCA}` · `eia:gas:epmr:national` | 10 days |
 | `budget:{bls\|eia}:{YYYY-MM-DD}` (runtime upstream counter) | 2 days |
@@ -195,11 +215,11 @@ non-zero on any fetch/write error, any CPI/gas gap, >2% of LAUS areas without da
   are refused (error logged once); EIA still uses the in-memory counter. Local dev/tests use the in-memory fallback.
 - `validate` callbacks reject out-of-range data on read and before write. Concurrent requests for a key share one
   fetch (in-process dedupe). Census/ACS and rent are bundled JSON, not cached.
-- CDN: `s-maxage=86400, stale-while-revalidate=86400` when unemployment, CPI and gas are all present and not stale;
+- CDN: `s-maxage=86400, stale-while-revalidate=86400` when CPI and gas are both present and not stale;
   otherwise `s-maxage=300, stale-while-revalidate=300`. A national stand-in for a failed local series
   (`gas.data.fallback` / `cpi.data.fallback === 'national'`, `usesNationalFallback`) counts as degraded too
   (data route, share image, OG image).
-- **BLS data-age staleness** (`isBlsPeriodStale`, `snapshot.ts`): CPI or LAUS whose latest month ended more than
+- **BLS data-age staleness** (`isBlsPeriodStale`, `snapshot.ts`): CPI whose latest month ended more than
   75 days ago (`BLS_STALE_DAYS`) is marked `stale` and shown with the stale badge, even if the cache entry is fresh
   (the refresh rewrites `fetchedAt` even when BLS hasn't published a new month). Gas: >10 days (`isGasStale`).
 - Live `/api/health` checks require `Authorization: Bearer $CRON_SECRET` (`no-store`). Public `/api/health` is cache-only, CDN-cached 60 s (`Vary: Authorization`).
@@ -210,7 +230,7 @@ non-zero on any fetch/write error, any CPI/gas gap, >2% of LAUS areas without da
 
 ## Testing strategy
 
-- **Golden zips** (`golden-zips.test.ts`): hand-checked county/CPI/gas/LAUS expectations taken from the sources, not the code.
+- **Golden zips** (`golden-zips.test.ts`): hand-checked county/CPI/gas expectations taken from the sources, not the code.
 - **Recorded fixtures:** `tests/fixtures/bls-recorded-*.json` (real BLS responses) drive parser and baseline tests.
   `tests/fixtures/snapshots/{zip}.json` drive render tests and Playwright.
 - **Render-level:** `hero-cards.test.tsx` asserts the displayed $ equals the API % × stated base, null/out-of-range →
@@ -254,9 +274,8 @@ the refresh-cache workflow once (Actions → workflow_dispatch) **before or righ
   residential zip in the same city (`donorScope: 'city'`), else the most populous in the county (`'county'`) — not
   necessarily the nearest zip.
 - Zillow county rent covers only ~41% of residential zips (~590 counties). The rest get the CPI shelter card.
-- Connecticut LAUS for a legacy county is its dominant planning region (approx); zip-level CT is exact.
 - Using the real HUD USPS crosswalk would need a HUD USER API token.
-- Kalawao HI and AS/GU/MP/VI have no Local Pulse county record.
+- Kalawao HI and AS/GU/MP/VI have no county record (no Zillow tabs, not on the map).
 
 ## Shell command notes
 

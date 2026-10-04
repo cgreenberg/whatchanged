@@ -10,27 +10,17 @@ import { http, HttpResponse } from 'msw'
 describe('fetchSnapshot graceful degradation', () => {
   beforeEach(() => clearMemCache())
 
-  test('when BLS unemployment fails, snapshot still returns with error field', async () => {
+  test('when BLS fails, snapshot still returns with CPI error and gas data', async () => {
     server.use(
-      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
-        const body = await request.json() as { seriesid?: string[] }
-        // Only fail for unemployment (LAUCN series), let CPI through
-        const ids = body.seriesid ?? []
-        if (ids.some((id: string) => id.startsWith('LAUCN'))) {
-          return new HttpResponse(null, { status: 503 })
-        }
-        // Let CPI requests pass through to default handler
-        return HttpResponse.json({
-          status: 'REQUEST_SUCCEEDED',
-          Results: { series: [] },
-        })
-      })
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', () =>
+        new HttpResponse(null, { status: 503 })
+      )
     )
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull()
-    // unemployment should be null with error
-    expect(snapshot!.unemployment.data).toBeNull()
-    expect(snapshot!.unemployment.error).toBeTruthy()
+    expect(snapshot!.cpi.data).toBeNull()
+    expect(snapshot!.cpi.error).toBeTruthy()
+    expect(snapshot!.gas.data).not.toBeNull()
   })
 
   test('when all external APIs fail, snapshot returns with all data null but no crash', async () => {
@@ -44,7 +34,6 @@ describe('fetchSnapshot graceful degradation', () => {
     )
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull() // should not return null for valid zip
-    expect(snapshot!.unemployment.data).toBeNull()
     expect(snapshot!.cpi.data).toBeNull()
     expect(snapshot!.gas.data).toBeNull()
     // Census is static — should still be present
@@ -81,7 +70,7 @@ describe('fetchSnapshot caching behavior', () => {
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull()
     const cs = snapshot!.cacheStatus!
-    for (const key of ['unemployment', 'cpi', 'gas', 'census'] as const) {
+    for (const key of ['cpi', 'gas', 'census'] as const) {
       expect(['hit', 'miss', 'stale', 'error']).toContain(cs[key])
     }
   })

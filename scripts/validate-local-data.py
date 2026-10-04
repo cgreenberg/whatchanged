@@ -480,6 +480,32 @@ def main():
         inv("county-rent.json: pct in [-30, 60], levels positive, matches counties.json",
             [f for f, v in crj["counties"].items() if not (-30 <= v["pct"] <= 60 and v["curRent"] > 0 and v["baseRent"] > 0
                                                          and counties.get(f, {}).get("rent") == v["pct"])])
+        # Housing graph series (county shards): the Rent tab's latest % must equal the Rent card's %,
+        # and the Home prices tab's latest % must equal the map's home-value %.
+        shards = {}
+        for sp in glob.glob(os.path.join(a.data, "county", "*.json")):
+            shards.update(json.load(open(sp)))
+
+        def series_pct(s, latest):
+            if not s or not s.get("v"):
+                return None
+            y, m = int(s["start"][:4]), int(s["start"][5:])
+            bi = (2025 - y) * 12 + (1 - m)
+            v = s["v"]
+            if bi < 0 or bi >= len(v) or v[bi] is None or v[-1] is None:
+                return None
+            n = len(v) - 1 + m - 1
+            end = f"{y + n // 12:04d}-{n % 12 + 1:02d}"
+            return round((v[-1] / v[bi] - 1) * 100, 1) if end == latest else ("stale", end)
+        inv("County rentS series reproduce county-rent.json pct (Rent tab = Rent card)",
+            [(f, v["pct"], series_pct(shards.get(f, {}).get("rentS"), v["asOf"])) for f, v in crj["counties"].items()
+             if series_pct(shards.get(f, {}).get("rentS"), v["asOf"]) != v["pct"]])
+        hv_latest = json.load(open(os.path.join(a.data, "meta.json")))["sources"]["zhvi"]["latest"]
+        inv("County hvS series reproduce the county home-value % (Home prices tab = map)",
+            [(f, c["hv"], series_pct(c.get("hvS"), hv_latest)) for f, c in shards.items()
+             if "hv" in c and series_pct(c.get("hvS"), hv_latest) != c["hv"]])
+        inv("counties.json carries no monthly series (kept in the per-state shards)",
+            [f for f, c in counties.items() if "hvS" in c or "rentS" in c])
 
     # ------------------------------------------------------------------ write report
     json.dump(RESULTS, open(os.path.join(a.out, "results.json"), "w"), indent=1, default=str)

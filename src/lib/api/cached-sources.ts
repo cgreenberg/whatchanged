@@ -6,30 +6,17 @@
 // budget in kv.ts.
 
 import { getCachedOrFetch, TTL_BLS, TTL_EIA, type CachedResult } from '@/lib/cache/kv'
-import type { UnemploymentData, CpiData } from '@/types'
-import { fetchUnemployment } from './bls'
+import type { CpiData } from '@/types'
 import { fetchCpiArea, cpiCacheKey, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchGasSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
-import { isValidUnemployment, isValidCpi, isValidGasSeries } from './validate'
+import { isValidCpi, isValidGasSeries } from './validate'
 
 /** Runtime TTLs (longer than the refresh interval; see kv.ts). */
-export const UNEMPLOYMENT_TTL = TTL_BLS
 export const CPI_TTL = TTL_BLS
 export const GAS_TTL = TTL_EIA
 
 export interface FetchOpts {
   forceRefresh?: boolean
-}
-
-/** Keyed by LAUS area so every zip in one area (e.g. a CT planning region) shares an entry. */
-export const unemploymentCacheKey = (lausFips: string) => `bls:unemployment:${lausFips}`
-
-export function getUnemploymentCached(lausFips: string, opts: FetchOpts = {}): Promise<CachedResult<UnemploymentData>> {
-  return getCachedOrFetch(unemploymentCacheKey(lausFips), UNEMPLOYMENT_TTL, () => fetchUnemployment(lausFips), {
-    validate: isValidUnemployment,
-    forceRefresh: opts.forceRefresh,
-    budget: 'bls',
-  })
 }
 
 export type CpiArea = { areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 }

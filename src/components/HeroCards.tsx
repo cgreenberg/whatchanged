@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { StatCard } from '@/components/StatCard'
 import { buildHeroCards, asOfRange, SHELTER_VS_RENT_NOTE, type HeroCountyContext } from '@/lib/hero-cards'
-import { fetchCounty } from '@/lib/local-pulse'
+import { fetchCounty } from '@/lib/county-data'
 import type { EconomicSnapshot } from '@/types'
 
 export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {

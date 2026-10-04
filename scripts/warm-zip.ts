@@ -41,7 +41,7 @@ async function main() {
       const res = await fetch(`${BASE_URL}/api/data/${zip}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
-      const missing = ['unemployment', 'cpi', 'gas'].filter((k) => !json?.[k]?.data)
+      const missing = ['cpi', 'gas'].filter((k) => !json?.[k]?.data)
       if (missing.length) bad++
       console.log(`${zip}  ${missing.length ? `MISSING ${missing.join(', ')}` : 'ok'}`)
     } catch (e) {

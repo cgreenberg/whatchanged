@@ -71,7 +71,7 @@ interface EraChartProps {
   /** Source/geography/adjustment for the footer; window and as-of are derived from the visible data. */
   provenance: Omit<Provenance, 'window' | 'asOf'> & { asOf?: string }
   stale?: boolean
-  /** Optional headline block shown above the chart (e.g. the unemployment change). */
+  /** Optional block shown above the chart (e.g. the Housing graph's tabs and headline %). */
   headline?: ReactNode
   /** Weekly gas: the "Jan 2025" view starts at the baseline week (last reading ≤ Jan 20). */
   weeklyGasBaseline?: boolean

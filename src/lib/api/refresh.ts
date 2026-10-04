@@ -4,25 +4,20 @@
 // envelope format (writeEnvelope), so user requests are cache hits and the
 // runtime path almost never calls BLS/EIA.
 //
-// Upstream use for a full refresh:
-//   - LAUS: one BLS POST per 49 areas (+ the shared national series = 50, the
-//     BLS v2 per-request maximum with a key), ~66 calls for ~3,230 areas
-//   - CPI:  one BLS POST per 15 areas (45 series + 3 national = 48), 3 calls
-//   - Gas:  one EIA GET per duoarea (~28 calls)
+// Upstream use for a full refresh (prices only; county unemployment/LAUS is no
+// longer fetched at runtime):
+//   - CPI: one BLS POST per 15 areas (45 series + 3 national = 48), 3 calls
+//   - Gas: one EIA GET per duoarea (~28 calls)
 
 import zipCountyData from '@/lib/data/zip-county.json'
 import { lookupZip } from '@/lib/data/zip-lookup'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
-import { getLausAreaForCounty, resolveLausArea } from '@/lib/mappings/laus-area'
 import { writeEnvelope, setCached, missingKey, MISSING_TTL } from '@/lib/cache/kv'
 import { fetchBlsSeries, type BlsRawPoint } from './bls-common'
-import { buildSeriesId, parseUnemploymentResponse, NATIONAL_UNEMPLOYMENT_SERIES } from './bls'
 import { cpiSeriesIds, cpiCacheKey, parseCpiResponse, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchGasSeries, getGasLookup, type GasLookupResult, type GasSeriesData } from './eia'
-import { isValidUnemployment, isValidCpi, isValidGasSeries } from './validate'
+import { isValidCpi, isValidGasSeries } from './validate'
 import {
-  unemploymentCacheKey,
-  UNEMPLOYMENT_TTL,
   CPI_TTL,
   GAS_TTL,
   NATIONAL_CPI,
@@ -32,14 +27,11 @@ import {
 
 /** BLS API v2 with a registration key: max 50 series and 20 years per request. */
 export const BLS_MAX_SERIES_PER_REQUEST = 50
-export const LAUS_AREAS_PER_REQUEST = BLS_MAX_SERIES_PER_REQUEST - 1 // + national LNU04000000
 export const CPI_AREAS_PER_REQUEST = 15 // 15 × 3 items + 3 national items = 48 series
 
 // --- Plan --------------------------------------------------------------------
 
 export interface RefreshPlan {
-  /** Every LAUS area FIPS any zip (or county) resolves to — incl. CT planning regions, PR municipios. */
-  lausAreas: string[]
   /** Every CPI area any county resolves to, plus national (runtime fallback). */
   cpiAreas: CpiArea[]
   /** Every EIA gas series any zip resolves to, plus national (overlay + fallback). */
@@ -50,21 +42,17 @@ const ALL_ZIPS = Object.keys(zipCountyData as Record<string, unknown>)
 
 /** Resolve zips exactly as the snapshot does (fetchSnapshot) and collect distinct cache targets. */
 export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
-  const laus = new Set<string>()
   const cpi = new Map<string, CpiArea>([[NATIONAL_CPI.areaCode, NATIONAL_CPI]])
   const gas = new Map<string, GasLookupResult>([[NATIONAL_GAS_LOOKUP.cacheKey, NATIONAL_GAS_LOOKUP]])
   for (const zip of zips) {
     const location = lookupZip(zip)
     if (!location) continue
-    laus.add(resolveLausArea(zip, location.countyFips).fips)
-    laus.add(getLausAreaForCounty(location.countyFips).fips)
     const area = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
     if (!cpi.has(area.areaCode)) cpi.set(area.areaCode, area)
     const lookup = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips)
     if (!gas.has(lookup.cacheKey)) gas.set(lookup.cacheKey, lookup)
   }
   return {
-    lausAreas: [...laus].sort(),
     cpiAreas: [...cpi.values()].sort((a, b) => a.areaCode.localeCompare(b.areaCode)),
     gasLookups: [...gas.values()].sort((a, b) => a.cacheKey.localeCompare(b.cacheKey)),
   }
@@ -179,36 +167,6 @@ export async function runRefresh(
   const record = (key: string, status: ItemStatus, error?: string) =>
     report.results.push(error ? { key, status, error } : { key, status })
 
-  // LAUS unemployment — batched, sequential.
-  const lausBatches = chunk(plan.lausAreas, LAUS_AREAS_PER_REQUEST)
-  for (const [i, batch] of lausBatches.entries()) {
-    const ids = batch.map(buildSeriesId)
-    let seriesMap: Record<string, BlsRawPoint[]>
-    try {
-      seriesMap = await withRetry('bls', () => deps.fetchBls([...ids, NATIONAL_UNEMPLOYMENT_SERIES]))
-    } catch (e) {
-      report.failedBatches++
-      for (const fips of batch) record(unemploymentCacheKey(fips), 'error', msg(e))
-      continue
-    }
-    for (const fips of batch) {
-      const key = unemploymentCacheKey(fips)
-      if (!seriesMap[buildSeriesId(fips)]?.length) {
-        record(key, 'missing', `BLS returned no data for ${buildSeriesId(fips)}`)
-        continue
-      }
-      try {
-        const data = parseUnemploymentResponse(seriesMap, fips)
-        if (!isValidUnemployment(data)) record(key, 'invalid', 'failed sanity validation')
-        else pending.push({ key, ttl: UNEMPLOYMENT_TTL, data })
-      } catch (e) {
-        record(key, 'invalid', msg(e))
-      }
-    }
-    deps.log(`  LAUS batch ${i + 1}/${lausBatches.length} (${batch.length} areas)`)
-    if (blsPauseMs) await deps.sleep(blsPauseMs)
-  }
-
   // CPI — batched with the shared national series.
   const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
   const natIds = [nat.groceries, nat.shelter, nat.energy]
@@ -322,8 +280,8 @@ export function shouldSkipRecentRun(
   return age >= 0 && age < intervalMs
 }
 
-export type RefreshSource = 'laus' | 'cpi' | 'gas'
-const SOURCES: RefreshSource[] = ['laus', 'cpi', 'gas']
+export type RefreshSource = 'cpi' | 'gas'
+const SOURCES: RefreshSource[] = ['cpi', 'gas']
 
 export interface RefreshArgs {
   dryRun: boolean
@@ -366,5 +324,5 @@ export function parseRefreshArgs(argv: string[]): RefreshArgs | { error: string 
 
 /** Total number of upstream targets in a plan. */
 export function planSize(plan: RefreshPlan): number {
-  return plan.lausAreas.length + plan.cpiAreas.length + plan.gasLookups.length
+  return plan.cpiAreas.length + plan.gasLookups.length
 }

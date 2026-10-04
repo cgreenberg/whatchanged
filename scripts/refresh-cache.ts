@@ -8,7 +8,7 @@
  *
  *   npm run cache:refresh                      # full refresh → Upstash (needs KV_* env)
  *   npm run cache:refresh -- --dry-run         # fetch + validate, write to in-memory only
- *   npm run cache:refresh -- --only=gas        # just one source: laus | cpi | gas
+ *   npm run cache:refresh -- --only=gas        # just one source: cpi | gas
  *   npm run cache:refresh -- --zips=98683,10001  # only the areas behind these zips
  *   npm run cache:refresh -- --force           # run even if a full refresh succeeded < 12h ago
  *
@@ -22,8 +22,8 @@
  *
  * Env: BLS_API_KEY (required: 50 series/request needs a key), EIA_API_KEY,
  *      KV_REST_API_URL (https), KV_REST_API_TOKEN.
- * Never prints secrets. Exit 1 on any fetch or write error, any CPI/gas gap, or
- * if more than 2% of LAUS areas have no usable data (a systematic problem).
+ * Never prints secrets. Exit 1 on any fetch or write error or any CPI/gas gap.
+ * (County unemployment/LAUS is not refreshed: the site no longer fetches it.)
  */
 import {
   planRefresh,
@@ -46,8 +46,6 @@ import {
   getCached,
   setCached,
 } from '../src/lib/cache/kv'
-
-const MAX_MISSING_LAUS_SHARE = 0.02
 
 function fail(msg: string): never {
   console.error(msg)
@@ -103,13 +101,12 @@ async function main() {
 
   const full = planRefresh(zips)
   const plan: RefreshPlan = {
-    lausAreas: !only || only === 'laus' ? full.lausAreas : [],
     cpiAreas: !only || only === 'cpi' ? full.cpiAreas : [],
     gasLookups: !only || only === 'gas' ? full.gasLookups : [],
   }
   if (planSize(plan) === 0) fail('Refresh plan is empty (check --zips / --only)')
   console.log(
-    `refresh-cache${dryRun ? ' (dry run, in-memory)' : ''}: ${plan.lausAreas.length} LAUS areas, ` +
+    `refresh-cache${dryRun ? ' (dry run, in-memory)' : ''}: ` +
       `${plan.cpiAreas.length} CPI areas, ${plan.gasLookups.length} EIA gas series`
   )
 
@@ -126,15 +123,8 @@ async function main() {
       `(${Math.round((Date.now() - started) / 1000)}s)`
   )
 
-  // A handful of LAUS areas may legitimately have no BLS series (or fail the
-  // 0–25% sanity range); the runtime shows "Data unavailable" for them too.
-  // Anything else — fetch/write errors, CPI or gas gaps — fails the run.
-  const isLaus = (k: string) => k.startsWith('bls:unemployment:')
-  const lausGaps = report.results.filter((r) => isLaus(r.key) && (r.status === 'missing' || r.status === 'invalid')).length
-  const otherGaps = report.results.filter((r) => !isLaus(r.key) && (r.status === 'missing' || r.status === 'invalid')).length
-  const tooManyLausGaps = plan.lausAreas.length > 0 && lausGaps / plan.lausAreas.length > MAX_MISSING_LAUS_SHARE
-  if (tooManyLausGaps) console.error(`Too many LAUS areas without usable data: ${lausGaps}/${plan.lausAreas.length}`)
-  if (s.errors || otherGaps || tooManyLausGaps) process.exit(1)
+  // Any fetch/write error or CPI/gas gap fails the run.
+  if (s.errors || s.missing || s.invalid) process.exit(1)
   if (!dryRun && isFullRun) {
     await setCached(REFRESH_LAST_SUCCESS_KEY, new Date().toISOString(), REFRESH_LAST_SUCCESS_TTL)
   }

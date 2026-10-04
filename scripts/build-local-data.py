@@ -12,7 +12,10 @@ at build time, so rebuilding after those files change picks up the new mappings 
 
 Outputs
   public/data/zip/{zip3}.json   per-zip: Zillow home value + rent series, Realtor.com listing snapshot
-  public/data/counties.json     per-county metrics for the national map + local cards
+  public/data/counties.json     per-county metrics for the national map
+  public/data/county/{st}.json  per-state shards of the same records plus monthly Zillow series since 2016
+                                (hvS = ZHVI levels, rentS = ZORI levels seasonally adjusted here) for the Housing graph
+  public/data/us-housing.json   U.S. ZHVI / seasonally adjusted ZORI series (Housing graph "Show national")
   public/data/cities/{ST}.json  Zillow city-level home value / rent, keyed by Zillow RegionID
   public/data/meta.json         as-of dates, per-metric time windows, source attributions
 
@@ -146,6 +149,25 @@ def last_consecutive(months, n):
         if all(month_range(w[k], w[k + 1])[1:] == [w[k + 1]] for k in range(n - 1)):
             return w
     raise SystemExit(f"no {n} consecutive published months in {months[-12:]}")
+
+
+def compact_series(row, months, digits):
+    """{start: YYYY-MM, v: [...]} from the first finite month to the end; interior gaps become null."""
+    ok = np.isfinite(row)
+    first = int(np.argmax(ok))
+    rnd = (lambda x: int(round(float(x)))) if digits == 0 else (lambda x: round(float(x), digits))
+    return {"start": months[first], "v": [rnd(x) if np.isfinite(x) else None for x in row[first:]]}
+
+
+def us_row(path, sa):
+    """United States row of a Zillow metro file as a compact series (ZORI seasonally adjusted here)."""
+    k, mat, months, _ = load_zillow(path, lambda d: d.RegionType.tolist())
+    i = k.index("country")
+    if sa:
+        adj, ok = seasonal_adjust(mat[i:i + 1], months)
+        assert ok[0], "US ZORI too short to seasonally adjust"
+        return compact_series(adj[0], months, 2)
+    return compact_series(mat[i], months, 0)
 
 
 def to_int(x):
@@ -365,6 +387,8 @@ def main():
             timeline["hv"][f] = [round(float(v), 1) for v in row]
         if np.isfinite(pct[i]):
             counties[f]["hv"] = round(float(pct[i]), 1); counties[f]["hvCur"] = int(round(cur[i], -2))
+            # Monthly ZHVI levels since SERIES_START for the Housing graph (Zillow-adjusted; 1 decimal so the graph reproduces `hv`)
+            counties[f]["hvS"] = compact_series(chv[i], cm, 1)
     ck, cr, crm, _ = load_zillow(R("zori_county.csv"), cfips)
     cr_sa, _ = seasonal_adjust(cr, crm)
     _, _, pct = change_since(cr_sa, crm)
@@ -382,6 +406,9 @@ def main():
             timeline["rent"][f] = [round(float(v), 1) for v in row]
         if np.isfinite(pct[i]) and np.isfinite(cr[i, -1]):
             counties[f]["rent"] = round(float(pct[i]), 1); counties[f]["rentCur"] = int(round(cr[i, -1]))  # observed level
+            # Seasonally adjusted ZORI levels since SERIES_START for the Housing graph (2 decimals so the
+            # graph's latest % change reproduces `rent` exactly)
+            counties[f]["rentS"] = compact_series(cr_sa[i], crm, 2)
             if RENT_HERO_MIN <= pct[i] <= RENT_HERO_MAX and np.isfinite(cr[i, bi]):
                 county_rent[f] = {"pct": round(float(pct[i]), 1), "baseRent": int(round(cr[i, bi])),
                                   "curRent": int(round(cr[i, -1])), "asOf": crm[-1]}
@@ -597,6 +624,11 @@ def main():
             cur_ = counties[f].get("z")
             if cur_ is None or order[z] < order[cur_]:
                 counties[f]["z"] = z
+    # Counties with no Zillow zip still get a crosswalk zip, so every map tap can load the place
+    for z in sorted(zip_county):
+        f = zip_county[z]["countyFips"]
+        if f in counties and "z" not in counties[f]:
+            counties[f]["z"] = z
     for legacy, src in copy_from.items():
         if legacy in counties and "z" not in counties[legacy] and "z" in counties.get(src, {}):
             counties[legacy]["z"] = counties[src]["z"]
@@ -609,8 +641,10 @@ def main():
         del counties[f]
     print(f"dropped {len(unnamed)} counties with no known name: {unnamed[:20]}")
 
+    SERIES_KEYS = ("hvS", "rentS")  # monthly series ship only in the per-state shards (the map file stays small)
     with open(os.path.join(a.out, "counties.json"), "w") as fh:
-        json.dump(counties, fh, separators=(",", ":"), sort_keys=True)
+        json.dump({f: {k: v for k, v in c.items() if k not in SERIES_KEYS} for f, c in counties.items()}, fh,
+                  separators=(",", ":"), sort_keys=True)
     # Per-state shards for the zip lookup (the map keeps the full file)
     os.makedirs(os.path.join(a.out, "county"), exist_ok=True)
     for old in glob.glob(os.path.join(a.out, "county", "*.json")):
@@ -647,6 +681,10 @@ def main():
 
     with open(os.path.join(a.out, "counties-timeline.json"), "w") as fh:
         json.dump(timeline, fh, separators=(",", ":"))
+    # U.S. comparison lines for the Housing graph (same series definitions as the county rows)
+    with open(os.path.join(a.out, "us-housing.json"), "w") as fh:
+        json.dump({"hvS": us_row(R("zhvi_metro.csv"), False), "rentS": us_row(R("zori_metro.csv"), True)}, fh,
+                  separators=(",", ":"))
     meta["paycheckWindow"] = window_label
     with open(os.path.join(a.out, "meta.json"), "w") as fh:
         json.dump(meta, fh, indent=1)

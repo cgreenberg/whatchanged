@@ -3,8 +3,7 @@
 import React from 'react'
 import * as kv from '@/lib/cache/kv'
 import { runRefresh, parseRefreshArgs, shouldSkipRecentRun, REFRESH_ATTEMPT_INTERVAL_MS, defaultRefreshDeps } from '@/lib/api/refresh'
-import { unemploymentCacheKey } from '@/lib/api/cached-sources'
-import { parseCpiResponse, cpiSeriesIds } from '@/lib/api/bls-cpi'
+import { parseCpiResponse, cpiSeriesIds, cpiCacheKey } from '@/lib/api/bls-cpi'
 import { sparklineGeometry, buildLineSparklineV3 } from '@/lib/share-card/sparklines'
 import {
   gasShortGeo,
@@ -192,24 +191,24 @@ test('budget counter is created with its TTL atomically (SET NX EX) before INCR;
 // ---------------------------------------------------------------- LOW3 known-missing markers
 
 test('refresh marks areas with no upstream data; the runtime then skips the upstream fetch', async () => {
-  const fips = '53011'
+  const key = cpiCacheKey('0490')
   const report = await runRefresh(
-    { lausAreas: [fips], cpiAreas: [], gasLookups: [] },
+    { cpiAreas: [{ areaCode: '0490', areaName: 'Pacific', tier: 2 }], gasLookups: [] },
     { ...defaultRefreshDeps, fetchBls: async () => ({}), sleep: async () => undefined, log: () => undefined },
     { blsPauseMs: 0 }
   )
-  expect(report.results).toEqual([expect.objectContaining({ key: unemploymentCacheKey(fips), status: 'missing' })])
-  expect(await kv.getCached(kv.missingKey(unemploymentCacheKey(fips)))).toBe(true)
+  expect(report.results).toEqual([expect.objectContaining({ key, status: 'missing' })])
+  expect(await kv.getCached(kv.missingKey(key))).toBe(true)
 
   let fetches = 0
   await expect(
-    kv.getCachedOrFetch(unemploymentCacheKey(fips), 100, async () => { fetches++; return {} }, { budget: 'bls' })
+    kv.getCachedOrFetch(key, 100, async () => { fetches++; return {} }, { budget: 'bls' })
   ).rejects.toThrow(/no upstream data at last refresh/)
   expect(fetches).toBe(0)
 
   // a later successful write clears the marker
-  await kv.writeEnvelope(unemploymentCacheKey(fips), { ok: true }, 100)
-  expect(await kv.getCached(kv.missingKey(unemploymentCacheKey(fips)))).toBeNull()
+  await kv.writeEnvelope(key, { ok: true }, 100)
+  expect(await kv.getCached(kv.missingKey(key))).toBeNull()
 })
 
 // ---------------------------------------------------------------- LOW1 / security refresh guards

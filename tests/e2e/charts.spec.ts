@@ -8,14 +8,16 @@ test.describe('Charts section', () => {
     await expect(page.getByTestId('charts-section')).toBeVisible({ timeout: 10000 })
   })
 
-  test('five charts, each with a provenance line', async ({ page }) => {
-    for (const id of ['gas', 'cpi-groceries', 'cpi-shelter', 'cpi-energy', 'unemployment']) {
+  test('four price charts (gas, groceries, housing, energy), each with a provenance line; no unemployment', async ({ page }) => {
+    for (const id of ['gas', 'cpi-groceries', 'housing-rent', 'cpi-energy']) {
       const chart = page.getByTestId(`chart-${id}`)
       await expect(chart).toBeVisible()
       const line = chart.getByTestId('provenance').last()
       await expect(line).toBeVisible()
       expect(((await line.textContent()) ?? '').split(' · ').length).toBeGreaterThanOrEqual(5)
     }
+    await expect(page.getByTestId('chart-unemployment')).toHaveCount(0)
+    await expect(page.getByText(/unemployment/i)).toHaveCount(0)
   })
 
   test('"Jan 2025" is the default view and CPI charts say what the % is relative to', async ({ page }) => {
@@ -31,18 +33,33 @@ test.describe('Charts section', () => {
     await expect(chart.getByTestId('chart-window')).toHaveText(/^% change since \w{3} \d{4}$/)
   })
 
-  test('unemployment: SA 3-month headline and NSA chart label', async ({ page }) => {
-    const chart = page.getByTestId('chart-unemployment')
-    await expect(chart.getByTestId('unemployment-headline')).toContainText('3-month avg, seasonally adjusted by whatchanged', { timeout: 10000 })
-    await expect(chart.getByTestId('provenance').last()).toContainText('not seasonally adjusted')
+  test('Housing graph: Rent | Home prices | Shelter (CPI) tabs, Rent by default with the Rent card %', async ({ page }) => {
+    const housing = page.getByTestId('housing-chart')
+    await expect(housing).toHaveAttribute('data-tab', 'rent', { timeout: 15000 })
+    const card = (await page.getByTestId('stat-card-rent').getByTestId('stat-value').textContent())?.trim()
+    await expect(housing.getByTestId('housing-headline-pct')).toHaveText(card!)
+    await expect(housing.getByTestId('provenance').last()).toContainText('Zillow ZORI · Clark County, WA, monthly')
+
+    await housing.getByTestId('housing-tab-homePrices').click()
+    await expect(housing).toHaveAttribute('data-tab', 'homePrices')
+    await expect(housing.getByTestId('provenance').last()).toContainText('Zillow Home Value Index (ZHVI)')
+    await expect(housing.getByTestId('chart-note')).toContainText("Zillow's smoothed, seasonally adjusted")
+
+    await housing.getByTestId('housing-tab-shelter').click()
+    await expect(housing).toHaveAttribute('data-tab', 'shelter')
+    await expect(housing.getByTestId('provenance').last()).toContainText('BLS CPI shelter')
+    await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')
   })
 
-  test('unemployment provenance mentions the dashed U.S. line only when shown', async ({ page }) => {
-    const chart = page.getByTestId('chart-unemployment')
-    const line = chart.getByTestId('provenance').last()
+  test('Housing graph Rent tab: 10Y view and the U.S. comparison line', async ({ page }) => {
+    const housing = page.getByTestId('housing-chart')
+    await expect(housing).toHaveAttribute('data-tab', 'rent', { timeout: 15000 })
+    await housing.getByTestId('timeframe-10Y').click()
+    await expect(housing.getByTestId('chart-window')).toHaveText(/^% change since \w{3} 201\d$/)
+    const line = housing.getByTestId('provenance').last()
     await expect(line).not.toContainText('dashed')
-    await chart.getByLabel('Show national').check()
-    await expect(line).toContainText('dashed: U.S.')
+    await housing.getByLabel('Show national').check()
+    await expect(line).toContainText('dashed: U.S. ZORI')
   })
 })
 

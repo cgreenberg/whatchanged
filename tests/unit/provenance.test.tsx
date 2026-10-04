@@ -1,41 +1,34 @@
 import '@testing-library/jest-dom'
 /**
- * Every card (hero, chart, unemployment headline, local pulse) renders a full provenance line:
+ * Every card (hero, chart, each Housing graph tab) renders a full provenance line:
  * source · geography · window · as-of · adjustment — with an as-of taken from the data.
  */
 import fs from 'fs'
 import path from 'path'
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
+import { render, screen, within, fireEvent } from '@testing-library/react'
 import { HeroCards } from '@/components/HeroCards'
 import { EraChart } from '@/components/charts/EraChart'
-import { getChartInput, UnemploymentHeadline } from '@/components/charts/ChartsSection'
+import { getChartInput } from '@/components/charts/ChartsSection'
+import { HousingChart } from '@/components/charts/HousingChart'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import { buildHeroCards } from '@/lib/hero-cards'
 import { isCompleteProvenance, cpiTierOf, cpiGeoLabel } from '@/lib/provenance'
 import type { EconomicSnapshot } from '@/types'
-import type { CountyPulse, PulseMeta } from '@/lib/local-pulse'
+import type { CountyRecord, UsHousing } from '@/lib/county-data'
 import austin from '../fixtures/snapshots/78701.json'
 import stamford from '../fixtures/snapshots/06902.json'
 
 const clone = (s: unknown): EconomicSnapshot => JSON.parse(JSON.stringify(s))
 const root = path.join(__dirname, '..', '..')
-const meta: PulseMeta = JSON.parse(fs.readFileSync(path.join(root, 'public/data/meta.json'), 'utf8'))
-const txCounties: Record<string, CountyPulse> = JSON.parse(fs.readFileSync(path.join(root, 'public/data/county/48.json'), 'utf8'))
-const zip787: Record<string, unknown> = JSON.parse(fs.readFileSync(path.join(root, 'public/data/zip/787.json'), 'utf8'))
-const txCities: Record<string, unknown> = JSON.parse(fs.readFileSync(path.join(root, 'public/data/cities/TX.json'), 'utf8'))
+const txCounties: Record<string, CountyRecord> = JSON.parse(fs.readFileSync(path.join(root, 'public/data/county/48.json'), 'utf8'))
+const usHousing: UsHousing = JSON.parse(fs.readFileSync(path.join(root, 'public/data/us-housing.json'), 'utf8'))
 
-jest.mock('@/lib/local-pulse', () => {
-  const actual = jest.requireActual('@/lib/local-pulse')
-  return {
-    ...actual,
-    fetchPulseMeta: jest.fn(),
-    fetchCounty: jest.fn(),
-    fetchZipPulse: jest.fn(),
-    fetchCity: jest.fn(),
-  }
+jest.mock('@/lib/county-data', () => {
+  const actual = jest.requireActual('@/lib/county-data')
+  return { ...actual, fetchCounty: jest.fn(), fetchUsHousing: jest.fn(), fetchLocalMeta: jest.fn() }
 })
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const lp = require('@/lib/local-pulse')
+const cd = require('@/lib/county-data')
 
 // Recharts' ResponsiveContainer has no size in jsdom; silence its size warnings only
 const warn = console.warn
@@ -108,46 +101,47 @@ describe('chart provenance', () => {
     expect(screen.getByTestId('chart-window')).toHaveTextContent('% change since Jan 2025')
   })
 
-  test('unemployment chart is labeled not seasonally adjusted', () => {
-    const input = getChartInput('unemployment', clone(austin))
-    expect(input.provenance.adjustment).toBe('not seasonally adjusted')
+  test('CPI and gas charts are labeled not seasonally adjusted', () => {
+    for (const id of ['gas', 'cpi-groceries', 'cpi-shelter', 'cpi-energy']) {
+      expect(getChartInput(id, clone(austin)).provenance.adjustment).toBe('not seasonally adjusted')
+    }
   })
 
-  test('unemployment headline uses the 3-month SA averages and full provenance', () => {
-    render(<UnemploymentHeadline county={txCounties['48453']} meta={meta} countyName="Travis County" />)
-    const h = screen.getByTestId('unemployment-headline')
-    expect(h).toHaveTextContent('3-month avg, seasonally adjusted by whatchanged')
-    expect(h).toHaveTextContent(`${txCounties['48453'].urBase!.toFixed(1)}% → ${txCounties['48453'].urCur!.toFixed(1)}%`)
-    expectFullLine(within(h).getByTestId('provenance'))
-  })
-
-  test('unemployment chart mentions the dashed U.S. line only while it is shown', () => {
-    const config = chartConfigs.find(c => c.id === 'unemployment')!
-    const input = getChartInput('unemployment', clone(austin))
-    expect(input.provenance.geography).not.toContain('dashed')
+  test('gas chart mentions the dashed U.S. line only while it is shown', () => {
+    const config = chartConfigs.find(c => c.id === 'gas')!
+    const input = getChartInput('gas', clone(austin))
     render(<EraChart config={config} data={input.data} nationalData={input.nationalData}
-      provenance={input.provenance} nationalLabel={input.nationalLabel} />)
+      provenance={input.provenance} nationalLabel="U.S." />)
     expect(screen.getByTestId('provenance')).not.toHaveTextContent('dashed')
     if (input.nationalData.length && config.showNationalToggle) {
       fireEvent.click(screen.getByLabelText('Show national'))
       expect(screen.getByTestId('provenance')).toHaveTextContent('dashed: U.S.')
     }
   })
+})
 
-  test('CT chart names the planning region, not the legacy county', () => {
-    const s = clone(stamford)
-    s.unemployment.data = { ...s.unemployment.data!, lausFips: '09190', lausAreaName: 'Western Connecticut Planning Region' }
-    expect(getChartInput('unemployment', s).provenance.geography).toBe('Western Connecticut planning region, monthly')
+describe('Housing graph provenance', () => {
+  beforeEach(() => {
+    cd.fetchCounty.mockResolvedValue(txCounties['48453'])
+    cd.fetchUsHousing.mockResolvedValue(usHousing)
+  })
+  const shelterConfig = chartConfigs.find(c => c.id === 'cpi-shelter')!
+
+  test.each(['rent', 'homePrices', 'shelter'])('%s tab shows a full provenance line', async tab => {
+    render(<HousingChart snapshot={clone(austin)} shelterConfig={shelterConfig} />)
+    await screen.findByTestId('housing-headline-pct')
+    fireEvent.click(screen.getByTestId(`housing-tab-${tab}`))
+    expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', tab)
+    expectFullLine(screen.getByTestId('provenance'))
+    expect(screen.getByTestId('chart-window')).toHaveTextContent('% change since Jan 2025')
   })
 
-  test('CT headline is labeled as an approximation and names both areas when they differ', () => {
-    const ct: Record<string, CountyPulse> = JSON.parse(fs.readFileSync(path.join(root, 'public/data/county/09.json'), 'utf8'))
-    render(<UnemploymentHeadline county={ct['09001']} meta={meta} countyName="Fairfield County"
-      chartArea="Greater Bridgeport planning region, CT" />)
-    const h = screen.getByTestId('unemployment-headline')
-    expect(within(h).getByTestId('unemployment-approx-note')).toHaveTextContent('Western Connecticut planning region')
-    expect(within(h).getByTestId('unemployment-approx-note')).toHaveTextContent('Greater Bridgeport planning region, CT')
-    expect(within(h).getByTestId('provenance')).toHaveTextContent('Western Connecticut planning region (approximates Fairfield County, CT)')
+  test('Zillow tabs offer the U.S. comparison line and name it only while shown', async () => {
+    render(<HousingChart snapshot={clone(austin)} shelterConfig={shelterConfig} />)
+    await screen.findByTestId('housing-headline-pct')
+    expect(screen.getByTestId('provenance')).not.toHaveTextContent('dashed')
+    fireEvent.click(screen.getByLabelText('Show national'))
+    expect(screen.getByTestId('provenance')).toHaveTextContent('dashed: U.S. ZORI')
   })
 })
 
@@ -161,34 +155,5 @@ describe('stale CPI tier inference (entries cached before `tier` existed)', () =
   test('Urban Hawaii (metro S49F) is not mislabeled as a region', () => {
     expect(cpiGeoLabel({ metro: 'Urban Hawaii', seriesIds: { groceries: 'CUURS49FSAF11', shelter: '', energy: '' } } as never))
       .toBe('metro: Urban Hawaii')
-  })
-})
-
-describe('local pulse provenance', () => {
-  beforeEach(() => {
-    lp.fetchPulseMeta.mockResolvedValue(meta)
-    lp.fetchCounty.mockResolvedValue(txCounties['48453'])
-    lp.fetchZipPulse.mockResolvedValue(zip787['78701'] ?? null)
-    lp.fetchCity.mockResolvedValue(Object.values(txCities).find((c) => (c as { n: string }).n === 'Austin') ?? null)
-  })
-
-  test('every pulse card renders a full provenance line', async () => {
-    const { LocalPulse } = await import('@/components/pulse/LocalPulse')
-    render(<LocalPulse zip="78701" countyFips="48453" countyName="Travis County" cityName="Austin" stateAbbr="TX" heroShowsCountyRent />)
-    await waitFor(() => expect(screen.getByTestId('local-pulse')).toBeInTheDocument())
-    const cards = screen.getAllByTestId(/^pulse-/)
-    expect(cards.length).toBeGreaterThan(0)
-    for (const c of cards) expectFullLine(within(c).getByTestId('provenance'))
-  })
-
-  test('with the county rent in the hero, the pulse rent card shows only finer-grained detail', async () => {
-    const { LocalPulse } = await import('@/components/pulse/LocalPulse')
-    render(<LocalPulse zip="78701" countyFips="48453" countyName="Travis County" cityName="Austin" stateAbbr="TX" heroShowsCountyRent />)
-    await waitFor(() => expect(screen.getByTestId('local-pulse')).toBeInTheDocument())
-    const rentCard = screen.queryByTestId('pulse-rent')
-    if (rentCard) {
-      expect(rentCard).not.toHaveTextContent('Rent on new leases · Travis County')
-      expect(rentCard).not.toHaveTextContent('used elsewhere on this site')
-    }
   })
 })

@@ -181,16 +181,6 @@ function checkBlsSeries(
 async function checkZip(zip: string, bls: Map<string, Map<string, number>>, snap: Json) {
   const audit = snap._audit ?? {}
 
-  // Unemployment (county LAUS)
-  const u = get(snap, 'unemployment.data')
-  if (!u) add(zip, 'unemployment', 'SKIP', get(snap, 'unemployment.error') ?? 'no data in response')
-  else {
-    const id = u.seriesId ?? get(audit, 'blsSeriesIds.unemployment') ?? undefined
-    checkBlsSeries(zip, 'unemp', id, bls, { current: u.current, baseline: u.baseline, series: u.series, valueKey: 'rate' }, 0.001)
-    if (isNum(u.current) && isNum(u.baseline) && isNum(u.change))
-      add(zip, 'unemp math', near(u.change, round1(u.current - u.baseline), 0.11) ? 'PASS' : 'FAIL', `change ${u.change} vs ${round1(u.current - u.baseline)}`)
-  }
-
   // CPI (groceries / shelter)
   const c = get(snap, 'cpi.data')
   if (!c) add(zip, 'cpi', 'SKIP', get(snap, 'cpi.error') ?? 'no data in response')
@@ -327,8 +317,8 @@ async function main() {
   const ids = new Set<string>()
   for (const snap of snaps.values()) {
     const a = snap._audit?.blsSeriesIds ?? {}
-    for (const id of [snap.unemployment?.data?.seriesId, snap.cpi?.data?.seriesIds?.groceries, snap.cpi?.data?.seriesIds?.shelter,
-      a.unemployment, a.cpiGroceries, a.cpiShelter]) if (typeof id === 'string') ids.add(id)
+    for (const id of [snap.cpi?.data?.seriesIds?.groceries, snap.cpi?.data?.seriesIds?.shelter,
+      a.cpiGroceries, a.cpiShelter]) if (typeof id === 'string') ids.add(id)
   }
   let bls = new Map<string, Map<string, number>>()
   if (ids.size) {

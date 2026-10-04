@@ -3,7 +3,7 @@
  *
  * Usage:
  *   npx tsx scripts/flush-keys.ts 'bls:cpi:*'            # dry run: lists matches
- *   npx tsx scripts/flush-keys.ts 'bls:unemployment:09*' --yes   # deletes them
+ *   npx tsx scripts/flush-keys.ts 'bls:cpi:*' --yes   # deletes them
  *   ... --include-lastgood                                # also delete `:lastgood` copies
  *
  * Prefer re-running `npm run cache:refresh` (overwrites keys in place) to flushing.

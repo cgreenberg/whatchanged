@@ -32,10 +32,10 @@ export interface ChartConfig {
   normalizeToBaseline?: boolean  // normalize first visible point to 100 (percentage change view)
 }
 
-// ORDER KEY:
+// ORDER KEY (ChartsSection renders the Housing graph in the shelter slot, with three tabs):
 // Row 1: gas (1) + groceries (2) — side by side (medium)
-// Row 2: shelter (3) — full width (large)
-// Row 3: energy (4) + unemployment (5) — side by side (medium)
+// Row 2: Housing (3): Rent | Home prices | Shelter (CPI) — full width (large)
+// Row 3: energy (4) — full width (large)
 // Mobile: stacked in same order
 
 export const chartConfigs: ChartConfig[] = [
@@ -80,7 +80,7 @@ export const chartConfigs: ChartConfig[] = [
   },
   {
     id: 'cpi-shelter',
-    title: 'Shelter prices (CPI)',
+    title: 'Housing costs',
     description: 'BLS CPI shelter: rent paid by all tenants (including existing leases) plus homeowners\' equivalent rent. It trails new-lease asking rents by about a year.',
     chartType: 'line',
     series: [
@@ -105,7 +105,7 @@ export const chartConfigs: ChartConfig[] = [
     series: [
       { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
     ],
-    size: 'medium',
+    size: 'large',
     order: 4,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
@@ -116,23 +116,44 @@ export const chartConfigs: ChartConfig[] = [
     geoLevel: 'Metro area (when available)',
     showNationalToggle: true,
   },
-  {
-    id: 'unemployment',
-    title: 'Unemployment rate',
-    description: 'Share of the labor force that is jobless and looking for work. Chart: monthly county and U.S. rates, not seasonally adjusted, so they rise and fall with the seasons.',
-    chartType: 'area',
-    series: [
-      { dataKey: 'rate', label: 'Unemployment Rate', color: '#F59E0B', type: 'monotone' },
-    ],
-    size: 'medium',
-    order: 5,
+]
+
+/** Zillow tabs of the Housing graph (same slot and layout as CPI shelter; % change from the first visible month). */
+export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
+  rent: {
+    id: 'housing-rent',
+    title: 'Housing costs',
+    description: 'Zillow Observed Rent Index (ZORI): typical asking rent on new leases in your county, seasonally adjusted by whatchanged. Same series as the Rent card.',
+    chartType: 'line',
+    series: [{ dataKey: 'rent', label: 'Rent (new leases)', color: '#3B82F6', type: 'monotone' }],
+    size: 'large',
+    order: 3,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
-    yAxisLabel: '%',
-    formatValue: (v) => `${v.toFixed(1)}%`,
-    sourceLabel: 'BLS Local Area Unemployment Statistics',
-    sourceUrl: 'https://data.bls.gov/lausmap/',
-    geoLevel: 'County-level',
+    yAxisLabel: '% change',
+    normalizeToBaseline: true,
+    formatValue: (v) => fmtSignedPct(v),
+    sourceLabel: 'Zillow Observed Rent Index (ZORI)',
+    sourceUrl: 'https://www.zillow.com/research/data/',
+    geoLevel: 'County',
     showNationalToggle: true,
   },
-]
+  homePrices: {
+    id: 'housing-home-prices',
+    title: 'Housing costs',
+    description: "Zillow Home Value Index (ZHVI): Zillow's smoothed, seasonally adjusted estimate of the typical (middle-tier) home value in your county.",
+    chartType: 'line',
+    series: [{ dataKey: 'hv', label: 'Typical home value', color: '#8B5CF6', type: 'monotone' }],
+    size: 'large',
+    order: 3,
+    defaultTimeframe: 'Jan 2025',
+    eraShading: true,
+    yAxisLabel: '% change',
+    normalizeToBaseline: true,
+    formatValue: (v) => fmtSignedPct(v),
+    sourceLabel: 'Zillow Home Value Index (ZHVI)',
+    sourceUrl: 'https://www.zillow.com/research/data/',
+    geoLevel: 'County',
+    showNationalToggle: true,
+  },
+}

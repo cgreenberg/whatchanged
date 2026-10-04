@@ -11,7 +11,6 @@ function computeAge(fetchedAt: string | undefined): number | null {
 }
 
 function buildAudit(snapshot: EconomicSnapshot) {
-  const u = snapshot.unemployment?.data
   const c = snapshot.cpi?.data
   const g = snapshot.gas?.data
   return {
@@ -31,7 +30,6 @@ function buildAudit(snapshot: EconomicSnapshot) {
     dataAge: {
       gas: computeAge(snapshot.gas.fetchedAt),
       cpi: computeAge(snapshot.cpi.fetchedAt),
-      unemployment: computeAge(snapshot.unemployment.fetchedAt),
     },
     censusFallback: snapshot.census?.data?.isFallback ?? null,
     censusIncome: snapshot.census?.data ? {
@@ -43,21 +41,12 @@ function buildAudit(snapshot: EconomicSnapshot) {
       label: snapshot.census.data.sourceLabel ?? null,
     } : null,
     blsSeriesIds: {
-      unemployment: u?.seriesId ?? null,
       cpiGroceries: c?.seriesIds?.groceries ?? null,
       cpiShelter: c?.seriesIds?.shelter ?? null,
       cpiEnergy: c?.seriesIds?.energy ?? null,
     },
     // Per-source series + the exact observations used for each displayed change
     sources: {
-      unemployment: u ? {
-        seriesId: u.seriesId ?? null,
-        nationalSeriesId: u.nationalSeriesId ?? null,
-        baseline: { period: u.baselinePeriod ?? null, value: u.baseline },
-        latest: { period: u.latestPeriod ?? null, value: u.current, preliminary: u.latestPreliminary ?? false },
-        seasonallyAdjusted: false,
-        stale: snapshot.unemployment.stale ?? false,
-      } : null,
       cpiGroceries: c ? {
         seriesId: c.seriesIds?.groceries ?? null,
         fallback: c.fallback ?? null,
@@ -99,21 +88,6 @@ function buildAudit(snapshot: EconomicSnapshot) {
         baseline: c.shelterBaseline ?? null,
         result: c.shelterChange,
       } : null,
-      // NOT the page headline. This is the raw NSA LAUS series, Jan 2025 vs the
-      // latest (possibly preliminary) month. The headline shown on the page comes
-      // from the local-data pipeline (seasonally adjusted, 3-month averages).
-      unemploymentChange: u ? {
-        formula: 'current - baseline',
-        basis: 'NSA, Jan 2025 vs latest month (latest may be preliminary)',
-        displayed: false,
-        note: 'Not the page headline: the headline uses seasonally adjusted 3-month averages from the local-data pipeline.',
-        current: u.current,
-        currentPeriod: u.latestPeriod ?? null,
-        currentPreliminary: u.latestPreliminary ?? false,
-        baseline: u.baseline,
-        baselinePeriod: u.baselinePeriod ?? null,
-        result: u.change,
-      } : null,
       tariffEstimate: snapshot.tariff?.data ? {
         formula: 'Math.round(medianIncome * tariffRate)',
         medianIncome: snapshot.tariff.data.medianIncome,
@@ -146,7 +120,7 @@ export async function GET(
   const audit = req.nextUrl.searchParams.get('audit') === 'true'
   const body = audit ? { ...snapshot, _audit: buildAudit(snapshot) } : snapshot
 
-  const sources = [snapshot.unemployment, snapshot.cpi, snapshot.gas]
+  const sources = [snapshot.cpi, snapshot.gas]
   // A national stand-in for a failed local series is degraded too (short TTL, self-heals).
   const degraded = sources.some((s) => !s?.data || s.stale) || usesNationalFallback(snapshot)
   const cacheHeader = degraded

@@ -22,10 +22,9 @@ import {
 } from '@/lib/api/refresh'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { lookupZip } from '@/lib/data/zip-lookup'
-import { resolveLausArea } from '@/lib/mappings/laus-area'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 import { getGasLookup, buildSeriesFromData, type EiaRawPoint } from '@/lib/api/eia'
-import { unemploymentCacheKey, NATIONAL_GAS_LOOKUP } from '@/lib/api/cached-sources'
+import { NATIONAL_GAS_LOOKUP } from '@/lib/api/cached-sources'
 import { cpiCacheKey } from '@/lib/api/bls-cpi'
 import eiaFixture from '../fixtures/eia-gas.json'
 
@@ -38,7 +37,6 @@ function runtimeKeysFor(zip: string): string[] {
   const loc = lookupZip(zip)!
   const area = getMetroCpiAreaForCounty(loc.countyFips, loc.stateAbbr)
   return [
-    unemploymentCacheKey(resolveLausArea(zip, loc.countyFips).fips),
     cpiCacheKey(area.areaCode),
     getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips).cacheKey,
     NATIONAL_GAS_LOOKUP.cacheKey,
@@ -66,12 +64,9 @@ afterEach(() => {
 describe('planRefresh', () => {
   const plan = planRefresh()
 
-  test('covers every LAUS area: all counties, CT planning regions, PR municipios', () => {
-    expect(plan.lausAreas.length).toBeGreaterThan(3200)
-    expect(new Set(plan.lausAreas).size).toBe(plan.lausAreas.length)
-    expect(plan.lausAreas).toEqual(expect.arrayContaining(['09110', '09190', '72001', '53011', '06037']))
-    // legacy CT counties are never requested from LAUS
-    expect(plan.lausAreas.some((f) => /^090(0|1)\d$/.test(f))).toBe(false)
+  test('plans prices only: no county unemployment (LAUS) targets', () => {
+    expect(plan).not.toHaveProperty('lausAreas')
+    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'gasLookups'])
   })
 
   test('covers every CPI area (23 metros + 9 divisions + national) and every gas series', () => {
@@ -86,7 +81,6 @@ describe('planRefresh', () => {
 
   test('the plan includes every key the runtime can request for the sample zips', () => {
     const planned = new Set([
-      ...plan.lausAreas.map(unemploymentCacheKey),
       ...plan.cpiAreas.map((a) => cpiCacheKey(a.areaCode)),
       ...plan.gasLookups.map((g) => g.cacheKey),
     ])
@@ -112,16 +106,23 @@ describe('runRefresh — full plan with mocked upstreams', () => {
     const s = summarize(report)
     expect(blsBatches.every((b) => b.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
     expect(blsBatches.every((b) => new Set(b).size === b.length)).toBe(true)
-    const expectedCalls = Math.ceil(plan.lausAreas.length / 49) + Math.ceil((plan.cpiAreas.length - 1) / 15)
+    const expectedCalls = Math.ceil((plan.cpiAreas.length - 1) / 15)
     expect(s.blsCalls).toBe(expectedCalls)
-    expect(s.blsCalls).toBeLessThan(80)
+    expect(s.blsCalls).toBe(3) // 32 local CPI areas (+ national) → 3 BLS requests per full refresh
+    expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
     expect(s.eiaCalls).toBe(plan.gasLookups.length)
     expect(s.errors).toBe(0)
-    expect(s.written).toBe(plan.lausAreas.length + plan.cpiAreas.length + plan.gasLookups.length)
+    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length)
   })
 
   test('a failing BLS batch is retried with backoff, then reported as errors (no writes)', async () => {
-    const plan = { lausAreas: ['53011', '41051'], cpiAreas: [], gasLookups: [] }
+    const plan = {
+      cpiAreas: [
+        { areaCode: '0490', areaName: 'Pacific', tier: 2 as const },
+        { areaCode: '0480', areaName: 'Mountain', tier: 2 as const },
+      ],
+      gasLookups: [],
+    }
     let calls = 0
     const writes: string[] = []
     const report = await runRefresh(
@@ -149,7 +150,7 @@ describe('runRefresh — full plan with mocked upstreams', () => {
   })
 
   test('a BLS daily-threshold error halts further BLS requests', async () => {
-    const plan = planRefresh(['98683', '10001'])
+    const plan = planRefresh() // 3 CPI batches
     let calls = 0
     const report = await runRefresh(
       plan,
@@ -191,7 +192,7 @@ describe('refresh and runtime produce identical keys and envelopes', () => {
     const calls = countUpstreamCalls()
     const warm = await fetchSnapshot(zip)
     expect(calls).toEqual({ bls: 0, eia: 0 })
-    expect(warm!.cacheStatus).toMatchObject({ unemployment: 'hit', cpi: 'hit', gas: 'hit' })
+    expect(warm!.cacheStatus).toMatchObject({ cpi: 'hit', gas: 'hit' })
 
     // 3. Runtime path from a cold cache writes the same keys with the same envelope shape + data
     clearMemCache()
@@ -252,9 +253,8 @@ describe('runtime upstream budget', () => {
     const calls = countUpstreamCalls()
     const snapshot = await fetchSnapshot('98683')
     expect(calls.bls).toBe(0)
-    expect(snapshot!.unemployment.data).toBeNull()
-    expect(snapshot!.unemployment.error).toBe('Data unavailable')
     expect(snapshot!.cpi.data).toBeNull()
+    expect(snapshot!.cpi.error).toBe('Data unavailable')
     expect(snapshot!.gas.data).not.toBeNull() // EIA budget separate
   })
 
@@ -266,7 +266,7 @@ describe('runtime upstream budget', () => {
     let ok = 0
     for (let i = 0; i < 20; i++) {
       try {
-        await getCachedOrFetch(`bls:unemployment:${10000 + i}`, 60, fetchFn, { budget: 'bls' })
+        await getCachedOrFetch(`bls:cpi:test${i}:all`, 60, fetchFn, { budget: 'bls' })
         ok++
       } catch (e) {
         expect(e).toBeInstanceOf(BudgetExceededError)

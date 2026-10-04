@@ -1,49 +1,12 @@
-// BLS series IDs + the REAL parsers (bls-common / bls / bls-cpi), driven by a
+// BLS series IDs + the REAL parsers (bls-common / bls-cpi), driven by a
 // recorded BLS API response (tests/fixtures/bls-recorded-2024-2026.json).
 
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
 import { clearMemCache } from '@/lib/cache/kv'
-import {
-  buildSeriesId,
-  fetchUnemployment,
-  parseUnemploymentResponse,
-  NATIONAL_UNEMPLOYMENT_SERIES,
-} from '@/lib/api/bls'
 import { parseCpiResponse, fetchCpiArea } from '@/lib/api/bls-cpi'
 import { parseBlsMonthly, findBaseline, findLatest, pctChange, type BlsRawPoint } from '@/lib/api/bls-common'
 import recorded from '../fixtures/bls-recorded-2024-2026.json'
-
-describe('BLS LAUS series ID format', () => {
-  test('5-digit FIPS 53011 produces correct series ID', () => {
-    expect(buildSeriesId('53011')).toBe('LAUCN530110000000003')
-  })
-
-  test('short FIPS 1 gets padded to 5 digits (00001)', () => {
-    const id = buildSeriesId('1')
-    expect(id).toBe('LAUCN000010000000003')
-    expect(id.slice(5, 10)).toBe('00001')
-  })
-
-  test('short FIPS 011 gets padded to 00011', () => {
-    const id = buildSeriesId('011')
-    expect(id).toBe('LAUCN000110000000003')
-  })
-
-  test('Manhattan FIPS 36061 produces correct ID', () => {
-    expect(buildSeriesId('36061')).toBe('LAUCN360610000000003')
-  })
-
-  test('Chicago Cook County 17031 produces correct ID', () => {
-    expect(buildSeriesId('17031')).toBe('LAUCN170310000000003')
-  })
-
-  test('FIPS with leading zeros preserved: 06001', () => {
-    const id = buildSeriesId('06001')
-    expect(id).toBe('LAUCN060010000000003')
-    expect(id.slice(5, 10)).toBe('06001')
-  })
-})
 
 // ---------------------------------------------------------------------------
 // Recorded fixture helpers
@@ -67,6 +30,7 @@ const PACIFIC_IDS = ['CUUR0490SAF11', 'CUUR0490SAH1', 'CUUR0490SA0E', 'CUUR0000S
 
 describe('parseBlsMonthly (real parser, recorded data)', () => {
   test('drops "-" values (Oct 2025 shutdown gap) and sorts oldest first', () => {
+    // Raw recorded series (county LAUS is no longer fetched at runtime; used here only as parser input)
     const pts = parseBlsMonthly(RECORDED['LAUCN530110000000003'])
     expect(pts.find((p) => p.date === '2025-10')).toBeUndefined()
     expect(pts[0].date).toBe('2024-01')
@@ -117,49 +81,6 @@ describe('findBaseline / findLatest', () => {
     expect(pctChange(110, 100)).toBe(10)
     expect(pctChange(110, 0)).toBeNull()
     expect(pctChange(NaN, 100)).toBeNull()
-  })
-})
-
-describe('parseUnemploymentResponse (recorded LAUS for Clark County, WA)', () => {
-  const ids = ['LAUCN530110000000003', 'LNU04000000']
-
-  test('baseline = 2025-M01, latest = most recent valid month', () => {
-    const d = parseUnemploymentResponse(seriesMap(ids), '53011')
-    expect(d.baseline).toBe(4.6)
-    expect(d.baselinePeriod).toBe('2025-01')
-    expect(d.current).toBe(4.8)
-    expect(d.latestPeriod).toBe('2026-08')
-    expect(d.change).toBe(0.2)
-    expect(d.seriesId).toBe('LAUCN530110000000003')
-  })
-
-  test('national overlay is the NSA series LNU04000000', () => {
-    const d = parseUnemploymentResponse(seriesMap(ids), '53011')
-    expect(NATIONAL_UNEMPLOYMENT_SERIES).toBe('LNU04000000')
-    expect(d.nationalSeriesId).toBe('LNU04000000')
-    expect(d.nationalSeries?.find((p) => p.date === '2025-01')?.rate).toBe(4.4)
-  })
-
-  test('missing Jan 2025 → baseline and change are null (not 0 / not full rate)', () => {
-    const d = parseUnemploymentResponse(
-      seriesMap(ids, (id, data) => (id.startsWith('LAUCN') ? data.filter((x) => !(x.year === '2025' && x.period === 'M01')) : data)),
-      '53011'
-    )
-    expect(d.baseline).toBeNull()
-    expect(d.change).toBeNull()
-    expect(d.current).toBe(4.8)
-  })
-
-  test('Jan 2025 "-" → baseline null', () => {
-    const d = parseUnemploymentResponse(
-      seriesMap(ids, (id, data) => data.map((x) => (id.startsWith('LAUCN') && x.year === '2025' && x.period === 'M01' ? { ...x, value: '-' } : x))),
-      '53011'
-    )
-    expect(d.baseline).toBeNull()
-  })
-
-  test('throws when the county series has no valid values', () => {
-    expect(() => parseUnemploymentResponse({ LAUCN530110000000003: [{ year: '2025', period: 'M01', value: '-' }] }, '53011')).toThrow()
   })
 })
 
@@ -224,23 +145,6 @@ describe('parseCpiResponse (recorded CPI)', () => {
 
 describe('fetchers request the right series (MSW, recorded fixture)', () => {
   beforeEach(() => clearMemCache())
-
-  test('fetchUnemployment requests county LAUS + LNU04000000 in one call', async () => {
-    let requested: string[] = []
-    server.use(
-      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
-        const body = (await request.json()) as { seriesid: string[] }
-        requested = body.seriesid
-        return HttpResponse.json({
-          status: 'REQUEST_SUCCEEDED',
-          Results: { series: body.seriesid.map((id) => ({ seriesID: id, data: RECORDED[id] ?? [] })) },
-        })
-      })
-    )
-    const d = await fetchUnemployment('53011')
-    expect(requested).toEqual(['LAUCN530110000000003', 'LNU04000000'])
-    expect(d.baseline).toBe(4.6)
-  })
 
   test('fetchCpiArea batches area + national series in one call', async () => {
     let calls = 0

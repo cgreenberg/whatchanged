@@ -1,4 +1,6 @@
-// LAUS (BLS county unemployment) area resolution.
+// LAUS area resolution (BLS county-equivalent geography). No longer used for
+// a runtime unemployment fetch: the Census income lookup (census-acs.ts) and
+// build/audit scripts use it to resolve CT zips to their 2022 planning region.
 //
 // Connecticut abolished its 8 counties in 2022; BLS LAUS now publishes
 // "county" series for the 9 Census planning regions (FIPS 09110–09190).
@@ -62,15 +64,4 @@ export function getLausAreaFipsForZip(zip: string): string | null {
 /** Display name of a LAUS area that is not a county (CT planning regions); undefined otherwise. */
 export function getLausAreaName(lausFips: string): string | undefined {
   return CT_PLANNING_REGION_NAMES[lausFips]
-}
-
-/**
- * LAUS area for a zip, falling back to its county when the zip isn't in
- * zip-county.json. Used by the live unemployment path (snapshot + warm cron)
- * so every zip in one planning region shares one cache key.
- */
-export function resolveLausArea(zip: string, countyFips: string): { fips: string; name?: string } {
-  const fips = getLausAreaFipsForZip(zip) ?? getLausAreaForCounty(countyFips).fips
-  const name = getLausAreaName(fips)
-  return name ? { fips, name } : { fips }
 }

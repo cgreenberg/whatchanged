@@ -20,7 +20,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://whatchanged.us'),
   title: 'What Changed | See how your town has changed since January 2025',
-  description: 'Enter your zip code to see how local gas, rent, grocery prices, and unemployment changed since January 20, 2025.',
+  description: 'Enter your zip code to see how local gas, rent, home, grocery and energy prices changed since January 20, 2025.',
   openGraph: {
     title: 'What Changed In Your Town?',
     description: 'Enter your zip code. See what changed since January 2025.',

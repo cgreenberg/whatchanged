@@ -7,7 +7,6 @@ import type {
   CensusData,
   TariffData,
   CacheStatus,
-  UnemploymentData,
   CpiData,
   GasPriceData,
 } from '@/types'
@@ -16,11 +15,9 @@ import { getCountyRent } from '@/lib/rent'
 import { computeDollarImpact } from '@/lib/compute/dollar-translations'
 import { getGasLookup, isGasStale, toGasPriceData } from './eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
-import { resolveLausArea } from '@/lib/mappings/laus-area'
 import { NATIONAL_CPI_AREA } from './bls-cpi'
 import { monthOlderThan } from '@/lib/hero-cards'
 import {
-  getUnemploymentCached,
   getCpiCached,
   getGasSeriesCached,
   getNationalGasCached,
@@ -31,8 +28,8 @@ import {
 
 /**
  * BLS data whose latest month ended more than this many days ago is shown with the stale badge.
- * Normal lag at its worst (just before the next release) is ~45 days for CPI and ~62 for county
- * LAUS, so 75 days means at least one monthly release was missed (refresh stuck, or BLS stopped).
+ * Normal lag at its worst (just before the next release) is ~45 days for CPI, so 75 days means at
+ * least one monthly release was missed (refresh stuck, or BLS stopped).
  */
 export const BLS_STALE_DAYS = 75
 
@@ -83,13 +80,10 @@ export async function fetchSnapshot(
   const cpiArea = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
   const gasLookup = getGasLookup(location.stateAbbr, cpiArea.areaCode, location.countyFips)
   const gasIsNational = gasLookup.duoarea === 'NUS'
-  // LAUS area by zip: CT zips resolve to their 2022 planning region, others to the county.
-  const lausArea = resolveLausArea(zip, location.countyFips)
 
   // Fetch all external sources in parallel, each through its own cache key.
   // National gas is a single shared key (used for the overlay and as fallback).
-  const [unemploymentResult, cpiPrimary, gasPrimary, gasNational] = await Promise.all([
-    settle(getUnemploymentCached(lausArea.fips, opts), 'bls-laus'),
+  const [cpiPrimary, gasPrimary, gasNational] = await Promise.all([
     settle(getCpiCached(cpiArea, opts), 'bls-cpi'),
     settle(getGasSeriesCached(gasLookup, opts), 'eia-gas'),
     gasIsNational ? Promise.resolve(null) : settle(getNationalGasCached(opts), 'eia-gas-national'),
@@ -119,20 +113,7 @@ export async function fetchSnapshot(
   }
   const gasStale = !!gasData && (!!gasMeta?.stale || isGasStale(gasData.latestDate ?? ''))
 
-  // Area name is re-attached here so older cache entries (without it) still label correctly.
-  const unemploymentData: UnemploymentData | null = unemploymentResult?.data
-    ? {
-        ...unemploymentResult.data,
-        lausFips: lausArea.fips,
-        ...(lausArea.name ? { lausAreaName: lausArea.name } : {}),
-      }
-    : null
   const nowDate = new Date(now)
-  const lausLatest = unemploymentData?.latestPeriod ?? unemploymentData?.series?.[unemploymentData.series.length - 1]?.date
-  const unemployment: DataResult<UnemploymentData> = wrap(
-    unemploymentData, 'bls-laus', unemploymentResult?.fetchedAt, now,
-    !!unemploymentResult?.stale || isBlsPeriodStale(lausLatest, nowDate),
-  )
   const cpiBase: CpiData | null = cpiResult?.data
     ? cpiIsNationalFallback
       ? { ...cpiResult.data, fallback: 'national' }
@@ -210,7 +191,6 @@ export async function fetchSnapshot(
   const rent = getCountyRent(location.countyFips)
 
   const cacheStatus: CacheStatus = {
-    unemployment: cacheStatusOf(unemploymentResult),
     cpi: cacheStatusOf(cpiResult),
     gas: cacheStatusOf(gasMeta),
     census: 'hit',
@@ -219,7 +199,6 @@ export async function fetchSnapshot(
   return {
     zip,
     location,
-    unemployment,
     cpi,
     gas,
     census,

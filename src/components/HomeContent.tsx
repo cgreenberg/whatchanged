@@ -8,8 +8,6 @@ import { StatCardSkeleton } from '@/components/StatCardSkeleton'
 import { HeroCards } from '@/components/HeroCards'
 import { ChartsSection } from '@/components/charts/ChartsSection'
 import { ShareButton } from '@/components/ShareButton'
-import { LocalPulse } from '@/components/pulse/LocalPulse'
-import { SHOW_LOCAL_PULSE } from '@/lib/features'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CityGrid } from '@/components/CityGrid'
 import { LazyMount } from '@/components/LazyMount'
@@ -19,7 +17,7 @@ import type { EconomicSnapshot } from '@/types'
 
 // d3-geo/topojson are ESM-only; load the map chunk only on the client, and only near the viewport
 const NationalMap = dynamic(
-  () => import('@/components/pulse/NationalMap').then(m => ({ default: m.NationalMap })),
+  () => import('@/components/map/NationalMap').then(m => ({ default: m.NationalMap })),
   { ssr: false, loading: () => <MapPlaceholder /> }
 )
 
@@ -117,19 +115,6 @@ export default function HomeContent() {
             <HeroCards snapshot={snapshot} />
             <ShareButton snapshot={snapshot} place={place} />
           </section>
-          {SHOW_LOCAL_PULSE && (
-            <ErrorBoundary>
-              <LocalPulse
-                key={snapshot.zip}
-                zip={snapshot.zip}
-                countyFips={snapshot.location.countyFips}
-                countyName={snapshot.location.countyName}
-                cityName={snapshot.location.cityName}
-                stateAbbr={snapshot.location.stateAbbr}
-                heroShowsCountyRent={!!snapshot.rent}
-              />
-            </ErrorBoundary>
-          )}
           <ErrorBoundary>
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>

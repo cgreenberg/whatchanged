@@ -147,11 +147,13 @@ const inRange = (v: unknown, [lo, hi]: readonly [number, number]): v is number =
 
 const NOT_SA = 'not seasonally adjusted'
 
-/** Shown next to the CPI shelter chart and under the hero cards when the Zillow Rent card is shown. */
+/** Shown under the hero cards when the Zillow Rent card is shown. */
 export const SHELTER_VS_RENT_NOTE =
   'CPI shelter covers all renters and homeowners and lags market rents by about a year; the Rent card shows new-lease asking rents (Zillow).'
-export const SHELTER_NOTE_NO_RENT =
-  'CPI shelter covers all renters and homeowners and lags market rents on new leases by about a year.'
+/** Shown with the Housing graph (all three tabs): how the Zillow series differ from CPI shelter. */
+export const HOUSING_NOTE =
+  'Rent and Home prices are Zillow market measures for your county: asking rents on new leases and the typical home value. ' +
+  'Shelter (CPI) is the BLS index of what all renters and homeowners pay, including existing leases, so it trails new-lease rents by about a year.'
 /** Every gas figure is EIA regular-grade retail gasoline. */
 export const GAS_SOURCE = 'EIA weekly retail regular gasoline'
 /** County rent older than this (from the end of its as-of month) gets a stale badge. */

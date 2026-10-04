@@ -1,38 +1,39 @@
 import '@testing-library/jest-dom'
 /**
  * Render-level checks for the frontend data-accuracy fixes: flagged county metrics carry their note,
- * rent $ wording, preliminary unemployment months, census income provenance, the CPI-shelter vs Zillow
- * explanation, chart windows that end on the hero %, share-card geography/baselines, and paycheck colors.
+ * rent $ wording, preliminary points, census income provenance, the CPI-shelter vs Zillow explanation,
+ * chart windows that end on the hero %, share-card geography/baselines, and the Housing graph tabs.
  */
 import fs from 'fs'
 import path from 'path'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { HeroCards } from '@/components/HeroCards'
 import { EraChart } from '@/components/charts/EraChart'
-import { getChartInput, preliminaryMonths, UnemploymentHeadline } from '@/components/charts/ChartsSection'
+import { getChartInput } from '@/components/charts/ChartsSection'
+import { HousingChart } from '@/components/charts/HousingChart'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import { filterByTimeframe, splitPreliminary } from '@/lib/charts/chart-data'
 import {
   buildRentCard, buildTariffCard, buildShelterCard, nationalChangeMatching, monthOlderThan,
-  SHELTER_VS_RENT_NOTE, SHELTER_NOTE_NO_RENT, GAS_SOURCE, buildGasCard,
+  SHELTER_VS_RENT_NOTE, HOUSING_NOTE, GAS_SOURCE, buildGasCard,
 } from '@/lib/hero-cards'
 import { computeDotX, computeDotY } from '@/lib/share-card/og-geometry'
 import { cpiShareLabel, sinceLabel } from '@/lib/share-card/generate'
 import { getCensusData } from '@/lib/data/census-acs'
 import { estimateTariffCost, TARIFF_COST_RATE } from '@/lib/tariff'
-import { fmtDollars, fmtMonthYear } from '@/lib/format'
+import { fmtDollars, fmtMonthYear, fmtSignedPct } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
-import type { CountyPulse, PulseMeta } from '@/lib/local-pulse'
+import type { CountyRecord, UsHousing } from '@/lib/county-data'
 import austin from '../fixtures/snapshots/78701.json'
 
 jest.mock('next/og', () => ({ ImageResponse: class {} }))
 jest.mock('@/lib/api/snapshot', () => ({ fetchSnapshot: jest.fn() }))
-jest.mock('@/lib/local-pulse', () => {
-  const actual = jest.requireActual('@/lib/local-pulse')
-  return { ...actual, fetchPulseMeta: jest.fn(), fetchCounty: jest.fn(), fetchZipPulse: jest.fn(), fetchCity: jest.fn() }
+jest.mock('@/lib/county-data', () => {
+  const actual = jest.requireActual('@/lib/county-data')
+  return { ...actual, fetchLocalMeta: jest.fn(), fetchCounty: jest.fn(), fetchUsHousing: jest.fn() }
 })
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const lp = require('@/lib/local-pulse')
+const cd = require('@/lib/county-data')
 
 const warn = console.warn
 beforeAll(() => {
@@ -45,46 +46,30 @@ afterAll(() => (console.warn as jest.Mock).mockRestore())
 
 const root = path.join(__dirname, '..', '..')
 const readJson = <T,>(p: string): T => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'))
-const meta = readJson<PulseMeta>('public/data/meta.json')
-const nc = readJson<Record<string, CountyPulse>>('public/data/county/37.json')
-const pr = readJson<Record<string, CountyPulse>>('public/data/county/72.json')
-const al = readJson<Record<string, CountyPulse>>('public/data/county/01.json')
+const tx = readJson<Record<string, CountyRecord>>('public/data/county/48.json')
+const us = readJson<UsHousing>('public/data/us-housing.json')
 const clone = (): EconomicSnapshot => JSON.parse(JSON.stringify(austin))
 
 beforeEach(() => {
-  lp.fetchPulseMeta.mockResolvedValue(meta)
-  lp.fetchCounty.mockResolvedValue(null)
-  lp.fetchZipPulse.mockResolvedValue(null)
-  lp.fetchCity.mockResolvedValue(null)
+  cd.fetchLocalMeta.mockResolvedValue(readJson('public/data/meta.json'))
+  cd.fetchCounty.mockResolvedValue(null)
+  cd.fetchUsHousing.mockResolvedValue(us)
 })
+const shelterConfig = chartConfigs.find(c => c.id === 'cpi-shelter')!
 
 // ---------------------------------------------------------------- flags / notes
 describe('flagged county metrics show their note', () => {
-  test('Buncombe NC (37021): unemployment headline carries the Helene baseline note', () => {
-    render(<UnemploymentHeadline county={nc['37021']} meta={meta} countyName="Buncombe County" />)
-    const note = screen.getByTestId('flag-note')
-    expect(note).toHaveTextContent('Unusual value')
-    expect(note).toHaveTextContent('Hurricane Helene')
+  test('Housing graph Rent tab carries the flag caveat for a flagged county rent', async () => {
+    cd.fetchCounty.mockResolvedValue({ ...tx['48453'], flags: ['rent'] })
+    render(<HousingChart snapshot={clone()} shelterConfig={shelterConfig} />)
+    expect(await screen.findByTestId('flag-note')).toHaveTextContent('Unusual value: far outside the range')
   })
 
-  test('Adjuntas PR (00601 → 72001): flagged without a note gets the generic caveat', () => {
-    expect(pr['72001'].flags).toContain('ur')
-    render(<UnemploymentHeadline county={pr['72001']} meta={meta} countyName="Adjuntas Municipio" />)
-    expect(screen.getByTestId('flag-note')).toHaveTextContent('Unusual value: far outside the range')
-  })
-
-  test('unflagged county: no caveat', () => {
-    const c = { ...nc['37021'], flags: undefined, note: undefined }
-    render(<UnemploymentHeadline county={c} meta={meta} countyName="Buncombe County" />)
+  test('unflagged county: no caveat', async () => {
+    cd.fetchCounty.mockResolvedValue({ ...tx['48453'], flags: undefined, note: undefined })
+    render(<HousingChart snapshot={clone()} shelterConfig={shelterConfig} />)
+    await screen.findByTestId('housing-headline')
     expect(screen.queryByTestId('flag-note')).toBeNull()
-  })
-
-  test('paychecks card shows the wage/real caveat (St. Clair AL, 01115)', async () => {
-    lp.fetchCounty.mockResolvedValue(al['01115'])
-    const { LocalPulse } = await import('@/components/pulse/LocalPulse')
-    render(<LocalPulse zip="35120" countyFips="01115" countyName="St. Clair County" stateAbbr="AL" />)
-    const card = await screen.findByTestId('pulse-paychecks')
-    expect(within(card).getByTestId('flag-note')).toHaveTextContent('Unusual value')
   })
 
   test('hero rent card shows a caveat when the county rent is flagged', () => {
@@ -113,32 +98,8 @@ describe('rent hero', () => {
   })
 })
 
-// ---------------------------------------------------------------- preliminary unemployment
-describe('preliminary unemployment months', () => {
-  const withSeries = (pts: Array<Record<string, unknown>>, extra: Record<string, unknown> = {}) => {
-    const s = clone()
-    s.unemployment.data = { ...s.unemployment.data!, series: pts as never, latestPeriod: pts[pts.length - 1].date as string, ...extra }
-    return s
-  }
-
-  test('per-point flags mark those months; provenance says (preliminary)', () => {
-    const s = withSeries([{ date: '2026-06', rate: 4 }, { date: '2026-07', rate: 4.1 }, { date: '2026-08', rate: 3.9, preliminary: true }])
-    expect(preliminaryMonths(s.unemployment.data)).toEqual(['2026-08'])
-    const input = getChartInput('unemployment', s)
-    expect(input.data[2]).toMatchObject({ date: '2026-08', preliminary: true })
-    expect(input.data[1].preliminary).toBeUndefined()
-    expect(input.provenance.asOf).toBe('Aug 2026 (preliminary)')
-  })
-
-  test('latestPreliminary marks the last point; absent fields fall back to the meta month', () => {
-    const a = withSeries([{ date: '2026-07', rate: 4 }, { date: '2026-08', rate: 4 }], { latestPreliminary: true })
-    expect(preliminaryMonths(a.unemployment.data)).toEqual(['2026-08'])
-    const b = withSeries([{ date: '2026-07', rate: 4 }, { date: '2026-08', rate: 4 }])
-    expect(preliminaryMonths(b.unemployment.data, '2026-08')).toEqual(['2026-08'])
-    const c = withSeries([{ date: '2026-07', rate: 4, preliminary: false }, { date: '2026-08', rate: 4, preliminary: false }])
-    expect(preliminaryMonths(c.unemployment.data, '2026-08')).toEqual([])
-  })
-
+// ---------------------------------------------------------------- preliminary points
+describe('preliminary points', () => {
   test('chart splits preliminary points into a dashed series that connects to the last final point', () => {
     const { rows, hasPreliminary } = splitPreliminary([
       { date: '2026-06', rate: 4 }, { date: '2026-07', rate: 4.1 }, { date: '2026-08', rate: 3.9, preliminary: true },
@@ -149,10 +110,6 @@ describe('preliminary unemployment months', () => {
     expect(rows[2]).toMatchObject({ rate: null, rate_prelim: 3.9 })
   })
 
-  test('headline says it excludes the preliminary month', () => {
-    render(<UnemploymentHeadline county={nc['37021']} meta={meta} countyName="Buncombe County" chartPreliminary={['2026-08']} />)
-    expect(screen.getByTestId('unemployment-prelim-note')).toHaveTextContent('excludes the preliminary Aug 2026 figure')
-  })
 })
 
 // ---------------------------------------------------------------- census provenance
@@ -215,15 +172,12 @@ describe('tariff income provenance', () => {
 
 // ---------------------------------------------------------------- shelter vs rent explanation
 describe('CPI shelter vs Zillow rent explanation', () => {
-  test('shelter chart carries the note (rent-aware wording) and renders it', () => {
+  test('shelter tab carries the CPI-vs-Zillow note and renders it', () => {
     const s = clone()
     const input = getChartInput('cpi-shelter', s)
-    expect(input.note).toBe(SHELTER_VS_RENT_NOTE)
-    s.rent = null
-    expect(getChartInput('cpi-shelter', s).note).toBe(SHELTER_NOTE_NO_RENT)
-    const config = chartConfigs.find(c => c.id === 'cpi-shelter')!
-    render(<EraChart config={config} data={input.data} nationalData={input.nationalData} provenance={input.provenance} note={input.note} />)
-    expect(screen.getByTestId('chart-note')).toHaveTextContent('lags market rents by about a year')
+    expect(input.note).toBe(HOUSING_NOTE)
+    render(<EraChart config={shelterConfig} data={input.data} nationalData={input.nationalData} provenance={input.provenance} note={input.note} />)
+    expect(screen.getByTestId('chart-note')).toHaveTextContent('trails new-lease rents by about a year')
   })
 
   test('hero cards show the note when the Rent card is shown', () => {
@@ -300,27 +254,58 @@ describe('share card labels and OG geometry', () => {
   })
 })
 
-// ---------------------------------------------------------------- pulse colors + asOf + rent caption
-describe('local pulse', () => {
-  test('paychecks: price change colored by sign (a fall is not red)', async () => {
-    lp.fetchCounty.mockResolvedValue({ ...al['01115'], flags: undefined, cpi: -1.2, wage: 2, real: 3.2 })
-    const { LocalPulse } = await import('@/components/pulse/LocalPulse')
-    render(<LocalPulse zip="35120" countyFips="01115" countyName="St. Clair County" stateAbbr="AL" />)
-    const card = await screen.findByTestId('pulse-paychecks')
-    const prices = within(card).getByText('-1.2%')
-    expect(prices).toHaveStyle({ color: '#22C55E' })
-    expect(within(card).getByText('+2.0%')).toHaveStyle({ color: '#22C55E' })
+// ---------------------------------------------------------------- Housing graph tabs
+describe('Housing graph', () => {
+  test('defaults to Rent when the county has Zillow rent; its latest % equals the Rent card %', async () => {
+    const s = clone()
+    cd.fetchCounty.mockResolvedValue(tx['48453'])
+    render(<HousingChart snapshot={s} shelterConfig={shelterConfig} />)
+    const pct = await screen.findByTestId('housing-headline-pct')
+    expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', 'rent')
+    expect(pct).toHaveTextContent(fmtSignedPct(s.rent!.pct))
+    expect(buildRentCard(s)!.value).toBe(pct.textContent)
+    expect(screen.getByTestId('provenance')).toHaveTextContent('Zillow ZORI · Travis County, TX, monthly')
+    expect(screen.getByTestId('provenance')).toHaveTextContent('seasonally adjusted by whatchanged')
+    expect(screen.getByTestId('chart-note')).toHaveTextContent('same county series as the Rent card')
   })
 
-  test('zip rent sparkline is captioned and provenance uses the row as-of month', async () => {
-    const zip = readJson<Record<string, { rent?: { asOf: string } }>>('public/data/zip/787.json')['78701']
-    lp.fetchZipPulse.mockResolvedValue({ ...zip, rent: { ...zip.rent!, asOf: '2026-06' } })
-    lp.fetchCounty.mockResolvedValue(null)
-    const { LocalPulse } = await import('@/components/pulse/LocalPulse')
-    render(<LocalPulse zip="78701" countyFips="48453" countyName="Travis County" stateAbbr="TX" heroShowsCountyRent />)
-    const card = await screen.findByTestId('pulse-rent')
-    expect(card).toHaveTextContent('Trend line: zip 78701 estimate')
-    await waitFor(() => expect(within(card).getByTestId('provenance')).toHaveTextContent('Jun 2026'))
-    expect(card).toHaveTextContent('Typical asking rent: $3,104/mo (Jun 2026)')
+  test('Home prices tab: ZHVI series, labeled smoothed and seasonally adjusted by Zillow', async () => {
+    cd.fetchCounty.mockResolvedValue(tx['48453'])
+    render(<HousingChart snapshot={clone()} shelterConfig={shelterConfig} />)
+    await screen.findByTestId('housing-headline-pct')
+    fireEvent.click(screen.getByTestId('housing-tab-homePrices'))
+    expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', 'homePrices')
+    expect(screen.getByTestId('housing-headline-pct')).toHaveTextContent(fmtSignedPct(tx['48453'].hv!))
+    expect(screen.getByTestId('provenance')).toHaveTextContent('Zillow Home Value Index (ZHVI)')
+    expect(screen.getByTestId('provenance')).toHaveTextContent('smoothed and seasonally adjusted by Zillow')
+    expect(screen.getByTestId('chart-note')).toHaveTextContent("Zillow's smoothed, seasonally adjusted")
+  })
+
+  test('Shelter (CPI) tab shows the BLS CPI shelter series', async () => {
+    cd.fetchCounty.mockResolvedValue(tx['48453'])
+    render(<HousingChart snapshot={clone()} shelterConfig={shelterConfig} />)
+    await screen.findByTestId('housing-headline-pct')
+    fireEvent.click(screen.getByTestId('housing-tab-shelter'))
+    expect(screen.getByTestId('provenance')).toHaveTextContent('BLS CPI shelter')
+  })
+
+  test('no Zillow rent: defaults to Shelter (CPI), Rent tab disabled with a note', async () => {
+    const s = clone()
+    s.rent = null
+    const { rentS: _r, rent: _p, ...noRent } = tx['48453']
+    void _r; void _p
+    cd.fetchCounty.mockResolvedValue(noRent)
+    render(<HousingChart snapshot={s} shelterConfig={shelterConfig} />)
+    expect(await screen.findByTestId('housing-missing-note')).toHaveTextContent('No Zillow rent data for Travis County, TX')
+    expect(screen.getByTestId('housing-tab-rent')).toBeDisabled()
+    expect(screen.getByTestId('housing-tab-homePrices')).not.toBeDisabled()
+    expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', 'shelter')
+  })
+
+  test('county shard failure: Zillow tabs disabled, Shelter (CPI) still shown', async () => {
+    cd.fetchCounty.mockRejectedValue(new Error('HTTP 500'))
+    render(<HousingChart snapshot={clone()} shelterConfig={shelterConfig} />)
+    expect(await screen.findByTestId('housing-missing-note')).toHaveTextContent('Zillow data is unavailable right now')
+    await waitFor(() => expect(screen.getByTestId('housing-chart')).toHaveAttribute('data-tab', 'shelter'))
   })
 })

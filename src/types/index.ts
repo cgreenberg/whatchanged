@@ -18,36 +18,6 @@ export interface DataResult<T> {
   stale?: boolean
 }
 
-export interface UnemploymentPoint {
-  date: string // YYYY-MM format
-  rate: number
-  /** BLS footnote code "P": preliminary month, revised in the next release. */
-  preliminary?: true
-}
-
-export interface UnemploymentData {
-  current: number
-  latestPeriod?: string // YYYY-MM of `current`
-  /** true when the latest month (`current`) is a BLS preliminary estimate. */
-  latestPreliminary?: boolean
-  baseline: number | null // Jan 2025 value (null if BLS has no Jan 2025 value)
-  baselinePeriod?: string | null // YYYY-MM of `baseline`
-  /**
-   * current - baseline (percentage points, NOT seasonally adjusted, Jan 2025 vs latest
-   * month, latest may be preliminary); null when baseline missing. Not the page headline.
-   */
-  change: number | null
-  series: UnemploymentPoint[]
-  countyFips: string
-  /** LAUS area FIPS actually published by BLS (CT: 2022 planning region 09110–09190). */
-  lausFips?: string
-  /** LAUS area display name when it differs from the county (CT planning regions). */
-  lausAreaName?: string
-  seriesId?: string
-  nationalSeriesId?: string // LNU04000000 (NSA, matches county LAUS)
-  nationalSeries?: UnemploymentPoint[]
-}
-
 export interface CpiPoint {
   date: string
   /** null for a month where this area's groceries series has no value (another item does). */
@@ -165,7 +135,6 @@ export interface RentData {
 }
 
 export interface CacheStatus {
-  unemployment: 'hit' | 'miss' | 'stale' | 'error'
   cpi: 'hit' | 'miss' | 'stale' | 'error'
   gas: 'hit' | 'miss' | 'stale' | 'error'
   census: 'hit' | 'miss'
@@ -174,7 +143,6 @@ export interface CacheStatus {
 export interface EconomicSnapshot {
   zip: string
   location: ZipInfo
-  unemployment: DataResult<UnemploymentData>
   cpi: DataResult<CpiData>
   gas: DataResult<GasPriceData>
   census: DataResult<CensusData>
