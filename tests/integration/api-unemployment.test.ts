@@ -2,16 +2,16 @@ import { fetchUnemployment } from '@/lib/api/bls'
 import { getCached, setCached, clearMemCache } from '@/lib/cache/kv'
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
-import blsFixture from '../fixtures/bls-unemployment.json'
 
 describe('BLS unemployment client', () => {
   beforeEach(() => clearMemCache())
 
   test('fetches and parses unemployment data correctly', async () => {
     const data = await fetchUnemployment('53011')
-    expect(data.current).toBe(5.0)
-    expect(data.baseline).toBe(4.1)
-    expect(data.change).toBe(0.9)
+    // Recorded LAUS for Clark County, WA: Jan 2025 = 4.6, Aug 2026 = 4.8
+    expect(data.current).toBe(4.8)
+    expect(data.baseline).toBe(4.6)
+    expect(data.change).toBe(0.2)
     expect(data.series.length).toBeGreaterThan(0)
     expect(data.countyFips).toBe('53011')
   })

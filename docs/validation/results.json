@@ -10,11 +10,11 @@
   "section": "1. Built JSON matches raw source",
   "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all zips)",
   "status": "PASS",
-  "detail": "median |adj| 0.05 pts, mean -0.89, p95 |adj| 3.69",
+  "detail": "median |adj| 1.82 pts, mean -1.82, p95 |adj| 4.43",
   "metrics": {
-   "n": 5824,
-   "median_abs": 0.05,
-   "mean": -0.89
+   "n": 2839,
+   "median_abs": 1.82,
+   "mean": -1.82
   }
  },
  {
@@ -28,28 +28,35 @@
   "section": "2. Coverage and geography",
   "check": "Zillow zips unreachable from site (not in zip\u2192county crosswalk)",
   "status": "PASS",
-  "detail": "7 of 26268 ZHVI zips; examples ['08739', '18934', '19481', '88032', '95424', '95433']",
+  "detail": "0 of 26268 ZHVI zips; examples []",
   "metrics": {}
  },
  {
   "section": "2. Coverage and geography",
   "check": "Site zips with zip-level home values",
   "status": "INFO",
-  "detail": "26261/33791 (78%)",
+  "detail": "26268/41195 (64%)",
   "metrics": {}
  },
  {
   "section": "2. Coverage and geography",
   "check": "Site zips with zip-level rent",
   "status": "INFO",
-  "detail": "5822/33791 (17%) \u2014 gap filled by county/HUD fallback",
+  "detail": "5824/41195 (14%) in raw ZORI; the UI leads with county rent, then Zillow city rent in the same county",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Site zips whose county has published rent (SA since Jan 2025 or same-month YoY)",
+  "status": "INFO",
+  "detail": "25286/41195 (61%)",
   "metrics": {}
  },
  {
   "section": "2. Coverage and geography",
   "check": "Counties with data but no map shape",
   "status": "WARN",
-  "detail": "84: ['02066', '09140', '09190', '72001', '72003', '72005', '72007', '72009', '72011', '72013', '72015', '72017'] (new AK census areas; CT planning regions are folded into legacy counties)",
+  "detail": "83: ['02063', '02066', '72001', '72003', '72005', '72007', '72009', '72011', '72013', '72015', '72017', '72019'] (new AK census areas; CT planning regions are folded into legacy counties)",
   "metrics": {}
  },
  {
@@ -119,20 +126,20 @@
   "section": "3. Home values \u2014 independent sources",
   "check": "Zip home values, within- vs between-county agreement: ZHVI vs FHFA zip5 (2025)",
   "status": "WARN",
-  "detail": "between counties r=0.53; zip-vs-zip inside the same county r=0.06 (n=11637 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "detail": "between counties r=0.53; zip-vs-zip inside the same county r=0.06 (n=11647 zips) \u2014 county differences are corroborated, within-county zip differences are not",
   "metrics": {
-   "within": 0.058541688310230953,
-   "between": 0.5343859610153111
+   "within": 0.058194428648855975,
+   "between": 0.5348883239847259
   }
  },
  {
   "section": "3. Home values \u2014 independent sources",
   "check": "Zip home values, within- vs between-county agreement: ZHVI YoY vs Realtor.com list $/sqft YoY",
   "status": "WARN",
-  "detail": "between counties r=0.54; zip-vs-zip inside the same county r=0.11 (n=5348 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "detail": "between counties r=0.54; zip-vs-zip inside the same county r=0.10 (n=5402 zips) \u2014 county differences are corroborated, within-county zip differences are not",
   "metrics": {
-   "within": 0.1095762377239109,
-   "between": 0.5439952339752769
+   "within": 0.10476672140946788,
+   "between": 0.5388064671526124
   }
  },
  {
@@ -153,14 +160,14 @@
   "section": "4. Rent \u2014 independent sources",
   "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
   "status": "PASS",
-  "detail": "{'n': 370, 'pearson': 0.842, 'spearman': 0.764, 'mae': 2.3, 'bias': 0.65, 'sign_agree': 0.822}",
+  "detail": "{'n': 364, 'pearson': 0.858, 'spearman': 0.784, 'mae': 2.25, 'bias': 0.59, 'sign_agree': 0.824}",
   "metrics": {
-   "n": 370,
-   "pearson": 0.842,
-   "spearman": 0.764,
-   "mae": 2.3,
-   "bias": 0.65,
-   "sign_agree": 0.822
+   "n": 364,
+   "pearson": 0.858,
+   "spearman": 0.784,
+   "mae": 2.25,
+   "bias": 0.59,
+   "sign_agree": 0.824
   }
  },
  {
@@ -237,10 +244,10 @@
   "section": "4. Rent \u2014 independent sources",
   "check": "Zip rents, within- vs between-county agreement: Zillow ZORI vs HUD SAFMR FY25\u2192FY27",
   "status": "WARN",
-  "detail": "between counties r=0.29; zip-vs-zip inside the same county r=-0.04 (n=4844 zips) \u2014 county differences are corroborated, within-county zip differences are not",
+  "detail": "between counties r=0.25; zip-vs-zip inside the same county r=-0.04 (n=4882 zips) \u2014 county differences are corroborated, within-county zip differences are not",
   "metrics": {
-   "within": -0.03931552930651075,
-   "between": 0.2928187566468345
+   "within": -0.03883770992590524,
+   "between": 0.25347037736055117
   }
  },
  {
@@ -427,7 +434,7 @@
   "section": "5. Paychecks (QCEW)",
   "check": "Why we pool 4 quarters: single-quarter YoY persistence (Q1-2026 vs Q4-2025, raw)",
   "status": "INFO",
-  "detail": "all counties r=0.222; counties with \u226520k jobs r=0.029 \u2192 single quarters are mostly bonus/vesting timing noise. Built 4-quarter metric: \u226520k-job counties p5/p50/p95 = [1.3, 3.8, 6.0]",
+  "detail": "all counties r=0.222; counties with \u226520k jobs r=0.029 \u2192 single quarters are mostly bonus/vesting timing noise. Built 4-quarter metric: \u226520k-job counties p5/p50/p95 = [1.3, 3.8, 5.9]",
   "metrics": {
    "all": {
     "n": 3275,
@@ -523,7 +530,7 @@
   "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "rent %",
   "status": "WARN",
-  "detail": "5 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Ouachita Parish, LA +27.3, Cape May County, NJ +24.0, Calcasieu Parish, LA +23.4",
+  "detail": "4 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Calcasieu Parish, LA +23.4, Linn County, IA +19.0",
   "metrics": {
    "flagged": [
     [
@@ -537,19 +544,14 @@
      33.6
     ],
     [
-     "22073",
-     "Ouachita Parish, LA",
-     27.3
-    ],
-    [
-     "34009",
-     "Cape May County, NJ",
-     24.0
-    ],
-    [
      "22019",
      "Calcasieu Parish, LA",
      23.4
+    ],
+    [
+     "19113",
+     "Linn County, IA",
+     19.0
     ]
    ]
   }
@@ -558,13 +560,13 @@
   "section": "7. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "unemployment pts",
   "status": "WARN",
-  "detail": "1 flagged: Buncombe County, NC -3.6",
+  "detail": "1 flagged: Buncombe County, NC -3.5",
   "metrics": {
    "flagged": [
     [
      "37021",
      "Buncombe County, NC",
-     -3.6
+     -3.5
     ]
    ]
   }
@@ -728,5 +730,75 @@
     ]
    ]
   }
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "No county name equals its FIPS or is empty",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "No CT planning-region (091x0) or statewide rows",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "County metrics within sanity ranges",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "No percentile-rank fields shipped",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "Zip listings: \u226520 active, YoY within \u00b1100%, price-cut share in [0,1] (11864 zips)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "Zip rent carries an honest basis (sa|yoy), no ranks, no SA series on YoY rows",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "Every crosswalk zip resolves to a county record",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "Zillow city keys unique by name + county + state",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "Every county's cpiArea equals county-geo.json's cpiArea",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "8. Shipped data invariants",
+  "check": "county-rent.json: pct in [-30, 60], levels positive, matches counties.json",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
  }
 ]

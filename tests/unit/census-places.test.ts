@@ -17,9 +17,8 @@ describe('getCensusData — city-level lookup', () => {
   })
 
   test('city-level lookup with zip NOT in ZCTA data sets isRentFallback true', () => {
-    // 00001 is not a real zip — no ZCTA entry, but if city matches it should use national rent fallback
-    // Use a known-missing zip with a city that exists in the places file
-    const result = getCensusData('00001', 'san francisco', 'ca')
+    // 94119 is a San Francisco PO-box zip with no ZCTA entry → city income, national rent fallback
+    const result = getCensusData('94119', 'san francisco', 'ca')
     expect(result.isCityLevel).toBe(true)
     expect(result.isFallback).toBe(false)
     expect(result.isRentFallback).toBe(true)
@@ -56,5 +55,17 @@ describe('getCensusData — city-level lookup', () => {
     expect(result.medianIncome).toBe(136689)
     expect(result.isCityLevel).toBe(true)
     expect(result.cityName).toBe('San Francisco')
+  })
+
+  test('city/state that does not contain the zip is ignored (Portland OR params on Portland ME zip)', () => {
+    const plain = getCensusData('04101')
+    const result = getCensusData('04101', 'portland', 'or')
+    expect(result.isCityLevel).toBe(false)
+    expect(result.medianIncome).toBe(plain.medianIncome)
+  })
+
+  test('city in another state is ignored (Beverly Hills zip with SF params)', () => {
+    const result = getCensusData('98683', 'beverly hills', 'ca')
+    expect(result.isCityLevel).toBe(false)
   })
 })

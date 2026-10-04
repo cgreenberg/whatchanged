@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef } from "react";
 import { searchCitiesStatic } from "@/lib/data/city-zip-lookup";
-import { parseQuery, CityResult } from "@/lib/city-search";
+import { parseQuery, mergeCityResults, CityResult } from "@/lib/city-search";
 
 type SearchState = "idle" | "loading" | "done" | "error";
 
@@ -47,41 +47,47 @@ export function useCitySearch(query: string) {
       return;
     }
 
-    // Tier 1 — instant static lookup
-    const staticHits = searchCitiesStatic(q).map(c => ({
+    // Tier 1 — instant static lookup (shown immediately)
+    const staticHits: CityResult[] = searchCitiesStatic(q).map(c => ({
       display: c.display,
       zip: c.zip,
       source: "static" as const,
     }));
 
-    if (staticHits.length > 0) {
-      dispatch({ type: "SET_RESULTS", results: staticHits, status: "done" });
-      return;
-    }
-
-    // Tier 2 — debounce then Census API
+    // Tier 2 needs ≥3 chars; static hits alone for shorter queries
     if (q.length < 3) {
-      dispatch({ type: "SET_RESULTS", results: [], status: "idle" });
+      dispatch({
+        type: "SET_RESULTS",
+        results: staticHits,
+        status: staticHits.length > 0 ? "done" : "idle",
+      });
       return;
     }
 
-    dispatch({ type: "SET_STATUS", status: "loading" });
+    // Show static hits right away, then merge in API results so a query like
+    // "portland" also lists Portland ME, not just the static Portland OR.
+    if (staticHits.length > 0) {
+      dispatch({ type: "SET_RESULTS", results: staticHits, status: "loading" });
+    } else {
+      dispatch({ type: "SET_STATUS", status: "loading" });
+    }
 
     debounceRef.current = setTimeout(async () => {
       const { city, state } = parseQuery(q);
       const query = state ? `${city} ${state}` : city;
+      let apiHits: CityResult[] = [];
       try {
         const res = await fetch(`/api/city-search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(4000) });
-        if (!res.ok) { dispatch({ type: "SET_RESULTS", results: [], status: "error" }); return; }
-        const data: CityResult[] = await res.json();
-        if (data.length > 0) {
-          dispatch({ type: "SET_RESULTS", results: data, status: "done" });
-        } else {
-          dispatch({ type: "SET_RESULTS", results: [], status: "error" });
-        }
+        if (res.ok) apiHits = await res.json();
       } catch {
-        dispatch({ type: "SET_RESULTS", results: [], status: "error" });
+        apiHits = [];
       }
+      const merged = mergeCityResults(staticHits, apiHits).slice(0, 8);
+      dispatch({
+        type: "SET_RESULTS",
+        results: merged,
+        status: merged.length > 0 ? "done" : "error",
+      });
     }, 400);
 
     return () => {

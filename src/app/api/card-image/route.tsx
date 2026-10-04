@@ -11,7 +11,8 @@ export async function GET(request: Request) {
     return new Response('Invalid zip code', { status: 400 })
   }
 
-  const city = searchParams.get('city') ?? undefined
-  const state = searchParams.get('state') ?? undefined
+  // Same caps as /api/og and the page metadata: never pass unbounded free text downstream
+  const city = searchParams.get('city')?.slice(0, 100) || undefined
+  const state = searchParams.get('state')?.slice(0, 2) || undefined
   return generateShareCard(zip, city, state)
 }

@@ -16,18 +16,9 @@ export function ZipInput({ onSubmit, isLoading }: ZipInputProps) {
   const [dismissed, setDismissed] = useState(false)
   const [geoLoading, setGeoLoading] = useState(false)
   const [geoError, setGeoError] = useState<string | null>(null)
-  const prefetchedRef = useRef<Set<string>>(new Set())
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { results, status } = useCitySearch(value)
-
-  // Prefetch only for valid 5-digit zips — side effect, no setState, fine in useEffect
-  useEffect(() => {
-    if (/^\d{5}$/.test(value) && !prefetchedRef.current.has(value)) {
-      prefetchedRef.current.add(value)
-      fetch(`/api/data/${value}`).catch(() => {})
-    }
-  }, [value])
 
   // Close on outside mousedown — no setState in effect body, only in event handler
   useEffect(() => {

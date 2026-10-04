@@ -33,29 +33,12 @@ describe('fetchSnapshot graceful degradation', () => {
     expect(snapshot!.unemployment.error).toBeTruthy()
   })
 
-  test('when USASpending fails, snapshot still returns with federal error', async () => {
-    server.use(
-      http.post('https://api.usaspending.gov/api/v2/search/spending_by_award/', () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
-    const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
-    expect(snapshot!.federal.data).toBeNull()
-    expect(snapshot!.federal.error).toBeTruthy()
-    // Other sources should still work
-    expect(snapshot!.census.data).not.toBeNull()
-  })
-
   test('when all external APIs fail, snapshot returns with all data null but no crash', async () => {
     server.use(
       http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', () =>
         new HttpResponse(null, { status: 503 })
       ),
       http.get('https://api.eia.gov/v2/petroleum/pri/gnd/data/', () =>
-        new HttpResponse(null, { status: 503 })
-      ),
-      http.post('https://api.usaspending.gov/api/v2/search/spending_by_award/', () =>
         new HttpResponse(null, { status: 503 })
       )
     )
@@ -64,7 +47,6 @@ describe('fetchSnapshot graceful degradation', () => {
     expect(snapshot!.unemployment.data).toBeNull()
     expect(snapshot!.cpi.data).toBeNull()
     expect(snapshot!.gas.data).toBeNull()
-    expect(snapshot!.federal.data).toBeNull()
     // Census is static — should still be present
     expect(snapshot!.census.data).not.toBeNull()
   })
@@ -99,8 +81,8 @@ describe('fetchSnapshot caching behavior', () => {
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull()
     const cs = snapshot!.cacheStatus!
-    for (const key of ['unemployment', 'cpi', 'gas', 'federal', 'census'] as const) {
-      expect(['hit', 'miss']).toContain(cs[key])
+    for (const key of ['unemployment', 'cpi', 'gas', 'census'] as const) {
+      expect(['hit', 'miss', 'stale', 'error']).toContain(cs[key])
     }
   })
 })

@@ -1,110 +1,137 @@
-import { NextResponse } from 'next/server'
-import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from '@/lib/api/source-registry'
-import { fetchSnapshot } from '@/lib/api/snapshot'
-import { getCached } from '@/lib/cache/kv'
+// Health check.
+// Public requests are CACHE-ONLY: they report which representative cache keys
+// are present and how old their data is. No upstream (BLS/EIA) calls are made,
+// so this endpoint cannot burn API quota.
+// Live upstream checks run only with `Authorization: Bearer ${CRON_SECRET}`.
 
-interface SourceStatus {
-  name: string
-  status: 'ok' | 'degraded' | 'error' | 'unknown'
-  error?: string
-  docsUrl: string
-  cacheHit?: boolean
+import { NextResponse } from 'next/server'
+import { blsSource, blsCpiSource, eiaSource } from '@/lib/api/source-registry'
+import { getCached, getCachedEnvelope, lastGoodKey, failedKey } from '@/lib/cache/kv'
+import { isCronAuthorized } from '@/lib/api/cron-auth'
+import { unemploymentCacheKey } from '@/lib/api/cached-sources'
+import { cpiCacheKey, fetchCpiArea, NATIONAL_CPI_AREA } from '@/lib/api/bls-cpi'
+import { getGasLookup, NATIONAL_GAS_CACHE_KEY, fetchGasSeries } from '@/lib/api/eia'
+import { fetchUnemployment } from '@/lib/api/bls'
+import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+
+export const dynamic = 'force-dynamic'
+
+// Representative location: Clark County, WA (zip 98683)
+const SAMPLE_COUNTY = '53011'
+const SAMPLE_STATE = 'WA'
+
+interface KeyStatus {
+  key: string
+  present: boolean
+  fetchedAt: string | null
+  ageSeconds: number | null
+  lastGoodPresent: boolean
+  recentlyFailed: boolean
 }
 
-export async function GET() {
-  const now = new Date().toISOString()
-  const results: Record<string, SourceStatus> = {}
+async function keyStatus(key: string): Promise<KeyStatus> {
+  const [env, lastGood, failed] = await Promise.all([
+    getCachedEnvelope<unknown>(key),
+    getCachedEnvelope<unknown>(lastGoodKey(key)),
+    getCached<boolean>(failedKey(key)),
+  ])
+  const fetchedAt = env?.fetchedAt ?? null
+  const t = fetchedAt ? new Date(fetchedAt).getTime() : NaN
+  return {
+    key,
+    present: !!env,
+    fetchedAt,
+    ageSeconds: Number.isFinite(t) ? Math.round((Date.now() - t) / 1000) : null,
+    lastGoodPresent: !!lastGood,
+    recentlyFailed: !!failed,
+  }
+}
 
-  // 1. Check Redis/cache availability
+function redact(message: string): string {
+  let safe = message
+  for (const secret of [process.env.BLS_API_KEY, process.env.EIA_API_KEY]) {
+    if (secret) safe = safe.replaceAll(secret, '[REDACTED]')
+  }
+  return safe
+}
+
+export async function GET(req: Request) {
+  const now = new Date().toISOString()
+
   let cacheAvailable = false
   try {
-    // Attempt a benign cache read to verify connectivity
     await getCached<boolean>('health:ping')
     cacheAvailable = true
   } catch {
     cacheAvailable = false
   }
 
-  // 2. Liveness checks — actually call each source (uses cache if warm)
-  const livenessChecks = [
-    { source: blsSource, args: ['53011'] as [string] },
-    { source: blsCpiSource, args: ['53011', 'WA'] as [string, string] },
-    { source: eiaSource, args: ['WA'] as [string] },
-    { source: usaSpendingSource, args: ['53011', 'WA'] as [string, string] },
+  const cpiArea = getMetroCpiAreaForCounty(SAMPLE_COUNTY, SAMPLE_STATE)
+  const gasLookup = getGasLookup(SAMPLE_STATE, cpiArea.areaCode, SAMPLE_COUNTY)
+  const keys = [
+    unemploymentCacheKey(SAMPLE_COUNTY),
+    cpiCacheKey(cpiArea.areaCode),
+    cpiCacheKey(NATIONAL_CPI_AREA),
+    gasLookup.cacheKey,
+    NATIONAL_GAS_CACHE_KEY,
   ]
 
-  await Promise.all(
-    livenessChecks.map(async ({ source, args }) => {
-      try {
-        await (source.fetch as (...a: string[]) => Promise<unknown>)(...args)
-        results[source.id] = { name: source.name, status: 'ok', docsUrl: source.docsUrl }
-      } catch (err) {
-        // Redact API keys and sensitive values from error messages before
-        // surfacing them in the public health endpoint response.
-        const rawMessage = err instanceof Error ? err.message : 'Unknown'
-        const blsApiKey = process.env.BLS_API_KEY
-        const eiaApiKey = process.env.EIA_API_KEY
-        let safeMessage = rawMessage
-        if (blsApiKey) safeMessage = safeMessage.replaceAll(blsApiKey, '[REDACTED]')
-        if (eiaApiKey) safeMessage = safeMessage.replaceAll(eiaApiKey, '[REDACTED]')
-        results[source.id] = {
-          name: source.name,
-          status: 'error',
-          error: safeMessage,
-          docsUrl: source.docsUrl,
-        }
-      }
-    })
-  )
-
-  // 3. Snapshot check for representative zip — reports cacheHit per source
-  //    cacheHit=true means data was served from cache (warm), false means a live fetch occurred
-  let snapshotCacheStatus: Record<string, boolean | null> = {}
-  try {
-    const snapshot = await fetchSnapshot('98683')
-    if (snapshot?.cacheStatus) {
-      snapshotCacheStatus = {
-        unemployment: snapshot.cacheStatus.unemployment === 'hit',
-        cpi: snapshot.cacheStatus.cpi === 'hit',
-        gas: snapshot.cacheStatus.gas === 'hit',
-        federal: snapshot.cacheStatus.federal === 'hit',
-      }
-      // Annotate liveness results with cacheHit info
-      for (const [sourceKey, hit] of Object.entries(snapshotCacheStatus)) {
-        const sourceIdMap: Record<string, string> = {
-          unemployment: 'bls-laus',
-          cpi: 'bls-cpi',
-          gas: 'eia-gas',
-          federal: 'usaspending',
-        }
-        const id = sourceIdMap[sourceKey]
-        if (id && results[id]) {
-          results[id].cacheHit = hit ?? undefined
-        }
-      }
+  let cacheKeys: KeyStatus[] = []
+  if (cacheAvailable) {
+    try {
+      cacheKeys = await Promise.all(keys.map(keyStatus))
+    } catch {
+      cacheAvailable = false
     }
-  } catch {
-    // Non-fatal — snapshot check is best-effort
   }
 
-  const allOk = Object.values(results).every((r) => r.status === 'ok')
-  const overallStatus = allOk ? 'ok' : 'degraded'
+  let live: Record<string, { name: string; status: 'ok' | 'error'; error?: string; docsUrl: string }> | null = null
+  if (isCronAuthorized(req)) {
+    live = {}
+    const checks = [
+      { source: blsSource, run: () => fetchUnemployment(SAMPLE_COUNTY) },
+      { source: blsCpiSource, run: () => fetchCpiArea({ areaCode: NATIONAL_CPI_AREA, areaName: 'National', tier: 4 }) },
+      { source: eiaSource, run: () => fetchGasSeries('NUS') },
+    ]
+    await Promise.all(
+      checks.map(async ({ source, run }) => {
+        try {
+          await run()
+          live![source.id] = { name: source.name, status: 'ok', docsUrl: source.docsUrl }
+        } catch (err) {
+          live![source.id] = {
+            name: source.name,
+            status: 'error',
+            error: redact(err instanceof Error ? err.message : 'Unknown'),
+            docsUrl: source.docsUrl,
+          }
+        }
+      })
+    )
+  }
+
+  const cacheOk = cacheAvailable && cacheKeys.every((k) => k.present || k.lastGoodPresent)
+  const liveOk = !live || Object.values(live).every((r) => r.status === 'ok')
+  const ok = cacheOk && liveOk
 
   return NextResponse.json(
     {
-      status: overallStatus,
+      status: ok ? 'ok' : 'degraded',
       timestamp: now,
       cache: {
         available: cacheAvailable,
-        note: cacheAvailable
-          ? 'Redis connected'
-          : 'Redis unavailable — using in-memory fallback',
+        note: cacheAvailable ? 'Cache reachable' : 'Cache unavailable',
+        keys: cacheKeys,
       },
-      sources: results,
+      ...(live ? { live } : { liveChecks: 'skipped (requires CRON_SECRET)' }),
     },
     {
-      status: allOk ? 200 : 207,
-      headers: { 'Cache-Control': 'no-cache, no-store' },
+      status: ok ? 200 : 207,
+      // Public (unauthenticated) checks do ~16 Redis reads: let the CDN absorb
+      // repeated hits for a minute. Authenticated live checks are never cached.
+      headers: live
+        ? { 'Cache-Control': 'no-cache, no-store' }
+        : { 'Cache-Control': 'public, s-maxage=60', Vary: 'Authorization' },
     }
   )
 }

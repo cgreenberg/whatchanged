@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
-import { estimateTariffCost, formatDollars } from '@/lib/tariff'
 import { getCachedNationalData } from '@/lib/api/national'
+import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, HI_AK_GAS_CAVEAT, type HeroCardModel } from '@/lib/hero-cards'
+import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
+import { BASELINE_DAY_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
+import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
 
 export const runtime = 'nodejs'
 
@@ -19,7 +22,6 @@ const BLUE = '#3D9EFF'
 const PURPLE = '#A87EFF'
 const RED = '#F04040'
 
-const DOT_PAD = 10 // inset so edge dots aren't clipped
 
 function buildSparklinePath(data: NationalDataPoint[], width: number, height: number): string {
   if (data.length < 2) return '0,0'
@@ -43,25 +45,8 @@ function buildAreaPath(data: NationalDataPoint[], width: number, height: number)
   return `${DOT_PAD},${height - DOT_PAD} ${sparkline} ${width - DOT_PAD},${height - DOT_PAD}`
 }
 
-function computeDotX(series: NationalDataPoint[], index: number, width: number): number {
-  if (series.length === 0) return width / 2
-  const usableWidth = width - 2 * DOT_PAD
-  const idx = index < 0 ? series.length + index : index
-  return DOT_PAD + (idx / (series.length - 1)) * usableWidth
-}
-
-function computeDotY(series: NationalDataPoint[], index: number, height: number): number {
-  if (series.length === 0) return height / 2
-  const values = series.map(d => d.value)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min || 1
-  const usableH = height - 2 * DOT_PAD
-  const idx = index < 0 ? series.length + index : index
-  return DOT_PAD + usableH - ((series[idx].value - min) / range) * usableH
-}
-
 function yLabels(series: NationalDataPoint[], fmt: 'dollar' | 'percent'): { yMin: string; yMid: string; yMax: string } {
+  if (!series.length) return { yMin: '', yMid: '', yMax: '' }
   const values = series.map(d => d.value)
   const min = Math.min(...values)
   const max = Math.max(...values)
@@ -74,12 +59,11 @@ function yLabels(series: NationalDataPoint[], fmt: 'dollar' | 'percent'): { yMin
 
 function midDateLabel(series: NationalDataPoint[]): string {
   if (series.length < 3) return ''
-  const midIdx = Math.floor(series.length / 2)
-  const midDate = new Date(series[midIdx].date)
-  return midDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }).toUpperCase()
+  return fmtMonthShort(series[Math.floor(series.length / 2)].date).toUpperCase()
 }
 
 function gridlineYPositions(series: NationalDataPoint[], height: number): { minY: number; midY: number } {
+  if (!series.length) return { minY: height - DOT_PAD, midY: height / 2 }
   const values = series.map(d => d.value)
   const min = Math.min(...values)
   const max = Math.max(...values)
@@ -91,73 +75,112 @@ function gridlineYPositions(series: NationalDataPoint[], height: number): { minY
   return { minY, midY }
 }
 
+/**
+ * Context under each OG stat: line 1 = short geography (every number comes from a different
+ * area: county rent, regional CPI, regional gas), line 2 = baseline window.
+ */
+function ogSublines(c: HeroCardModel): [string, string] {
+  const since = c.provenance.window.replace(/^since week of /, 'since ')
+  switch (c.id) {
+    case 'gas': return [c.geoTag ?? c.provenance.geography, since]
+    case 'rent': return [c.geoTag ?? c.provenance.geography, `${since}, seas. adj.`]
+    case 'tariff': return [c.geoTag ? `${c.geoTag} income` : 'income', 'estimate']
+    default: return [c.geoTag ?? c.provenance.geography, since]
+  }
+}
+
+/** Short CDN lifetime; degraded (missing/stale) cards expire fast so they self-heal. */
+const CACHE_OK = 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400'
+const CACHE_DEGRADED = 'public, max-age=60, s-maxage=300'
+
+const OG_LABELS: Record<HeroCardModel['id'], string> = {
+  gas: 'GAS (REGULAR)',
+  rent: 'RENT (NEW LEASES)',
+  shelter: 'SHELTER (CPI)',
+  groceries: 'GROCERIES',
+  tariff: 'TARIFF IMPACT (EST.)',
+}
+const OG_COLORS: Record<HeroCardModel['id'], string> = {
+  gas: RED, rent: BLUE, shelter: BLUE, groceries: AMBER, tariff: PURPLE,
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const zip = searchParams.get('zip') ?? ''
+  const city = searchParams.get('city')?.slice(0, 100) || undefined
+  const state = searchParams.get('state')?.slice(0, 2) || undefined
 
-  // Try to fetch live data when zip is provided
-  let location = searchParams.get('location') ?? ''
-  let groceries = searchParams.get('groceries') ?? ''
-  let shelter = ''
-  let federal = searchParams.get('federal') ?? ''
-  let tariff = ''
-  let gasPrice = ''
+  // Everything drawn comes from the zip's own snapshot — no free-text query params.
+  let location = ''
+  let stats: Array<{ label: string; value: string; unit?: string; color: string; sub?: string; sub2?: string }> = []
+  const footnotes: string[] = []
+  let latestPeriod: string | undefined
+  let throughLabel: string | null = null
+  let degraded = false
+  let sources = 'BLS · EIA · Census · Yale Budget Lab'
 
-  if (zip && /^\d{5}$/.test(zip)) {
+  if (/^\d{5}$/.test(zip)) {
     try {
-      const snapshot = await fetchSnapshot(zip)
+      const snapshot = await fetchSnapshot(zip, city, state)
       if (snapshot) {
-        if (!location) {
-          const city = snapshot.location.cityName || snapshot.location.countyName
-          location = `${city}, ${snapshot.location.stateAbbr}`
+        const cards = buildHeroCards(snapshot)
+        location = `${snapshot.location.cityName || snapshot.location.countyName}, ${snapshot.location.stateAbbr}`
+        sources = cards.some(c => c.id === 'rent' && c.status === 'ok')
+          ? 'BLS · EIA · Zillow · Census · Yale Budget Lab'
+          : 'BLS · EIA · Census · Yale Budget Lab'
+        stats = cards.map(c => {
+          const [sub, sub2] = c.status === 'ok' ? ogSublines(c) : [undefined, undefined]
+          const isGas = c.status === 'ok' && c.id === 'gas' && !!snapshot.gas.data
+          const value = c.status === 'ok' ? (isGas ? fmtSignedDollars(snapshot.gas.data!.change) : c.value ?? '') : ''
+          return {
+            label: OG_LABELS[c.id],
+            value: value && c.outlier ? `${value}${OUTLIER_MARK}` : value,
+            // Unit drawn smaller on the same line so "+$1.19/gal" never wraps
+            unit: isGas ? '/gal' : undefined,
+            color: OG_COLORS[c.id],
+            sub,
+            sub2,
+          }
+        })
+        if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
+        if (cards.some(c => c.id === 'gas' && c.status === 'ok' && c.caveat === HI_AK_GAS_CAVEAT)) {
+          footnotes.push('Gas: no EIA Hawaii/Alaska series; West Coast avg shown, local prices typically higher')
         }
-        if (!groceries && snapshot.cpi.data) {
-          groceries = `${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`
-        }
-        if (snapshot.cpi.data?.shelterChange !== undefined) {
-          shelter = `${snapshot.cpi.data.shelterChange > 0 ? '+' : ''}${snapshot.cpi.data.shelterChange.toFixed(1)}%`
-        }
-        if (!federal && snapshot.federal.data) {
-          const amt = snapshot.federal.data.amountCut
-          federal = amt >= 1_000_000_000
-            ? `$${(amt / 1_000_000_000).toFixed(1)}B`
-            : `$${(amt / 1_000_000).toFixed(1)}M`
-        }
-        if (snapshot.gas.data) {
-          gasPrice = `$${snapshot.gas.data.current.toFixed(2)}/gal`
-        }
-        if (snapshot.census.data) {
-          const cost = estimateTariffCost(snapshot.census.data.medianIncome)
-          tariff = `~${formatDollars(cost)}/yr`
-        }
+        latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
+        throughLabel = dataThroughLabel(cards)
+        degraded = cards.some(c => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)
       }
     } catch {
-      // Fall through with whatever query params we have
+      // fall through to the national card
     }
   }
 
-  // Dynamic month/year for date range badge
-  const monthYear = new Date()
-    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    .toUpperCase()
-
-  // No zip or no location — show generic fallback card
-  const hasData = location && (gasPrice || groceries || shelter || tariff)
+  const hasData = !!location && stats.some(s => s.value) && !!latestPeriod
 
   if (!hasData) {
-    const national = await getCachedNationalData()
+    const fetched = await getCachedNationalData()
+    // No hard-coded fallback numbers: if national data is unavailable, don't render a card
+    if (!fetched.gas || !fetched.groceries || !fetched.shelter) {
+      return new Response('National data unavailable', { status: 503, headers: { 'Cache-Control': 'no-store' } })
+    }
+    const nationalStale = [fetched.gas, fetched.groceries, fetched.shelter].some(m => m.stale)
+    // Header/axis dates come from the data, never today's date
+    const nationalLatest = [fetched.gas.latestPeriod, fetched.groceries.latestPeriod, fetched.shelter.latestPeriod]
+      .filter(Boolean).sort().pop()
+    // Sparklines start at the baseline point (same rule as the headline numbers)
+    const gasFrom = gasBaselineIndex(fetched.gas.series)
+    const national = {
+      ...fetched,
+      gas: { ...fetched.gas, series: fetched.gas.series.slice(Math.max(0, gasFrom)) },
+      groceries: { ...fetched.groceries, series: fetched.groceries.series.filter(p => p.date >= fetched.groceries!.baselinePeriod) },
+      shelter: { ...fetched.shelter, series: fetched.shelter.series.filter(p => p.date >= fetched.shelter!.baselinePeriod) },
+    }
 
     // Format values for display
-    const gasChange = national.gas.change >= 0
-      ? `+$${national.gas.change.toFixed(2)}`
-      : `-$${Math.abs(national.gas.change).toFixed(2)}`
-    const grocChange = national.groceries.change >= 0
-      ? `+${national.groceries.change.toFixed(1)}%`
-      : `${national.groceries.change.toFixed(1)}%`
-    const sheltChange = national.shelter.change >= 0
-      ? `+${national.shelter.change.toFixed(1)}%`
-      : `${national.shelter.change.toFixed(1)}%`
-    const tariffAnnual = `~$${national.tariff.annualCost.toLocaleString()}/yr`
+    const gasChange = fmtSignedDollars(national.gas.change)
+    const grocChange = fmtSignedPct(national.groceries.change)
+    const sheltChange = fmtSignedPct(national.shelter.change)
+    const tariffAnnual = `~${fmtDollars(national.tariff.annualCost)}/yr`
 
     // Sparkline dimensions per panel (leave 45px for y-axis labels)
     const yAxisW = 55
@@ -173,7 +196,7 @@ export async function GET(req: NextRequest) {
     const sheltArea = buildAreaPath(national.shelter.series, sparkW, sparkH)
 
     // Date labels
-    const latestMonth = new Date().toLocaleDateString('en-US', { month: 'short', year: '2-digit' }).toUpperCase()
+    const latestMonth = fmtMonthShort(nationalLatest).toUpperCase()
 
     // RGB lookup for dynamic pill colors
     const RGB: Record<string, string> = {
@@ -195,9 +218,9 @@ export async function GET(req: NextRequest) {
     const sheltGrid = gridlineYPositions(national.shelter.series, sparkH)
 
     const panels = [
-      { label: 'GAS PRICES', sublabel: '(regular unleaded, $/gal)', value: `$${national.gas.current.toFixed(2)}/gal`, pill: gasChange, color: RED, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
-      { label: 'GROCERIES', sublabel: '(CPI: food at home)', value: grocChange, pill: national.groceries.change >= 0 ? 'rising' : 'falling', color: AMBER, points: grocPoints, area: grocArea, startDotX: computeDotX(national.groceries.series, 0, sparkW), startDotY: computeDotY(national.groceries.series, 0, sparkH), endDotX: computeDotX(national.groceries.series, -1, sparkW), endDotY: computeDotY(national.groceries.series, -1, sparkH), yMin: grocYLabels.yMin, yMid: grocYLabels.yMid, yMax: grocYLabels.yMax, midDate: grocMidDate, gridMinY: grocGrid.minY, gridMidY: grocGrid.midY },
-      { label: 'SHELTER', sublabel: "(rent & owners' equiv.)", value: sheltChange, pill: national.shelter.change >= 0 ? 'rising' : 'falling', color: BLUE, points: sheltPoints, area: sheltArea, startDotX: computeDotX(national.shelter.series, 0, sparkW), startDotY: computeDotY(national.shelter.series, 0, sparkH), endDotX: computeDotX(national.shelter.series, -1, sparkW), endDotY: computeDotY(national.shelter.series, -1, sparkH), yMin: sheltYLabels.yMin, yMid: sheltYLabels.yMid, yMax: sheltYLabels.yMax, midDate: sheltMidDate, gridMinY: sheltGrid.minY, gridMidY: sheltGrid.midY },
+      { label: 'GAS PRICES', sublabel: '(regular gasoline, $/gal)', value: `$${national.gas.current.toFixed(2)}/gal`, pill: gasChange, color: RED, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), firstDate: national.gas.series[0]?.date, since: national.gas.series[0]?.date ? `since ${fmtDay(national.gas.series[0].date)}` : `since ${BASELINE_DAY_LABEL}`, yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
+      { label: 'GROCERIES', sublabel: '(CPI: food at home)', value: grocChange, pill: national.groceries.change >= 0 ? 'rising' : 'falling', color: AMBER, points: grocPoints, area: grocArea, startDotX: computeDotX(national.groceries.series, 0, sparkW), startDotY: computeDotY(national.groceries.series, 0, sparkH), endDotX: computeDotX(national.groceries.series, -1, sparkW), endDotY: computeDotY(national.groceries.series, -1, sparkH), firstDate: national.groceries.series[0]?.date, since: `since ${fmtMonthYear(national.groceries.baselinePeriod)}`, yMin: grocYLabels.yMin, yMid: grocYLabels.yMid, yMax: grocYLabels.yMax, midDate: grocMidDate, gridMinY: grocGrid.minY, gridMidY: grocGrid.midY },
+      { label: 'SHELTER', sublabel: "(rent & owners' equiv.)", value: sheltChange, pill: national.shelter.change >= 0 ? 'rising' : 'falling', color: BLUE, points: sheltPoints, area: sheltArea, startDotX: computeDotX(national.shelter.series, 0, sparkW), startDotY: computeDotY(national.shelter.series, 0, sparkH), endDotX: computeDotX(national.shelter.series, -1, sparkW), endDotY: computeDotY(national.shelter.series, -1, sparkH), firstDate: national.shelter.series[0]?.date, since: `since ${fmtMonthYear(national.shelter.baselinePeriod)}`, yMin: sheltYLabels.yMin, yMid: sheltYLabels.yMid, yMax: sheltYLabels.yMax, midDate: sheltMidDate, gridMinY: sheltGrid.minY, gridMidY: sheltGrid.midY },
     ]
 
     return new ImageResponse(
@@ -267,7 +290,7 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
               }}
             >
-              Since Jan 20, 2025 · enter your zip for local data
+              Since {BASELINE_DAY_LABEL} · data through {fmtMonthYear(nationalLatest)} · enter your zip for local data
             </span>
           </div>
 
@@ -376,7 +399,7 @@ export async function GET(req: NextRequest) {
                   }}
                 >
                   <span style={{ fontFamily: 'DM Mono', fontSize: 18, color: '#555', display: 'flex' }}>
-                    {"JAN '25"}
+                    {fmtMonthShort(panel.firstDate).toUpperCase()}
                   </span>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 18, color: '#555', display: 'flex' }}>
                     {panel.midDate}
@@ -435,7 +458,7 @@ export async function GET(req: NextRequest) {
                     marginTop: 4,
                   }}
                 >
-                  since Jan 2025
+                  {panel.since}
                 </span>
               </div>
             ))}
@@ -520,17 +543,12 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1200, height: 630, fonts: await loadShareFonts() },
+      // A stale national series (last-good copy or old period) gets the short cache so it self-heals
+      { width: 1200, height: 630, fonts: await loadShareFonts(), headers: { 'Cache-Control': nationalStale ? CACHE_DEGRADED : CACHE_OK } },
     )
   }
 
-  // ── Stats data for the four cards ───────────────────────────────────
-  const stats = [
-    { label: 'GAS PRICES', value: gasPrice, color: RED },
-    { label: 'GROCERIES', value: groceries, color: AMBER },
-    { label: 'SHELTER', value: shelter, color: BLUE },
-    { label: 'TARIFF IMPACT', value: tariff, color: PURPLE },
-  ]
+  const monthYear = throughLabel ?? fmtMonthYear(latestPeriod).toUpperCase()
 
   return new ImageResponse(
     (
@@ -624,7 +642,7 @@ export async function GET(req: NextRequest) {
                 letterSpacing: '0.06em',
               }}
             >
-              JAN. 20, 2025
+              {BASELINE_DAY_LABEL.toUpperCase()}
             </span>
             <span
               style={{
@@ -707,13 +725,40 @@ export async function GET(req: NextRequest) {
                   lineHeight: 1,
                   textTransform: 'uppercase',
                   display: 'flex',
+                  flexDirection: 'row',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {stat.value || 'N/A'}
+                {stat.value && stat.unit && (
+                  <span style={{ fontSize: 26, fontWeight: 700, textTransform: 'none', marginLeft: 2, alignSelf: 'flex-end', marginBottom: 4 }}>
+                    {stat.unit}
+                  </span>
+                )}
               </span>
+              {stat.sub && (
+                <span style={{ fontFamily: 'monospace', fontSize: 16, color: TEXT_SECONDARY, display: 'flex', marginTop: 10 }}>
+                  {stat.sub}
+                </span>
+              )}
+              {stat.sub2 && (
+                <span style={{ fontFamily: 'monospace', fontSize: 14, color: TEXT_TERTIARY, display: 'flex', marginTop: 4 }}>
+                  {stat.sub2}
+                </span>
+              )}
             </div>
           ))}
         </div>
+
+        {footnotes.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '0 40px 10px 40px', gap: 2 }}>
+            {footnotes.map(f => (
+              <span key={f} style={{ fontFamily: 'monospace', fontSize: 14, color: AMBER, display: 'flex' }}>
+                {f}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* FOOTER — ~50px */}
         <div
@@ -728,7 +773,7 @@ export async function GET(req: NextRequest) {
           }}
         >
           <span style={{ fontFamily: 'monospace', fontSize: 16, color: TEXT_TERTIARY, display: 'flex' }}>
-            BLS · EIA · Census · Yale Budget Lab
+            {sources}
           </span>
           <span
             style={{
@@ -745,6 +790,6 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, headers: { 'Cache-Control': degraded ? CACHE_DEGRADED : CACHE_OK } },
   )
 }

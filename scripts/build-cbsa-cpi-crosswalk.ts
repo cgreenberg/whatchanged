@@ -2,9 +2,18 @@
 /**
  * build-cbsa-cpi-crosswalk.ts
  *
- * Downloads the NBER CBSA-to-FIPS county crosswalk CSV and combines it with
- * a hardcoded CBSA→CPI area mapping to produce a county FIPS → CPI area code
- * crosswalk JSON file.
+ * Downloads the NBER copy of the OMB **February 2013** CBSA delineation
+ * (Bulletin 13-01) and combines it with a hardcoded CBSA→CPI area mapping to
+ * produce a county FIPS → CPI area code crosswalk JSON file.
+ *
+ * Why 2013: the BLS 2018 CPI geographic revision defines its self-representing
+ * metro areas using the 2013 OMB delineations. Later delineations (2018, 2020,
+ * 2023) added/removed counties that BLS does NOT sample for those CPI areas
+ * (e.g. 2023 drops Kenosha WI from Chicago and Pike PA / Orange & Dutchess NY
+ * from New York, and adds San Jacinto TX to Houston).
+ *
+ * Connecticut: the 2013 delineation uses the legacy CT counties (09001–09015),
+ * which is what zip-county.json uses. No CT county is in any CPI metro CBSA.
  *
  * Output: src/lib/data/cbsa-cpi-crosswalk.json
  * Run with: npx tsx scripts/build-cbsa-cpi-crosswalk.ts
@@ -18,14 +27,14 @@ import { join } from 'path'
 // ---------------------------------------------------------------------------
 
 const NBER_CSV_URL =
-  'https://data.nber.org/cbsa-csa-fips-county-crosswalk/2023/cbsa2fipsxw_2023.csv'
+  'https://data.nber.org/cbsa-csa-fips-county-crosswalk/2013/cbsa2fipsxw2013.csv'
 
 // ---------------------------------------------------------------------------
 // CBSA → CPI area mapping
 //
 // Each CPI area = exactly one CBSA (the BLS "self-representing" metro).
-// Source: BLS 2018 CPI geographic revision.
-// Counties not in these 23 CBSAs fall to regional CPI (Tier 2).
+// Source: BLS 2018 CPI geographic revision (CBSA codes/titles as of OMB 2013).
+// Counties not in these 23 CBSAs fall to Census-division CPI (Tier 2).
 // ---------------------------------------------------------------------------
 
 const CBSA_TO_CPI: Record<string, string> = {
@@ -52,25 +61,6 @@ const CBSA_TO_CPI: Record<string, string> = {
   '41740': 'S49E', // San Diego-Carlsbad, CA
   '46520': 'S49F', // Urban Honolulu, HI
   '11260': 'S49G', // Anchorage, AK
-}
-
-// ---------------------------------------------------------------------------
-// Connecticut old→new FIPS mapping
-// CT abolished counties in 2022; Census/OMB now uses Planning Region FIPS
-// (09110-09190) but HUD crosswalk still uses old county FIPS (09001-09015).
-// We generate entries for both so lookups work regardless of which FIPS
-// the caller has.
-// ---------------------------------------------------------------------------
-
-const CT_OLD_TO_NEW: Record<string, string[]> = {
-  '09001': ['09110'], // Fairfield → Western CT Planning Region
-  '09003': ['09120'], // Hartford → Capitol Planning Region
-  '09005': ['09130'], // Litchfield → Northwest Hills Planning Region
-  '09007': ['09140'], // Middlesex → Lower CT River Valley Planning Region
-  '09009': ['09150'], // New Haven → South Central CT Planning Region
-  '09011': ['09160'], // New London → Southeastern CT Planning Region
-  '09013': ['09170'], // Tolland → Capitol Planning Region (shares)
-  '09015': ['09180'], // Windham → Northeastern CT Planning Region
 }
 
 // ---------------------------------------------------------------------------
@@ -177,25 +167,6 @@ async function main() {
     }
   }
 
-  // Handle Connecticut: propagate CPI mappings from new planning region
-  // FIPS to old county FIPS (and vice versa) so lookups work with either.
-  for (const [oldFips, newFipsList] of Object.entries(CT_OLD_TO_NEW)) {
-    if (!result[oldFips]) {
-      for (const newFips of newFipsList) {
-        if (result[newFips]) {
-          result[oldFips] = result[newFips]
-          break
-        }
-      }
-    }
-    // Also propagate old→new if the CSV used old FIPS
-    for (const newFips of newFipsList) {
-      if (!result[newFips] && result[oldFips]) {
-        result[newFips] = result[oldFips]
-      }
-    }
-  }
-
   // Sort by FIPS code
   const sorted: Record<string, string> = {}
   for (const key of Object.keys(result).sort()) {
@@ -244,7 +215,19 @@ async function main() {
     ['06037', 'S49A', 'Los Angeles County'],
     ['17031', 'S23A', 'Cook County (Chicago)'],
     ['53033', 'S49D', 'King County (Seattle)'],
+    ['55059', 'S23A', 'Kenosha County WI (Chicago CBSA in 2013)'],
+    ['42103', 'S12A', 'Pike County PA (New York CBSA in 2013)'],
+    ['36071', 'S12A', 'Orange County NY (New York CBSA in 2013)'],
+    ['36027', 'S12A', 'Dutchess County NY (New York CBSA in 2013)'],
+    ['48221', 'S37A', 'Hood County TX (Dallas CBSA in 2013)'],
+    ['48425', 'S37A', 'Somervell County TX (Dallas CBSA in 2013)'],
   ]
+  // Counties that must NOT be in a CPI metro under the 2013 delineation
+  for (const [fips, name] of [['48407', 'San Jacinto County TX']]) {
+    const pass = !sorted[fips]
+    console.log(`  ${pass ? '\u2713' : '\u2717'} ${fips} (${name}): ${sorted[fips] || 'not in a CPI metro'}`)
+    if (!pass) process.exit(1)
+  }
   console.log('\nVerification checks:')
   let allPass = true
   for (const [fips, expected, name] of checks) {

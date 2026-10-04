@@ -10,7 +10,7 @@ describe('CBSA CPI crosswalk', () => {
   })
 
   test('all crosswalk values are valid CPI area codes', () => {
-    for (const [fips, code] of Object.entries(crosswalk)) {
+    for (const code of Object.values(crosswalk)) {
       expect(BLS_CPI_AREAS).toHaveProperty(code as string)
     }
   })
@@ -39,5 +39,21 @@ describe('CBSA CPI crosswalk', () => {
     expect(xw['17031']).toBe('S23A') // Cook County → Chicago
     expect(xw['53033']).toBe('S49D') // King County WA → Seattle
     expect(xw['26163']).toBe('S23B') // Wayne County MI → Detroit
+  })
+
+  test('uses the OMB 2013 delineation that BLS CPI areas are defined on', () => {
+    const xw = crosswalk as Record<string, string>
+    expect(xw['55059']).toBe('S23A') // Kenosha WI → Chicago
+    expect(xw['42103']).toBe('S12A') // Pike PA → New York
+    expect(xw['36071']).toBe('S12A') // Orange NY → New York
+    expect(xw['36027']).toBe('S12A') // Dutchess NY → New York
+    expect(xw['48221']).toBe('S37A') // Hood TX → Dallas
+    expect(xw['48425']).toBe('S37A') // Somervell TX → Dallas
+    expect(xw['48407']).toBeUndefined() // San Jacinto TX — added to Houston only in 2023
+    expect(xw['13187']).toBeUndefined() // Lumpkin GA — not in the 2013 Atlanta CBSA
+  })
+
+  test('no Connecticut entries (no CT county is in a CPI metro CBSA)', () => {
+    expect(Object.keys(crosswalk).filter(f => f.startsWith('09'))).toEqual([])
   })
 })

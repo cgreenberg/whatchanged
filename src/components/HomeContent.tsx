@@ -1,70 +1,87 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { ZipInput } from '@/components/ZipInput'
 import { LocationBanner } from '@/components/LocationBanner'
-import { StatCard } from '@/components/StatCard'
 import { StatCardSkeleton } from '@/components/StatCardSkeleton'
+import { HeroCards } from '@/components/HeroCards'
 import { ChartsSection } from '@/components/charts/ChartsSection'
-import { estimateTariffCost, formatDollars } from '@/lib/tariff'
-import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
 import { ShareButton } from '@/components/ShareButton'
 import { LocalPulse } from '@/components/pulse/LocalPulse'
-import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { CityGrid } from '@/components/CityGrid'
+import { LazyMount } from '@/components/LazyMount'
+import { BASELINE_MONTH_LONG } from '@/lib/baseline'
+import { pagePath, parsePlaceQuery, type PlaceQuery } from '@/lib/share-url'
 import type { EconomicSnapshot } from '@/types'
 
-// d3-geo/topojson are ESM-only and ~40KB; load the map chunk only on the client
+// d3-geo/topojson are ESM-only; load the map chunk only on the client, and only near the viewport
 const NationalMap = dynamic(
   () => import('@/components/pulse/NationalMap').then(m => ({ default: m.NationalMap })),
-  { ssr: false, loading: () => <div className="mt-12 aspect-[975/610] bg-zinc-900 rounded-xl" /> }
+  { ssr: false, loading: () => <MapPlaceholder /> }
 )
 
-type PageState = 'idle' | 'loading' | 'loaded' | 'error'
-
-function formatSourceDate(dateStr: string): string {
-  const parts = dateStr.split('-')
-  const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1)
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+function MapPlaceholder() {
+  return <div className="mt-12 aspect-[975/610] bg-zinc-900 rounded-xl" />
 }
+
+type PageState = 'idle' | 'loading' | 'loaded' | 'error'
 
 export default function HomeContent() {
   const [state, setState] = useState<PageState>('idle')
   const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null)
+  const [place, setPlace] = useState<PlaceQuery | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  async function handleZipSubmit(zip: string, city?: string, state?: string) {
+  // Only the latest request may update state: older responses/errors are dropped and aborted.
+  const requestId = useRef(0)
+  const abortRef = useRef<AbortController | null>(null)
+
+  const handleZipSubmit = useCallback(async (zip: string, city?: string, stateAbbr?: string) => {
+    const id = ++requestId.current
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+
+    const q: PlaceQuery = city && stateAbbr ? { zip, city, state: stateAbbr } : { zip }
     setState('loading')
     setErrorMsg('')
     try {
-      const url = city && state
-        ? `/api/data/${zip}?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`
-        : `/api/data/${zip}`
-      const res = await fetch(url)
+      const params = new URLSearchParams()
+      if (q.city && q.state) {
+        params.set('city', q.city)
+        params.set('state', q.state)
+      }
+      const qs = params.toString()
+      const res = await fetch(`/api/data/${zip}${qs ? `?${qs}` : ''}`, { signal: ctrl.signal })
       if (res.status === 404) throw new Error('Zip code not found')
       if (!res.ok) throw new Error('Failed to load data')
       const data: EconomicSnapshot = await res.json()
+      if (id !== requestId.current) return
       setSnapshot(data)
+      setPlace(q)
       setState('loaded')
-      window.history.replaceState({}, '', `/?zip=${zip}`)
+      window.history.replaceState({}, '', pagePath(q))
     } catch (err) {
+      if (id !== requestId.current) return
+      if (err instanceof Error && err.name === 'AbortError') return
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong')
       setState('error')
     }
-  }
+  }, [])
 
-  function selectFromMap(zip: string) {
+  const selectFromMap = useCallback((zip: string) => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     handleZipSubmit(zip)
-  }
+  }, [handleZipSubmit])
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const zip = params.get('zip')
-    if (zip && /^\d{5}$/.test(zip)) {
-      handleZipSubmit(zip)
-    }
-  }, [])
+    const q = parsePlaceQuery(window.location.search)
+    if (q) handleZipSubmit(q.zip, q.city ?? undefined, q.state ?? undefined)
+    return () => abortRef.current?.abort()
+  }, [handleZipSubmit])
+
+  const loaded = state === 'loaded' && snapshot
 
   return (
     <main className="min-h-screen px-4 py-12 max-w-4xl mx-auto">
@@ -74,196 +91,48 @@ export default function HomeContent() {
           Enter your zip code
         </h1>
         <p className="text-lg md:text-xl text-zinc-400 mb-8" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
-          See what changed in your town since January 2025.
+          See what changed in your town since {BASELINE_MONTH_LONG}.
         </p>
         <ZipInput onSubmit={handleZipSubmit} isLoading={state === 'loading'} />
         {state === 'idle' && <CityGrid onCitySelect={handleZipSubmit} />}
       </section>
 
-
       {/* Results */}
-      {(state === 'loading' || state === 'loaded') && (
-        <section>
-          {snapshot && state === 'loaded' && (
-            <LocationBanner location={snapshot.location} />
-          )}
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6" data-testid="stat-cards">
-            {state === 'loading' ? (
-              <>
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-              </>
-            ) : snapshot && (() => {
-              const natGas = snapshot.gas.data?.nationalSeries
-              const natGasPrice = natGas?.length ? natGas[natGas.length - 1].price : undefined
-              const natGasBaseline = natGas?.find(p => p.date.startsWith('2025-01'))?.price
-              const natGasDelta = natGasPrice != null && natGasBaseline != null ? natGasPrice - natGasBaseline : undefined
-
-              const natCpi = snapshot.cpi.data?.nationalSeries
-
-              // Find Jan 2025 baseline in national series (series may start from 2020)
-              const natBaseline = natCpi?.find(p => p.date === '2025-01')
-              const natLatest = natCpi?.length ? natCpi[natCpi.length - 1] : undefined
-
-              let natShelterChange: number | undefined
-              if (natBaseline && natLatest) {
-                const first = natBaseline.shelter
-                const last = natLatest.shelter
-                if (first != null && last != null && first !== 0) {
-                  natShelterChange = ((last - first) / first) * 100
-                }
-              }
-
-              let natGroceriesChange: number | undefined
-              if (natBaseline && natLatest) {
-                const first = natBaseline.groceries
-                const last = natLatest.groceries
-                if (first != null && last != null && first !== 0) {
-                  natGroceriesChange = ((last - first) / first) * 100
-                }
-              }
-
-              const cpiTier = snapshot.cpi.data?.tier ?? (
-                snapshot.cpi.data?.metro === 'National' ? 4 :
-                snapshot.cpi.data?.metro?.includes('Urban') ? 3 : 1
-              )
-
-              return (
-                <>
-                  {snapshot.gas.data && (
-                    <StatCard
-                      label="Gas Prices"
-                      value={`$${snapshot.gas.data.current.toFixed(2)}/gal`}
-                      change={`${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)} since Jan 2025`}
-                      direction={snapshot.gas.data.change > 0 ? 'up' : 'down'}
-                      sourceLabel="EIA"
-                      sourceDate={Array.isArray(snapshot.gas.data?.series) && snapshot.gas.data!.series.length > 0 ? formatSourceDate(snapshot.gas.data!.series[snapshot.gas.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                      geoLevel={`${snapshot.gas.data.geoLevel ?? 'state-level'}${snapshot.gas.data.isNationalFallback ? ' (state data unavailable)' : ''}`}
-                      isNegative
-                      sourceUrl={
-                        snapshot.gas.data.tier === 3
-                          ? 'https://www.eia.gov/petroleum/weekly/includes/padds.php'
-                          : 'https://www.eia.gov/petroleum/gasdiesel/'
-                      }
-                      accentColor="#F59E0B"
-                      nationalValue={natGasPrice != null ? `National: $${natGasPrice.toFixed(2)}/gal${natGasDelta != null ? ` (${natGasDelta > 0 ? '+' : ''}$${natGasDelta.toFixed(2)})` : ''}` : undefined}
-                    />
-                  )}
-                  {snapshot.cpi.data && (() => {
-                    const shelterChange = snapshot.cpi.data!.shelterChange ?? 0
-                    const medianRent = snapshot.census.data?.medianRent ?? 1271
-                    const shelterDollarImpact = snapshot.dollarImpact?.shelter
-                      ?? computeShelterImpact(shelterChange, medianRent)
-                    return (
-                      <StatCard
-                        label="Housing Costs"
-                        value={`${shelterChange > 0 ? '+' : ''}${shelterChange.toFixed(1)}%`}
-                        change={`~$${shelterDollarImpact}/yr ${shelterChange >= 0 ? 'more' : 'less'} since Jan 2025`}
-                        direction={shelterChange > 0 ? 'up' : 'down'}
-                        sourceLabel="BLS CPI"
-                        sourceDate={Array.isArray(snapshot.cpi.data?.series) && snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        geoLevel={
-                          cpiTier === 4 ? 'national' :
-                          cpiTier === 3 ? `region: ${snapshot.cpi.data?.metro}` :
-                          cpiTier === 2 ? `division: ${snapshot.cpi.data?.metro}` :
-                          `metro: ${snapshot.cpi.data?.metro}`
-                        }
-                        isNegative
-                        sourceUrl={
-                          snapshot.cpi.data?.seriesIds?.shelter
-                            ? `https://data.bls.gov/timeseries/${snapshot.cpi.data.seriesIds.shelter}`
-                            : 'https://data.bls.gov/cgi-bin/surveymost?cu'
-                        }
-                        accentColor="#3B82F6"
-                        nationalValue={natShelterChange != null ? `National: ${natShelterChange > 0 ? '+' : ''}${natShelterChange.toFixed(1)}%` : undefined}
-                      />
-                    )
-                  })()}
-                  {snapshot.cpi.data && (() => {
-                    const pctChange = snapshot.cpi.data.groceriesChange
-                    const localIncome = snapshot.census.data?.medianIncome ?? 74580
-                    const dollarImpact = snapshot.dollarImpact?.groceries
-                      ?? computeGroceryImpact(pctChange, localIncome)
-                    return (
-                      <StatCard
-                        label="Grocery Prices"
-                        value={`${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%`}
-                        change={`~$${dollarImpact}/yr ${pctChange >= 0 ? 'more' : 'less'} since Jan 2025`}
-                        direction={pctChange > 0 ? 'up' : 'down'}
-                        sourceLabel="BLS CPI"
-                        sourceDate={Array.isArray(snapshot.cpi.data?.series) && snapshot.cpi.data!.series.length > 0 ? formatSourceDate(snapshot.cpi.data!.series[snapshot.cpi.data!.series.length - 1].date) : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        geoLevel={
-                          cpiTier === 4 ? 'national' :
-                          cpiTier === 3 ? `region: ${snapshot.cpi.data?.metro}` :
-                          cpiTier === 2 ? `division: ${snapshot.cpi.data?.metro}` :
-                          `metro: ${snapshot.cpi.data?.metro}`
-                        }
-                        isNegative
-                        sourceUrl={
-                          snapshot.cpi.data?.seriesIds?.groceries
-                            ? `https://data.bls.gov/timeseries/${snapshot.cpi.data.seriesIds.groceries}`
-                            : 'https://data.bls.gov/cgi-bin/surveymost?cu'
-                        }
-                        accentColor="#EF4444"
-                        nationalValue={natGroceriesChange != null ? `National: ${natGroceriesChange > 0 ? '+' : ''}${natGroceriesChange.toFixed(1)}%` : undefined}
-                      />
-                    )
-                  })()}
-                  {snapshot.census.data && (() => {
-                    const cost = estimateTariffCost(snapshot.census.data!.medianIncome)
-                    const isCityLevel = snapshot.census.data?.isCityLevel
-                    const cityName = snapshot.census.data?.cityName
-                    return (
-                      <StatCard
-                        label="Tariff Impact"
-                        value={`~${formatDollars(cost)}/yr`}
-                        change={`based on ${formatDollars(snapshot.census.data!.medianIncome)} local income`}
-                        direction="up"
-                        sourceLabel="Yale Budget Lab"
-                        sourceDate="2025 est."
-                        geoLevel={isCityLevel && cityName ? `${cityName} city proper median income` : 'zip-level income'}
-                        isNegative
-                        sourceUrl="https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs"
-                        accentColor="#A855F7"
-                      />
-                    )
-                  })()}
-                </>
-              )
-            })()}
+      {state === 'loading' && (
+        <section aria-busy>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mt-6" data-testid="stat-cards-loading">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
           </div>
-
-          {/* Primary share buttons — above charts */}
-          {state === 'loaded' && snapshot && (
-            <ShareButton snapshot={snapshot} />
-          )}
         </section>
       )}
 
-      {state === 'loaded' && snapshot && (
+      {loaded && (
         <>
+          <section>
+            <LocationBanner location={snapshot.location} />
+            <HeroCards snapshot={snapshot} />
+            <ShareButton snapshot={snapshot} place={place} />
+          </section>
           <ErrorBoundary>
-            <LocalPulse key={snapshot.zip} zip={snapshot.zip} countyFips={snapshot.location.countyFips} />
+            <LocalPulse
+              key={snapshot.zip}
+              zip={snapshot.zip}
+              countyFips={snapshot.location.countyFips}
+              countyName={snapshot.location.countyName}
+              cityName={snapshot.location.cityName}
+              stateAbbr={snapshot.location.stateAbbr}
+              heroShowsCountyRent={!!snapshot.rent}
+            />
           </ErrorBoundary>
           <ErrorBoundary>
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
-          {/* <DigDeeper snapshot={snapshot} /> */}
-          <ShareButton snapshot={snapshot} />
+          <ShareButton snapshot={snapshot} place={place} />
           <CityGrid onCitySelect={handleZipSubmit} />
-          <ErrorBoundary>
-            <NationalMap countyFips={snapshot.location.countyFips} onZipSelect={selectFromMap} />
-          </ErrorBoundary>
         </>
-      )}
-
-      {state === 'idle' && (
-        <ErrorBoundary>
-          <NationalMap onZipSelect={selectFromMap} />
-        </ErrorBoundary>
       )}
 
       {state === 'error' && (
@@ -278,6 +147,13 @@ export default function HomeContent() {
           </button>
         </div>
       )}
+
+      {/* One map instance for the whole session: stays mounted across zip changes */}
+      <ErrorBoundary>
+        <LazyMount placeholder={<MapPlaceholder />}>
+          <NationalMap countyFips={loaded ? snapshot.location.countyFips : undefined} onZipSelect={selectFromMap} />
+        </LazyMount>
+      </ErrorBoundary>
 
       {/* Footer */}
       <footer className="mt-16 mb-4 text-center text-sm" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>

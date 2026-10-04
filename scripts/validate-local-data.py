@@ -90,7 +90,7 @@ def main():
     diffs = []
     for z in zori.index:
         p = zp(z)
-        if p and "rent" in p and np.isfinite(zori.loc[z, "2025-01"]):
+        if p and p.get("rent", {}).get("basis") == "sa" and np.isfinite(zori.loc[z, "2025-01"]):
             row = zori.loc[z].dropna()
             raw_pct = (row.iloc[-1] / zori.loc[z, "2025-01"] - 1) * 100
             diffs.append(p["rent"]["pct"] - raw_pct)
@@ -136,7 +136,12 @@ def main():
     record(S, "Site zips with zip-level home values", "INFO",
            f"{len(site_zips & hv_z)}/{len(site_zips)} ({100*len(site_zips & hv_z)/len(site_zips):.0f}%)")
     record(S, "Site zips with zip-level rent", "INFO",
-           f"{len(site_zips & rent_z)}/{len(site_zips)} ({100*len(site_zips & rent_z)/len(site_zips):.0f}%) — gap filled by county/HUD fallback")
+           f"{len(site_zips & rent_z)}/{len(site_zips)} ({100*len(site_zips & rent_z)/len(site_zips):.0f}%) in raw ZORI; "
+           f"the UI leads with county rent, then Zillow city rent in the same county")
+    rent_cty = {f for f, c in counties.items() if "rent" in c or "rentYoY" in c}
+    n_cty = sum(1 for v in zip_county.values() if v["countyFips"] in rent_cty)
+    record(S, "Site zips whose county has published rent (SA since Jan 2025 or same-month YoY)", "INFO",
+           f"{n_cty}/{len(site_zips)} ({100*n_cty/len(site_zips):.0f}%)")
     topo = json.load(open(os.path.join(a.data, "counties-albers-10m.json")))
     topo_ids = {str(g["id"]).zfill(5) for g in topo["objects"]["counties"]["geometries"]}
     no_shape = sorted(f for f in counties if f not in topo_ids)
@@ -419,6 +424,62 @@ def main():
         record(S, label, "WARN" if len(flag) else "PASS",
                f"{len(flag)} flagged: " + ", ".join(f"{counties[f]['n']} {vals[f]:+.1f}" for f in flag.index[:8]),
                {"flagged": [(f, counties[f]["n"], float(vals[f])) for f in flag.index]})
+
+    # ------------------------------------------------------------------ 8. Shipped-data invariants (FAIL on violation)
+    S = "8. Shipped data invariants"
+    def inv(name, bad, fmt=lambda b: str(b[:10])):
+        record(S, name, "FAIL" if bad else "PASS", f"{len(bad)} violations: {fmt(bad)}" if bad else "none")
+    inv("No county name equals its FIPS or is empty", [f for f, c in counties.items() if not c.get("n") or c["n"] == f])
+    inv("No CT planning-region (091x0) or statewide rows", [f for f in counties if re.fullmatch(r"091[1-9]0", f) or f.endswith("000")])
+    ranges = {"hv": (-50, 50), "rent": (-50, 80), "rentYoY": (-50, 80), "ur": (-15, 15), "urCur": (0, 25), "urBase": (0, 25),
+              "wage": (-25, 25), "real": (-25, 25), "cpi": (-20, 50)}
+    inv("County metrics within sanity ranges", [(f, k, c[k]) for f, c in counties.items() for k, (lo, hi) in ranges.items()
+                                               if k in c and not lo <= c[k] <= hi])
+    inv("No percentile-rank fields shipped", [(f, k) for f, c in counties.items() for k in c if re.fullmatch(r"[a-z]+R", k)])
+    bad_l, bad_r, n_l = [], [], 0
+    for shard in glob.glob(os.path.join(a.data, "zip", "*.json")):
+        for z, v in json.load(open(shard)).items():
+            li = v.get("listings")
+            if li:
+                n_l += 1
+                if li["active"] < 20 or any(li[k] is not None and abs(li[k]) > 1 for k in ("priceYoY", "activeYoY", "domYoY")) \
+                        or (li["reduced"] is not None and not 0 <= li["reduced"] <= 1):
+                    bad_l.append(z)
+            r_ = v.get("rent")
+            if r_ and (r_.get("basis") not in ("sa", "yoy") or "rank" in r_ or (r_["basis"] == "yoy" and "s" in r_)):
+                bad_r.append(z)
+            if "rank" in v.get("hv", {}):
+                bad_r.append(z)
+    inv(f"Zip listings: ≥20 active, YoY within ±100%, price-cut share in [0,1] ({n_l} zips)", bad_l)
+    inv("Zip rent carries an honest basis (sa|yoy), no ranks, no SA series on YoY rows", bad_r)
+    resolved = set(counties)
+    # No source publishes these: Kalawao HI (15005) and the island territories (AS 60, GU 66, MP 69, VI 78)
+    no_data_ok = lambda f: f == "15005" or f[:2] in ("60", "66", "69", "78")
+    inv("Every crosswalk zip resolves to a county record",
+        sorted(f for f in {v["countyFips"] for v in zip_county.values()} - resolved if not no_data_ok(f)))
+    keyset, coll = {}, []
+    for cf in glob.glob(os.path.join(a.data, "cities", "*.json")):
+        for rid, c in json.load(open(cf)).items():
+            k = (c["n"], c["county"], os.path.basename(cf)[:2])
+            if k in keyset:
+                coll.append(k)
+            keyset[k] = rid
+    inv("Zillow city keys unique by name + county + state", coll)
+    geo_path = os.path.join(a.repo, "src/lib/data/county-geo.json")
+    geo = json.load(open(geo_path)) if os.path.exists(geo_path) else {}
+    LEGACY_NOT_IN_GEO = {"02261"}  # Valdez-Cordova AK (map shape); build copies CPI from Chugach 02063
+    if len(geo) < 3100:
+        record(S, "county-geo.json present with >= 3,100 counties", "FAIL", f"{len(geo)} counties")
+    else:
+        inv("Every county's cpiArea equals county-geo.json's cpiArea",
+            [(f, c.get("cpiArea"), geo.get(f, {}).get("cpiArea")) for f, c in counties.items()
+             if "cpiArea" in c and f not in LEGACY_NOT_IN_GEO and c["cpiArea"] != geo.get(f, {}).get("cpiArea")])
+    cr_path = os.path.join(a.repo, "src/lib/data/county-rent.json")
+    if os.path.exists(cr_path):
+        crj = json.load(open(cr_path))
+        inv("county-rent.json: pct in [-30, 60], levels positive, matches counties.json",
+            [f for f, v in crj["counties"].items() if not (-30 <= v["pct"] <= 60 and v["curRent"] > 0 and v["baseRent"] > 0
+                                                         and counties.get(f, {}).get("rent") == v["pct"])])
 
     # ------------------------------------------------------------------ write report
     json.dump(RESULTS, open(os.path.join(a.out, "results.json"), "w"), indent=1, default=str)

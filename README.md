@@ -4,63 +4,60 @@
 
 [whatchanged.us](https://www.whatchanged.us)
 
-What Changed is a free, nonpartisan web app that shows how local economic conditions have shifted since January 20, 2025. Enter any US zip code and get a visual snapshot of unemployment, grocery prices, shelter costs, gas prices, federal spending changes, and estimated tariff impact — all sourced from official government data.
+What Changed is a free, nonpartisan web app that shows how local economic conditions have shifted since January 20, 2025. Enter a US zip code or city to see gas prices, rent, grocery prices, an estimated tariff cost, unemployment and other local indicators, all from official statistics and published research.
 
-The goal is simple: give people the facts about their local economy, clearly cited, with no spin. Every number on the site links back to its source. Projections are labeled as projections. The data speaks for itself.
+Every number shows its source, geography, time window, as-of date and whether it is seasonally adjusted. Estimates are labeled as estimates. The data speaks for itself.
 
 ---
 
 ## Data Sources
 
-All data comes from official US government agencies and academic research:
+**Live (fetched and cached per request):**
 
-| Metric | Source | Detail |
+| Metric | Source | Geography |
 |---|---|---|
-| Unemployment rate | [Bureau of Labor Statistics (BLS)](https://www.bls.gov/) | Local Area Unemployment Statistics (LAUS), county-level |
-| Grocery prices | [Bureau of Labor Statistics (BLS)](https://www.bls.gov/) | Consumer Price Index (CPI) food subcategories, metro-level |
-| Shelter costs | [Bureau of Labor Statistics (BLS)](https://www.bls.gov/) | CPI shelter subcategories, metro-level |
-| Gas prices | [Energy Information Administration (EIA)](https://www.eia.gov/) | Weekly retail gasoline prices, regional |
-| Federal spending cuts | [USASpending.gov](https://www.usaspending.gov/) | Contract and grant data, county-level |
-| Income & rent | [US Census Bureau](https://www.census.gov/) | American Community Survey (ACS), ZIP-level |
-| Tariff cost estimate | [Yale Budget Lab](https://budgetlab.yale.edu/) | Estimated ~2% of household income impact |
-| Zip-to-county mapping | [HUD USPS Crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html) | ZIP → county FIPS code |
+| Gas prices | [EIA](https://www.eia.gov/petroleum/gasdiesel/) weekly retail gasoline | EIA city, state, or PADD region |
+| Grocery, shelter, energy prices | [BLS CPI](https://www.bls.gov/cpi/) | CPI metro area, Census division, or national |
+| Unemployment rate (chart) | [BLS LAUS](https://www.bls.gov/lau/) | County (Connecticut: planning region) |
 
-All changes are measured from a **January 20, 2025 baseline**.
+**Bundled (rebuilt by scripts):**
+
+| Metric | Source | Geography |
+|---|---|---|
+| Rent on new leases | [Zillow ZORI](https://www.zillow.com/research/data/), seasonally adjusted by whatchanged | County |
+| Income and rent levels | [Census ACS](https://www.census.gov/programs-surveys/acs) 5-year | ZIP (ZCTA), city |
+| Tariff cost estimate | [Yale Budget Lab](https://budgetlab.yale.edu/) (2.05% of local median household income) | ZIP |
+| Zip → county | Census 2020 ZCTA/block relationship files (housing-unit weighted) + GeoNames for PO-box zips | ZIP |
+| Local Pulse: home values, listings, paychecks, unemployment, permits, job postings, health premiums | Zillow, Realtor.com, BLS QCEW/LAUS/CPI, Census, Indeed Hiring Lab, CMS | County, city, ZIP |
+
+Changes are measured from a **January 2025 baseline**: the January 2025 monthly value for monthly data, and the last weekly reading on or before January 20, 2025 for gas.
+
+More detail:
+- [docs/MAPPING_STRATEGY.md](docs/MAPPING_STRATEGY.md): how a zip maps to county, CPI area, gas region and LAUS area
+- [docs/LOCAL_DATA_SOURCES.md](docs/LOCAL_DATA_SOURCES.md): the monthly local-data pipeline, its sources and methods
+- [docs/validation/FINDINGS.md](docs/validation/FINDINGS.md): cross-source validation results and caveats
 
 ---
 
 ## Features
 
-- **Hero stat cards** — unemployment, grocery prices, shelter costs, and federal spending changes with animated counters and dollar-impact translations
-- **Interactive charts** — time series with toggleable ranges (Jan 2025, 3Y, 5Y, 10Y) and presidential era shading for context
-- **National comparison** — toggle national averages alongside your local data on every chart
-- **Shareable image cards** — auto-generated PNG snapshots optimized for social media sharing
-- **Tariff impact estimate** — household cost projection based on local median income
-- **Interactive map** — Leaflet/OpenStreetMap view of your zip code area
+- **Hero cards:** gas, rent (or CPI shelter where Zillow has no county rent), groceries and tariff estimate, each with a dollar translation and a provenance line
+- **Charts:** gas, groceries, shelter, energy and unemployment, with Jan 2025 / 3Y / 5Y / 10Y ranges, a national overlay and era shading
+- **Local Pulse:** county-level home values, rent, listings, paychecks vs prices and more
+- **National county map:** how every county changed, per metric
+- **Share images:** auto-generated PNG cards for social media
 
 ---
 
 ## Tech Stack
 
-- [Next.js](https://nextjs.org/) (React) — framework
-- [Tailwind CSS](https://tailwindcss.com/) — styling
-- [Recharts](https://recharts.org/) — charts
-- [Framer Motion](https://www.framer.com/motion/) — animations
-- [Leaflet](https://leafletjs.com/) + OpenStreetMap — maps
-- [Upstash Redis](https://upstash.com/) — API response caching
-- [Satori](https://github.com/vercel/satori) — server-side image generation
-- [Vercel](https://vercel.com/) — hosting and serverless API routes
+Next.js (App Router) + React, TypeScript, Tailwind CSS, Recharts, Framer Motion, d3-geo + TopoJSON (map), `next/og` / Satori (images), Upstash Redis (cache), Vercel (hosting). Tests: Jest + MSW, Playwright.
 
 ---
 
 ## Development
 
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Setup
+Requires Node.js 20+ and npm. The local-data pipeline also needs Python 3 with pandas, numpy and openpyxl.
 
 ```bash
 git clone https://github.com/cgreenberg/whatchanged.git
@@ -68,66 +65,31 @@ cd whatchanged
 npm install
 ```
 
-Create a `.env.local` file with the required API keys (see `.env.example` for the template):
+Create `.env.local`:
 
 ```
 BLS_API_KEY=your_key
 EIA_API_KEY=your_key
-CENSUS_API_KEY=your_key
-KV_REST_API_URL=your_upstash_url
+KV_REST_API_URL=your_upstash_url      # optional: without it an in-memory cache is used
 KV_REST_API_TOKEN=your_upstash_token
+CRON_SECRET=any_random_string         # enables live upstream checks on /api/health
 ```
-
-### Run
 
 ```bash
-npm run dev        # Start dev server at localhost:3000
-npm run build      # Production build
-npm test           # Run unit/integration tests (Jest)
-npm run test:e2e   # Run end-to-end tests (Playwright)
-npm run lint       # Lint with ESLint
+npm run dev          # dev server at localhost:3000
+npm run build        # production build
+npm test             # unit + integration tests (Jest)
+npm run test:e2e     # end-to-end tests (Playwright, API mocked)
+npm run lint         # ESLint
 ```
+
+See `CLAUDE.md` for the full command list, data-pipeline scripts and cache rules.
 
 ---
 
-## Project Structure
+## Data Verification
 
-```
-src/
-  app/              # Next.js pages and API routes
-    api/
-      data/[zip]/   # Main data endpoint — fetches all metrics for a zip
-      og/           # Shareable image generation (Satori)
-      warm-cache/   # Cache warming endpoint
-  components/       # React components (stat cards, charts, map, share button)
-  lib/
-    api/            # Data fetching (BLS, EIA, USASpending, Census)
-    cache/          # Upstash Redis caching layer
-    charts/         # Chart configuration and data transforms
-    data/           # Static data (zip-county mappings, Census ACS, CPI area maps)
-  types/            # TypeScript type definitions
-tests/
-  unit/             # Unit tests
-  integration/      # API integration tests
-  e2e/              # Playwright browser tests
-  fixtures/         # Test data fixtures
-  mocks/            # MSW API mock handlers
-scripts/            # Utility scripts (cache preloading, data auditing)
-audit/              # Independent data audit system (Python)
-public/             # Static assets
-```
-
----
-
-## Data Auditing
-
-An independent audit system verifies the site's data weekly against the original government sources. It runs as a separate Python application that interacts with whatchanged.us only through the public API — no shared code, no internal access.
-
-Each audit tests 10 random zip codes and checks every number against BLS, EIA, Census, and AAA. The result is an HTML report with pass/fail verdicts, comparison tables, and full-page screenshots.
-
-- **View reports**: [whatchanged.us/audit](https://www.whatchanged.us/audit) or [GitHub Actions](https://github.com/cgreenberg/whatchanged/actions/workflows/weekly-audit.yml)
-- **Schedule**: Every Wednesday at 9:00 AM Eastern (automated via GitHub Actions)
-- **Details**: See [audit/README.md](audit/README.md)
+Unit tests cover the mapping and math layers, including hand-checked "golden" zips and recorded BLS responses. `npm run verify:live` fetches a fixed set of zips from the deployed API and compares the series, baselines and latest values directly against BLS and EIA (needs `BLS_API_KEY` and `EIA_API_KEY`). It runs weekly via GitHub Actions and opens an issue on failure. The monthly local-data refresh runs its own validator (`scripts/validate-local-data.py`) before it opens a pull request.
 
 ---
 

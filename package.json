@@ -9,21 +9,29 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:live": "npx tsx scripts/verify-live.ts",
+    "audit:mappings": "npx tsx scripts/audit-zip-mappings.ts",
+    "build:zip-county": "NODE_OPTIONS=--max-old-space-size=6144 npx tsx scripts/build-zip-county.ts",
+    "build:county-geo": "npx tsx scripts/build-county-geo.ts",
+    "build:cbsa-crosswalk": "npx tsx scripts/build-cbsa-cpi-crosswalk.ts",
+    "build:census-acs": "npx tsx scripts/build-census-acs.ts",
+    "build:po-box-acs": "npx tsx scripts/build-po-box-acs.ts",
+    "data:local": "RAW=${RAW:-/tmp/raw}; bash scripts/fetch-local-data.sh $RAW && python3 scripts/build-local-data.py --raw $RAW --out public/data && python3 scripts/validate-local-data.py --raw $RAW --data public/data --out docs/validation",
+    "cache:refresh": "npx tsx scripts/refresh-cache.ts",
+    "cache:preload": "npm run cache:refresh --",
+    "cache:flush": "npx tsx scripts/flush-keys.ts",
+    "cache:warm": "npx tsx scripts/warm-zip.ts"
   },
   "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "@types/leaflet": "^1.9.21",
     "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^2.0.1",
     "d3-geo": "^3.1.1",
     "framer-motion": "^12.36.0",
-    "leaflet": "^1.9.4",
     "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
-    "satori": "^0.25.0",
     "topojson-client": "^3.1.0",
     "vercel": "^50.35.0"
   },
@@ -48,6 +56,7 @@
     "msw": "^2.12.10",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.6",
+    "tsx": "4.21.0",
     "typescript": "^5"
   }
 }

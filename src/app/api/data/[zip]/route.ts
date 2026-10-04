@@ -1,11 +1,127 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
+import { eiaGasSeriesId, EIA_GAS_PRODUCT } from '@/lib/api/eia'
+import type { EconomicSnapshot } from '@/types'
+import { usesNationalFallback, cpiItemStale } from '@/lib/hero-cards'
 
-function computeAge(fetchedAt: string): number | null {
-  try {
-    return Math.round((Date.now() - new Date(fetchedAt).getTime()) / 1000)
-  } catch {
-    return null
+function computeAge(fetchedAt: string | undefined): number | null {
+  if (!fetchedAt) return null
+  const t = new Date(fetchedAt).getTime()
+  return Number.isFinite(t) ? Math.round((Date.now() - t) / 1000) : null
+}
+
+function buildAudit(snapshot: EconomicSnapshot) {
+  const u = snapshot.unemployment?.data
+  const c = snapshot.cpi?.data
+  const g = snapshot.gas?.data
+  return {
+    cacheStatus: snapshot.cacheStatus,
+    tariffComputation: {
+      input: snapshot.tariff?.data?.medianIncome,
+      rate: snapshot.tariff?.data?.tariffRate,
+      output: snapshot.tariff?.data?.estimatedCost,
+      isFallback: snapshot.tariff?.data?.isFallback,
+    },
+    gasSeries: {
+      duoarea: g?.duoarea,
+      geoLevel: g?.geoLevel,
+      isNationalFallback: g?.isNationalFallback,
+    },
+    // Seconds since the upstream data was actually fetched (stored in the cache entry)
+    dataAge: {
+      gas: computeAge(snapshot.gas.fetchedAt),
+      cpi: computeAge(snapshot.cpi.fetchedAt),
+      unemployment: computeAge(snapshot.unemployment.fetchedAt),
+    },
+    censusFallback: snapshot.census?.data?.isFallback ?? null,
+    censusIncome: snapshot.census?.data ? {
+      source: snapshot.census.data.source ?? null,
+      geo: snapshot.census.data.incomeGeo ?? null,
+      year: snapshot.census.data.year,
+      donorZip: snapshot.census.data.donorZip ?? null,
+      donorScope: snapshot.census.data.donorScope ?? null,
+      label: snapshot.census.data.sourceLabel ?? null,
+    } : null,
+    blsSeriesIds: {
+      unemployment: u?.seriesId ?? null,
+      cpiGroceries: c?.seriesIds?.groceries ?? null,
+      cpiShelter: c?.seriesIds?.shelter ?? null,
+      cpiEnergy: c?.seriesIds?.energy ?? null,
+    },
+    // Per-source series + the exact observations used for each displayed change
+    sources: {
+      unemployment: u ? {
+        seriesId: u.seriesId ?? null,
+        nationalSeriesId: u.nationalSeriesId ?? null,
+        baseline: { period: u.baselinePeriod ?? null, value: u.baseline },
+        latest: { period: u.latestPeriod ?? null, value: u.current, preliminary: u.latestPreliminary ?? false },
+        seasonallyAdjusted: false,
+        stale: snapshot.unemployment.stale ?? false,
+      } : null,
+      cpiGroceries: c ? {
+        seriesId: c.seriesIds?.groceries ?? null,
+        fallback: c.fallback ?? null,
+        baseline: { period: c.groceriesBaselinePeriod ?? null, value: c.groceriesBaseline },
+        latest: { period: c.groceriesLatestPeriod ?? null, value: c.groceriesCurrent },
+        stale: cpiItemStale(snapshot, 'groceries'),
+      } : null,
+      cpiShelter: c && c.shelterChange !== undefined ? {
+        seriesId: c.seriesIds?.shelter ?? null,
+        baseline: { period: c.shelterBaselinePeriod ?? null, value: c.shelterBaseline ?? null },
+        latest: { period: c.shelterLatestPeriod ?? null, value: c.shelterCurrent ?? null },
+        stale: cpiItemStale(snapshot, 'shelter'),
+      } : null,
+      gas: g ? {
+        seriesId: g.duoarea ? eiaGasSeriesId(g.duoarea) : null,
+        product: EIA_GAS_PRODUCT,
+        duoarea: g.duoarea ?? null,
+        baseline: { period: g.baselineDate ?? null, value: g.baseline },
+        latest: { period: g.latestDate ?? null, value: g.current },
+        stale: snapshot.gas.stale ?? false,
+      } : null,
+    },
+    computations: {
+      gasChange: g ? {
+        formula: 'current - baseline',
+        current: g.current,
+        baseline: g.baseline,
+        result: g.change,
+      } : null,
+      groceriesChange: c ? {
+        formula: '(groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100',
+        current: c.groceriesCurrent,
+        baseline: c.groceriesBaseline,
+        result: c.groceriesChange,
+      } : null,
+      shelterChange: c && c.shelterChange !== undefined ? {
+        formula: '(shelterCurrent - shelterBaseline) / shelterBaseline * 100',
+        current: c.shelterCurrent ?? null,
+        baseline: c.shelterBaseline ?? null,
+        result: c.shelterChange,
+      } : null,
+      // NOT the page headline. This is the raw NSA LAUS series, Jan 2025 vs the
+      // latest (possibly preliminary) month. The headline shown on the page comes
+      // from the local-data pipeline (seasonally adjusted, 3-month averages).
+      unemploymentChange: u ? {
+        formula: 'current - baseline',
+        basis: 'NSA, Jan 2025 vs latest month (latest may be preliminary)',
+        displayed: false,
+        note: 'Not the page headline: the headline uses seasonally adjusted 3-month averages from the local-data pipeline.',
+        current: u.current,
+        currentPeriod: u.latestPeriod ?? null,
+        currentPreliminary: u.latestPreliminary ?? false,
+        baseline: u.baseline,
+        baselinePeriod: u.baselinePeriod ?? null,
+        result: u.change,
+      } : null,
+      tariffEstimate: snapshot.tariff?.data ? {
+        formula: 'Math.round(medianIncome * tariffRate)',
+        medianIncome: snapshot.tariff.data.medianIncome,
+        tariffRate: snapshot.tariff.data.tariffRate,
+        result: snapshot.tariff.data.estimatedCost,
+      } : null,
+    },
+    apiVersion: '2.0',
   }
 }
 
@@ -19,8 +135,8 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid zip code format' }, { status: 400 })
   }
 
-  const city = req.nextUrl.searchParams.get('city') ?? undefined
-  const state = req.nextUrl.searchParams.get('state') ?? undefined
+  const city = req.nextUrl.searchParams.get('city')?.slice(0, 100) || undefined
+  const state = req.nextUrl.searchParams.get('state')?.slice(0, 2) || undefined
 
   const snapshot = await fetchSnapshot(zip, city, state)
   if (!snapshot) {
@@ -28,74 +144,14 @@ export async function GET(
   }
 
   const audit = req.nextUrl.searchParams.get('audit') === 'true'
+  const body = audit ? { ...snapshot, _audit: buildAudit(snapshot) } : snapshot
 
-  const body = audit
-    ? {
-        ...snapshot,
-        _audit: {
-          cacheStatus: snapshot.cacheStatus,
-          tariffComputation: {
-            input: snapshot.tariff?.data?.medianIncome,
-            rate: snapshot.tariff?.data?.tariffRate,
-            output: snapshot.tariff?.data?.estimatedCost,
-            isFallback: snapshot.tariff?.data?.isFallback,
-          },
-          gasSeries: {
-            duoarea: snapshot.gas?.data?.duoarea,
-            geoLevel: snapshot.gas?.data?.geoLevel,
-            isNationalFallback: snapshot.gas?.data?.isNationalFallback,
-          },
-          dataAge: {
-            gas: computeAge(snapshot.gas.fetchedAt),
-            cpi: computeAge(snapshot.cpi.fetchedAt),
-            unemployment: computeAge(snapshot.unemployment.fetchedAt),
-          },
-          censusFallback: snapshot.census?.data?.isFallback ?? null,
-          blsSeriesIds: {
-            unemployment: snapshot.unemployment?.data?.seriesId ?? null,
-            cpiGroceries: snapshot.cpi?.data?.seriesIds?.groceries ?? null,
-            cpiShelter: snapshot.cpi?.data?.seriesIds?.shelter ?? null,
-            cpiEnergy: snapshot.cpi?.data?.seriesIds?.energy ?? null,
-          },
-          computations: {
-            gasChange: snapshot.gas?.data ? {
-              formula: 'current - baseline',
-              current: snapshot.gas.data.current,
-              baseline: snapshot.gas.data.baseline,
-              result: snapshot.gas.data.change,
-            } : null,
-            groceriesChange: snapshot.cpi?.data ? {
-              formula: '(groceriesCurrent - groceriesBaseline) / groceriesBaseline * 100',
-              current: snapshot.cpi.data.groceriesCurrent,
-              baseline: snapshot.cpi.data.groceriesBaseline,
-              result: snapshot.cpi.data.groceriesChange,
-            } : null,
-            shelterChange: snapshot.cpi?.data ? {
-              formula: 'shelter % change from Jan 2025 baseline',
-              result: snapshot.cpi.data.shelterChange,
-            } : null,
-            unemploymentChange: snapshot.unemployment?.data ? {
-              formula: 'current - baseline',
-              current: snapshot.unemployment.data.current,
-              baseline: snapshot.unemployment.data.baseline,
-              result: snapshot.unemployment.data.change,
-            } : null,
-            tariffEstimate: snapshot.tariff?.data ? {
-              formula: 'Math.round(medianIncome * tariffRate)',
-              medianIncome: snapshot.tariff.data.medianIncome,
-              tariffRate: snapshot.tariff.data.tariffRate,
-              result: snapshot.tariff.data.estimatedCost,
-            } : null,
-          },
-          apiVersion: '1.0',
-        },
-      }
-    : snapshot
-
-  const hasNullData = !snapshot.unemployment?.data || !snapshot.cpi?.data || !snapshot.gas?.data || !snapshot.federal?.data
-  const cacheHeader = hasNullData
+  const sources = [snapshot.unemployment, snapshot.cpi, snapshot.gas]
+  // A national stand-in for a failed local series is degraded too (short TTL, self-heals).
+  const degraded = sources.some((s) => !s?.data || s.stale) || usesNationalFallback(snapshot)
+  const cacheHeader = degraded
     ? 's-maxage=300, stale-while-revalidate=300'
-    : 's-maxage=86400, stale-while-revalidate=604800'
+    : 's-maxage=86400, stale-while-revalidate=86400'
   const response = NextResponse.json(body)
   response.headers.set('Cache-Control', cacheHeader)
   return response

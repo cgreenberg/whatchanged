@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -12,403 +12,246 @@ import {
 import type { ChartConfig, Timeframe } from '@/lib/charts/chart-config'
 import { TimeframeToggle } from './TimeframeToggle'
 import { computeTrendline } from '@/lib/charts/trendline'
+import {
+  ERAS, ERA_FILL, eraSpans, firstOnOrAfter, onOrAfter, filterByTimeframe, normalizeEachSeries, firstDateOf, lastDateOf,
+  splitPreliminary, PRELIM_SUFFIX, GAP_SUFFIX, findGaps, withGapConnectors, dotDates, type Row,
+} from '@/lib/charts/chart-data'
+import { fmtMonthYear, fmtDay, monthsBetween, DATE_UNAVAILABLE } from '@/lib/format'
+import type { Provenance } from '@/lib/provenance'
+import { ProvenanceLine } from '@/components/ProvenanceLine'
 
-// Era boundaries at month level — works for both monthly ('2025-01') and weekly ('2025-01-06') data
-// Monthly: '2025-01' >= '2025-01' → Trump II. Clean.
-// Weekly: '2025-01-06' >= '2025-01' → Trump II. Jan 1-19 technically Biden but ~clean enough.
-const OBAMA_START = '2009-01'
-const TRUMP1_START = '2017-01'
-const BIDEN_START = '2021-01'
-const TRUMP2_START = '2025-01'
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-// Find first data point date >= boundary
-function findDateAtOrAfter(dates: string[], boundary: string): string | null {
-  return dates.find(d => d >= boundary) ?? null
-}
-
-// Compute the date range in months between two date strings
-function computeDateRangeMonths(firstDate: string, lastDate: string): number {
-  const [y1, m1] = firstDate.split('-').map(Number)
-  const [y2, m2] = lastDate.split('-').map(Number)
-  return (y2 - y1) * 12 + (m2 - m1)
-}
-
-// Generate tick dates snapped to Jan/Jul boundaries
+// Tick dates snapped to Jan/Jul boundaries
 function generateTicks(firstDate: string, lastDate: string): string[] {
-  const rangeMonths = computeDateRangeMonths(firstDate, lastDate)
+  const rangeMonths = monthsBetween(firstDate, lastDate)
   const [startYear, startMonth] = firstDate.split('-').map(Number)
   const [endYear, endMonth] = lastDate.split('-').map(Number)
-
   const ticks: string[] = []
-
   if (rangeMonths < 6) {
-    // Monthly ticks
     for (let y = startYear; y <= endYear; y++) {
       const mStart = y === startYear ? startMonth : 1
       const mEnd = y === endYear ? endMonth : 12
-      for (let m = mStart; m <= mEnd; m++) {
-        ticks.push(`${y}-${String(m).padStart(2, '0')}`)
-      }
-    }
-  } else if (rangeMonths <= 36) {
-    // 6-month ticks (Jan + Jul)
-    for (let y = startYear; y <= endYear + 1; y++) {
-      ticks.push(`${y}-01`)
-      ticks.push(`${y}-07`)
+      for (let m = mStart; m <= mEnd; m++) ticks.push(`${y}-${String(m).padStart(2, '0')}`)
     }
   } else if (rangeMonths <= 72) {
-    // 6-month ticks (Jan + Jul)
-    for (let y = startYear; y <= endYear + 1; y++) {
-      ticks.push(`${y}-01`)
-      ticks.push(`${y}-07`)
-    }
+    for (let y = startYear; y <= endYear + 1; y++) ticks.push(`${y}-01`, `${y}-07`)
   } else {
-    // Yearly ticks (Jan only)
-    for (let y = startYear; y <= endYear + 1; y++) {
-      ticks.push(`${y}-01`)
-    }
+    for (let y = startYear; y <= endYear + 1; y++) ticks.push(`${y}-01`)
   }
-
-  // Filter to only ticks within the data range
   return ticks.filter(t => t >= firstDate.slice(0, 7) && t <= lastDate.slice(0, 7))
 }
 
-// Format tick label based on range
 function formatTickLabel(dateStr: string, rangeMonths: number): string {
   const [yearStr, monthStr] = dateStr.split('-')
   const month = parseInt(monthStr, 10)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-  if (rangeMonths < 6) {
-    return `${months[month - 1]} '${yearStr.slice(2)}`
-  } else if (rangeMonths <= 36) {
-    return `${months[month - 1]} '${yearStr.slice(2)}`
-  } else if (rangeMonths <= 72) {
-    // Jan shows year, Jul shows "Jul"
-    return month === 1 ? `'${yearStr.slice(2)}` : months[month - 1]
-  } else {
-    return `'${yearStr.slice(2)}`
-  }
+  if (rangeMonths <= 36) return `${MONTHS[month - 1]} '${yearStr.slice(2)}`
+  if (rangeMonths <= 72) return month === 1 ? `'${yearStr.slice(2)}` : MONTHS[month - 1]
+  return `'${yearStr.slice(2)}`
 }
 
-// Tooltip always shows full "Mon YYYY" regardless of timeframe
 function formatTooltipLabel(dateStr: string): string {
-  const [yearStr, monthStr] = dateStr.split('-')
-  const month = parseInt(monthStr, 10)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${months[month - 1]} ${yearStr}`
+  return dateStr.length > 7 ? fmtDay(dateStr) : fmtMonthYear(dateStr)
 }
 
-// For each computed tick date, find the closest actual data point date
+function fmtPoint(d?: string): string {
+  return d ? (d.length > 7 ? fmtDay(d) : fmtMonthYear(d)) : DATE_UNAVAILABLE
+}
+
 function snapTicksToData(computedTicks: string[], dataDates: string[]): string[] {
-  return computedTicks.map(tick => {
-    // Find first data date that starts with the tick's YYYY-MM, or the closest one after
-    const match = dataDates.find(d => d.startsWith(tick) || d >= tick)
-    return match ?? dataDates[dataDates.length - 1]
-  }).filter((v, i, arr) => arr.indexOf(v) === i) // dedupe
+  return computedTicks
+    .map(tick => dataDates.find(d => d.startsWith(tick) || d >= tick) ?? dataDates[dataDates.length - 1])
+    .filter((v, i, arr) => arr.indexOf(v) === i)
 }
 
 interface EraChartProps {
   config: ChartConfig
-  data: Array<{ date: string; [key: string]: unknown }>
-  nationalData?: Array<{ date: string; [key: string]: unknown }>
+  data: Row[]
+  nationalData?: Row[]
+  /** Source/geography/adjustment for the footer; window and as-of are derived from the visible data. */
+  provenance: Omit<Provenance, 'window' | 'asOf'> & { asOf?: string }
+  stale?: boolean
+  /** Optional headline block shown above the chart (e.g. the unemployment change). */
+  headline?: ReactNode
+  /** Weekly gas: the "Jan 2025" view starts at the baseline week (last reading ≤ Jan 20). */
+  weeklyGasBaseline?: boolean
+  /** Appended to the provenance geography as "(dashed: …)" only while the national line is shown. */
+  nationalLabel?: string
+  /** One-line explanation shown above the provenance footer. */
+  note?: string
 }
 
-function filterByTimeframe(
-  data: Array<{ date: string }>,
-  tf: Timeframe
-): Array<{ date: string }> {
-  if (tf === 'Jan 2025') {
-    return data.filter(d => d.date >= '2025-01')
-  }
-  const now = new Date()
-  const yearsBack = tf === '3Y' ? 3 : tf === '5Y' ? 5 : 10
-  const cutoff = new Date(now.getFullYear() - yearsBack, now.getMonth(), 1)
-  const cutoffStr = cutoff.toISOString().slice(0, 7)
-  return data.filter(d => d.date >= cutoffStr)
+function ChartHeader({
+  config, timeframe, setTimeframe, showNationalToggle, showNational, setShowNational, stale,
+}: {
+  config: ChartConfig
+  timeframe: Timeframe
+  setTimeframe: (t: Timeframe) => void
+  showNationalToggle: boolean
+  showNational: boolean
+  setShowNational: (v: boolean) => void
+  stale?: boolean
+}) {
+  const [showTooltip, setShowTooltip] = useState(false)
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
+        {config.title}
+        {config.description && (
+          <span className="relative inline-block ml-1">
+            <button
+              type="button"
+              className="text-zinc-500 hover:text-zinc-300 cursor-help"
+              onClick={() => setShowTooltip(prev => !prev)}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              aria-label="More info"
+            >&#9432;</button>
+            {showTooltip && (
+              <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
+                {config.description}
+              </span>
+            )}
+          </span>
+        )}
+        {stale && (
+          <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-300 border border-amber-300/40 rounded px-1.5 py-0.5" data-testid="stale-badge">
+            Stale
+          </span>
+        )}
+      </h3>
+      <div className="flex items-center gap-3">
+        {showNationalToggle && (
+          <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showNational}
+              onChange={e => setShowNational(e.target.checked)}
+              className="rounded border-zinc-600"
+            />
+            Show national
+          </label>
+        )}
+        <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
+      </div>
+    </div>
+  )
 }
 
-export function EraChart({ config, data, nationalData }: EraChartProps) {
+export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
+  const mainKey = config.series[0]?.dataKey ?? ''
 
-  const filteredData = useMemo(() => filterByTimeframe(data, timeframe), [data, timeframe])
+  const filteredData = useMemo(
+    () => filterByTimeframe(data, timeframe, weeklyGasBaseline, mainKey),
+    [data, timeframe, weeklyGasBaseline, mainKey]
+  )
 
-  // Merge trendline data if enabled
-  const chartData = useMemo(() => {
+  const chartData = useMemo((): Row[] => {
     if (!config.trendline || !config.series[0]) return filteredData
-    const trendData = computeTrendline(
-      filteredData as Array<{ date: string; [key: string]: unknown }>,
-      config.series[0].dataKey
-    )
+    const trendData = computeTrendline(filteredData, config.series[0].dataKey)
     return filteredData.map((d, i) => ({ ...d, trend: trendData[i]?.trend }))
   }, [filteredData, config.trendline, config.series])
 
-  // Merge national data into chartData when showNational is enabled
-  const mergedData = useMemo((): Array<{ date: string; [key: string]: unknown }> => {
-    if (!showNational || !nationalData?.length) return chartData
+  // Merge national data when enabled (keys prefixed national_) on the local dates only, so both lines
+  // cover the same months (the national line never runs past the latest local month).
+  const mergedData = useMemo((): Row[] => {
+    if (!showNational || !nationalData?.length || !chartData.length) return chartData
     const nationalMap = new Map(nationalData.map(d => [d.date, d]))
-    const localDates = new Set(chartData.map(d => d.date as string))
-
-    const merged = chartData.map(d => {
-      const nd = nationalMap.get(d.date as string)
+    return chartData.map(d => {
+      const nd = nationalMap.get(d.date)
       if (!nd) return d
-      const entry: { date: string; [key: string]: unknown } = { ...d }
+      const entry: Row = { ...d }
       for (const key of Object.keys(nd)) {
-        if (key !== 'date') entry[`national_${key}`] = nd[key]
+        if (key !== 'date' && key !== 'preliminary') entry[`national_${key}`] = nd[key]
       }
       return entry
     })
-
-    // Append national-only data points beyond local range (not before it)
-    const lastLocalDate = chartData[chartData.length - 1]?.date as string
-    if (lastLocalDate) {
-      for (const nd of nationalData) {
-        if (nd.date > lastLocalDate) {
-          const entry: { date: string; [key: string]: unknown } = { date: nd.date }
-          for (const key of Object.keys(nd)) {
-            if (key !== 'date') entry[`national_${key}`] = nd[key]
-          }
-          merged.push(entry)
-        }
-      }
-    }
-
-    return merged
   }, [chartData, showNational, nationalData])
 
-  // Normalize to percentage change from first visible data point
-  const displayData = useMemo((): Array<{ date: string; [key: string]: unknown }> => {
-    if (!config.normalizeToBaseline || !mergedData.length) return mergedData
-    const first = mergedData[0]
-    return mergedData.map(d => {
-      const normalized: { date: string; [key: string]: unknown } = { date: d.date }
-      for (const key of Object.keys(d)) {
-        if (key === 'date') continue
-        const val = d[key]
-        const baseVal = first[key]
-        if (typeof val === 'number' && typeof baseVal === 'number' && baseVal !== 0) {
-          normalized[key] = ((val - baseVal) / baseVal) * 100
-        } else {
-          normalized[key] = val
-        }
-      }
-      return normalized
-    })
-  }, [mergedData, config.normalizeToBaseline])
+  // % change view: each series (local and national) from its own first visible value.
+  // Preliminary points (e.g. the latest LAUS month) move to their own dashed series afterwards.
+  const { rows: splitData, hasPreliminary } = useMemo(
+    () => splitPreliminary(config.normalizeToBaseline ? normalizeEachSeries(mergedData) : mergedData, mainKey),
+    [mergedData, config.normalizeToBaseline, mainKey]
+  )
 
-  if (!displayData.length) {
+  // Months the source did not publish inside the visible window (e.g. Phoenix food-at-home):
+  // drawn as a faint dashed connector, with isolated points and the latest point dotted.
+  const prelimKey = `${mainKey}${PRELIM_SUFFIX}`
+  const gaps = useMemo(() => (config.chartType === 'bar' ? [] : findGaps(splitData, mainKey, [prelimKey])), [splitData, mainKey, prelimKey, config.chartType])
+  const displayData = useMemo(() => withGapConnectors(splitData, mainKey, gaps, [prelimKey]), [splitData, mainKey, gaps, prelimKey])
+  const dotted = useMemo(() => dotDates(splitData, mainKey, !hasPreliminary), [splitData, mainKey, hasPreliminary])
+  const sourceShort = provenance.source.split(' ')[0]
+  const gapNote = gaps.length
+    ? `No ${sourceShort} data for ${gaps.map(g => g.from === g.to ? fmtPoint(g.from) : `${fmtPoint(g.from)}–${fmtPoint(g.to)}`).join(', ')}`
+    : null
+
+  const hasLocal = displayData.some(d => typeof d[mainKey] === 'number' || typeof d[`${mainKey}${PRELIM_SUFFIX}`] === 'number')
+  const hasNationalData = (nationalData?.length ?? 0) > 0
+  const sizeClass = config.size === 'large' ? 'col-span-full' : config.size === 'medium' ? 'sm:col-span-1' : ''
+
+  const firstDate = firstDateOf(chartData, mainKey)
+  const lastDate = lastDateOf(chartData, mainKey)
+  const windowText = config.normalizeToBaseline
+    ? `% change since ${fmtPoint(firstDate)}`
+    : `${fmtPoint(firstDate)} – ${fmtPoint(lastDate)}`
+  const nationalShown = showNational && hasNationalData && !!config.showNationalToggle
+  const fullProvenance: Provenance = {
+    ...provenance,
+    geography: nationalShown && nationalLabel ? `${provenance.geography} (dashed: ${nationalLabel})` : provenance.geography,
+    window: hasLocal ? windowText : 'no data in this window',
+    asOf: provenance.asOf ?? fmtPoint(lastDateOf(data, mainKey)),
+  }
+
+  const header = (
+    <ChartHeader
+      config={config}
+      timeframe={timeframe}
+      setTimeframe={setTimeframe}
+      showNationalToggle={!!config.showNationalToggle && hasNationalData}
+      showNational={showNational}
+      setShowNational={setShowNational}
+      stale={stale}
+    />
+  )
+
+  if (!hasLocal) {
     return (
-      <div
-        className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${
-          config.size === 'large'
-            ? 'col-span-full'
-            : config.size === 'medium'
-              ? 'sm:col-span-1'
-              : ''
-        }`}
-        data-testid={`chart-${config.id}`}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
-            {config.title}
-            {config.description && (
-              <span className="relative inline-block ml-1">
-                <button
-                  type="button"
-                  className="text-zinc-500 hover:text-zinc-300 cursor-help"
-                  onClick={() => setShowTooltip(prev => !prev)}
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                  aria-label="More info"
-                >&#9432;</button>
-                {showTooltip && (
-                  <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
-                    {config.description}
-                  </span>
-                )}
-              </span>
-            )}
-          </h3>
-          <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
-        </div>
+      <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${sizeClass}`} data-testid={`chart-${config.id}`}>
+        {header}
+        {headline}
         <div className="h-64 flex items-center justify-center">
           <p className="text-zinc-600 text-sm font-inter">Data unavailable</p>
         </div>
+        {note && <p className="text-[11px] text-zinc-400 mt-2" data-testid="chart-note">{note}</p>}
+        <ProvenanceLine provenance={fullProvenance} className="mt-2 pt-2 border-t border-zinc-800" />
       </div>
     )
   }
 
-  // Local data range (for stable tick computation — unaffected by national overlay extension)
-  const localFirstDate = (chartData[0]?.date ?? '') as string
-  const localLastDate = (chartData[chartData.length - 1]?.date ?? '') as string
+  const allDates = displayData.map(d => d.date)
+  const localFirst = chartData[0].date
+  const localLast = chartData[chartData.length - 1].date
+  const spans = config.eraShading ? eraSpans(allDates) : []
+  const lines = config.eraShading
+    ? ERAS.filter(e => e.label && !onOrAfter(allDates[0], e.start))
+      .map(e => ({ key: e.key, label: e.label!, x: firstOnOrAfter(allDates, e.start) }))
+      .filter(l => l.x && l.x !== allDates[0])
+    : []
 
-  // Full display range (for era shading — needs to cover national extension too)
-  const firstDate = (displayData[0]?.date ?? '') as string
-  const lastDate = (displayData[displayData.length - 1]?.date ?? '') as string
-
-  // Build era shading using actual data point dates (handles both monthly and weekly formats)
-  const allDates = displayData.map(d => d.date as string)
-
-  // Compute era boundary data points (used for both ReferenceArea and ReferenceLine)
-  // Rendered as direct JSX children of ChartComponent (not array/fragment — Recharts v3 compatibility)
-  const ox1 = config.eraShading ? (firstDate < TRUMP1_START ? allDates[0] : null) : null
-  const ox2 = config.eraShading ? findDateAtOrAfter(allDates, TRUMP1_START) : null
-  const showObama = !!(ox1 && ox2 && ox1 < ox2)
-
-  const t1x1 = config.eraShading ? (firstDate >= TRUMP1_START && firstDate < BIDEN_START ? allDates[0] : findDateAtOrAfter(allDates, TRUMP1_START)) : null
-  const t1x2 = config.eraShading ? findDateAtOrAfter(allDates, BIDEN_START) : null
-  const showTrump1 = !!(t1x1 && t1x2 && t1x1 < t1x2)  // strict < to skip zero-width
-
-  const bx1 = config.eraShading ? (firstDate >= BIDEN_START && firstDate < TRUMP2_START ? allDates[0] : findDateAtOrAfter(allDates, BIDEN_START)) : null
-  const bx2 = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
-  const showBiden = !!(bx1 && bx2 && bx1 < bx2)  // strict <
-  const showBidenFull = !!(bx1 && !bx2 && firstDate < TRUMP2_START && lastDate < TRUMP2_START)
-
-  const t2x1 = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
-  const showTrump2 = !!t2x1
-
-  const jan2017Line = config.eraShading ? findDateAtOrAfter(allDates, TRUMP1_START) : null
-  const jan2021Line = config.eraShading ? findDateAtOrAfter(allDates, BIDEN_START) : null
-  const jan2025Line = config.eraShading ? findDateAtOrAfter(allDates, TRUMP2_START) : null
-
-  const renderSeries = () => {
-    return config.series.map(s => {
-      if (config.chartType === 'area') {
-        return (
-          <Area
-            key={`${s.dataKey}-${timeframe}`}
-            type={s.type ?? 'monotone'}
-            dataKey={s.dataKey}
-            stroke={s.color}
-            fill={s.color}
-            fillOpacity={0.1}
-            strokeWidth={2}
-            name={s.label}
-            dot={false}
-            animationDuration={600}
-            animationEasing="ease-out"
-          />
-        )
-      } else if (config.chartType === 'bar') {
-        return (
-          <Bar
-            key={s.dataKey}
-            dataKey={s.dataKey}
-            fill={s.color}
-            name={s.label}
-          />
-        )
-      } else {
-        return (
-          <Line
-            key={`${s.dataKey}-${timeframe}`}
-            type={s.type ?? 'monotone'}
-            dataKey={s.dataKey}
-            stroke={s.color}
-            strokeWidth={2}
-            name={s.label}
-            dot={false}
-            animationDuration={600}
-            animationEasing="ease-out"
-          />
-        )
-      }
-    })
-  }
-
-  // National overlay lines (dotted) when showNational is enabled
-  const nationalLines = showNational ? config.series.map(s => (
-    <Line
-      key={`national_${s.dataKey}-${timeframe}`}
-      type={s.type ?? 'monotone'}
-      dataKey={`national_${s.dataKey}`}
-      stroke={s.color}
-      strokeWidth={1}
-      strokeDasharray="6 3"
-      strokeOpacity={0.5}
-      name={`${s.label} (National)`}
-      dot={false}
-      animationDuration={600}
-      animationEasing="ease-out"
-    />
-  )) : null
-
-  // Add trendline if enabled
-  const trendlineElement = config.trendline ? (
-    <Line
-      key="trend"
-      type="linear"
-      dataKey="trend"
-      stroke="#9CA3AF"
-      strokeWidth={1}
-      strokeDasharray="6 3"
-      name="Trend"
-      dot={false}
-    />
-  ) : null
-
-  // Bug 4 fix: Custom tick system snapped to Jan/Jul boundaries
-  // Use local data range so ticks stay stable when toggling national overlay
-  const rangeMonths = computeDateRangeMonths(localFirstDate, localLastDate)
-  const computedTicks = generateTicks(localFirstDate, localLastDate)
-  const snappedTicks = snapTicksToData(computedTicks, allDates)
-
-  const ChartComponent =
-    config.chartType === 'area' ? AreaChart
-    : config.chartType === 'bar' ? BarChart
-    : LineChart
-
-  const hasNationalData = (nationalData?.length ?? 0) > 0
+  const ChartComponent = config.chartType === 'area' ? AreaChart : config.chartType === 'bar' ? BarChart : LineChart
+  const rangeMonths = monthsBetween(localFirst, localLast)
+  const snappedTicks = snapTicksToData(generateTicks(localFirst, localLast), allDates)
 
   return (
-    <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${
-        config.size === 'large'
-          ? 'col-span-full'
-          : config.size === 'medium'
-            ? 'sm:col-span-1'
-            : ''
-      }`}
-      data-testid={`chart-${config.id}`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
-            {config.title}
-            {config.description && (
-              <span className="relative inline-block ml-1">
-                <button
-                  type="button"
-                  className="text-zinc-500 hover:text-zinc-300 cursor-help"
-                  onClick={() => setShowTooltip(prev => !prev)}
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                  aria-label="More info"
-                >&#9432;</button>
-                {showTooltip && (
-                  <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
-                    {config.description}
-                  </span>
-                )}
-              </span>
-            )}
-          </h3>
-        <div className="flex items-center gap-3">
-          {config.showNationalToggle && hasNationalData && (
-            <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showNational}
-                onChange={e => setShowNational(e.target.checked)}
-                className="rounded border-zinc-600"
-              />
-              Show national
-            </label>
-          )}
-          <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
-        </div>
-      </div>
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 ${sizeClass}`} data-testid={`chart-${config.id}`}>
+      {header}
+      {headline}
+      {config.normalizeToBaseline && (
+        <p className="text-[11px] text-zinc-500 mb-1" data-testid="chart-window">{windowText}</p>
+      )}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent data={displayData}>
@@ -429,47 +272,72 @@ export function EraChart({ config, data, nationalData }: EraChartProps) {
             />
             <Tooltip
               animationDuration={0}
-              contentStyle={{
-                backgroundColor: '#18181B',
-                border: '1px solid #3F3F46',
-                borderRadius: '8px',
-                fontSize: 12,
-              }}
-              labelFormatter={(label: unknown) =>
-                typeof label === 'string' ? formatTooltipLabel(label.slice(0, 7)) : String(label)
-              }
+              contentStyle={{ backgroundColor: '#18181B', border: '1px solid #3F3F46', borderRadius: '8px', fontSize: 12 }}
+              labelFormatter={(label: unknown) => (typeof label === 'string' ? formatTooltipLabel(label) : String(label))}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(value: any) =>
-                typeof value === 'number' && config.formatValue
-                  ? config.formatValue(value)
-                  : String(value ?? '')
+                typeof value === 'number' && config.formatValue ? config.formatValue(value) : String(value ?? '')
               }
             />
             <Legend wrapperStyle={{ fontSize: 11, color: '#A1A1AA' }} />
-            {showObama && <ReferenceArea x1={ox1!} x2={ox2!} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
-            {showTrump1 && <ReferenceArea x1={t1x1!} x2={t1x2!} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
-            {showBiden && <ReferenceArea x1={bx1!} x2={bx2!} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
-            {showBidenFull && <ReferenceArea x1={bx1!} x2={allDates[allDates.length - 1]} fill="rgba(59, 130, 246, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
-            {showTrump2 && <ReferenceArea x1={t2x1!} x2={allDates[allDates.length - 1]} fill="rgba(239, 68, 68, 0.25)" strokeOpacity={0} ifOverflow="visible" />}
-            {jan2017Line && firstDate < TRUMP1_START && <ReferenceLine x={jan2017Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2017', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
-            {jan2021Line && firstDate < BIDEN_START && <ReferenceLine x={jan2021Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2021', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
-            {jan2025Line && firstDate < TRUMP2_START && <ReferenceLine x={jan2025Line} stroke="#6B7280" strokeDasharray="3 3" label={{ value: 'Jan 2025', position: 'top', fontSize: 10, fill: '#6B7280' }} />}
-            {renderSeries()}
-            {nationalLines}
-            {trendlineElement}
+            {/* Era shading must precede the series (z-order) */}
+            {spans.map(s => (
+              <ReferenceArea key={s.key} x1={s.x1} x2={s.x2} fill={ERA_FILL[s.color]} strokeOpacity={0} ifOverflow="visible" />
+            ))}
+            {lines.map(l => (
+              <ReferenceLine key={l.key} x={l.x!} stroke="#6B7280" strokeDasharray="3 3" label={{ value: l.label, position: 'top', fontSize: 10, fill: '#6B7280' }} />
+            ))}
+            {config.series.map((s, si) => {
+              // Dots only where the line alone would hide a point: isolated points and the latest one
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const dot = si !== 0 ? false : (p: any) => dotted.has(p?.payload?.date) && typeof p.cx === 'number' && typeof p.cy === 'number'
+                ? <circle key={`dt-${p.index}`} cx={p.cx} cy={p.cy} r={3} fill={s.color} stroke="#18181B" strokeWidth={1} data-testid="point-dot" />
+                : <g key={`dt-${p?.index}`} />
+              return config.chartType === 'area' ? (
+                <Area key={`${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={s.dataKey} stroke={s.color} fill={s.color}
+                  fillOpacity={0.1} strokeWidth={2} name={s.label} dot={dot} animationDuration={600} animationEasing="ease-out" />
+              ) : config.chartType === 'bar' ? (
+                <Bar key={s.dataKey} dataKey={s.dataKey} fill={s.color} name={s.label} />
+              ) : (
+                <Line key={`${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={s.dataKey} stroke={s.color}
+                  strokeWidth={2} name={s.label} dot={dot} animationDuration={600} animationEasing="ease-out" />
+              )
+            })}
+            {gaps.map((g, i) => (
+              <Line key={`gap-${i}-${timeframe}`} type="linear" dataKey={`${mainKey}${GAP_SUFFIX}${i}`} stroke={config.series[0]?.color}
+                strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="2 4" dot={false} activeDot={false} connectNulls
+                isAnimationActive={false} legendType="none" tooltipType="none" className="gap-connector" />
+            ))}
+            {hasPreliminary && config.series[0] && (() => {
+              const s = config.series[0]
+              const pk = `${s.dataKey}${PRELIM_SUFFIX}`
+              // Hollow dot only on the preliminary points (the dashed segment starts at the last final point)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const dot = (p: any) => p?.payload?.preliminary === true && typeof p.cx === 'number' && typeof p.cy === 'number'
+                ? <circle key={`pd-${p.index}`} cx={p.cx} cy={p.cy} r={3.5} fill="#18181B" stroke={s.color} strokeWidth={1.5} data-testid="preliminary-dot" />
+                : <g key={`pd-${p?.index}`} />
+              return config.chartType === 'area' ? (
+                <Area key={`${pk}-${timeframe}`} type="linear" dataKey={pk} stroke={s.color} strokeDasharray="4 3" fill={s.color}
+                  fillOpacity={0.04} strokeWidth={2} name={`${s.label} (preliminary)`} dot={dot} isAnimationActive={false} connectNulls />
+              ) : (
+                <Line key={`${pk}-${timeframe}`} type="linear" dataKey={pk} stroke={s.color} strokeDasharray="4 3"
+                  strokeWidth={2} name={`${s.label} (preliminary)`} dot={dot} isAnimationActive={false} connectNulls />
+              )
+            })()}
+            {showNational && config.series.map(s => (
+              <Line key={`national_${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={`national_${s.dataKey}`}
+                stroke={s.color} strokeWidth={1} strokeDasharray="6 3" strokeOpacity={0.5} name={`${s.label} (U.S.)`}
+                dot={false} animationDuration={600} animationEasing="ease-out" />
+            ))}
+            {config.trendline && (
+              <Line key="trend" type="linear" dataKey="trend" stroke="#9CA3AF" strokeWidth={1} strokeDasharray="6 3" name="Trend" dot={false} />
+            )}
           </ChartComponent>
         </ResponsiveContainer>
       </div>
-      {(config.sourceLabel || config.geoLevel) && (
-        <div className="mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-500">
-          {config.sourceUrl ? (
-            <a href={config.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
-              {config.sourceLabel}
-            </a>
-          ) : config.sourceLabel}
-          {config.geoLevel && <span> · {config.geoLevel}</span>}
-        </div>
-      )}
+      {gapNote && <p className="text-[11px] text-zinc-500 mt-1" data-testid="chart-gap-note">{gapNote}</p>}
+      {note && <p className="text-[11px] text-zinc-400 mt-2" data-testid="chart-note">{note}</p>}
+      <ProvenanceLine provenance={fullProvenance} className="mt-2 pt-2 border-t border-zinc-800" />
     </div>
   )
 }

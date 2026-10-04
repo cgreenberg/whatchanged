@@ -1,6 +1,9 @@
 # Data validation findings (2026-10-01)
 
-Full results are in `report.md`, which `scripts/validate-local-data.py` regenerates. The validator parses every raw file with its own code and does not import the build script. Of 45 checks, 19 pass, 15 warn, 11 are informational and none fail.
+Full results are in `report.md`, which `scripts/validate-local-data.py` regenerates. The validator parses every raw file with its own code and does not import the build script. Regenerated 2026-10-02 after the review fixes: 28 pass, 15 warn, 12 are informational and none fail.
+Section 8 ("Shipped data invariants") now FAILs the refresh on bad county names, CT planning-region rows,
+out-of-range metrics, shipped ranks, out-of-range listings, dishonest rent basis, unresolved crosswalk
+counties, ambiguous city keys, or an inconsistent `county-rent.json`.
 
 ## What holds up
 
@@ -29,9 +32,19 @@ Full results are in `report.md`, which `scripts/validate-local-data.py` regenera
 ## Outliers checked and kept (real, not bugs)
 
 - **Rent:** Taylor County TX (Abilene) +48%. All 5 Abilene zips rose 47–60%, job postings rose 29%, and ACA gross premiums rose too. Apartment List doesn't cover Abilene. Lake Charles LA +25% is confirmed by Apartment List (+27%). SF +34% is confirmed by Apartment List (+40%).
-- **Unemployment:** Buncombe NC −3.6 pts. The January 2025 baseline was inflated after Hurricane Helene, so this is real but misleading without context.
+- **Unemployment:** Buncombe NC −3.5 pts (6.7% → 3.2%; 3-month seasonally adjusted averages, May–Jul 2026 vs Dec 2024–Feb 2025, as in the shipped county shard). The winter 2024–25 baseline was inflated after Hurricane Helene, so this is real but misleading without context.
 - **ACA:** Navajo County AZ net premium $65 → $446. This is real in the CMS file, and enrollment fell from 4,641 to 3,111.
+
+## What changed in the UI because of this review
+
+- Cards lead with county (then same-county Zillow city) figures; zip figures are labeled estimates; percentile ranks removed.
+- Zip rent series too short to seasonally adjust are no longer shown as "adjusted": they use a same-month
+  year-over-year comparison, labeled as such, or are dropped.
+- Buncombe NC is excluded from unemployment movers and carries a Helene-baseline note; flagged permit outliers
+  (+150–290%) are excluded from movers; the latest preliminary LAUS month is excluded.
 
 ## Coverage
 
-Of the site's 33,791 zips, 78% have zip-level home values and 17% have zip-level rent. The rest fall back to county rent, which Zillow covers for 978 counties, or to Zillow city rent (2,637 cities). Puerto Rico has data but no map shape.
+Of the site's 41,126 crosswalk zips, 64% have zip-level home values and 14% appear in Zillow's zip rent file.
+61% are in a county with published rent (SA since Jan 2025 or same-month YoY); Zillow city rent in the same
+county fills some of the rest (2,853 cities). Puerto Rico has data but no map shape.

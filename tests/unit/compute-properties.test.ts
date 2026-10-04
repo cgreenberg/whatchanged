@@ -1,70 +1,36 @@
 import fc from 'fast-check'
 import { estimateTariffCost } from '@/lib/tariff'
+import { pctChange } from '@/lib/api/bls-common'
+import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
+import { isValidCpi, isValidUnemployment, isValidGasSeries } from '@/lib/api/validate'
+import type { CpiData, UnemploymentData } from '@/types'
+import type { GasSeriesData } from '@/lib/api/eia'
 
+// Property tests of REAL code (no re-implemented formulas).
 describe('compute properties', () => {
   jest.setTimeout(60000) // property tests can be slow
 
-  // 2.2a: Percent change formula
-  // Source: src/lib/api/bls-cpi.ts lines 145-146
-  // Formula: parseFloat(((current - baseline) / baseline * 100).toFixed(1))
-  describe('percent change', () => {
-    it('is never NaN or Infinity for positive baseline and current', () => {
+  describe('pctChange (bls-common)', () => {
+    it('is finite and sign-correct for positive baseline', () => {
       fc.assert(
         fc.property(
-          fc.double({ min: 0.01, max: 1000, noNaN: true }),
-          fc.double({ min: 0.01, max: 1000, noNaN: true }),
+          fc.double({ min: 1, max: 1000, noNaN: true }),
+          fc.double({ min: 1, max: 1000, noNaN: true }),
           (baseline, current) => {
-            const result = parseFloat(((current - baseline) / baseline * 100).toFixed(1))
-            expect(isNaN(result)).toBe(false)
-            expect(isFinite(result)).toBe(true)
+            const r = pctChange(current, baseline)!
+            expect(Number.isFinite(r)).toBe(true)
+            if (current - baseline > baseline * 0.001) expect(r).toBeGreaterThanOrEqual(0)
+            if (baseline - current > baseline * 0.001) expect(r).toBeLessThanOrEqual(0)
           }
         )
       )
     })
 
-    it('is 0 when baseline equals current', () => {
+    it('is null (never 0) for a zero/negative baseline', () => {
       fc.assert(
-        fc.property(
-          fc.double({ min: 0.01, max: 1000, noNaN: true }),
-          (value) => {
-            const result = parseFloat(((value - value) / value * 100).toFixed(1))
-            expect(result).toBe(0)
-          }
-        )
-      )
-    })
-
-    it('is positive when current > baseline', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 0.01, max: 999, noNaN: true }),
-          fc.double({ min: 0.01, max: 999, noNaN: true }),
-          (a, b) => {
-            const baseline = Math.min(a, b)
-            const current = Math.max(a, b)
-            // Only test when they are meaningfully different (not just floating point noise)
-            fc.pre(current - baseline > 0.001)
-            const result = parseFloat(((current - baseline) / baseline * 100).toFixed(1))
-            expect(result).toBeGreaterThanOrEqual(0)
-          }
-        )
-      )
-    })
-
-    it('is negative when current < baseline', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 0.01, max: 999, noNaN: true }),
-          fc.double({ min: 0.01, max: 999, noNaN: true }),
-          (a, b) => {
-            const baseline = Math.max(a, b)
-            const current = Math.min(a, b)
-            // Only test when they are meaningfully different
-            fc.pre(baseline - current > 0.001)
-            const result = parseFloat(((current - baseline) / baseline * 100).toFixed(1))
-            expect(result).toBeLessThanOrEqual(0)
-          }
-        )
+        fc.property(fc.double({ min: -100, max: 0, noNaN: true }), fc.double({ min: 1, max: 1000, noNaN: true }), (b, c) => {
+          expect(pctChange(c, b)).toBeNull()
+        })
       )
     })
   })
@@ -124,203 +90,73 @@ describe('compute properties', () => {
     })
   })
 
-  // 2.2c: Grocery dollar impact
-  // Source: src/components/HomeContent.tsx lines 178-180
-  // Formula:
-  //   grocerySpend = 6000 * (localIncome / 74580)
-  //   dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
-  describe('grocery dollar impact', () => {
-    it('is always >= 0 (Math.abs ensures this)', () => {
+  describe('dollar translations keep the sign of the change', () => {
+    it('grocery impact has the same sign as the % change', () => {
       fc.assert(
-        fc.property(
-          fc.double({ min: 15000, max: 300000, noNaN: true }),
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (localIncome, pctChange) => {
-            const grocerySpend = 6000 * (localIncome / 74580)
-            const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
-            expect(dollarImpact).toBeGreaterThanOrEqual(0)
-          }
-        )
+        fc.property(fc.double({ min: -20, max: 50, noNaN: true }), (pct) => {
+          const v = computeGroceryImpact(pct)!
+          expect(Number.isFinite(v)).toBe(true)
+          if (pct >= 0.01) expect(v).toBeGreaterThanOrEqual(0)
+          if (pct <= -0.01) expect(v).toBeLessThanOrEqual(0)
+        })
       )
     })
 
-    it('is never NaN', () => {
+    it('shelter impact has the same sign as the % change and scales with rent', () => {
       fc.assert(
-        fc.property(
-          fc.double({ min: 15000, max: 300000, noNaN: true }),
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (localIncome, pctChange) => {
-            const grocerySpend = 6000 * (localIncome / 74580)
-            const dollarImpact = Math.round(grocerySpend * Math.abs(pctChange) / 100)
-            expect(isNaN(dollarImpact)).toBe(false)
-          }
-        )
+        fc.property(fc.double({ min: 200, max: 5000, noNaN: true }), fc.double({ min: -20, max: 50, noNaN: true }), (rent, pct) => {
+          const v = computeShelterImpact(pct, rent)!
+          expect(v).toBe(Math.round((rent * 12 * pct) / 100) || 0)
+        })
       )
     })
   })
 
-  // 2.2d: Shelter dollar impact
-  // Source: src/components/HomeContent.tsx lines 148-150
-  // Formula:
-  //   annualRent = medianRent * 12
-  //   shelterDollarImpact = Math.round(annualRent * Math.abs(shelterChange) / 100)
-  describe('shelter dollar impact', () => {
-    it('is always >= 0', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 200, max: 5000, noNaN: true }),
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (medianRent, shelterChange) => {
-            const annualRent = medianRent * 12
-            const shelterDollarImpact = Math.round(annualRent * Math.abs(shelterChange) / 100)
-            expect(shelterDollarImpact).toBeGreaterThanOrEqual(0)
-          }
-        )
-      )
+  describe('sanity validators (src/lib/api/validate.ts)', () => {
+    const cpi = (groceriesChange: number, shelterChange?: number): CpiData => ({
+      groceriesCurrent: 110, groceriesBaseline: 100, groceriesChange,
+      ...(shelterChange !== undefined ? { shelterChange } : {}),
+      series: [], metro: 'X', tier: 2,
+    })
+    const unemp = (current: number): UnemploymentData => ({
+      current, baseline: 4, change: current - 4, series: [], countyFips: '00000',
+    })
+    const gas = (current: number, baseline = 3): GasSeriesData => ({
+      current, baseline, change: current - baseline, baselineDate: '2025-01-20', latestDate: '2025-02-24',
+      series: [{ date: '2025-01-20', price: baseline }], regionName: 'X',
     })
 
-    it('is never NaN', () => {
+    it('CPI change in [-20, 50] passes, outside fails', () => {
+      fc.assert(fc.property(fc.double({ min: -20, max: 50, noNaN: true }), (v) => expect(isValidCpi(cpi(v))).toBe(true)))
       fc.assert(
         fc.property(
-          fc.double({ min: 200, max: 5000, noNaN: true }),
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (medianRent, shelterChange) => {
-            const annualRent = medianRent * 12
-            const shelterDollarImpact = Math.round(annualRent * Math.abs(shelterChange) / 100)
-            expect(isNaN(shelterDollarImpact)).toBe(false)
-          }
-        )
-      )
-    })
-
-    it('equals Math.round(medianRent * 12 * Math.abs(shelterChange) / 100)', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 200, max: 5000, noNaN: true }),
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (medianRent, shelterChange) => {
-            const annualRent = medianRent * 12
-            const viaTwoStep = Math.round(annualRent * Math.abs(shelterChange) / 100)
-            const viaOneStep = Math.round(medianRent * 12 * Math.abs(shelterChange) / 100)
-            expect(viaTwoStep).toBe(viaOneStep)
-          }
-        )
-      )
-    })
-  })
-
-  // 2.2e: Sanity range checks
-  // Source: CLAUDE.md — Sanity Ranges section
-  describe('sanity ranges', () => {
-    const isUnemploymentValid = (v: number) => v >= 0 && v <= 25
-    const isCpiChangeValid = (v: number) => v >= -20 && v <= 50
-    const isGasPriceValid = (v: number) => v >= 1 && v <= 10
-
-    it('unemployment values inside 0-25% pass', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 0, max: 25, noNaN: true }),
+          fc.oneof(fc.double({ min: 50.0001, max: 500, noNaN: true }), fc.double({ min: -500, max: -20.0001, noNaN: true })),
           (v) => {
-            expect(isUnemploymentValid(v)).toBe(true)
+            expect(isValidCpi(cpi(v))).toBe(false)
+            expect(isValidCpi(cpi(1, v))).toBe(false)
           }
         )
       )
     })
 
-    it('unemployment values outside 0-25% fail', () => {
+    it('unemployment in [0, 25] passes, outside fails', () => {
+      fc.assert(fc.property(fc.double({ min: 0, max: 25, noNaN: true }), (v) => expect(isValidUnemployment(unemp(v))).toBe(true)))
       fc.assert(
         fc.property(
-          fc.oneof(
-            fc.double({ min: 25.0001, max: 100, noNaN: true }),
-            fc.double({ min: -100, max: -0.0001, noNaN: true })
-          ),
+          fc.oneof(fc.double({ min: 25.0001, max: 100, noNaN: true }), fc.double({ min: -100, max: -0.0001, noNaN: true })),
+          (v) => expect(isValidUnemployment(unemp(v))).toBe(false)
+        )
+      )
+    })
+
+    it('gas $1–$10 passes, outside fails (current or baseline)', () => {
+      fc.assert(fc.property(fc.double({ min: 1, max: 10, noNaN: true }), (v) => expect(isValidGasSeries(gas(v))).toBe(true)))
+      fc.assert(
+        fc.property(
+          fc.oneof(fc.double({ min: 10.0001, max: 100, noNaN: true }), fc.double({ min: 0, max: 0.9999, noNaN: true })),
           (v) => {
-            expect(isUnemploymentValid(v)).toBe(false)
-          }
-        )
-      )
-    })
-
-    it('CPI change values inside -20% to +50% pass', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: -20, max: 50, noNaN: true }),
-          (v) => {
-            expect(isCpiChangeValid(v)).toBe(true)
-          }
-        )
-      )
-    })
-
-    it('CPI change values outside -20% to +50% fail', () => {
-      fc.assert(
-        fc.property(
-          fc.oneof(
-            fc.double({ min: 50.0001, max: 200, noNaN: true }),
-            fc.double({ min: -200, max: -20.0001, noNaN: true })
-          ),
-          (v) => {
-            expect(isCpiChangeValid(v)).toBe(false)
-          }
-        )
-      )
-    })
-
-    it('gas price values inside $1-$10 pass', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 1, max: 10, noNaN: true }),
-          (v) => {
-            expect(isGasPriceValid(v)).toBe(true)
-          }
-        )
-      )
-    })
-
-    it('gas price values outside $1-$10 fail', () => {
-      fc.assert(
-        fc.property(
-          fc.oneof(
-            fc.double({ min: 10.0001, max: 100, noNaN: true }),
-            fc.double({ min: 0.0001, max: 0.9999, noNaN: true })
-          ),
-          (v) => {
-            expect(isGasPriceValid(v)).toBe(false)
-          }
-        )
-      )
-    })
-  })
-
-  // 2.2f: Gas price change rounding
-  // Source: src/lib/api/eia.ts lines 173, 203
-  // Formula: parseFloat((current - baseline).toFixed(3))
-  describe('gas price change rounding', () => {
-    it('result has at most 3 decimal places', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 1.0, max: 10.0, noNaN: true }),
-          fc.double({ min: 1.0, max: 10.0, noNaN: true }),
-          (baseline, current) => {
-            const result = parseFloat((current - baseline).toFixed(3))
-            // Check decimal places: convert to string and count after decimal point
-            const str = result.toString()
-            const decimalIndex = str.indexOf('.')
-            const decimalPlaces = decimalIndex === -1 ? 0 : str.length - decimalIndex - 1
-            expect(decimalPlaces).toBeLessThanOrEqual(3)
-          }
-        )
-      )
-    })
-
-    it('result is never NaN', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 1.0, max: 10.0, noNaN: true }),
-          fc.double({ min: 1.0, max: 10.0, noNaN: true }),
-          (baseline, current) => {
-            const result = parseFloat((current - baseline).toFixed(3))
-            expect(isNaN(result)).toBe(false)
+            expect(isValidGasSeries(gas(v))).toBe(false)
+            expect(isValidGasSeries(gas(3, v))).toBe(false)
           }
         )
       )

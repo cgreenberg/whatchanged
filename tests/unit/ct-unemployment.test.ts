@@ -7,22 +7,28 @@
  */
 
 import { buildSeriesId } from '@/lib/api/bls'
+import { resolveLausArea } from '@/lib/mappings/laus-area'
 
 describe('CT county FIPS → planning region remapping', () => {
   test('Hartford (09003) → Capitol Planning Region (09110)', () => {
     expect(buildSeriesId('09003')).toBe('LAUCN091100000000003')
   })
 
-  test('Fairfield (09001) → Greater Bridgeport Planning Region (09120)', () => {
-    expect(buildSeriesId('09001')).toBe('LAUCN091200000000003')
+  test('Fairfield (09001) → Western CT Planning Region (09190, most housing units)', () => {
+    expect(buildSeriesId('09001')).toBe('LAUCN091900000000003')
+  })
+
+  test('planning-region FIPS pass through unchanged', () => {
+    expect(buildSeriesId('09120')).toBe('LAUCN091200000000003')
+    expect(buildSeriesId('09190')).toBe('LAUCN091900000000003')
   })
 
   test('Windham (09015) → Northeastern CT Planning Region (09150)', () => {
     expect(buildSeriesId('09015')).toBe('LAUCN091500000000003')
   })
 
-  test('Tolland (09013) → Northeastern CT Planning Region (09150)', () => {
-    expect(buildSeriesId('09013')).toBe('LAUCN091500000000003')
+  test('Tolland (09013) → Capitol Planning Region (09110)', () => {
+    expect(buildSeriesId('09013')).toBe('LAUCN091100000000003')
   })
 
   test('New Haven (09009) → South Central CT Planning Region (09170)', () => {
@@ -53,5 +59,21 @@ describe('Non-CT FIPS are unchanged', () => {
 
   test('Cook County IL (17031) is not remapped', () => {
     expect(buildSeriesId('17031')).toBe('LAUCN170310000000003')
+  })
+})
+
+describe('CT LAUS area resolves per zip', () => {
+  test.each([
+    ['06902', '09190'], // Stamford
+    ['06830', '09190'], // Greenwich
+    ['06810', '09190'], // Danbury
+    ['06604', '09120'], // Bridgeport
+  ])('%s → %s', (zip, region) => {
+    expect(resolveLausArea(zip, '09001').fips).toBe(region)
+  })
+
+  test('CT areas carry the planning-region name; other counties do not', () => {
+    expect(resolveLausArea('06902', '09001').name).toBe('Western Connecticut Planning Region')
+    expect(resolveLausArea('98683', '53011')).toEqual({ fips: '53011' })
   })
 })

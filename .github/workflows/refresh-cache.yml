@@ -1,0 +1,52 @@
+name: Refresh data cache (BLS LAUS + CPI, EIA gas → Upstash)
+
+# Preloads every series the site can request, so user requests are cache hits
+# and runtime never has to spend the BLS 500/day quota. Runtime TTLs (BLS 21d,
+# EIA 10d) are longer than this schedule, so keys never expire between runs.
+#   - weekly, Tuesday 15:00 UTC: EIA publishes weekly retail gas Monday evening
+#   - 16th and 28th: after the BLS CPI (~10th–15th) and county LAUS (~end of
+#     month) releases
+# A full run uses ~70 BLS requests and ~28 EIA requests (worst case with 2
+# retries per batch ~210). A scheduled run that starts < 12h after a successful
+# full refresh (Redis key refresh:last-success) is skipped; manual runs can
+# pass force=true.
+
+on:
+  schedule:
+    - cron: '0 15 * * 2'
+    - cron: '0 15 16,28 * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Run even if a full refresh succeeded < 12h ago'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh-cache
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Refresh cache
+        run: npm run cache:refresh -- ${FORCE_FLAG}
+        env:
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          FORCE_FLAG: ${{ inputs.force && '--force' || '' }}

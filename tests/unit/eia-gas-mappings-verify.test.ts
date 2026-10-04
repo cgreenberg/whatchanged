@@ -15,6 +15,7 @@ import {
   COUNTY_EIA_CITY_OVERRIDES,
   STATE_LEVEL_CODES,
   STATE_TO_PAD,
+  PAD_DUOAREA,
 } from '@/lib/mappings/eia-gas'
 
 describe('CPI_TO_EIA_CITY mapping integrity', () => {
@@ -25,7 +26,7 @@ describe('CPI_TO_EIA_CITY mapping integrity', () => {
   })
 
   test('all entries have a non-empty duoarea and label', () => {
-    for (const [code, entry] of Object.entries(CPI_TO_EIA_CITY)) {
+    for (const entry of Object.values(CPI_TO_EIA_CITY)) {
       expect(entry.duoarea).toBeTruthy()
       expect(entry.label).toBeTruthy()
     }
@@ -114,3 +115,21 @@ describe('COUNTY_EIA_CITY_OVERRIDES integrity', () => {
     }
   })
 })
+
+describe('PADD 5 outside California', () => {
+  test('PADD 5 states without an EIA state series use R5XCA, not the CA-dominated R50', () => {
+    expect(PAD_DUOAREA[5]).toBe('R5XCA')
+    for (const st of ['AZ', 'NV', 'OR', 'AK', 'HI']) {
+      expect(STATE_TO_PAD[st]).toBe(5)
+      expect(STATE_LEVEL_CODES[st]).toBeUndefined()
+    }
+    // CA and WA always resolve to their own state series before the PADD tier
+    expect(STATE_LEVEL_CODES.CA.duoarea).toBe('SCA')
+    expect(STATE_LEVEL_CODES.WA.duoarea).toBe('SWA')
+  })
+
+  test('no county override points at R50', () => {
+    expect(Object.values(COUNTY_EIA_CITY_OVERRIDES).filter(o => o.duoarea === 'R50')).toEqual([])
+  })
+})
+

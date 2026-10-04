@@ -1,0 +1,69 @@
+// Cached accessors for each upstream data source. These are the ONLY paths
+// that should call BLS/EIA at runtime: the snapshot and national data (OG
+// image) go through here, and scripts/refresh-cache.ts writes the very same
+// keys (via the *CacheKey helpers + TTLs below) so a runtime request is
+// normally a cache hit. Runtime misses are charged to the daily upstream
+// budget in kv.ts.
+
+import { getCachedOrFetch, TTL_BLS, TTL_EIA, type CachedResult } from '@/lib/cache/kv'
+import type { UnemploymentData, CpiData } from '@/types'
+import { fetchUnemployment } from './bls'
+import { fetchCpiArea, cpiCacheKey, NATIONAL_CPI_AREA } from './bls-cpi'
+import { fetchGasSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
+import { isValidUnemployment, isValidCpi, isValidGasSeries } from './validate'
+
+/** Runtime TTLs (longer than the refresh interval; see kv.ts). */
+export const UNEMPLOYMENT_TTL = TTL_BLS
+export const CPI_TTL = TTL_BLS
+export const GAS_TTL = TTL_EIA
+
+export interface FetchOpts {
+  forceRefresh?: boolean
+}
+
+/** Keyed by LAUS area so every zip in one area (e.g. a CT planning region) shares an entry. */
+export const unemploymentCacheKey = (lausFips: string) => `bls:unemployment:${lausFips}`
+
+export function getUnemploymentCached(lausFips: string, opts: FetchOpts = {}): Promise<CachedResult<UnemploymentData>> {
+  return getCachedOrFetch(unemploymentCacheKey(lausFips), UNEMPLOYMENT_TTL, () => fetchUnemployment(lausFips), {
+    validate: isValidUnemployment,
+    forceRefresh: opts.forceRefresh,
+    budget: 'bls',
+  })
+}
+
+export type CpiArea = { areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 }
+
+export const NATIONAL_CPI: CpiArea = { areaCode: NATIONAL_CPI_AREA, areaName: 'National', tier: 4 }
+
+export function getCpiCached(area: CpiArea, opts: FetchOpts = {}): Promise<CachedResult<CpiData>> {
+  return getCachedOrFetch(cpiCacheKey(area.areaCode), CPI_TTL, () => fetchCpiArea(area), {
+    validate: isValidCpi,
+    forceRefresh: opts.forceRefresh,
+    budget: 'bls',
+  })
+}
+
+export function getGasSeriesCached(lookup: GasLookupResult, opts: FetchOpts = {}): Promise<CachedResult<GasSeriesData>> {
+  return getCachedOrFetch(lookup.cacheKey, GAS_TTL, () => fetchGasSeries(lookup.duoarea), {
+    validate: isValidGasSeries,
+    forceRefresh: opts.forceRefresh,
+    budget: 'eia',
+  })
+}
+
+export const NATIONAL_GAS_LOOKUP = describeDuoarea('NUS')
+
+export function getNationalGasCached(opts: FetchOpts = {}): Promise<CachedResult<GasSeriesData>> {
+  return getGasSeriesCached(NATIONAL_GAS_LOOKUP, opts)
+}
+
+/** Resolve a promise to its value, or null on rejection (logging the error). */
+export async function settle<T>(p: Promise<T>, label: string): Promise<T | null> {
+  try {
+    return await p
+  } catch (e) {
+    console.error(`[${label}] unavailable:`, e instanceof Error ? e.message : e)
+    return null
+  }
+}

@@ -59,39 +59,53 @@ export default function AboutPage() {
             </thead>
             <tbody>
               <tr className="border-b border-zinc-800">
-                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Unemployment Rate</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS Local Area Unemployment Statistics</td>
-                <td className="py-3 pr-4 whitespace-nowrap">County</td>
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Gas Prices (regular)</td>
+                <td className="py-3 pr-4 text-zinc-300">EIA Weekly Retail Gasoline Prices, regular grade</td>
+                <td className="py-3 pr-4">Closest EIA city, state, or PADD region</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Weekly</td>
+                <td className="py-3">Baseline: last weekly reading on or before Jan 20, 2025. Not seasonally adjusted. EIA publishes no Hawaii or Alaska series; those zips show the West Coast (excl. California) average, and local prices are typically higher (labeled on the card).</td>
+              </tr>
+              <tr className="border-b border-zinc-800">
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Rent (new leases)</td>
+                <td className="py-3 pr-4 text-zinc-300">Zillow Observed Rent Index (ZORI)</td>
+                <td className="py-3 pr-4">County</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Not seasonally adjusted</td>
+                <td className="py-3">Asking rents on new leases. The % change since January 2025 is seasonally adjusted by whatchanged. The $/mo figure is that adjusted % expressed in dollars at today&apos;s typical rent (current rent − current rent ÷ (1 + %)), so it removes the usual seasonal rise and is not the raw difference between two months&apos; listed rents. The typical asking rent is shown separately, as listed for its month.</td>
+              </tr>
+              <tr className="border-b border-zinc-800">
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Shelter Prices</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index (shelter)</td>
+                <td className="py-3 pr-4">Metro area, Census division, or region</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
+                <td className="py-3">All tenants (including existing leases) and homeowners&apos; equivalent rent; lags new-lease asking rents by about a year, so it can move differently from the Rent card. Shown as a chart, and as the housing card where county rent isn&apos;t available. $ estimate uses local Census median rent (none where only national CPI is available, e.g. Puerto Rico). Not seasonally adjusted.</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Grocery Prices</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index (food at home)</td>
+                <td className="py-3 pr-4">Metro area, Census division, or region</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Food at home category</td>
-              </tr>
-              <tr className="border-b border-zinc-800">
-                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Shelter Costs</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Shelter sub-index</td>
+                <td className="py-3">$ estimate: $6,000/yr typical grocery spend × % change. Not seasonally adjusted.</td>
               </tr>
               <tr className="border-b border-zinc-800">
                 <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Energy Costs</td>
-                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Metro area</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Consumer Price Index (energy)</td>
+                <td className="py-3 pr-4">Metro area, Census division, or region</td>
                 <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
-                <td className="py-3">Energy sub-index</td>
+                <td className="py-3">BLS &ldquo;Energy&rdquo; combines household energy (electricity and utility natural gas, plus fuel oil) with motor fuel (gasoline), which is roughly half its weight, so it moves with gas prices as well as utility bills. Not seasonally adjusted.</td>
+              </tr>
+              <tr className="border-b border-zinc-800">
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Unemployment Rate</td>
+                <td className="py-3 pr-4 text-zinc-300">BLS Local Area Unemployment Statistics</td>
+                <td className="py-3 pr-4">County (Connecticut: planning region)</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Monthly</td>
+                <td className="py-3">Headline change: the average of the latest 3 complete months vs the December 2024 – February 2025 average, both seasonally adjusted by whatchanged; the newest (preliminary) month is excluded. Chart: monthly county and U.S. rates as published, not seasonally adjusted, with the preliminary month marked. Counties with unusual values carry a note.</td>
               </tr>
               <tr>
-                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Gas Prices</td>
-                <td className="py-3 pr-4 text-zinc-300">EIA Weekly Retail Gasoline Prices</td>
-                <td className="py-3 pr-4 whitespace-nowrap">State-level</td>
-                <td className="py-3 pr-4 whitespace-nowrap">Weekly</td>
-                <td className="py-3">—</td>
+                <td className="py-3 pr-4 font-medium text-white whitespace-nowrap">Tariff Impact</td>
+                <td className="py-3 pr-4 text-zinc-300">Yale Budget Lab estimate</td>
+                <td className="py-3 pr-4">Zip, city, or county (Census ACS median household income)</td>
+                <td className="py-3 pr-4 whitespace-nowrap">Static</td>
+                <td className="py-3">Estimate: median household income × 2.05%. Not a measured change. PO-box zips without Census data borrow the income of the largest residential zip in the same city or county (labeled); zips with no usable zip-level figure use their county&apos;s ACS median (labeled county); where no local figure exists, the U.S. median is used and labeled national.</td>
               </tr>
             </tbody>
           </table>
@@ -110,11 +124,16 @@ export default function AboutPage() {
           className="text-zinc-300 text-sm leading-relaxed"
           style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
         >
-          Year-over-year percentage changes are calculated by comparing the most recent available
-          data point to the value from January 20, 2025 — the date of the presidential
-          inauguration. National comparison overlays use the same BLS and EIA series at the
-          national level, allowing you to see whether local trends diverge from the country as a
-          whole.
+          Changes compare the most recent available data with a baseline tied to January 20, 2025,
+          the date of the presidential inauguration. Each source uses the closest baseline it
+          publishes: for gas (EIA, weekly), the last weekly reading on or before January 20, 2025;
+          for BLS consumer prices, the January 2025 index, or the nearest earlier month for areas
+          BLS doesn&apos;t publish every month (for example December 2024); for county rent and home
+          values (Zillow), January 2025; for the unemployment headline, the December 2024 –
+          February 2025 average compared with the latest 3 complete months, seasonally adjusted by
+          whatchanged. Every card shows its source, geography, baseline, the date of its latest
+          data, and whether the figures are seasonally adjusted. National comparisons use the same
+          BLS and EIA series at the national level over the same months as the local figure.
         </p>
       </div>
 
@@ -136,36 +155,21 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Data Audit */}
+      {/* Data Checks */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
         <h2
           className="text-2xl text-white mb-4"
           style={{ fontFamily: 'var(--font-bebas, sans-serif)' }}
         >
-          Data Audit
+          Data Checks
         </h2>
-        <div
-          className="text-zinc-300 text-sm leading-relaxed space-y-3"
+        <p
+          className="text-zinc-300 text-sm leading-relaxed"
           style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
         >
-          <p>
-            Every week, an automated audit verifies the data on this site against the original
-            government sources. It tests 10 random zip codes, checks that every number matches
-            BLS, EIA, and Census data, re-derives all calculations, and takes screenshots as
-            evidence.
-          </p>
-          <p>
-            The audit checks API correctness, display accuracy, internal math, and
-            cross-references gas prices against AAA as an independent source.
-          </p>
-        </div>
-        <a
-          href="/audit-report.html"
-          className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-4"
-          style={{ fontFamily: 'var(--font-inter, sans-serif)' }}
-        >
-          View Latest Audit Report
-        </a>
+          Data on this site is checked by automated tests against the government source APIs
+          (BLS and EIA).
+        </p>
       </div>
 
       {/* About This Project */}
@@ -197,8 +201,8 @@ export default function AboutPage() {
             {buildDate}
           </p>
           <p>
-            All BLS and EIA data used on this site is public domain and freely available from the
-            respective government agencies.
+            All BLS, EIA, and Census data used on this site is public domain and freely available from
+            the respective government agencies. Rent and home value data come from Zillow Research.
           </p>
         </div>
       </div>

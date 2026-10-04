@@ -1,0 +1,6691 @@
+{
+ "zip": "98683",
+ "location": {
+  "zip": "98683",
+  "countyFips": "53011",
+  "countyName": "Clark County",
+  "stateName": "Washington",
+  "stateAbbr": "WA",
+  "cityName": "Vancouver"
+ },
+ "unemployment": {
+  "data": {
+   "current": 3.9,
+   "baseline": 4.6,
+   "change": -0.7,
+   "series": [
+    {
+     "date": "2016-01",
+     "rate": 6.2
+    },
+    {
+     "date": "2016-02",
+     "rate": 6.4
+    },
+    {
+     "date": "2016-03",
+     "rate": 6.5
+    },
+    {
+     "date": "2016-04",
+     "rate": 6.1
+    },
+    {
+     "date": "2016-05",
+     "rate": 5.6
+    },
+    {
+     "date": "2016-06",
+     "rate": 6.2
+    },
+    {
+     "date": "2016-07",
+     "rate": 6.1
+    },
+    {
+     "date": "2016-08",
+     "rate": 6.5
+    },
+    {
+     "date": "2016-09",
+     "rate": 5.6
+    },
+    {
+     "date": "2016-10",
+     "rate": 5.8
+    },
+    {
+     "date": "2016-11",
+     "rate": 5.3
+    },
+    {
+     "date": "2016-12",
+     "rate": 5.5
+    },
+    {
+     "date": "2017-01",
+     "rate": 6
+    },
+    {
+     "date": "2017-02",
+     "rate": 5.7
+    },
+    {
+     "date": "2017-03",
+     "rate": 5.4
+    },
+    {
+     "date": "2017-04",
+     "rate": 4.7
+    },
+    {
+     "date": "2017-05",
+     "rate": 4.6
+    },
+    {
+     "date": "2017-06",
+     "rate": 4.4
+    },
+    {
+     "date": "2017-07",
+     "rate": 4.9
+    },
+    {
+     "date": "2017-08",
+     "rate": 5
+    },
+    {
+     "date": "2017-09",
+     "rate": 4.7
+    },
+    {
+     "date": "2017-10",
+     "rate": 4.5
+    },
+    {
+     "date": "2017-11",
+     "rate": 4.8
+    },
+    {
+     "date": "2017-12",
+     "rate": 5.2
+    },
+    {
+     "date": "2018-01",
+     "rate": 5.2
+    },
+    {
+     "date": "2018-02",
+     "rate": 5.6
+    },
+    {
+     "date": "2018-03",
+     "rate": 5.4
+    },
+    {
+     "date": "2018-04",
+     "rate": 4.9
+    },
+    {
+     "date": "2018-05",
+     "rate": 4.5
+    },
+    {
+     "date": "2018-06",
+     "rate": 4.7
+    },
+    {
+     "date": "2018-07",
+     "rate": 4.7
+    },
+    {
+     "date": "2018-08",
+     "rate": 4.9
+    },
+    {
+     "date": "2018-09",
+     "rate": 4.2
+    },
+    {
+     "date": "2018-10",
+     "rate": 4.4
+    },
+    {
+     "date": "2018-11",
+     "rate": 4.5
+    },
+    {
+     "date": "2018-12",
+     "rate": 5.1
+    },
+    {
+     "date": "2019-01",
+     "rate": 5.4
+    },
+    {
+     "date": "2019-02",
+     "rate": 5.5
+    },
+    {
+     "date": "2019-03",
+     "rate": 5.3
+    },
+    {
+     "date": "2019-04",
+     "rate": 4.9
+    },
+    {
+     "date": "2019-05",
+     "rate": 4.6
+    },
+    {
+     "date": "2019-06",
+     "rate": 4.9
+    },
+    {
+     "date": "2019-07",
+     "rate": 5
+    },
+    {
+     "date": "2019-08",
+     "rate": 5.1
+    },
+    {
+     "date": "2019-09",
+     "rate": 4.2
+    },
+    {
+     "date": "2019-10",
+     "rate": 4.4
+    },
+    {
+     "date": "2019-11",
+     "rate": 4.1
+    },
+    {
+     "date": "2019-12",
+     "rate": 4
+    },
+    {
+     "date": "2020-01",
+     "rate": 4.6
+    },
+    {
+     "date": "2020-02",
+     "rate": 4.4
+    },
+    {
+     "date": "2020-03",
+     "rate": 4.7
+    },
+    {
+     "date": "2020-04",
+     "rate": 13.8
+    },
+    {
+     "date": "2020-05",
+     "rate": 13
+    },
+    {
+     "date": "2020-06",
+     "rate": 10.7
+    },
+    {
+     "date": "2020-07",
+     "rate": 10.5
+    },
+    {
+     "date": "2020-08",
+     "rate": 8.5
+    },
+    {
+     "date": "2020-09",
+     "rate": 7.5
+    },
+    {
+     "date": "2020-10",
+     "rate": 6.4
+    },
+    {
+     "date": "2020-11",
+     "rate": 6.4
+    },
+    {
+     "date": "2020-12",
+     "rate": 6.7
+    },
+    {
+     "date": "2021-01",
+     "rate": 6.5
+    },
+    {
+     "date": "2021-02",
+     "rate": 6.8
+    },
+    {
+     "date": "2021-03",
+     "rate": 6.1
+    },
+    {
+     "date": "2021-04",
+     "rate": 5
+    },
+    {
+     "date": "2021-05",
+     "rate": 4.8
+    },
+    {
+     "date": "2021-06",
+     "rate": 4.6
+    },
+    {
+     "date": "2021-07",
+     "rate": 4.8
+    },
+    {
+     "date": "2021-08",
+     "rate": 5
+    },
+    {
+     "date": "2021-09",
+     "rate": 4.3
+    },
+    {
+     "date": "2021-10",
+     "rate": 4
+    },
+    {
+     "date": "2021-11",
+     "rate": 3.7
+    },
+    {
+     "date": "2021-12",
+     "rate": 3.9
+    },
+    {
+     "date": "2022-01",
+     "rate": 4.5
+    },
+    {
+     "date": "2022-02",
+     "rate": 4.4
+    },
+    {
+     "date": "2022-03",
+     "rate": 4.3
+    },
+    {
+     "date": "2022-04",
+     "rate": 3.5
+    },
+    {
+     "date": "2022-05",
+     "rate": 3.8
+    },
+    {
+     "date": "2022-06",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-07",
+     "rate": 3.4
+    },
+    {
+     "date": "2022-08",
+     "rate": 4.4
+    },
+    {
+     "date": "2022-09",
+     "rate": 3.2
+    },
+    {
+     "date": "2022-10",
+     "rate": 3.5
+    },
+    {
+     "date": "2022-11",
+     "rate": 4
+    },
+    {
+     "date": "2022-12",
+     "rate": 4
+    },
+    {
+     "date": "2023-01",
+     "rate": 4.1
+    },
+    {
+     "date": "2023-02",
+     "rate": 4.7
+    },
+    {
+     "date": "2023-03",
+     "rate": 4
+    },
+    {
+     "date": "2023-04",
+     "rate": 3.2
+    },
+    {
+     "date": "2023-05",
+     "rate": 3.1
+    },
+    {
+     "date": "2023-06",
+     "rate": 2.7
+    },
+    {
+     "date": "2023-07",
+     "rate": 3.8
+    },
+    {
+     "date": "2023-08",
+     "rate": 4.5
+    },
+    {
+     "date": "2023-09",
+     "rate": 3.8
+    },
+    {
+     "date": "2023-10",
+     "rate": 4.1
+    },
+    {
+     "date": "2023-11",
+     "rate": 3.9
+    },
+    {
+     "date": "2023-12",
+     "rate": 4.7
+    },
+    {
+     "date": "2024-01",
+     "rate": 4.7
+    },
+    {
+     "date": "2024-02",
+     "rate": 5.2
+    },
+    {
+     "date": "2024-03",
+     "rate": 4.6
+    },
+    {
+     "date": "2024-04",
+     "rate": 3.8
+    },
+    {
+     "date": "2024-05",
+     "rate": 4.2
+    },
+    {
+     "date": "2024-06",
+     "rate": 3.7
+    },
+    {
+     "date": "2024-07",
+     "rate": 4.8
+    },
+    {
+     "date": "2024-08",
+     "rate": 4.7
+    },
+    {
+     "date": "2024-09",
+     "rate": 3.7
+    },
+    {
+     "date": "2024-10",
+     "rate": 4
+    },
+    {
+     "date": "2024-11",
+     "rate": 4.2
+    },
+    {
+     "date": "2024-12",
+     "rate": 4.4
+    },
+    {
+     "date": "2025-01",
+     "rate": 4.6
+    },
+    {
+     "date": "2025-02",
+     "rate": 5.1
+    },
+    {
+     "date": "2025-03",
+     "rate": 4.5
+    },
+    {
+     "date": "2025-04",
+     "rate": 4.1
+    },
+    {
+     "date": "2025-05",
+     "rate": 4.3
+    },
+    {
+     "date": "2025-06",
+     "rate": 3.8
+    },
+    {
+     "date": "2025-07",
+     "rate": 4.7
+    },
+    {
+     "date": "2025-08",
+     "rate": 4.8
+    },
+    {
+     "date": "2025-09",
+     "rate": 4.1
+    },
+    {
+     "date": "2025-11",
+     "rate": 4.8
+    },
+    {
+     "date": "2025-12",
+     "rate": 5.1
+    },
+    {
+     "date": "2026-01",
+     "rate": 5
+    },
+    {
+     "date": "2026-02",
+     "rate": 5.3
+    },
+    {
+     "date": "2026-03",
+     "rate": 5
+    },
+    {
+     "date": "2026-04",
+     "rate": 5.1
+    },
+    {
+     "date": "2026-05",
+     "rate": 4.8
+    },
+    {
+     "date": "2026-06",
+     "rate": 4.4
+    },
+    {
+     "date": "2026-07",
+     "rate": 3.9
+    }
+   ],
+   "countyFips": "53011",
+   "seriesId": "LAUCN530110000000003",
+   "nationalSeries": [
+    {
+     "date": "2016-01",
+     "rate": 4.8
+    },
+    {
+     "date": "2016-02",
+     "rate": 4.9
+    },
+    {
+     "date": "2016-03",
+     "rate": 5
+    },
+    {
+     "date": "2016-04",
+     "rate": 5.1
+    },
+    {
+     "date": "2016-05",
+     "rate": 4.8
+    },
+    {
+     "date": "2016-06",
+     "rate": 4.9
+    },
+    {
+     "date": "2016-07",
+     "rate": 4.8
+    },
+    {
+     "date": "2016-08",
+     "rate": 4.9
+    },
+    {
+     "date": "2016-09",
+     "rate": 5
+    },
+    {
+     "date": "2016-10",
+     "rate": 4.9
+    },
+    {
+     "date": "2016-11",
+     "rate": 4.7
+    },
+    {
+     "date": "2016-12",
+     "rate": 4.7
+    },
+    {
+     "date": "2017-01",
+     "rate": 4.7
+    },
+    {
+     "date": "2017-02",
+     "rate": 4.6
+    },
+    {
+     "date": "2017-03",
+     "rate": 4.4
+    },
+    {
+     "date": "2017-04",
+     "rate": 4.4
+    },
+    {
+     "date": "2017-05",
+     "rate": 4.4
+    },
+    {
+     "date": "2017-06",
+     "rate": 4.3
+    },
+    {
+     "date": "2017-07",
+     "rate": 4.3
+    },
+    {
+     "date": "2017-08",
+     "rate": 4.4
+    },
+    {
+     "date": "2017-09",
+     "rate": 4.3
+    },
+    {
+     "date": "2017-10",
+     "rate": 4.2
+    },
+    {
+     "date": "2017-11",
+     "rate": 4.2
+    },
+    {
+     "date": "2017-12",
+     "rate": 4.1
+    },
+    {
+     "date": "2018-01",
+     "rate": 4
+    },
+    {
+     "date": "2018-02",
+     "rate": 4.1
+    },
+    {
+     "date": "2018-03",
+     "rate": 4
+    },
+    {
+     "date": "2018-04",
+     "rate": 4
+    },
+    {
+     "date": "2018-05",
+     "rate": 3.8
+    },
+    {
+     "date": "2018-06",
+     "rate": 4
+    },
+    {
+     "date": "2018-07",
+     "rate": 3.8
+    },
+    {
+     "date": "2018-08",
+     "rate": 3.8
+    },
+    {
+     "date": "2018-09",
+     "rate": 3.7
+    },
+    {
+     "date": "2018-10",
+     "rate": 3.8
+    },
+    {
+     "date": "2018-11",
+     "rate": 3.8
+    },
+    {
+     "date": "2018-12",
+     "rate": 3.9
+    },
+    {
+     "date": "2019-01",
+     "rate": 4
+    },
+    {
+     "date": "2019-02",
+     "rate": 3.8
+    },
+    {
+     "date": "2019-03",
+     "rate": 3.8
+    },
+    {
+     "date": "2019-04",
+     "rate": 3.7
+    },
+    {
+     "date": "2019-05",
+     "rate": 3.6
+    },
+    {
+     "date": "2019-06",
+     "rate": 3.6
+    },
+    {
+     "date": "2019-07",
+     "rate": 3.7
+    },
+    {
+     "date": "2019-08",
+     "rate": 3.6
+    },
+    {
+     "date": "2019-09",
+     "rate": 3.5
+    },
+    {
+     "date": "2019-10",
+     "rate": 3.6
+    },
+    {
+     "date": "2019-11",
+     "rate": 3.6
+    },
+    {
+     "date": "2019-12",
+     "rate": 3.6
+    },
+    {
+     "date": "2020-01",
+     "rate": 3.6
+    },
+    {
+     "date": "2020-02",
+     "rate": 3.5
+    },
+    {
+     "date": "2020-03",
+     "rate": 4.4
+    },
+    {
+     "date": "2020-04",
+     "rate": 14.8
+    },
+    {
+     "date": "2020-05",
+     "rate": 13.2
+    },
+    {
+     "date": "2020-06",
+     "rate": 11
+    },
+    {
+     "date": "2020-07",
+     "rate": 10.2
+    },
+    {
+     "date": "2020-08",
+     "rate": 8.4
+    },
+    {
+     "date": "2020-09",
+     "rate": 7.8
+    },
+    {
+     "date": "2020-10",
+     "rate": 6.9
+    },
+    {
+     "date": "2020-11",
+     "rate": 6.7
+    },
+    {
+     "date": "2020-12",
+     "rate": 6.7
+    },
+    {
+     "date": "2021-01",
+     "rate": 6.4
+    },
+    {
+     "date": "2021-02",
+     "rate": 6.2
+    },
+    {
+     "date": "2021-03",
+     "rate": 6.1
+    },
+    {
+     "date": "2021-04",
+     "rate": 6.1
+    },
+    {
+     "date": "2021-05",
+     "rate": 5.8
+    },
+    {
+     "date": "2021-06",
+     "rate": 5.9
+    },
+    {
+     "date": "2021-07",
+     "rate": 5.4
+    },
+    {
+     "date": "2021-08",
+     "rate": 5.1
+    },
+    {
+     "date": "2021-09",
+     "rate": 4.7
+    },
+    {
+     "date": "2021-10",
+     "rate": 4.5
+    },
+    {
+     "date": "2021-11",
+     "rate": 4.1
+    },
+    {
+     "date": "2021-12",
+     "rate": 3.9
+    },
+    {
+     "date": "2022-01",
+     "rate": 4
+    },
+    {
+     "date": "2022-02",
+     "rate": 3.9
+    },
+    {
+     "date": "2022-03",
+     "rate": 3.7
+    },
+    {
+     "date": "2022-04",
+     "rate": 3.7
+    },
+    {
+     "date": "2022-05",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-06",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-07",
+     "rate": 3.5
+    },
+    {
+     "date": "2022-08",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-09",
+     "rate": 3.5
+    },
+    {
+     "date": "2022-10",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-11",
+     "rate": 3.6
+    },
+    {
+     "date": "2022-12",
+     "rate": 3.5
+    },
+    {
+     "date": "2023-01",
+     "rate": 3.5
+    },
+    {
+     "date": "2023-02",
+     "rate": 3.6
+    },
+    {
+     "date": "2023-03",
+     "rate": 3.5
+    },
+    {
+     "date": "2023-04",
+     "rate": 3.4
+    },
+    {
+     "date": "2023-05",
+     "rate": 3.6
+    },
+    {
+     "date": "2023-06",
+     "rate": 3.6
+    },
+    {
+     "date": "2023-07",
+     "rate": 3.5
+    },
+    {
+     "date": "2023-08",
+     "rate": 3.7
+    },
+    {
+     "date": "2023-09",
+     "rate": 3.7
+    },
+    {
+     "date": "2023-10",
+     "rate": 3.9
+    },
+    {
+     "date": "2023-11",
+     "rate": 3.7
+    },
+    {
+     "date": "2023-12",
+     "rate": 3.8
+    },
+    {
+     "date": "2024-01",
+     "rate": 3.7
+    },
+    {
+     "date": "2024-02",
+     "rate": 3.9
+    },
+    {
+     "date": "2024-03",
+     "rate": 3.9
+    },
+    {
+     "date": "2024-04",
+     "rate": 3.9
+    },
+    {
+     "date": "2024-05",
+     "rate": 3.9
+    },
+    {
+     "date": "2024-06",
+     "rate": 4.1
+    },
+    {
+     "date": "2024-07",
+     "rate": 4.2
+    },
+    {
+     "date": "2024-08",
+     "rate": 4.2
+    },
+    {
+     "date": "2024-09",
+     "rate": 4.1
+    },
+    {
+     "date": "2024-10",
+     "rate": 4.1
+    },
+    {
+     "date": "2024-11",
+     "rate": 4.2
+    },
+    {
+     "date": "2024-12",
+     "rate": 4.1
+    },
+    {
+     "date": "2025-01",
+     "rate": 4
+    },
+    {
+     "date": "2025-02",
+     "rate": 4.2
+    },
+    {
+     "date": "2025-03",
+     "rate": 4.2
+    },
+    {
+     "date": "2025-04",
+     "rate": 4.2
+    },
+    {
+     "date": "2025-05",
+     "rate": 4.3
+    },
+    {
+     "date": "2025-06",
+     "rate": 4.1
+    },
+    {
+     "date": "2025-07",
+     "rate": 4.3
+    },
+    {
+     "date": "2025-08",
+     "rate": 4.3
+    },
+    {
+     "date": "2025-09",
+     "rate": 4.4
+    },
+    {
+     "date": "2025-11",
+     "rate": 4.5
+    },
+    {
+     "date": "2025-12",
+     "rate": 4.4
+    },
+    {
+     "date": "2026-01",
+     "rate": 4.3
+    },
+    {
+     "date": "2026-02",
+     "rate": 4.4
+    },
+    {
+     "date": "2026-03",
+     "rate": 4.3
+    },
+    {
+     "date": "2026-04",
+     "rate": 4.3
+    },
+    {
+     "date": "2026-05",
+     "rate": 4.3
+    },
+    {
+     "date": "2026-06",
+     "rate": 4.2
+    },
+    {
+     "date": "2026-07",
+     "rate": 4.1
+    },
+    {
+     "date": "2026-08",
+     "rate": 4.1
+    }
+   ],
+   "latestPeriod": "2026-07",
+   "baselinePeriod": "2025-01",
+   "nationalSeriesId": "LNU04000000"
+  },
+  "error": null,
+  "fetchedAt": "2026-10-02T19:35:22.603Z",
+  "sourceId": "bls-laus"
+ },
+ "cpi": {
+  "data": {
+   "groceriesCurrent": 138.497,
+   "groceriesBaseline": 133.145,
+   "groceriesChange": 4.0,
+   "shelterChange": 5.3,
+   "series": [
+    {
+     "date": "2017-12",
+     "groceries": 100,
+     "shelter": 100,
+     "energy": 100
+    },
+    {
+     "date": "2018-01",
+     "groceries": 100.436,
+     "shelter": 100.295,
+     "energy": 101.813
+    },
+    {
+     "date": "2018-02",
+     "groceries": 100.191,
+     "shelter": 100.688,
+     "energy": 104.505
+    },
+    {
+     "date": "2018-03",
+     "groceries": 100.314,
+     "shelter": 101.133,
+     "energy": 105.746
+    },
+    {
+     "date": "2018-04",
+     "groceries": 100.595,
+     "shelter": 101.425,
+     "energy": 108.934
+    },
+    {
+     "date": "2018-05",
+     "groceries": 100.398,
+     "shelter": 101.903,
+     "energy": 112.186
+    },
+    {
+     "date": "2018-06",
+     "groceries": 99.867,
+     "shelter": 102.404,
+     "energy": 112.979
+    },
+    {
+     "date": "2018-07",
+     "groceries": 100.552,
+     "shelter": 102.729,
+     "energy": 112.351
+    },
+    {
+     "date": "2018-08",
+     "groceries": 100.791,
+     "shelter": 103.158,
+     "energy": 112.285
+    },
+    {
+     "date": "2018-09",
+     "groceries": 100.558,
+     "shelter": 103.52,
+     "energy": 111.906
+    },
+    {
+     "date": "2018-10",
+     "groceries": 100.784,
+     "shelter": 103.649,
+     "energy": 114.871
+    },
+    {
+     "date": "2018-11",
+     "groceries": 100.771,
+     "shelter": 103.848,
+     "energy": 111.681
+    },
+    {
+     "date": "2018-12",
+     "groceries": 101.255,
+     "shelter": 104.109,
+     "energy": 107.825
+    },
+    {
+     "date": "2019-01",
+     "groceries": 101.734,
+     "shelter": 104.623,
+     "energy": 104.586
+    },
+    {
+     "date": "2019-02",
+     "groceries": 102.177,
+     "shelter": 105.096,
+     "energy": 103.609
+    },
+    {
+     "date": "2019-03",
+     "groceries": 102.185,
+     "shelter": 105.545,
+     "energy": 105.973
+    },
+    {
+     "date": "2019-04",
+     "groceries": 102.335,
+     "shelter": 106.177,
+     "energy": 115.097
+    },
+    {
+     "date": "2019-05",
+     "groceries": 102.23,
+     "shelter": 106.419,
+     "energy": 118.659
+    },
+    {
+     "date": "2019-06",
+     "groceries": 101.806,
+     "shelter": 106.863,
+     "energy": 115.228
+    },
+    {
+     "date": "2019-07",
+     "groceries": 102.205,
+     "shelter": 107.239,
+     "energy": 113.644
+    },
+    {
+     "date": "2019-08",
+     "groceries": 101.769,
+     "shelter": 107.541,
+     "energy": 111.052
+    },
+    {
+     "date": "2019-09",
+     "groceries": 102.229,
+     "shelter": 107.699,
+     "energy": 112.069
+    },
+    {
+     "date": "2019-10",
+     "groceries": 102.076,
+     "shelter": 107.967,
+     "energy": 119.178
+    },
+    {
+     "date": "2019-11",
+     "groceries": 101.751,
+     "shelter": 108.271,
+     "energy": 116.728
+    },
+    {
+     "date": "2019-12",
+     "groceries": 101.753,
+     "shelter": 108.445,
+     "energy": 111.833
+    },
+    {
+     "date": "2020-01",
+     "groceries": 101.989,
+     "shelter": 108.674,
+     "energy": 111.01
+    },
+    {
+     "date": "2020-02",
+     "groceries": 102.949,
+     "shelter": 109.182,
+     "energy": 110.291
+    },
+    {
+     "date": "2020-03",
+     "groceries": 103.645,
+     "shelter": 109.185,
+     "energy": 107.144
+    },
+    {
+     "date": "2020-04",
+     "groceries": 106.127,
+     "shelter": 109.288,
+     "energy": 98.859
+    },
+    {
+     "date": "2020-05",
+     "groceries": 107.111,
+     "shelter": 109.528,
+     "energy": 98.297
+    },
+    {
+     "date": "2020-06",
+     "groceries": 107.642,
+     "shelter": 109.549,
+     "energy": 101.408
+    },
+    {
+     "date": "2020-07",
+     "groceries": 106.676,
+     "shelter": 109.865,
+     "energy": 104.02
+    },
+    {
+     "date": "2020-08",
+     "groceries": 107.597,
+     "shelter": 109.896,
+     "energy": 105.269
+    },
+    {
+     "date": "2020-09",
+     "groceries": 107.193,
+     "shelter": 109.734,
+     "energy": 105.893
+    },
+    {
+     "date": "2020-10",
+     "groceries": 107.557,
+     "shelter": 109.89,
+     "energy": 105.88
+    },
+    {
+     "date": "2020-11",
+     "groceries": 106.291,
+     "shelter": 109.826,
+     "energy": 104.916
+    },
+    {
+     "date": "2020-12",
+     "groceries": 107.171,
+     "shelter": 109.781,
+     "energy": 105.455
+    },
+    {
+     "date": "2021-01",
+     "groceries": 106.709,
+     "shelter": 110.076,
+     "energy": 107.697
+    },
+    {
+     "date": "2021-02",
+     "groceries": 107.397,
+     "shelter": 110.222,
+     "energy": 111.523
+    },
+    {
+     "date": "2021-03",
+     "groceries": 107.494,
+     "shelter": 110.4,
+     "energy": 118.502
+    },
+    {
+     "date": "2021-04",
+     "groceries": 108.442,
+     "shelter": 110.896,
+     "energy": 121.541
+    },
+    {
+     "date": "2021-05",
+     "groceries": 109.086,
+     "shelter": 110.978,
+     "energy": 125.312
+    },
+    {
+     "date": "2021-06",
+     "groceries": 109.769,
+     "shelter": 111.339,
+     "energy": 127.304
+    },
+    {
+     "date": "2021-07",
+     "groceries": 110.976,
+     "shelter": 111.859,
+     "energy": 129.853
+    },
+    {
+     "date": "2021-08",
+     "groceries": 111.168,
+     "shelter": 112.01,
+     "energy": 131.218
+    },
+    {
+     "date": "2021-09",
+     "groceries": 112.338,
+     "shelter": 112.286,
+     "energy": 131.856
+    },
+    {
+     "date": "2021-10",
+     "groceries": 113.61,
+     "shelter": 112.748,
+     "energy": 134.9
+    },
+    {
+     "date": "2021-11",
+     "groceries": 114.714,
+     "shelter": 113.234,
+     "energy": 137.105
+    },
+    {
+     "date": "2021-12",
+     "groceries": 114.823,
+     "shelter": 113.541,
+     "energy": 137.203
+    },
+    {
+     "date": "2022-01",
+     "groceries": 115.986,
+     "shelter": 114.119,
+     "energy": 140.81
+    },
+    {
+     "date": "2022-02",
+     "groceries": 117.55,
+     "shelter": 114.67,
+     "energy": 141.438
+    },
+    {
+     "date": "2022-03",
+     "groceries": 119.641,
+     "shelter": 115.086,
+     "energy": 159.314
+    },
+    {
+     "date": "2022-04",
+     "groceries": 120.667,
+     "shelter": 115.716,
+     "energy": 160.169
+    },
+    {
+     "date": "2022-05",
+     "groceries": 122.161,
+     "shelter": 116.237,
+     "energy": 166.089
+    },
+    {
+     "date": "2022-06",
+     "groceries": 123.905,
+     "shelter": 116.866,
+     "energy": 174.702
+    },
+    {
+     "date": "2022-07",
+     "groceries": 124.698,
+     "shelter": 117.388,
+     "energy": 167.981
+    },
+    {
+     "date": "2022-08",
+     "groceries": 125.539,
+     "shelter": 118.189,
+     "energy": 159.41
+    },
+    {
+     "date": "2022-09",
+     "groceries": 126.255,
+     "shelter": 118.873,
+     "energy": 160.513
+    },
+    {
+     "date": "2022-10",
+     "groceries": 126.465,
+     "shelter": 119.491,
+     "energy": 169.703
+    },
+    {
+     "date": "2022-11",
+     "groceries": 126.331,
+     "shelter": 120.06,
+     "energy": 157.857
+    },
+    {
+     "date": "2022-12",
+     "groceries": 126.39,
+     "shelter": 120.787,
+     "energy": 145.451
+    },
+    {
+     "date": "2023-01",
+     "groceries": 126.577,
+     "shelter": 121.781,
+     "energy": 154.272
+    },
+    {
+     "date": "2023-02",
+     "groceries": 127.376,
+     "shelter": 122.526,
+     "energy": 150.588
+    },
+    {
+     "date": "2023-03",
+     "groceries": 127.415,
+     "shelter": 123.338,
+     "energy": 150.681
+    },
+    {
+     "date": "2023-04",
+     "groceries": 126.945,
+     "shelter": 123.75,
+     "energy": 150.728
+    },
+    {
+     "date": "2023-05",
+     "groceries": 127.109,
+     "shelter": 124.342,
+     "energy": 151.34
+    },
+    {
+     "date": "2023-06",
+     "groceries": 128.045,
+     "shelter": 124.981,
+     "energy": 153.565
+    },
+    {
+     "date": "2023-07",
+     "groceries": 128.188,
+     "shelter": 125.146,
+     "energy": 156.572
+    },
+    {
+     "date": "2023-08",
+     "groceries": 128.948,
+     "shelter": 125.554,
+     "energy": 160.916
+    },
+    {
+     "date": "2023-09",
+     "groceries": 128.455,
+     "shelter": 126.08,
+     "energy": 166.641
+    },
+    {
+     "date": "2023-10",
+     "groceries": 129.022,
+     "shelter": 126.376,
+     "energy": 166.458
+    },
+    {
+     "date": "2023-11",
+     "groceries": 128.576,
+     "shelter": 126.873,
+     "energy": 157.454
+    },
+    {
+     "date": "2023-12",
+     "groceries": 128.66,
+     "shelter": 127.139,
+     "energy": 151.387
+    },
+    {
+     "date": "2024-01",
+     "groceries": 129.611,
+     "shelter": 127.888,
+     "energy": 151.932
+    },
+    {
+     "date": "2024-02",
+     "groceries": 129.72,
+     "shelter": 128.477,
+     "energy": 152.421
+    },
+    {
+     "date": "2024-03",
+     "groceries": 129.671,
+     "shelter": 129.527,
+     "energy": 158.292
+    },
+    {
+     "date": "2024-04",
+     "groceries": 129.845,
+     "shelter": 129.925,
+     "energy": 164.409
+    },
+    {
+     "date": "2024-05",
+     "groceries": 130.43,
+     "shelter": 130.226,
+     "energy": 163.522
+    },
+    {
+     "date": "2024-06",
+     "groceries": 130.126,
+     "shelter": 130.33,
+     "energy": 157.349
+    },
+    {
+     "date": "2024-07",
+     "groceries": 130.251,
+     "shelter": 130.586,
+     "energy": 153.728
+    },
+    {
+     "date": "2024-08",
+     "groceries": 130.43,
+     "shelter": 130.803,
+     "energy": 152.013
+    },
+    {
+     "date": "2024-09",
+     "groceries": 130.685,
+     "shelter": 130.933,
+     "energy": 152.214
+    },
+    {
+     "date": "2024-10",
+     "groceries": 130.978,
+     "shelter": 131.131,
+     "energy": 151.881
+    },
+    {
+     "date": "2024-11",
+     "groceries": 131.114,
+     "shelter": 131.575,
+     "energy": 149.392
+    },
+    {
+     "date": "2024-12",
+     "groceries": 131.67,
+     "shelter": 131.834,
+     "energy": 147.567
+    },
+    {
+     "date": "2025-01",
+     "groceries": 133.145,
+     "shelter": 132.606,
+     "energy": 148.909
+    },
+    {
+     "date": "2025-02",
+     "groceries": 133.367,
+     "shelter": 132.997,
+     "energy": 153.974
+    },
+    {
+     "date": "2025-03",
+     "groceries": 134.25,
+     "shelter": 133.899,
+     "energy": 154.596
+    },
+    {
+     "date": "2025-04",
+     "groceries": 133.745,
+     "shelter": 134.457,
+     "energy": 158.434
+    },
+    {
+     "date": "2025-05",
+     "groceries": 134.308,
+     "shelter": 134.89,
+     "energy": 158.954
+    },
+    {
+     "date": "2025-06",
+     "groceries": 134.262,
+     "shelter": 135.165,
+     "energy": 157.266
+    },
+    {
+     "date": "2025-07",
+     "groceries": 134.268,
+     "shelter": 135.24,
+     "energy": 156.35
+    },
+    {
+     "date": "2025-08",
+     "groceries": 134.339,
+     "shelter": 135.195,
+     "energy": 156.49
+    },
+    {
+     "date": "2025-09",
+     "groceries": 134.558,
+     "shelter": 135.569,
+     "energy": 159.193
+    },
+    {
+     "date": "2025-11",
+     "groceries": 132.813,
+     "shelter": 135.417,
+     "energy": 157.197
+    },
+    {
+     "date": "2025-12",
+     "groceries": 134.394,
+     "shelter": 135.937,
+     "energy": 152.407
+    },
+    {
+     "date": "2026-01",
+     "groceries": 136.13,
+     "shelter": 136.485,
+     "energy": 149.905
+    },
+    {
+     "date": "2026-02",
+     "groceries": 136.716,
+     "shelter": 137.281,
+     "energy": 154.973
+    },
+    {
+     "date": "2026-03",
+     "groceries": 137.057,
+     "shelter": 137.668,
+     "energy": 171.501
+    },
+    {
+     "date": "2026-04",
+     "groceries": 137.894,
+     "shelter": 138.47,
+     "energy": 183.106
+    },
+    {
+     "date": "2026-05",
+     "groceries": 138.078,
+     "shelter": 138.762,
+     "energy": 188.925
+    },
+    {
+     "date": "2026-06",
+     "groceries": 137.797,
+     "shelter": 138.764,
+     "energy": 181.573
+    },
+    {
+     "date": "2026-07",
+     "groceries": 138.285,
+     "shelter": 139.14,
+     "energy": 176.871
+    },
+    {
+     "date": "2026-08",
+     "groceries": 138.497,
+     "shelter": 139.596,
+     "energy": 178.315
+    }
+   ],
+   "metro": "Pacific",
+   "tier": 2,
+   "seriesIds": {
+    "groceries": "CUUR0490SAF11",
+    "shelter": "CUUR0490SAH1",
+    "energy": "CUUR0490SA0E"
+   },
+   "nationalSeries": [
+    {
+     "date": "2016-01",
+     "groceries": 242.017,
+     "shelter": 283.498,
+     "energy": 180.171
+    },
+    {
+     "date": "2016-02",
+     "groceries": 242.062,
+     "shelter": 284.435,
+     "energy": 172.061
+    },
+    {
+     "date": "2016-03",
+     "groceries": 240.329,
+     "shelter": 285.196,
+     "energy": 179.017
+    },
+    {
+     "date": "2016-04",
+     "groceries": 240.635,
+     "shelter": 285.836,
+     "energy": 185.652
+    },
+    {
+     "date": "2016-05",
+     "groceries": 239.354,
+     "shelter": 286.924,
+     "energy": 192.673
+    },
+    {
+     "date": "2016-06",
+     "groceries": 238.43,
+     "shelter": 288.069,
+     "energy": 200.035
+    },
+    {
+     "date": "2016-07",
+     "groceries": 238.207,
+     "shelter": 288.78,
+     "energy": 195.94
+    },
+    {
+     "date": "2016-08",
+     "groceries": 238.088,
+     "shelter": 289.605,
+     "energy": 193.524
+    },
+    {
+     "date": "2016-09",
+     "groceries": 238.12,
+     "shelter": 290.445,
+     "energy": 195.852
+    },
+    {
+     "date": "2016-10",
+     "groceries": 238.145,
+     "shelter": 291.407,
+     "energy": 194.786
+    },
+    {
+     "date": "2016-11",
+     "groceries": 236.93,
+     "shelter": 291.953,
+     "energy": 191.402
+    },
+    {
+     "date": "2016-12",
+     "groceries": 236.464,
+     "shelter": 292.612,
+     "energy": 193.306
+    },
+    {
+     "date": "2017-01",
+     "groceries": 237.365,
+     "shelter": 293.56,
+     "energy": 199.608
+    },
+    {
+     "date": "2017-02",
+     "groceries": 237.918,
+     "shelter": 294.444,
+     "energy": 198.195
+    },
+    {
+     "date": "2017-03",
+     "groceries": 238.256,
+     "shelter": 295.044,
+     "energy": 198.597
+    },
+    {
+     "date": "2017-04",
+     "groceries": 238.817,
+     "shelter": 295.706,
+     "energy": 202.869
+    },
+    {
+     "date": "2017-05",
+     "groceries": 238.964,
+     "shelter": 296.503,
+     "energy": 203.132
+    },
+    {
+     "date": "2017-06",
+     "groceries": 238.3,
+     "shelter": 297.446,
+     "energy": 204.646
+    },
+    {
+     "date": "2017-07",
+     "groceries": 238.953,
+     "shelter": 297.919,
+     "energy": 202.554
+    },
+    {
+     "date": "2017-08",
+     "groceries": 238.843,
+     "shelter": 299.157,
+     "energy": 205.894
+    },
+    {
+     "date": "2017-09",
+     "groceries": 239.128,
+     "shelter": 299.844,
+     "energy": 215.711
+    },
+    {
+     "date": "2017-10",
+     "groceries": 239.543,
+     "shelter": 300.846,
+     "energy": 207.29
+    },
+    {
+     "date": "2017-11",
+     "groceries": 238.403,
+     "shelter": 301.185,
+     "energy": 209.383
+    },
+    {
+     "date": "2017-12",
+     "groceries": 238.579,
+     "shelter": 301.985,
+     "energy": 206.598
+    },
+    {
+     "date": "2018-01",
+     "groceries": 239.828,
+     "shelter": 302.928,
+     "energy": 210.663
+    },
+    {
+     "date": "2018-02",
+     "groceries": 239.19,
+     "shelter": 303.653,
+     "energy": 213.519
+    },
+    {
+     "date": "2018-03",
+     "groceries": 239.158,
+     "shelter": 304.847,
+     "energy": 212.554
+    },
+    {
+     "date": "2018-04",
+     "groceries": 240.129,
+     "shelter": 305.716,
+     "energy": 218.83
+    },
+    {
+     "date": "2018-05",
+     "groceries": 239.287,
+     "shelter": 306.913,
+     "energy": 226.81
+    },
+    {
+     "date": "2018-06",
+     "groceries": 239.158,
+     "shelter": 307.521,
+     "energy": 229.137
+    },
+    {
+     "date": "2018-07",
+     "groceries": 239.82,
+     "shelter": 308.393,
+     "energy": 227.107
+    },
+    {
+     "date": "2018-08",
+     "groceries": 240.015,
+     "shelter": 309.296,
+     "energy": 226.939
+    },
+    {
+     "date": "2018-09",
+     "groceries": 240.125,
+     "shelter": 309.702,
+     "energy": 226.165
+    },
+    {
+     "date": "2018-10",
+     "groceries": 239.882,
+     "shelter": 310.382,
+     "energy": 225.757
+    },
+    {
+     "date": "2018-11",
+     "groceries": 239.352,
+     "shelter": 310.95,
+     "energy": 215.91
+    },
+    {
+     "date": "2018-12",
+     "groceries": 239.989,
+     "shelter": 311.652,
+     "energy": 205.905
+    },
+    {
+     "date": "2019-01",
+     "groceries": 241.381,
+     "shelter": 312.696,
+     "energy": 200.563
+    },
+    {
+     "date": "2019-02",
+     "groceries": 242.057,
+     "shelter": 313.88,
+     "energy": 202.74
+    },
+    {
+     "date": "2019-03",
+     "groceries": 242.555,
+     "shelter": 315.135,
+     "energy": 211.724
+    },
+    {
+     "date": "2019-04",
+     "groceries": 241.878,
+     "shelter": 316.263,
+     "energy": 222.499
+    },
+    {
+     "date": "2019-05",
+     "groceries": 242.145,
+     "shelter": 317.188,
+     "energy": 225.773
+    },
+    {
+     "date": "2019-06",
+     "groceries": 241.407,
+     "shelter": 318.3,
+     "energy": 221.373
+    },
+    {
+     "date": "2019-07",
+     "groceries": 241.359,
+     "shelter": 319.136,
+     "energy": 222.492
+    },
+    {
+     "date": "2019-08",
+     "groceries": 241.153,
+     "shelter": 319.679,
+     "energy": 216.978
+    },
+    {
+     "date": "2019-09",
+     "groceries": 241.543,
+     "shelter": 320.569,
+     "energy": 215.418
+    },
+    {
+     "date": "2019-10",
+     "groceries": 242.34,
+     "shelter": 320.762,
+     "energy": 216.351
+    },
+    {
+     "date": "2019-11",
+     "groceries": 241.726,
+     "shelter": 321.267,
+     "energy": 214.636
+    },
+    {
+     "date": "2019-12",
+     "groceries": 241.75,
+     "shelter": 321.766,
+     "energy": 212.982
+    },
+    {
+     "date": "2020-01",
+     "groceries": 243.11,
+     "shelter": 323.053,
+     "energy": 213.043
+    },
+    {
+     "date": "2020-02",
+     "groceries": 244.054,
+     "shelter": 324.254,
+     "energy": 208.354
+    },
+    {
+     "date": "2020-03",
+     "groceries": 245.163,
+     "shelter": 324.615,
+     "energy": 199.573
+    },
+    {
+     "date": "2020-04",
+     "groceries": 251.717,
+     "shelter": 324.522,
+     "energy": 183.081
+    },
+    {
+     "date": "2020-05",
+     "groceries": 253.827,
+     "shelter": 325.265,
+     "energy": 183.076
+    },
+    {
+     "date": "2020-06",
+     "groceries": 255.042,
+     "shelter": 325.814,
+     "energy": 193.379
+    },
+    {
+     "date": "2020-07",
+     "groceries": 252.563,
+     "shelter": 326.58,
+     "energy": 197.665
+    },
+    {
+     "date": "2020-08",
+     "groceries": 252.352,
+     "shelter": 326.997,
+     "energy": 197.362
+    },
+    {
+     "date": "2020-09",
+     "groceries": 251.369,
+     "shelter": 327.116,
+     "energy": 198.858
+    },
+    {
+     "date": "2020-10",
+     "groceries": 251.937,
+     "shelter": 327.273,
+     "energy": 196.458
+    },
+    {
+     "date": "2020-11",
+     "groceries": 250.407,
+     "shelter": 327.435,
+     "energy": 194.388
+    },
+    {
+     "date": "2020-12",
+     "groceries": 251.253,
+     "shelter": 327.702,
+     "energy": 198.155
+    },
+    {
+     "date": "2021-01",
+     "groceries": 252.107,
+     "shelter": 328.282,
+     "energy": 205.273
+    },
+    {
+     "date": "2021-02",
+     "groceries": 252.716,
+     "shelter": 329.005,
+     "energy": 213.277
+    },
+    {
+     "date": "2021-03",
+     "groceries": 253.231,
+     "shelter": 330.122,
+     "energy": 225.861
+    },
+    {
+     "date": "2021-04",
+     "groceries": 254.76,
+     "shelter": 331.354,
+     "energy": 229.116
+    },
+    {
+     "date": "2021-05",
+     "groceries": 255.516,
+     "shelter": 332.454,
+     "energy": 235.339
+    },
+    {
+     "date": "2021-06",
+     "groceries": 257.412,
+     "shelter": 334.222,
+     "energy": 240.72
+    },
+    {
+     "date": "2021-07",
+     "groceries": 259.022,
+     "shelter": 335.812,
+     "energy": 244.8
+    },
+    {
+     "date": "2021-08",
+     "groceries": 259.825,
+     "shelter": 336.284,
+     "energy": 246.639
+    },
+    {
+     "date": "2021-09",
+     "groceries": 262.695,
+     "shelter": 337.451,
+     "energy": 248.228
+    },
+    {
+     "date": "2021-10",
+     "groceries": 265.478,
+     "shelter": 338.671,
+     "energy": 255.338
+    },
+    {
+     "date": "2021-11",
+     "groceries": 266.384,
+     "shelter": 339.997,
+     "energy": 259.1
+    },
+    {
+     "date": "2021-12",
+     "groceries": 267.555,
+     "shelter": 341.241,
+     "energy": 256.207
+    },
+    {
+     "date": "2022-01",
+     "groceries": 270.711,
+     "shelter": 342.604,
+     "energy": 260.653
+    },
+    {
+     "date": "2022-02",
+     "groceries": 274.568,
+     "shelter": 344.607,
+     "energy": 267.771
+    },
+    {
+     "date": "2022-03",
+     "groceries": 278.612,
+     "shelter": 346.618,
+     "energy": 298.246
+    },
+    {
+     "date": "2022-04",
+     "groceries": 282.161,
+     "shelter": 348.389,
+     "energy": 298.469
+    },
+    {
+     "date": "2022-05",
+     "groceries": 285.953,
+     "shelter": 350.58,
+     "energy": 316.761
+    },
+    {
+     "date": "2022-06",
+     "groceries": 288.884,
+     "shelter": 352.967,
+     "energy": 340.917
+    },
+    {
+     "date": "2022-07",
+     "groceries": 292.972,
+     "shelter": 354.935,
+     "energy": 325.407
+    },
+    {
+     "date": "2022-08",
+     "groceries": 295.007,
+     "shelter": 357.264,
+     "energy": 305.372
+    },
+    {
+     "date": "2022-09",
+     "groceries": 296.771,
+     "shelter": 359.704,
+     "energy": 297.343
+    },
+    {
+     "date": "2022-10",
+     "groceries": 298.401,
+     "shelter": 362.093,
+     "energy": 300.359
+    },
+    {
+     "date": "2022-11",
+     "groceries": 298.284,
+     "shelter": 364.195,
+     "energy": 292.953
+    },
+    {
+     "date": "2022-12",
+     "groceries": 299.089,
+     "shelter": 366.868,
+     "energy": 274.937
+    },
+    {
+     "date": "2023-01",
+     "groceries": 301.435,
+     "shelter": 369.585,
+     "energy": 283.33
+    },
+    {
+     "date": "2023-02",
+     "groceries": 302.483,
+     "shelter": 372.51,
+     "energy": 281.673
+    },
+    {
+     "date": "2023-03",
+     "groceries": 301.918,
+     "shelter": 374.971,
+     "energy": 279.084
+    },
+    {
+     "date": "2023-04",
+     "groceries": 302.328,
+     "shelter": 376.636,
+     "energy": 283.352
+    },
+    {
+     "date": "2023-05",
+     "groceries": 302.535,
+     "shelter": 378.776,
+     "energy": 279.816
+    },
+    {
+     "date": "2023-06",
+     "groceries": 302.335,
+     "shelter": 380.594,
+     "energy": 283.854
+    },
+    {
+     "date": "2023-07",
+     "groceries": 303.455,
+     "shelter": 382.226,
+     "energy": 284.828
+    },
+    {
+     "date": "2023-08",
+     "groceries": 303.716,
+     "shelter": 383.221,
+     "energy": 294.328
+    },
+    {
+     "date": "2023-09",
+     "groceries": 303.925,
+     "shelter": 385.433,
+     "energy": 296.004
+    },
+    {
+     "date": "2023-10",
+     "groceries": 304.788,
+     "shelter": 386.435,
+     "energy": 286.754
+    },
+    {
+     "date": "2023-11",
+     "groceries": 303.224,
+     "shelter": 387.892,
+     "energy": 277.029
+    },
+    {
+     "date": "2023-12",
+     "groceries": 303.005,
+     "shelter": 389.433,
+     "energy": 269.375
+    },
+    {
+     "date": "2024-01",
+     "groceries": 305.037,
+     "shelter": 391.896,
+     "energy": 270.42
+    },
+    {
+     "date": "2024-02",
+     "groceries": 305.469,
+     "shelter": 393.906,
+     "energy": 276.331
+    },
+    {
+     "date": "2024-03",
+     "groceries": 305.426,
+     "shelter": 396.174,
+     "energy": 285.002
+    },
+    {
+     "date": "2024-04",
+     "groceries": 305.707,
+     "shelter": 397.539,
+     "energy": 290.76
+    },
+    {
+     "date": "2024-05",
+     "groceries": 305.679,
+     "shelter": 399.274,
+     "energy": 290.139
+    },
+    {
+     "date": "2024-06",
+     "groceries": 305.752,
+     "shelter": 400.234,
+     "energy": 286.675
+    },
+    {
+     "date": "2024-07",
+     "groceries": 306.643,
+     "shelter": 401.545,
+     "energy": 287.868
+    },
+    {
+     "date": "2024-08",
+     "groceries": 306.402,
+     "shelter": 403.257,
+     "energy": 282.614
+    },
+    {
+     "date": "2024-09",
+     "groceries": 307.767,
+     "shelter": 404.133,
+     "energy": 275.74
+    },
+    {
+     "date": "2024-10",
+     "groceries": 308.2,
+     "shelter": 405.287,
+     "energy": 272.807
+    },
+    {
+     "date": "2024-11",
+     "groceries": 307.972,
+     "shelter": 406.25,
+     "energy": 268.213
+    },
+    {
+     "date": "2024-12",
+     "groceries": 308.38,
+     "shelter": 407.242,
+     "energy": 267.963
+    },
+    {
+     "date": "2025-01",
+     "groceries": 310.936,
+     "shelter": 409.153,
+     "energy": 273.045
+    },
+    {
+     "date": "2025-02",
+     "groceries": 311.284,
+     "shelter": 410.635,
+     "energy": 275.867
+    },
+    {
+     "date": "2025-03",
+     "groceries": 312.815,
+     "shelter": 411.99,
+     "energy": 275.734
+    },
+    {
+     "date": "2025-04",
+     "groceries": 311.84,
+     "shelter": 413.389,
+     "energy": 279.888
+    },
+    {
+     "date": "2025-05",
+     "groceries": 312.491,
+     "shelter": 414.689,
+     "energy": 280.097
+    },
+    {
+     "date": "2025-06",
+     "groceries": 313.028,
+     "shelter": 415.455,
+     "energy": 284.307
+    },
+    {
+     "date": "2025-07",
+     "groceries": 313.263,
+     "shelter": 416.271,
+     "energy": 283.395
+    },
+    {
+     "date": "2025-08",
+     "groceries": 314.608,
+     "shelter": 417.902,
+     "energy": 283.247
+    },
+    {
+     "date": "2025-09",
+     "groceries": 316.042,
+     "shelter": 418.598,
+     "energy": 283.589
+    },
+    {
+     "date": "2025-11",
+     "groceries": 313.954,
+     "shelter": 418.593,
+     "energy": 279.588
+    },
+    {
+     "date": "2025-12",
+     "groceries": 315.664,
+     "shelter": 420.134,
+     "energy": 274.131
+    },
+    {
+     "date": "2026-01",
+     "groceries": 317.431,
+     "shelter": 421.526,
+     "energy": 272.668
+    },
+    {
+     "date": "2026-02",
+     "groceries": 318.898,
+     "shelter": 422.776,
+     "energy": 277.179
+    },
+    {
+     "date": "2026-03",
+     "groceries": 318.755,
+     "shelter": 424.45,
+     "energy": 310.28
+    },
+    {
+     "date": "2026-04",
+     "groceries": 320.859,
+     "shelter": 427.049,
+     "energy": 329.907
+    },
+    {
+     "date": "2026-05",
+     "groceries": 321.047,
+     "shelter": 428.677,
+     "energy": 346.042
+    },
+    {
+     "date": "2026-06",
+     "groceries": 321.631,
+     "shelter": 429.062,
+     "energy": 328.95
+    },
+    {
+     "date": "2026-07",
+     "groceries": 321.643,
+     "shelter": 429.491,
+     "energy": 325.15
+    },
+    {
+     "date": "2026-08",
+     "groceries": 321.5,
+     "shelter": 430.611,
+     "energy": 329.351
+    }
+   ],
+   "groceriesBaselinePeriod": "2025-01",
+   "groceriesLatestPeriod": "2026-08",
+   "shelterBaseline": 132.606,
+   "shelterCurrent": 139.596,
+   "shelterBaselinePeriod": "2025-01",
+   "shelterLatestPeriod": "2026-08",
+   "areaCode": "0490"
+  },
+  "error": null,
+  "fetchedAt": "2026-10-02T19:35:22.603Z",
+  "sourceId": "bls-cpi"
+ },
+ "gas": {
+  "data": {
+   "current": 5.548,
+   "baseline": 3.885,
+   "change": 1.663,
+   "region": "WASHINGTON",
+   "geoLevel": "Washington state avg",
+   "isNationalFallback": false,
+   "duoarea": "SWA",
+   "tier": 1,
+   "series": [
+    {
+     "date": "2016-10-17",
+     "price": 2.733
+    },
+    {
+     "date": "2016-10-24",
+     "price": 2.762
+    },
+    {
+     "date": "2016-10-31",
+     "price": 2.76
+    },
+    {
+     "date": "2016-11-07",
+     "price": 2.749
+    },
+    {
+     "date": "2016-11-14",
+     "price": 2.711
+    },
+    {
+     "date": "2016-11-21",
+     "price": 2.663
+    },
+    {
+     "date": "2016-11-28",
+     "price": 2.633
+    },
+    {
+     "date": "2016-12-05",
+     "price": 2.599
+    },
+    {
+     "date": "2016-12-12",
+     "price": 2.577
+    },
+    {
+     "date": "2016-12-19",
+     "price": 2.592
+    },
+    {
+     "date": "2016-12-26",
+     "price": 2.635
+    },
+    {
+     "date": "2017-01-02",
+     "price": 2.688
+    },
+    {
+     "date": "2017-01-09",
+     "price": 2.736
+    },
+    {
+     "date": "2017-01-16",
+     "price": 2.77
+    },
+    {
+     "date": "2017-01-23",
+     "price": 2.766
+    },
+    {
+     "date": "2017-01-30",
+     "price": 2.753
+    },
+    {
+     "date": "2017-02-06",
+     "price": 2.747
+    },
+    {
+     "date": "2017-02-13",
+     "price": 2.751
+    },
+    {
+     "date": "2017-02-20",
+     "price": 2.756
+    },
+    {
+     "date": "2017-02-27",
+     "price": 2.79
+    },
+    {
+     "date": "2017-03-06",
+     "price": 2.81
+    },
+    {
+     "date": "2017-03-13",
+     "price": 2.869
+    },
+    {
+     "date": "2017-03-20",
+     "price": 2.88
+    },
+    {
+     "date": "2017-03-27",
+     "price": 2.882
+    },
+    {
+     "date": "2017-04-03",
+     "price": 2.902
+    },
+    {
+     "date": "2017-04-10",
+     "price": 2.939
+    },
+    {
+     "date": "2017-04-17",
+     "price": 2.946
+    },
+    {
+     "date": "2017-04-24",
+     "price": 2.963
+    },
+    {
+     "date": "2017-05-01",
+     "price": 2.963
+    },
+    {
+     "date": "2017-05-08",
+     "price": 2.932
+    },
+    {
+     "date": "2017-05-15",
+     "price": 2.925
+    },
+    {
+     "date": "2017-05-22",
+     "price": 2.926
+    },
+    {
+     "date": "2017-05-29",
+     "price": 2.923
+    },
+    {
+     "date": "2017-06-05",
+     "price": 2.919
+    },
+    {
+     "date": "2017-06-12",
+     "price": 2.89
+    },
+    {
+     "date": "2017-06-19",
+     "price": 2.863
+    },
+    {
+     "date": "2017-06-26",
+     "price": 2.84
+    },
+    {
+     "date": "2017-07-03",
+     "price": 2.825
+    },
+    {
+     "date": "2017-07-10",
+     "price": 2.847
+    },
+    {
+     "date": "2017-07-17",
+     "price": 2.85
+    },
+    {
+     "date": "2017-07-24",
+     "price": 2.836
+    },
+    {
+     "date": "2017-07-31",
+     "price": 2.848
+    },
+    {
+     "date": "2017-08-07",
+     "price": 2.866
+    },
+    {
+     "date": "2017-08-14",
+     "price": 2.887
+    },
+    {
+     "date": "2017-08-21",
+     "price": 2.932
+    },
+    {
+     "date": "2017-08-28",
+     "price": 3.004
+    },
+    {
+     "date": "2017-09-04",
+     "price": 3.092
+    },
+    {
+     "date": "2017-09-11",
+     "price": 3.106
+    },
+    {
+     "date": "2017-09-18",
+     "price": 3.102
+    },
+    {
+     "date": "2017-09-25",
+     "price": 3.081
+    },
+    {
+     "date": "2017-10-02",
+     "price": 3.038
+    },
+    {
+     "date": "2017-10-09",
+     "price": 2.993
+    },
+    {
+     "date": "2017-10-16",
+     "price": 2.966
+    },
+    {
+     "date": "2017-10-23",
+     "price": 2.953
+    },
+    {
+     "date": "2017-10-30",
+     "price": 2.957
+    },
+    {
+     "date": "2017-11-06",
+     "price": 2.981
+    },
+    {
+     "date": "2017-11-13",
+     "price": 3.045
+    },
+    {
+     "date": "2017-11-20",
+     "price": 3.052
+    },
+    {
+     "date": "2017-11-27",
+     "price": 3.035
+    },
+    {
+     "date": "2017-12-04",
+     "price": 3.013
+    },
+    {
+     "date": "2017-12-11",
+     "price": 2.993
+    },
+    {
+     "date": "2017-12-18",
+     "price": 2.987
+    },
+    {
+     "date": "2017-12-25",
+     "price": 2.95
+    },
+    {
+     "date": "2018-01-01",
+     "price": 2.953
+    },
+    {
+     "date": "2018-01-08",
+     "price": 2.953
+    },
+    {
+     "date": "2018-01-15",
+     "price": 2.959
+    },
+    {
+     "date": "2018-01-22",
+     "price": 2.974
+    },
+    {
+     "date": "2018-01-29",
+     "price": 2.991
+    },
+    {
+     "date": "2018-02-05",
+     "price": 3.027
+    },
+    {
+     "date": "2018-02-12",
+     "price": 3.041
+    },
+    {
+     "date": "2018-02-19",
+     "price": 3.022
+    },
+    {
+     "date": "2018-02-26",
+     "price": 3.018
+    },
+    {
+     "date": "2018-03-05",
+     "price": 3.046
+    },
+    {
+     "date": "2018-03-12",
+     "price": 3.055
+    },
+    {
+     "date": "2018-03-19",
+     "price": 3.127
+    },
+    {
+     "date": "2018-03-26",
+     "price": 3.174
+    },
+    {
+     "date": "2018-04-02",
+     "price": 3.208
+    },
+    {
+     "date": "2018-04-09",
+     "price": 3.228
+    },
+    {
+     "date": "2018-04-16",
+     "price": 3.265
+    },
+    {
+     "date": "2018-04-23",
+     "price": 3.294
+    },
+    {
+     "date": "2018-04-30",
+     "price": 3.308
+    },
+    {
+     "date": "2018-05-07",
+     "price": 3.381
+    },
+    {
+     "date": "2018-05-14",
+     "price": 3.346
+    },
+    {
+     "date": "2018-05-21",
+     "price": 3.394
+    },
+    {
+     "date": "2018-05-28",
+     "price": 3.435
+    },
+    {
+     "date": "2018-06-04",
+     "price": 3.438
+    },
+    {
+     "date": "2018-06-11",
+     "price": 3.423
+    },
+    {
+     "date": "2018-06-18",
+     "price": 3.419
+    },
+    {
+     "date": "2018-06-25",
+     "price": 3.401
+    },
+    {
+     "date": "2018-07-02",
+     "price": 3.394
+    },
+    {
+     "date": "2018-07-09",
+     "price": 3.388
+    },
+    {
+     "date": "2018-07-16",
+     "price": 3.389
+    },
+    {
+     "date": "2018-07-23",
+     "price": 3.371
+    },
+    {
+     "date": "2018-07-30",
+     "price": 3.362
+    },
+    {
+     "date": "2018-08-06",
+     "price": 3.351
+    },
+    {
+     "date": "2018-08-13",
+     "price": 3.344
+    },
+    {
+     "date": "2018-08-20",
+     "price": 3.344
+    },
+    {
+     "date": "2018-08-27",
+     "price": 3.332
+    },
+    {
+     "date": "2018-09-03",
+     "price": 3.35
+    },
+    {
+     "date": "2018-09-10",
+     "price": 3.362
+    },
+    {
+     "date": "2018-09-17",
+     "price": 3.349
+    },
+    {
+     "date": "2018-09-24",
+     "price": 3.352
+    },
+    {
+     "date": "2018-10-01",
+     "price": 3.37
+    },
+    {
+     "date": "2018-10-08",
+     "price": 3.408
+    },
+    {
+     "date": "2018-10-15",
+     "price": 3.469
+    },
+    {
+     "date": "2018-10-22",
+     "price": 3.514
+    },
+    {
+     "date": "2018-10-29",
+     "price": 3.503
+    },
+    {
+     "date": "2018-11-05",
+     "price": 3.493
+    },
+    {
+     "date": "2018-11-12",
+     "price": 3.452
+    },
+    {
+     "date": "2018-11-19",
+     "price": 3.386
+    },
+    {
+     "date": "2018-11-26",
+     "price": 3.347
+    },
+    {
+     "date": "2018-12-03",
+     "price": 3.266
+    },
+    {
+     "date": "2018-12-10",
+     "price": 3.204
+    },
+    {
+     "date": "2018-12-17",
+     "price": 3.124
+    },
+    {
+     "date": "2018-12-24",
+     "price": 3.079
+    },
+    {
+     "date": "2018-12-31",
+     "price": 3.057
+    },
+    {
+     "date": "2019-01-07",
+     "price": 2.987
+    },
+    {
+     "date": "2019-01-14",
+     "price": 2.941
+    },
+    {
+     "date": "2019-01-21",
+     "price": 2.893
+    },
+    {
+     "date": "2019-01-28",
+     "price": 2.843
+    },
+    {
+     "date": "2019-02-04",
+     "price": 2.823
+    },
+    {
+     "date": "2019-02-11",
+     "price": 2.811
+    },
+    {
+     "date": "2019-02-18",
+     "price": 2.817
+    },
+    {
+     "date": "2019-02-25",
+     "price": 2.819
+    },
+    {
+     "date": "2019-03-04",
+     "price": 2.813
+    },
+    {
+     "date": "2019-03-11",
+     "price": 2.857
+    },
+    {
+     "date": "2019-03-18",
+     "price": 2.921
+    },
+    {
+     "date": "2019-03-25",
+     "price": 3.029
+    },
+    {
+     "date": "2019-04-01",
+     "price": 3.114
+    },
+    {
+     "date": "2019-04-08",
+     "price": 3.214
+    },
+    {
+     "date": "2019-04-15",
+     "price": 3.341
+    },
+    {
+     "date": "2019-04-22",
+     "price": 3.424
+    },
+    {
+     "date": "2019-04-29",
+     "price": 3.471
+    },
+    {
+     "date": "2019-05-06",
+     "price": 3.517
+    },
+    {
+     "date": "2019-05-13",
+     "price": 3.529
+    },
+    {
+     "date": "2019-05-20",
+     "price": 3.506
+    },
+    {
+     "date": "2019-05-27",
+     "price": 3.501
+    },
+    {
+     "date": "2019-06-03",
+     "price": 3.476
+    },
+    {
+     "date": "2019-06-10",
+     "price": 3.413
+    },
+    {
+     "date": "2019-06-17",
+     "price": 3.371
+    },
+    {
+     "date": "2019-06-24",
+     "price": 3.307
+    },
+    {
+     "date": "2019-07-01",
+     "price": 3.29
+    },
+    {
+     "date": "2019-07-08",
+     "price": 3.265
+    },
+    {
+     "date": "2019-07-15",
+     "price": 3.244
+    },
+    {
+     "date": "2019-07-22",
+     "price": 3.214
+    },
+    {
+     "date": "2019-07-29",
+     "price": 3.195
+    },
+    {
+     "date": "2019-08-05",
+     "price": 3.189
+    },
+    {
+     "date": "2019-08-12",
+     "price": 3.174
+    },
+    {
+     "date": "2019-08-19",
+     "price": 3.164
+    },
+    {
+     "date": "2019-08-26",
+     "price": 3.153
+    },
+    {
+     "date": "2019-09-02",
+     "price": 3.123
+    },
+    {
+     "date": "2019-09-09",
+     "price": 3.132
+    },
+    {
+     "date": "2019-09-16",
+     "price": 3.125
+    },
+    {
+     "date": "2019-09-23",
+     "price": 3.137
+    },
+    {
+     "date": "2019-09-30",
+     "price": 3.153
+    },
+    {
+     "date": "2019-10-07",
+     "price": 3.198
+    },
+    {
+     "date": "2019-10-14",
+     "price": 3.276
+    },
+    {
+     "date": "2019-10-21",
+     "price": 3.337
+    },
+    {
+     "date": "2019-10-28",
+     "price": 3.366
+    },
+    {
+     "date": "2019-11-04",
+     "price": 3.372
+    },
+    {
+     "date": "2019-11-11",
+     "price": 3.367
+    },
+    {
+     "date": "2019-11-18",
+     "price": 3.345
+    },
+    {
+     "date": "2019-11-25",
+     "price": 3.306
+    },
+    {
+     "date": "2019-12-02",
+     "price": 3.27
+    },
+    {
+     "date": "2019-12-09",
+     "price": 3.24
+    },
+    {
+     "date": "2019-12-16",
+     "price": 3.135
+    },
+    {
+     "date": "2019-12-23",
+     "price": 3.086
+    },
+    {
+     "date": "2019-12-30",
+     "price": 3.084
+    },
+    {
+     "date": "2020-01-06",
+     "price": 3.054
+    },
+    {
+     "date": "2020-01-13",
+     "price": 3.042
+    },
+    {
+     "date": "2020-01-20",
+     "price": 3.02
+    },
+    {
+     "date": "2020-01-27",
+     "price": 2.999
+    },
+    {
+     "date": "2020-02-03",
+     "price": 2.989
+    },
+    {
+     "date": "2020-02-10",
+     "price": 2.997
+    },
+    {
+     "date": "2020-02-17",
+     "price": 2.982
+    },
+    {
+     "date": "2020-02-24",
+     "price": 3.006
+    },
+    {
+     "date": "2020-03-02",
+     "price": 3.01
+    },
+    {
+     "date": "2020-03-09",
+     "price": 3
+    },
+    {
+     "date": "2020-03-16",
+     "price": 2.957
+    },
+    {
+     "date": "2020-03-23",
+     "price": 2.796
+    },
+    {
+     "date": "2020-03-30",
+     "price": 2.676
+    },
+    {
+     "date": "2020-04-06",
+     "price": 2.581
+    },
+    {
+     "date": "2020-04-13",
+     "price": 2.5
+    },
+    {
+     "date": "2020-04-20",
+     "price": 2.409
+    },
+    {
+     "date": "2020-04-27",
+     "price": 2.331
+    },
+    {
+     "date": "2020-05-04",
+     "price": 2.315
+    },
+    {
+     "date": "2020-05-11",
+     "price": 2.336
+    },
+    {
+     "date": "2020-05-18",
+     "price": 2.358
+    },
+    {
+     "date": "2020-05-25",
+     "price": 2.414
+    },
+    {
+     "date": "2020-06-01",
+     "price": 2.447
+    },
+    {
+     "date": "2020-06-08",
+     "price": 2.523
+    },
+    {
+     "date": "2020-06-15",
+     "price": 2.585
+    },
+    {
+     "date": "2020-06-22",
+     "price": 2.632
+    },
+    {
+     "date": "2020-06-29",
+     "price": 2.681
+    },
+    {
+     "date": "2020-07-06",
+     "price": 2.689
+    },
+    {
+     "date": "2020-07-13",
+     "price": 2.716
+    },
+    {
+     "date": "2020-07-20",
+     "price": 2.761
+    },
+    {
+     "date": "2020-07-27",
+     "price": 2.783
+    },
+    {
+     "date": "2020-08-03",
+     "price": 2.777
+    },
+    {
+     "date": "2020-08-10",
+     "price": 2.77
+    },
+    {
+     "date": "2020-08-17",
+     "price": 2.783
+    },
+    {
+     "date": "2020-08-24",
+     "price": 2.804
+    },
+    {
+     "date": "2020-08-31",
+     "price": 2.815
+    },
+    {
+     "date": "2020-09-07",
+     "price": 2.821
+    },
+    {
+     "date": "2020-09-14",
+     "price": 2.817
+    },
+    {
+     "date": "2020-09-21",
+     "price": 2.805
+    },
+    {
+     "date": "2020-09-28",
+     "price": 2.782
+    },
+    {
+     "date": "2020-10-05",
+     "price": 2.764
+    },
+    {
+     "date": "2020-10-12",
+     "price": 2.761
+    },
+    {
+     "date": "2020-10-19",
+     "price": 2.745
+    },
+    {
+     "date": "2020-10-26",
+     "price": 2.731
+    },
+    {
+     "date": "2020-11-02",
+     "price": 2.724
+    },
+    {
+     "date": "2020-11-09",
+     "price": 2.71
+    },
+    {
+     "date": "2020-11-16",
+     "price": 2.722
+    },
+    {
+     "date": "2020-11-23",
+     "price": 2.726
+    },
+    {
+     "date": "2020-11-30",
+     "price": 2.722
+    },
+    {
+     "date": "2020-12-07",
+     "price": 2.716
+    },
+    {
+     "date": "2020-12-14",
+     "price": 2.685
+    },
+    {
+     "date": "2020-12-21",
+     "price": 2.677
+    },
+    {
+     "date": "2020-12-28",
+     "price": 2.675
+    },
+    {
+     "date": "2021-01-04",
+     "price": 2.676
+    },
+    {
+     "date": "2021-01-11",
+     "price": 2.678
+    },
+    {
+     "date": "2021-01-18",
+     "price": 2.708
+    },
+    {
+     "date": "2021-01-25",
+     "price": 2.723
+    },
+    {
+     "date": "2021-02-01",
+     "price": 2.745
+    },
+    {
+     "date": "2021-02-08",
+     "price": 2.805
+    },
+    {
+     "date": "2021-02-15",
+     "price": 2.849
+    },
+    {
+     "date": "2021-02-22",
+     "price": 2.914
+    },
+    {
+     "date": "2021-03-01",
+     "price": 3.034
+    },
+    {
+     "date": "2021-03-08",
+     "price": 3.121
+    },
+    {
+     "date": "2021-03-15",
+     "price": 3.202
+    },
+    {
+     "date": "2021-03-22",
+     "price": 3.285
+    },
+    {
+     "date": "2021-03-29",
+     "price": 3.294
+    },
+    {
+     "date": "2021-04-05",
+     "price": 3.301
+    },
+    {
+     "date": "2021-04-12",
+     "price": 3.3
+    },
+    {
+     "date": "2021-04-19",
+     "price": 3.316
+    },
+    {
+     "date": "2021-04-26",
+     "price": 3.346
+    },
+    {
+     "date": "2021-05-03",
+     "price": 3.421
+    },
+    {
+     "date": "2021-05-10",
+     "price": 3.446
+    },
+    {
+     "date": "2021-05-17",
+     "price": 3.486
+    },
+    {
+     "date": "2021-05-24",
+     "price": 3.515
+    },
+    {
+     "date": "2021-05-31",
+     "price": 3.519
+    },
+    {
+     "date": "2021-06-07",
+     "price": 3.565
+    },
+    {
+     "date": "2021-06-14",
+     "price": 3.569
+    },
+    {
+     "date": "2021-06-21",
+     "price": 3.6
+    },
+    {
+     "date": "2021-06-28",
+     "price": 3.682
+    },
+    {
+     "date": "2021-07-05",
+     "price": 3.755
+    },
+    {
+     "date": "2021-07-12",
+     "price": 3.805
+    },
+    {
+     "date": "2021-07-19",
+     "price": 3.802
+    },
+    {
+     "date": "2021-07-26",
+     "price": 3.829
+    },
+    {
+     "date": "2021-08-02",
+     "price": 3.83
+    },
+    {
+     "date": "2021-08-09",
+     "price": 3.856
+    },
+    {
+     "date": "2021-08-16",
+     "price": 3.876
+    },
+    {
+     "date": "2021-08-23",
+     "price": 3.881
+    },
+    {
+     "date": "2021-08-30",
+     "price": 3.877
+    },
+    {
+     "date": "2021-09-06",
+     "price": 3.872
+    },
+    {
+     "date": "2021-09-13",
+     "price": 3.867
+    },
+    {
+     "date": "2021-09-20",
+     "price": 3.859
+    },
+    {
+     "date": "2021-09-27",
+     "price": 3.839
+    },
+    {
+     "date": "2021-10-04",
+     "price": 3.829
+    },
+    {
+     "date": "2021-10-11",
+     "price": 3.838
+    },
+    {
+     "date": "2021-10-18",
+     "price": 3.842
+    },
+    {
+     "date": "2021-10-25",
+     "price": 3.881
+    },
+    {
+     "date": "2021-11-01",
+     "price": 3.867
+    },
+    {
+     "date": "2021-11-08",
+     "price": 3.857
+    },
+    {
+     "date": "2021-11-15",
+     "price": 3.853
+    },
+    {
+     "date": "2021-11-22",
+     "price": 3.855
+    },
+    {
+     "date": "2021-11-29",
+     "price": 3.852
+    },
+    {
+     "date": "2021-12-06",
+     "price": 3.847
+    },
+    {
+     "date": "2021-12-13",
+     "price": 3.827
+    },
+    {
+     "date": "2021-12-20",
+     "price": 3.822
+    },
+    {
+     "date": "2021-12-27",
+     "price": 3.809
+    },
+    {
+     "date": "2022-01-03",
+     "price": 3.827
+    },
+    {
+     "date": "2022-01-10",
+     "price": 3.899
+    },
+    {
+     "date": "2022-01-17",
+     "price": 3.94
+    },
+    {
+     "date": "2022-01-24",
+     "price": 3.938
+    },
+    {
+     "date": "2022-01-31",
+     "price": 3.936
+    },
+    {
+     "date": "2022-02-07",
+     "price": 3.934
+    },
+    {
+     "date": "2022-02-14",
+     "price": 3.935
+    },
+    {
+     "date": "2022-02-21",
+     "price": 3.947
+    },
+    {
+     "date": "2022-02-28",
+     "price": 3.966
+    },
+    {
+     "date": "2022-03-07",
+     "price": 4.383
+    },
+    {
+     "date": "2022-03-14",
+     "price": 4.742
+    },
+    {
+     "date": "2022-03-21",
+     "price": 4.696
+    },
+    {
+     "date": "2022-03-28",
+     "price": 4.715
+    },
+    {
+     "date": "2022-04-04",
+     "price": 4.657
+    },
+    {
+     "date": "2022-04-11",
+     "price": 4.6
+    },
+    {
+     "date": "2022-04-18",
+     "price": 4.585
+    },
+    {
+     "date": "2022-04-25",
+     "price": 4.617
+    },
+    {
+     "date": "2022-05-02",
+     "price": 4.651
+    },
+    {
+     "date": "2022-05-09",
+     "price": 4.772
+    },
+    {
+     "date": "2022-05-16",
+     "price": 4.948
+    },
+    {
+     "date": "2022-05-23",
+     "price": 5.153
+    },
+    {
+     "date": "2022-05-30",
+     "price": 5.156
+    },
+    {
+     "date": "2022-06-06",
+     "price": 5.332
+    },
+    {
+     "date": "2022-06-13",
+     "price": 5.494
+    },
+    {
+     "date": "2022-06-20",
+     "price": 5.497
+    },
+    {
+     "date": "2022-06-27",
+     "price": 5.436
+    },
+    {
+     "date": "2022-07-04",
+     "price": 5.406
+    },
+    {
+     "date": "2022-07-11",
+     "price": 5.307
+    },
+    {
+     "date": "2022-07-18",
+     "price": 5.174
+    },
+    {
+     "date": "2022-07-25",
+     "price": 5.066
+    },
+    {
+     "date": "2022-08-01",
+     "price": 4.972
+    },
+    {
+     "date": "2022-08-08",
+     "price": 4.833
+    },
+    {
+     "date": "2022-08-15",
+     "price": 4.755
+    },
+    {
+     "date": "2022-08-22",
+     "price": 4.707
+    },
+    {
+     "date": "2022-08-29",
+     "price": 4.68
+    },
+    {
+     "date": "2022-09-05",
+     "price": 4.57
+    },
+    {
+     "date": "2022-09-12",
+     "price": 4.578
+    },
+    {
+     "date": "2022-09-19",
+     "price": 4.557
+    },
+    {
+     "date": "2022-09-26",
+     "price": 4.87
+    },
+    {
+     "date": "2022-10-03",
+     "price": 5.25
+    },
+    {
+     "date": "2022-10-10",
+     "price": 5.297
+    },
+    {
+     "date": "2022-10-17",
+     "price": 5.161
+    },
+    {
+     "date": "2022-10-24",
+     "price": 4.957
+    },
+    {
+     "date": "2022-10-31",
+     "price": 4.802
+    },
+    {
+     "date": "2022-11-07",
+     "price": 4.757
+    },
+    {
+     "date": "2022-11-14",
+     "price": 4.761
+    },
+    {
+     "date": "2022-11-21",
+     "price": 4.626
+    },
+    {
+     "date": "2022-11-28",
+     "price": 4.477
+    },
+    {
+     "date": "2022-12-05",
+     "price": 4.278
+    },
+    {
+     "date": "2022-12-12",
+     "price": 4.04
+    },
+    {
+     "date": "2022-12-19",
+     "price": 3.851
+    },
+    {
+     "date": "2022-12-26",
+     "price": 3.792
+    },
+    {
+     "date": "2023-01-02",
+     "price": 3.789
+    },
+    {
+     "date": "2023-01-09",
+     "price": 3.827
+    },
+    {
+     "date": "2023-01-16",
+     "price": 3.896
+    },
+    {
+     "date": "2023-01-23",
+     "price": 3.994
+    },
+    {
+     "date": "2023-01-30",
+     "price": 4.071
+    },
+    {
+     "date": "2023-02-06",
+     "price": 4.077
+    },
+    {
+     "date": "2023-02-13",
+     "price": 4.059
+    },
+    {
+     "date": "2023-02-20",
+     "price": 4.122
+    },
+    {
+     "date": "2023-02-27",
+     "price": 4.184
+    },
+    {
+     "date": "2023-03-06",
+     "price": 4.183
+    },
+    {
+     "date": "2023-03-13",
+     "price": 4.193
+    },
+    {
+     "date": "2023-03-20",
+     "price": 4.171
+    },
+    {
+     "date": "2023-03-27",
+     "price": 4.179
+    },
+    {
+     "date": "2023-04-03",
+     "price": 4.252
+    },
+    {
+     "date": "2023-04-10",
+     "price": 4.343
+    },
+    {
+     "date": "2023-04-17",
+     "price": 4.452
+    },
+    {
+     "date": "2023-04-24",
+     "price": 4.531
+    },
+    {
+     "date": "2023-05-01",
+     "price": 4.577
+    },
+    {
+     "date": "2023-05-08",
+     "price": 4.549
+    },
+    {
+     "date": "2023-05-15",
+     "price": 4.576
+    },
+    {
+     "date": "2023-05-22",
+     "price": 4.607
+    },
+    {
+     "date": "2023-05-29",
+     "price": 4.655
+    },
+    {
+     "date": "2023-06-05",
+     "price": 4.661
+    },
+    {
+     "date": "2023-06-12",
+     "price": 4.772
+    },
+    {
+     "date": "2023-06-19",
+     "price": 4.852
+    },
+    {
+     "date": "2023-06-26",
+     "price": 4.959
+    },
+    {
+     "date": "2023-07-03",
+     "price": 4.965
+    },
+    {
+     "date": "2023-07-10",
+     "price": 4.938
+    },
+    {
+     "date": "2023-07-17",
+     "price": 4.926
+    },
+    {
+     "date": "2023-07-24",
+     "price": 4.908
+    },
+    {
+     "date": "2023-07-31",
+     "price": 4.937
+    },
+    {
+     "date": "2023-08-07",
+     "price": 5.013
+    },
+    {
+     "date": "2023-08-14",
+     "price": 5.036
+    },
+    {
+     "date": "2023-08-21",
+     "price": 5.04
+    },
+    {
+     "date": "2023-08-28",
+     "price": 5.049
+    },
+    {
+     "date": "2023-09-04",
+     "price": 5.072
+    },
+    {
+     "date": "2023-09-11",
+     "price": 5.051
+    },
+    {
+     "date": "2023-09-18",
+     "price": 5.038
+    },
+    {
+     "date": "2023-09-25",
+     "price": 5.011
+    },
+    {
+     "date": "2023-10-02",
+     "price": 5.078
+    },
+    {
+     "date": "2023-10-09",
+     "price": 4.972
+    },
+    {
+     "date": "2023-10-16",
+     "price": 4.855
+    },
+    {
+     "date": "2023-10-23",
+     "price": 4.758
+    },
+    {
+     "date": "2023-10-30",
+     "price": 4.649
+    },
+    {
+     "date": "2023-11-06",
+     "price": 4.501
+    },
+    {
+     "date": "2023-11-13",
+     "price": 4.426
+    },
+    {
+     "date": "2023-11-20",
+     "price": 4.369
+    },
+    {
+     "date": "2023-11-27",
+     "price": 4.307
+    },
+    {
+     "date": "2023-12-04",
+     "price": 4.247
+    },
+    {
+     "date": "2023-12-11",
+     "price": 4.199
+    },
+    {
+     "date": "2023-12-18",
+     "price": 4.151
+    },
+    {
+     "date": "2023-12-25",
+     "price": 4.097
+    },
+    {
+     "date": "2024-01-01",
+     "price": 4.082
+    },
+    {
+     "date": "2024-01-08",
+     "price": 4.024
+    },
+    {
+     "date": "2024-01-15",
+     "price": 3.993
+    },
+    {
+     "date": "2024-01-22",
+     "price": 3.94
+    },
+    {
+     "date": "2024-01-29",
+     "price": 3.917
+    },
+    {
+     "date": "2024-02-05",
+     "price": 3.896
+    },
+    {
+     "date": "2024-02-12",
+     "price": 3.879
+    },
+    {
+     "date": "2024-02-19",
+     "price": 3.892
+    },
+    {
+     "date": "2024-02-26",
+     "price": 4.017
+    },
+    {
+     "date": "2024-03-04",
+     "price": 4.108
+    },
+    {
+     "date": "2024-03-11",
+     "price": 4.176
+    },
+    {
+     "date": "2024-03-18",
+     "price": 4.259
+    },
+    {
+     "date": "2024-03-25",
+     "price": 4.364
+    },
+    {
+     "date": "2024-04-01",
+     "price": 4.493
+    },
+    {
+     "date": "2024-04-08",
+     "price": 4.587
+    },
+    {
+     "date": "2024-04-15",
+     "price": 4.633
+    },
+    {
+     "date": "2024-04-22",
+     "price": 4.631
+    },
+    {
+     "date": "2024-04-29",
+     "price": 4.634
+    },
+    {
+     "date": "2024-05-06",
+     "price": 4.631
+    },
+    {
+     "date": "2024-05-13",
+     "price": 4.607
+    },
+    {
+     "date": "2024-05-20",
+     "price": 4.565
+    },
+    {
+     "date": "2024-05-27",
+     "price": 4.569
+    },
+    {
+     "date": "2024-06-03",
+     "price": 4.472
+    },
+    {
+     "date": "2024-06-10",
+     "price": 4.383
+    },
+    {
+     "date": "2024-06-17",
+     "price": 4.28
+    },
+    {
+     "date": "2024-06-24",
+     "price": 4.256
+    },
+    {
+     "date": "2024-07-01",
+     "price": 4.242
+    },
+    {
+     "date": "2024-07-08",
+     "price": 4.238
+    },
+    {
+     "date": "2024-07-15",
+     "price": 4.227
+    },
+    {
+     "date": "2024-07-22",
+     "price": 4.195
+    },
+    {
+     "date": "2024-07-29",
+     "price": 4.205
+    },
+    {
+     "date": "2024-08-05",
+     "price": 4.144
+    },
+    {
+     "date": "2024-08-12",
+     "price": 4.175
+    },
+    {
+     "date": "2024-08-19",
+     "price": 4.136
+    },
+    {
+     "date": "2024-08-26",
+     "price": 4.115
+    },
+    {
+     "date": "2024-09-02",
+     "price": 4.153
+    },
+    {
+     "date": "2024-09-09",
+     "price": 4.087
+    },
+    {
+     "date": "2024-09-16",
+     "price": 4.086
+    },
+    {
+     "date": "2024-09-23",
+     "price": 4.046
+    },
+    {
+     "date": "2024-09-30",
+     "price": 4.009
+    },
+    {
+     "date": "2024-10-07",
+     "price": 3.966
+    },
+    {
+     "date": "2024-10-14",
+     "price": 4.012
+    },
+    {
+     "date": "2024-10-21",
+     "price": 4.009
+    },
+    {
+     "date": "2024-10-28",
+     "price": 3.993
+    },
+    {
+     "date": "2024-11-04",
+     "price": 3.968
+    },
+    {
+     "date": "2024-11-11",
+     "price": 3.961
+    },
+    {
+     "date": "2024-11-18",
+     "price": 3.94
+    },
+    {
+     "date": "2024-11-25",
+     "price": 3.931
+    },
+    {
+     "date": "2024-12-02",
+     "price": 3.965
+    },
+    {
+     "date": "2024-12-09",
+     "price": 3.92
+    },
+    {
+     "date": "2024-12-16",
+     "price": 3.874
+    },
+    {
+     "date": "2024-12-23",
+     "price": 3.86
+    },
+    {
+     "date": "2024-12-30",
+     "price": 3.845
+    },
+    {
+     "date": "2025-01-06",
+     "price": 3.85
+    },
+    {
+     "date": "2025-01-13",
+     "price": 3.857
+    },
+    {
+     "date": "2025-01-20",
+     "price": 3.885
+    },
+    {
+     "date": "2025-01-27",
+     "price": 3.919
+    },
+    {
+     "date": "2025-02-03",
+     "price": 3.947
+    },
+    {
+     "date": "2025-02-10",
+     "price": 4.007
+    },
+    {
+     "date": "2025-02-17",
+     "price": 4.111
+    },
+    {
+     "date": "2025-02-24",
+     "price": 4.106
+    },
+    {
+     "date": "2025-03-03",
+     "price": 4.092
+    },
+    {
+     "date": "2025-03-10",
+     "price": 4.043
+    },
+    {
+     "date": "2025-03-17",
+     "price": 4.016
+    },
+    {
+     "date": "2025-03-24",
+     "price": 4.029
+    },
+    {
+     "date": "2025-03-31",
+     "price": 4.128
+    },
+    {
+     "date": "2025-04-07",
+     "price": 4.315
+    },
+    {
+     "date": "2025-04-14",
+     "price": 4.284
+    },
+    {
+     "date": "2025-04-21",
+     "price": 4.231
+    },
+    {
+     "date": "2025-04-28",
+     "price": 4.191
+    },
+    {
+     "date": "2025-05-05",
+     "price": 4.185
+    },
+    {
+     "date": "2025-05-12",
+     "price": 4.208
+    },
+    {
+     "date": "2025-05-19",
+     "price": 4.265
+    },
+    {
+     "date": "2025-05-26",
+     "price": 4.34
+    },
+    {
+     "date": "2025-06-02",
+     "price": 4.326
+    },
+    {
+     "date": "2025-06-09",
+     "price": 4.295
+    },
+    {
+     "date": "2025-06-16",
+     "price": 4.311
+    },
+    {
+     "date": "2025-06-23",
+     "price": 4.383
+    },
+    {
+     "date": "2025-06-30",
+     "price": 4.39
+    },
+    {
+     "date": "2025-07-07",
+     "price": 4.366
+    },
+    {
+     "date": "2025-07-14",
+     "price": 4.35
+    },
+    {
+     "date": "2025-07-21",
+     "price": 4.352
+    },
+    {
+     "date": "2025-07-28",
+     "price": 4.337
+    },
+    {
+     "date": "2025-08-04",
+     "price": 4.369
+    },
+    {
+     "date": "2025-08-11",
+     "price": 4.405
+    },
+    {
+     "date": "2025-08-18",
+     "price": 4.405
+    },
+    {
+     "date": "2025-08-25",
+     "price": 4.386
+    },
+    {
+     "date": "2025-09-01",
+     "price": 4.389
+    },
+    {
+     "date": "2025-09-08",
+     "price": 4.462
+    },
+    {
+     "date": "2025-09-15",
+     "price": 4.627
+    },
+    {
+     "date": "2025-09-22",
+     "price": 4.605
+    },
+    {
+     "date": "2025-09-29",
+     "price": 4.542
+    },
+    {
+     "date": "2025-10-06",
+     "price": 4.508
+    },
+    {
+     "date": "2025-10-13",
+     "price": 4.461
+    },
+    {
+     "date": "2025-10-20",
+     "price": 4.411
+    },
+    {
+     "date": "2025-10-27",
+     "price": 4.358
+    },
+    {
+     "date": "2025-11-03",
+     "price": 4.28
+    },
+    {
+     "date": "2025-11-10",
+     "price": 4.223
+    },
+    {
+     "date": "2025-11-17",
+     "price": 4.158
+    },
+    {
+     "date": "2025-11-24",
+     "price": 4.146
+    },
+    {
+     "date": "2025-12-01",
+     "price": 4.129
+    },
+    {
+     "date": "2025-12-08",
+     "price": 4.084
+    },
+    {
+     "date": "2025-12-15",
+     "price": 3.976
+    },
+    {
+     "date": "2025-12-22",
+     "price": 3.918
+    },
+    {
+     "date": "2025-12-29",
+     "price": 3.877
+    },
+    {
+     "date": "2026-01-05",
+     "price": 3.81
+    },
+    {
+     "date": "2026-01-12",
+     "price": 3.746
+    },
+    {
+     "date": "2026-01-19",
+     "price": 3.757
+    },
+    {
+     "date": "2026-01-26",
+     "price": 3.784
+    },
+    {
+     "date": "2026-02-02",
+     "price": 3.861
+    },
+    {
+     "date": "2026-02-09",
+     "price": 3.958
+    },
+    {
+     "date": "2026-02-16",
+     "price": 4.104
+    },
+    {
+     "date": "2026-02-23",
+     "price": 4.242
+    },
+    {
+     "date": "2026-03-02",
+     "price": 4.302
+    },
+    {
+     "date": "2026-03-09",
+     "price": 4.614
+    },
+    {
+     "date": "2026-03-16",
+     "price": 4.885
+    },
+    {
+     "date": "2026-03-23",
+     "price": 5.256
+    },
+    {
+     "date": "2026-03-30",
+     "price": 5.293
+    },
+    {
+     "date": "2026-04-06",
+     "price": 5.331
+    },
+    {
+     "date": "2026-04-13",
+     "price": 5.316
+    },
+    {
+     "date": "2026-04-20",
+     "price": 5.326
+    },
+    {
+     "date": "2026-04-27",
+     "price": 5.394
+    },
+    {
+     "date": "2026-05-04",
+     "price": 5.628
+    },
+    {
+     "date": "2026-05-11",
+     "price": 5.694
+    },
+    {
+     "date": "2026-05-18",
+     "price": 5.691
+    },
+    {
+     "date": "2026-05-25",
+     "price": 5.672
+    },
+    {
+     "date": "2026-06-01",
+     "price": 5.628
+    },
+    {
+     "date": "2026-06-08",
+     "price": 5.545
+    },
+    {
+     "date": "2026-06-15",
+     "price": 5.443
+    },
+    {
+     "date": "2026-06-22",
+     "price": 5.253
+    },
+    {
+     "date": "2026-06-29",
+     "price": 5.127
+    },
+    {
+     "date": "2026-07-06",
+     "price": 4.994
+    },
+    {
+     "date": "2026-07-13",
+     "price": 4.948
+    },
+    {
+     "date": "2026-07-20",
+     "price": 4.987
+    },
+    {
+     "date": "2026-07-27",
+     "price": 5.107
+    },
+    {
+     "date": "2026-08-03",
+     "price": 5.14
+    },
+    {
+     "date": "2026-08-10",
+     "price": 5.149
+    },
+    {
+     "date": "2026-08-17",
+     "price": 5.213
+    },
+    {
+     "date": "2026-08-24",
+     "price": 5.306
+    },
+    {
+     "date": "2026-08-31",
+     "price": 5.348
+    },
+    {
+     "date": "2026-09-07",
+     "price": 5.573
+    },
+    {
+     "date": "2026-09-14",
+     "price": 5.597
+    },
+    {
+     "date": "2026-09-21",
+     "price": 5.605
+    },
+    {
+     "date": "2026-09-28",
+     "price": 5.548
+    }
+   ],
+   "nationalSeries": [
+    {
+     "date": "2016-10-17",
+     "price": 2.367
+    },
+    {
+     "date": "2016-10-24",
+     "price": 2.353
+    },
+    {
+     "date": "2016-10-31",
+     "price": 2.341
+    },
+    {
+     "date": "2016-11-07",
+     "price": 2.345
+    },
+    {
+     "date": "2016-11-14",
+     "price": 2.298
+    },
+    {
+     "date": "2016-11-21",
+     "price": 2.269
+    },
+    {
+     "date": "2016-11-28",
+     "price": 2.268
+    },
+    {
+     "date": "2016-12-05",
+     "price": 2.321
+    },
+    {
+     "date": "2016-12-12",
+     "price": 2.347
+    },
+    {
+     "date": "2016-12-19",
+     "price": 2.375
+    },
+    {
+     "date": "2016-12-26",
+     "price": 2.419
+    },
+    {
+     "date": "2017-01-02",
+     "price": 2.485
+    },
+    {
+     "date": "2017-01-09",
+     "price": 2.496
+    },
+    {
+     "date": "2017-01-16",
+     "price": 2.467
+    },
+    {
+     "date": "2017-01-23",
+     "price": 2.436
+    },
+    {
+     "date": "2017-01-30",
+     "price": 2.408
+    },
+    {
+     "date": "2017-02-06",
+     "price": 2.405
+    },
+    {
+     "date": "2017-02-13",
+     "price": 2.418
+    },
+    {
+     "date": "2017-02-20",
+     "price": 2.414
+    },
+    {
+     "date": "2017-02-27",
+     "price": 2.427
+    },
+    {
+     "date": "2017-03-06",
+     "price": 2.452
+    },
+    {
+     "date": "2017-03-13",
+     "price": 2.434
+    },
+    {
+     "date": "2017-03-20",
+     "price": 2.433
+    },
+    {
+     "date": "2017-03-27",
+     "price": 2.428
+    },
+    {
+     "date": "2017-04-03",
+     "price": 2.471
+    },
+    {
+     "date": "2017-04-10",
+     "price": 2.534
+    },
+    {
+     "date": "2017-04-17",
+     "price": 2.546
+    },
+    {
+     "date": "2017-04-24",
+     "price": 2.559
+    },
+    {
+     "date": "2017-05-01",
+     "price": 2.522
+    },
+    {
+     "date": "2017-05-08",
+     "price": 2.484
+    },
+    {
+     "date": "2017-05-15",
+     "price": 2.481
+    },
+    {
+     "date": "2017-05-22",
+     "price": 2.51
+    },
+    {
+     "date": "2017-05-29",
+     "price": 2.516
+    },
+    {
+     "date": "2017-06-05",
+     "price": 2.525
+    },
+    {
+     "date": "2017-06-12",
+     "price": 2.479
+    },
+    {
+     "date": "2017-06-19",
+     "price": 2.433
+    },
+    {
+     "date": "2017-06-26",
+     "price": 2.404
+    },
+    {
+     "date": "2017-07-03",
+     "price": 2.376
+    },
+    {
+     "date": "2017-07-10",
+     "price": 2.411
+    },
+    {
+     "date": "2017-07-17",
+     "price": 2.392
+    },
+    {
+     "date": "2017-07-24",
+     "price": 2.426
+    },
+    {
+     "date": "2017-07-31",
+     "price": 2.467
+    },
+    {
+     "date": "2017-08-07",
+     "price": 2.492
+    },
+    {
+     "date": "2017-08-14",
+     "price": 2.497
+    },
+    {
+     "date": "2017-08-21",
+     "price": 2.474
+    },
+    {
+     "date": "2017-08-28",
+     "price": 2.513
+    },
+    {
+     "date": "2017-09-04",
+     "price": 2.794
+    },
+    {
+     "date": "2017-09-11",
+     "price": 2.8
+    },
+    {
+     "date": "2017-09-18",
+     "price": 2.75
+    },
+    {
+     "date": "2017-09-25",
+     "price": 2.701
+    },
+    {
+     "date": "2017-10-02",
+     "price": 2.682
+    },
+    {
+     "date": "2017-10-09",
+     "price": 2.622
+    },
+    {
+     "date": "2017-10-16",
+     "price": 2.605
+    },
+    {
+     "date": "2017-10-23",
+     "price": 2.594
+    },
+    {
+     "date": "2017-10-30",
+     "price": 2.602
+    },
+    {
+     "date": "2017-11-06",
+     "price": 2.673
+    },
+    {
+     "date": "2017-11-13",
+     "price": 2.706
+    },
+    {
+     "date": "2017-11-20",
+     "price": 2.683
+    },
+    {
+     "date": "2017-11-27",
+     "price": 2.648
+    },
+    {
+     "date": "2017-12-04",
+     "price": 2.617
+    },
+    {
+     "date": "2017-12-11",
+     "price": 2.601
+    },
+    {
+     "date": "2017-12-18",
+     "price": 2.568
+    },
+    {
+     "date": "2017-12-25",
+     "price": 2.589
+    },
+    {
+     "date": "2018-01-01",
+     "price": 2.637
+    },
+    {
+     "date": "2018-01-08",
+     "price": 2.639
+    },
+    {
+     "date": "2018-01-15",
+     "price": 2.673
+    },
+    {
+     "date": "2018-01-22",
+     "price": 2.684
+    },
+    {
+     "date": "2018-01-29",
+     "price": 2.723
+    },
+    {
+     "date": "2018-02-05",
+     "price": 2.753
+    },
+    {
+     "date": "2018-02-12",
+     "price": 2.724
+    },
+    {
+     "date": "2018-02-19",
+     "price": 2.676
+    },
+    {
+     "date": "2018-02-26",
+     "price": 2.666
+    },
+    {
+     "date": "2018-03-05",
+     "price": 2.679
+    },
+    {
+     "date": "2018-03-12",
+     "price": 2.677
+    },
+    {
+     "date": "2018-03-19",
+     "price": 2.716
+    },
+    {
+     "date": "2018-03-26",
+     "price": 2.764
+    },
+    {
+     "date": "2018-04-02",
+     "price": 2.817
+    },
+    {
+     "date": "2018-04-09",
+     "price": 2.811
+    },
+    {
+     "date": "2018-04-16",
+     "price": 2.863
+    },
+    {
+     "date": "2018-04-23",
+     "price": 2.914
+    },
+    {
+     "date": "2018-04-30",
+     "price": 2.961
+    },
+    {
+     "date": "2018-05-07",
+     "price": 2.96
+    },
+    {
+     "date": "2018-05-14",
+     "price": 2.949
+    },
+    {
+     "date": "2018-05-21",
+     "price": 2.999
+    },
+    {
+     "date": "2018-05-28",
+     "price": 3.039
+    },
+    {
+     "date": "2018-06-04",
+     "price": 3.018
+    },
+    {
+     "date": "2018-06-11",
+     "price": 2.989
+    },
+    {
+     "date": "2018-06-18",
+     "price": 2.958
+    },
+    {
+     "date": "2018-06-25",
+     "price": 2.913
+    },
+    {
+     "date": "2018-07-02",
+     "price": 2.924
+    },
+    {
+     "date": "2018-07-09",
+     "price": 2.937
+    },
+    {
+     "date": "2018-07-16",
+     "price": 2.943
+    },
+    {
+     "date": "2018-07-23",
+     "price": 2.911
+    },
+    {
+     "date": "2018-07-30",
+     "price": 2.924
+    },
+    {
+     "date": "2018-08-06",
+     "price": 2.93
+    },
+    {
+     "date": "2018-08-13",
+     "price": 2.921
+    },
+    {
+     "date": "2018-08-20",
+     "price": 2.9
+    },
+    {
+     "date": "2018-08-27",
+     "price": 2.906
+    },
+    {
+     "date": "2018-09-03",
+     "price": 2.903
+    },
+    {
+     "date": "2018-09-10",
+     "price": 2.912
+    },
+    {
+     "date": "2018-09-17",
+     "price": 2.921
+    },
+    {
+     "date": "2018-09-24",
+     "price": 2.923
+    },
+    {
+     "date": "2018-10-01",
+     "price": 2.947
+    },
+    {
+     "date": "2018-10-08",
+     "price": 2.984
+    },
+    {
+     "date": "2018-10-15",
+     "price": 2.961
+    },
+    {
+     "date": "2018-10-22",
+     "price": 2.925
+    },
+    {
+     "date": "2018-10-29",
+     "price": 2.896
+    },
+    {
+     "date": "2018-11-05",
+     "price": 2.84
+    },
+    {
+     "date": "2018-11-12",
+     "price": 2.773
+    },
+    {
+     "date": "2018-11-19",
+     "price": 2.7
+    },
+    {
+     "date": "2018-11-26",
+     "price": 2.63
+    },
+    {
+     "date": "2018-12-03",
+     "price": 2.544
+    },
+    {
+     "date": "2018-12-10",
+     "price": 2.511
+    },
+    {
+     "date": "2018-12-17",
+     "price": 2.46
+    },
+    {
+     "date": "2018-12-24",
+     "price": 2.413
+    },
+    {
+     "date": "2018-12-31",
+     "price": 2.358
+    },
+    {
+     "date": "2019-01-07",
+     "price": 2.329
+    },
+    {
+     "date": "2019-01-14",
+     "price": 2.338
+    },
+    {
+     "date": "2019-01-21",
+     "price": 2.34
+    },
+    {
+     "date": "2019-01-28",
+     "price": 2.343
+    },
+    {
+     "date": "2019-02-04",
+     "price": 2.341
+    },
+    {
+     "date": "2019-02-11",
+     "price": 2.361
+    },
+    {
+     "date": "2019-02-18",
+     "price": 2.4
+    },
+    {
+     "date": "2019-02-25",
+     "price": 2.471
+    },
+    {
+     "date": "2019-03-04",
+     "price": 2.502
+    },
+    {
+     "date": "2019-03-11",
+     "price": 2.549
+    },
+    {
+     "date": "2019-03-18",
+     "price": 2.625
+    },
+    {
+     "date": "2019-03-25",
+     "price": 2.701
+    },
+    {
+     "date": "2019-04-01",
+     "price": 2.77
+    },
+    {
+     "date": "2019-04-08",
+     "price": 2.826
+    },
+    {
+     "date": "2019-04-15",
+     "price": 2.912
+    },
+    {
+     "date": "2019-04-22",
+     "price": 2.926
+    },
+    {
+     "date": "2019-04-29",
+     "price": 2.972
+    },
+    {
+     "date": "2019-05-06",
+     "price": 2.983
+    },
+    {
+     "date": "2019-05-13",
+     "price": 2.954
+    },
+    {
+     "date": "2019-05-20",
+     "price": 2.939
+    },
+    {
+     "date": "2019-05-27",
+     "price": 2.909
+    },
+    {
+     "date": "2019-06-03",
+     "price": 2.893
+    },
+    {
+     "date": "2019-06-10",
+     "price": 2.821
+    },
+    {
+     "date": "2019-06-17",
+     "price": 2.759
+    },
+    {
+     "date": "2019-06-24",
+     "price": 2.741
+    },
+    {
+     "date": "2019-07-01",
+     "price": 2.798
+    },
+    {
+     "date": "2019-07-08",
+     "price": 2.827
+    },
+    {
+     "date": "2019-07-15",
+     "price": 2.86
+    },
+    {
+     "date": "2019-07-22",
+     "price": 2.833
+    },
+    {
+     "date": "2019-07-29",
+     "price": 2.798
+    },
+    {
+     "date": "2019-08-05",
+     "price": 2.772
+    },
+    {
+     "date": "2019-08-12",
+     "price": 2.71
+    },
+    {
+     "date": "2019-08-19",
+     "price": 2.684
+    },
+    {
+     "date": "2019-08-26",
+     "price": 2.661
+    },
+    {
+     "date": "2019-09-02",
+     "price": 2.651
+    },
+    {
+     "date": "2019-09-09",
+     "price": 2.638
+    },
+    {
+     "date": "2019-09-16",
+     "price": 2.64
+    },
+    {
+     "date": "2019-09-23",
+     "price": 2.741
+    },
+    {
+     "date": "2019-09-30",
+     "price": 2.737
+    },
+    {
+     "date": "2019-10-07",
+     "price": 2.742
+    },
+    {
+     "date": "2019-10-14",
+     "price": 2.727
+    },
+    {
+     "date": "2019-10-21",
+     "price": 2.735
+    },
+    {
+     "date": "2019-10-28",
+     "price": 2.692
+    },
+    {
+     "date": "2019-11-04",
+     "price": 2.702
+    },
+    {
+     "date": "2019-11-11",
+     "price": 2.711
+    },
+    {
+     "date": "2019-11-18",
+     "price": 2.688
+    },
+    {
+     "date": "2019-11-25",
+     "price": 2.672
+    },
+    {
+     "date": "2019-12-02",
+     "price": 2.667
+    },
+    {
+     "date": "2019-12-09",
+     "price": 2.652
+    },
+    {
+     "date": "2019-12-16",
+     "price": 2.627
+    },
+    {
+     "date": "2019-12-23",
+     "price": 2.621
+    },
+    {
+     "date": "2019-12-30",
+     "price": 2.658
+    },
+    {
+     "date": "2020-01-06",
+     "price": 2.665
+    },
+    {
+     "date": "2020-01-13",
+     "price": 2.657
+    },
+    {
+     "date": "2020-01-20",
+     "price": 2.625
+    },
+    {
+     "date": "2020-01-27",
+     "price": 2.595
+    },
+    {
+     "date": "2020-02-03",
+     "price": 2.546
+    },
+    {
+     "date": "2020-02-10",
+     "price": 2.511
+    },
+    {
+     "date": "2020-02-17",
+     "price": 2.518
+    },
+    {
+     "date": "2020-02-24",
+     "price": 2.555
+    },
+    {
+     "date": "2020-03-02",
+     "price": 2.514
+    },
+    {
+     "date": "2020-03-09",
+     "price": 2.468
+    },
+    {
+     "date": "2020-03-16",
+     "price": 2.343
+    },
+    {
+     "date": "2020-03-23",
+     "price": 2.217
+    },
+    {
+     "date": "2020-03-30",
+     "price": 2.103
+    },
+    {
+     "date": "2020-04-06",
+     "price": 2.022
+    },
+    {
+     "date": "2020-04-13",
+     "price": 1.951
+    },
+    {
+     "date": "2020-04-20",
+     "price": 1.91
+    },
+    {
+     "date": "2020-04-27",
+     "price": 1.87
+    },
+    {
+     "date": "2020-05-04",
+     "price": 1.883
+    },
+    {
+     "date": "2020-05-11",
+     "price": 1.941
+    },
+    {
+     "date": "2020-05-18",
+     "price": 1.969
+    },
+    {
+     "date": "2020-05-25",
+     "price": 2.049
+    },
+    {
+     "date": "2020-06-01",
+     "price": 2.064
+    },
+    {
+     "date": "2020-06-08",
+     "price": 2.123
+    },
+    {
+     "date": "2020-06-15",
+     "price": 2.185
+    },
+    {
+     "date": "2020-06-22",
+     "price": 2.216
+    },
+    {
+     "date": "2020-06-29",
+     "price": 2.26
+    },
+    {
+     "date": "2020-07-06",
+     "price": 2.265
+    },
+    {
+     "date": "2020-07-13",
+     "price": 2.283
+    },
+    {
+     "date": "2020-07-20",
+     "price": 2.275
+    },
+    {
+     "date": "2020-07-27",
+     "price": 2.265
+    },
+    {
+     "date": "2020-08-03",
+     "price": 2.266
+    },
+    {
+     "date": "2020-08-10",
+     "price": 2.256
+    },
+    {
+     "date": "2020-08-17",
+     "price": 2.256
+    },
+    {
+     "date": "2020-08-24",
+     "price": 2.272
+    },
+    {
+     "date": "2020-08-31",
+     "price": 2.311
+    },
+    {
+     "date": "2020-09-07",
+     "price": 2.302
+    },
+    {
+     "date": "2020-09-14",
+     "price": 2.274
+    },
+    {
+     "date": "2020-09-21",
+     "price": 2.259
+    },
+    {
+     "date": "2020-09-28",
+     "price": 2.259
+    },
+    {
+     "date": "2020-10-05",
+     "price": 2.262
+    },
+    {
+     "date": "2020-10-12",
+     "price": 2.257
+    },
+    {
+     "date": "2020-10-19",
+     "price": 2.24
+    },
+    {
+     "date": "2020-10-26",
+     "price": 2.234
+    },
+    {
+     "date": "2020-11-02",
+     "price": 2.204
+    },
+    {
+     "date": "2020-11-09",
+     "price": 2.188
+    },
+    {
+     "date": "2020-11-16",
+     "price": 2.202
+    },
+    {
+     "date": "2020-11-23",
+     "price": 2.194
+    },
+    {
+     "date": "2020-11-30",
+     "price": 2.211
+    },
+    {
+     "date": "2020-12-07",
+     "price": 2.246
+    },
+    {
+     "date": "2020-12-14",
+     "price": 2.247
+    },
+    {
+     "date": "2020-12-21",
+     "price": 2.311
+    },
+    {
+     "date": "2020-12-28",
+     "price": 2.33
+    },
+    {
+     "date": "2021-01-04",
+     "price": 2.336
+    },
+    {
+     "date": "2021-01-11",
+     "price": 2.403
+    },
+    {
+     "date": "2021-01-18",
+     "price": 2.464
+    },
+    {
+     "date": "2021-01-25",
+     "price": 2.478
+    },
+    {
+     "date": "2021-02-01",
+     "price": 2.495
+    },
+    {
+     "date": "2021-02-08",
+     "price": 2.548
+    },
+    {
+     "date": "2021-02-15",
+     "price": 2.588
+    },
+    {
+     "date": "2021-02-22",
+     "price": 2.717
+    },
+    {
+     "date": "2021-03-01",
+     "price": 2.796
+    },
+    {
+     "date": "2021-03-08",
+     "price": 2.857
+    },
+    {
+     "date": "2021-03-15",
+     "price": 2.94
+    },
+    {
+     "date": "2021-03-22",
+     "price": 2.954
+    },
+    {
+     "date": "2021-03-29",
+     "price": 2.941
+    },
+    {
+     "date": "2021-04-05",
+     "price": 2.945
+    },
+    {
+     "date": "2021-04-12",
+     "price": 2.939
+    },
+    {
+     "date": "2021-04-19",
+     "price": 2.945
+    },
+    {
+     "date": "2021-04-26",
+     "price": 2.962
+    },
+    {
+     "date": "2021-05-03",
+     "price": 2.981
+    },
+    {
+     "date": "2021-05-10",
+     "price": 3.051
+    },
+    {
+     "date": "2021-05-17",
+     "price": 3.118
+    },
+    {
+     "date": "2021-05-24",
+     "price": 3.112
+    },
+    {
+     "date": "2021-05-31",
+     "price": 3.119
+    },
+    {
+     "date": "2021-06-07",
+     "price": 3.128
+    },
+    {
+     "date": "2021-06-14",
+     "price": 3.161
+    },
+    {
+     "date": "2021-06-21",
+     "price": 3.153
+    },
+    {
+     "date": "2021-06-28",
+     "price": 3.185
+    },
+    {
+     "date": "2021-07-05",
+     "price": 3.216
+    },
+    {
+     "date": "2021-07-12",
+     "price": 3.227
+    },
+    {
+     "date": "2021-07-19",
+     "price": 3.247
+    },
+    {
+     "date": "2021-07-26",
+     "price": 3.232
+    },
+    {
+     "date": "2021-08-02",
+     "price": 3.256
+    },
+    {
+     "date": "2021-08-09",
+     "price": 3.269
+    },
+    {
+     "date": "2021-08-16",
+     "price": 3.272
+    },
+    {
+     "date": "2021-08-23",
+     "price": 3.243
+    },
+    {
+     "date": "2021-08-30",
+     "price": 3.237
+    },
+    {
+     "date": "2021-09-06",
+     "price": 3.273
+    },
+    {
+     "date": "2021-09-13",
+     "price": 3.262
+    },
+    {
+     "date": "2021-09-20",
+     "price": 3.28
+    },
+    {
+     "date": "2021-09-27",
+     "price": 3.271
+    },
+    {
+     "date": "2021-10-04",
+     "price": 3.285
+    },
+    {
+     "date": "2021-10-11",
+     "price": 3.36
+    },
+    {
+     "date": "2021-10-18",
+     "price": 3.416
+    },
+    {
+     "date": "2021-10-25",
+     "price": 3.476
+    },
+    {
+     "date": "2021-11-01",
+     "price": 3.484
+    },
+    {
+     "date": "2021-11-08",
+     "price": 3.505
+    },
+    {
+     "date": "2021-11-15",
+     "price": 3.495
+    },
+    {
+     "date": "2021-11-22",
+     "price": 3.493
+    },
+    {
+     "date": "2021-11-29",
+     "price": 3.478
+    },
+    {
+     "date": "2021-12-06",
+     "price": 3.44
+    },
+    {
+     "date": "2021-12-13",
+     "price": 3.414
+    },
+    {
+     "date": "2021-12-20",
+     "price": 3.395
+    },
+    {
+     "date": "2021-12-27",
+     "price": 3.375
+    },
+    {
+     "date": "2022-01-03",
+     "price": 3.381
+    },
+    {
+     "date": "2022-01-10",
+     "price": 3.394
+    },
+    {
+     "date": "2022-01-17",
+     "price": 3.404
+    },
+    {
+     "date": "2022-01-24",
+     "price": 3.421
+    },
+    {
+     "date": "2022-01-31",
+     "price": 3.464
+    },
+    {
+     "date": "2022-02-07",
+     "price": 3.538
+    },
+    {
+     "date": "2022-02-14",
+     "price": 3.581
+    },
+    {
+     "date": "2022-02-21",
+     "price": 3.624
+    },
+    {
+     "date": "2022-02-28",
+     "price": 3.701
+    },
+    {
+     "date": "2022-03-07",
+     "price": 4.196
+    },
+    {
+     "date": "2022-03-14",
+     "price": 4.414
+    },
+    {
+     "date": "2022-03-21",
+     "price": 4.343
+    },
+    {
+     "date": "2022-03-28",
+     "price": 4.334
+    },
+    {
+     "date": "2022-04-04",
+     "price": 4.274
+    },
+    {
+     "date": "2022-04-11",
+     "price": 4.196
+    },
+    {
+     "date": "2022-04-18",
+     "price": 4.17
+    },
+    {
+     "date": "2022-04-25",
+     "price": 4.211
+    },
+    {
+     "date": "2022-05-02",
+     "price": 4.285
+    },
+    {
+     "date": "2022-05-09",
+     "price": 4.428
+    },
+    {
+     "date": "2022-05-16",
+     "price": 4.591
+    },
+    {
+     "date": "2022-05-23",
+     "price": 4.694
+    },
+    {
+     "date": "2022-05-30",
+     "price": 4.727
+    },
+    {
+     "date": "2022-06-06",
+     "price": 4.977
+    },
+    {
+     "date": "2022-06-13",
+     "price": 5.107
+    },
+    {
+     "date": "2022-06-20",
+     "price": 5.066
+    },
+    {
+     "date": "2022-06-27",
+     "price": 4.979
+    },
+    {
+     "date": "2022-07-04",
+     "price": 4.879
+    },
+    {
+     "date": "2022-07-11",
+     "price": 4.754
+    },
+    {
+     "date": "2022-07-18",
+     "price": 4.599
+    },
+    {
+     "date": "2022-07-25",
+     "price": 4.44
+    },
+    {
+     "date": "2022-08-01",
+     "price": 4.304
+    },
+    {
+     "date": "2022-08-08",
+     "price": 4.151
+    },
+    {
+     "date": "2022-08-15",
+     "price": 4.051
+    },
+    {
+     "date": "2022-08-22",
+     "price": 3.993
+    },
+    {
+     "date": "2022-08-29",
+     "price": 3.938
+    },
+    {
+     "date": "2022-09-05",
+     "price": 3.859
+    },
+    {
+     "date": "2022-09-12",
+     "price": 3.805
+    },
+    {
+     "date": "2022-09-19",
+     "price": 3.771
+    },
+    {
+     "date": "2022-09-26",
+     "price": 3.832
+    },
+    {
+     "date": "2022-10-03",
+     "price": 3.909
+    },
+    {
+     "date": "2022-10-10",
+     "price": 4.034
+    },
+    {
+     "date": "2022-10-17",
+     "price": 3.99
+    },
+    {
+     "date": "2022-10-24",
+     "price": 3.887
+    },
+    {
+     "date": "2022-10-31",
+     "price": 3.857
+    },
+    {
+     "date": "2022-11-07",
+     "price": 3.909
+    },
+    {
+     "date": "2022-11-14",
+     "price": 3.876
+    },
+    {
+     "date": "2022-11-21",
+     "price": 3.763
+    },
+    {
+     "date": "2022-11-28",
+     "price": 3.649
+    },
+    {
+     "date": "2022-12-05",
+     "price": 3.504
+    },
+    {
+     "date": "2022-12-12",
+     "price": 3.353
+    },
+    {
+     "date": "2022-12-19",
+     "price": 3.234
+    },
+    {
+     "date": "2022-12-26",
+     "price": 3.203
+    },
+    {
+     "date": "2023-01-02",
+     "price": 3.331
+    },
+    {
+     "date": "2023-01-09",
+     "price": 3.366
+    },
+    {
+     "date": "2023-01-16",
+     "price": 3.416
+    },
+    {
+     "date": "2023-01-23",
+     "price": 3.519
+    },
+    {
+     "date": "2023-01-30",
+     "price": 3.594
+    },
+    {
+     "date": "2023-02-06",
+     "price": 3.552
+    },
+    {
+     "date": "2023-02-13",
+     "price": 3.502
+    },
+    {
+     "date": "2023-02-20",
+     "price": 3.494
+    },
+    {
+     "date": "2023-02-27",
+     "price": 3.457
+    },
+    {
+     "date": "2023-03-06",
+     "price": 3.505
+    },
+    {
+     "date": "2023-03-13",
+     "price": 3.568
+    },
+    {
+     "date": "2023-03-20",
+     "price": 3.534
+    },
+    {
+     "date": "2023-03-27",
+     "price": 3.533
+    },
+    {
+     "date": "2023-04-03",
+     "price": 3.606
+    },
+    {
+     "date": "2023-04-10",
+     "price": 3.703
+    },
+    {
+     "date": "2023-04-17",
+     "price": 3.769
+    },
+    {
+     "date": "2023-04-24",
+     "price": 3.765
+    },
+    {
+     "date": "2023-05-01",
+     "price": 3.711
+    },
+    {
+     "date": "2023-05-08",
+     "price": 3.644
+    },
+    {
+     "date": "2023-05-15",
+     "price": 3.647
+    },
+    {
+     "date": "2023-05-22",
+     "price": 3.645
+    },
+    {
+     "date": "2023-05-29",
+     "price": 3.684
+    },
+    {
+     "date": "2023-06-05",
+     "price": 3.655
+    },
+    {
+     "date": "2023-06-12",
+     "price": 3.707
+    },
+    {
+     "date": "2023-06-19",
+     "price": 3.69
+    },
+    {
+     "date": "2023-06-26",
+     "price": 3.685
+    },
+    {
+     "date": "2023-07-03",
+     "price": 3.643
+    },
+    {
+     "date": "2023-07-10",
+     "price": 3.663
+    },
+    {
+     "date": "2023-07-17",
+     "price": 3.676
+    },
+    {
+     "date": "2023-07-24",
+     "price": 3.711
+    },
+    {
+     "date": "2023-07-31",
+     "price": 3.869
+    },
+    {
+     "date": "2023-08-07",
+     "price": 3.94
+    },
+    {
+     "date": "2023-08-14",
+     "price": 3.962
+    },
+    {
+     "date": "2023-08-21",
+     "price": 3.984
+    },
+    {
+     "date": "2023-08-28",
+     "price": 3.931
+    },
+    {
+     "date": "2023-09-04",
+     "price": 3.925
+    },
+    {
+     "date": "2023-09-11",
+     "price": 3.941
+    },
+    {
+     "date": "2023-09-18",
+     "price": 4.001
+    },
+    {
+     "date": "2023-09-25",
+     "price": 3.963
+    },
+    {
+     "date": "2023-10-02",
+     "price": 3.93
+    },
+    {
+     "date": "2023-10-09",
+     "price": 3.814
+    },
+    {
+     "date": "2023-10-16",
+     "price": 3.706
+    },
+    {
+     "date": "2023-10-23",
+     "price": 3.66
+    },
+    {
+     "date": "2023-10-30",
+     "price": 3.6
+    },
+    {
+     "date": "2023-11-06",
+     "price": 3.52
+    },
+    {
+     "date": "2023-11-13",
+     "price": 3.473
+    },
+    {
+     "date": "2023-11-20",
+     "price": 3.414
+    },
+    {
+     "date": "2023-11-27",
+     "price": 3.363
+    },
+    {
+     "date": "2023-12-04",
+     "price": 3.355
+    },
+    {
+     "date": "2023-12-11",
+     "price": 3.259
+    },
+    {
+     "date": "2023-12-18",
+     "price": 3.176
+    },
+    {
+     "date": "2023-12-25",
+     "price": 3.238
+    },
+    {
+     "date": "2024-01-01",
+     "price": 3.213
+    },
+    {
+     "date": "2024-01-08",
+     "price": 3.197
+    },
+    {
+     "date": "2024-01-15",
+     "price": 3.179
+    },
+    {
+     "date": "2024-01-22",
+     "price": 3.181
+    },
+    {
+     "date": "2024-01-29",
+     "price": 3.214
+    },
+    {
+     "date": "2024-02-05",
+     "price": 3.254
+    },
+    {
+     "date": "2024-02-12",
+     "price": 3.309
+    },
+    {
+     "date": "2024-02-19",
+     "price": 3.385
+    },
+    {
+     "date": "2024-02-26",
+     "price": 3.365
+    },
+    {
+     "date": "2024-03-04",
+     "price": 3.466
+    },
+    {
+     "date": "2024-03-11",
+     "price": 3.492
+    },
+    {
+     "date": "2024-03-18",
+     "price": 3.569
+    },
+    {
+     "date": "2024-03-25",
+     "price": 3.639
+    },
+    {
+     "date": "2024-04-01",
+     "price": 3.636
+    },
+    {
+     "date": "2024-04-08",
+     "price": 3.712
+    },
+    {
+     "date": "2024-04-15",
+     "price": 3.751
+    },
+    {
+     "date": "2024-04-22",
+     "price": 3.791
+    },
+    {
+     "date": "2024-04-29",
+     "price": 3.777
+    },
+    {
+     "date": "2024-05-06",
+     "price": 3.766
+    },
+    {
+     "date": "2024-05-13",
+     "price": 3.731
+    },
+    {
+     "date": "2024-05-20",
+     "price": 3.706
+    },
+    {
+     "date": "2024-05-27",
+     "price": 3.698
+    },
+    {
+     "date": "2024-06-03",
+     "price": 3.638
+    },
+    {
+     "date": "2024-06-10",
+     "price": 3.551
+    },
+    {
+     "date": "2024-06-17",
+     "price": 3.556
+    },
+    {
+     "date": "2024-06-24",
+     "price": 3.557
+    },
+    {
+     "date": "2024-07-01",
+     "price": 3.595
+    },
+    {
+     "date": "2024-07-08",
+     "price": 3.608
+    },
+    {
+     "date": "2024-07-15",
+     "price": 3.614
+    },
+    {
+     "date": "2024-07-22",
+     "price": 3.587
+    },
+    {
+     "date": "2024-07-29",
+     "price": 3.598
+    },
+    {
+     "date": "2024-08-05",
+     "price": 3.563
+    },
+    {
+     "date": "2024-08-12",
+     "price": 3.53
+    },
+    {
+     "date": "2024-08-19",
+     "price": 3.5
+    },
+    {
+     "date": "2024-08-26",
+     "price": 3.433
+    },
+    {
+     "date": "2024-09-02",
+     "price": 3.411
+    },
+    {
+     "date": "2024-09-09",
+     "price": 3.36
+    },
+    {
+     "date": "2024-09-16",
+     "price": 3.307
+    },
+    {
+     "date": "2024-09-23",
+     "price": 3.311
+    },
+    {
+     "date": "2024-09-30",
+     "price": 3.303
+    },
+    {
+     "date": "2024-10-07",
+     "price": 3.26
+    },
+    {
+     "date": "2024-10-14",
+     "price": 3.294
+    },
+    {
+     "date": "2024-10-21",
+     "price": 3.268
+    },
+    {
+     "date": "2024-10-28",
+     "price": 3.22
+    },
+    {
+     "date": "2024-11-04",
+     "price": 3.191
+    },
+    {
+     "date": "2024-11-11",
+     "price": 3.176
+    },
+    {
+     "date": "2024-11-18",
+     "price": 3.168
+    },
+    {
+     "date": "2024-11-25",
+     "price": 3.166
+    },
+    {
+     "date": "2024-12-02",
+     "price": 3.156
+    },
+    {
+     "date": "2024-12-09",
+     "price": 3.131
+    },
+    {
+     "date": "2024-12-16",
+     "price": 3.137
+    },
+    {
+     "date": "2024-12-23",
+     "price": 3.145
+    },
+    {
+     "date": "2024-12-30",
+     "price": 3.128
+    },
+    {
+     "date": "2025-01-06",
+     "price": 3.168
+    },
+    {
+     "date": "2025-01-13",
+     "price": 3.164
+    },
+    {
+     "date": "2025-01-20",
+     "price": 3.229
+    },
+    {
+     "date": "2025-01-27",
+     "price": 3.224
+    },
+    {
+     "date": "2025-02-03",
+     "price": 3.205
+    },
+    {
+     "date": "2025-02-10",
+     "price": 3.253
+    },
+    {
+     "date": "2025-02-17",
+     "price": 3.276
+    },
+    {
+     "date": "2025-02-24",
+     "price": 3.255
+    },
+    {
+     "date": "2025-03-03",
+     "price": 3.206
+    },
+    {
+     "date": "2025-03-10",
+     "price": 3.197
+    },
+    {
+     "date": "2025-03-17",
+     "price": 3.184
+    },
+    {
+     "date": "2025-03-24",
+     "price": 3.24
+    },
+    {
+     "date": "2025-03-31",
+     "price": 3.288
+    },
+    {
+     "date": "2025-04-07",
+     "price": 3.37
+    },
+    {
+     "date": "2025-04-14",
+     "price": 3.295
+    },
+    {
+     "date": "2025-04-21",
+     "price": 3.268
+    },
+    {
+     "date": "2025-04-28",
+     "price": 3.261
+    },
+    {
+     "date": "2025-05-05",
+     "price": 3.273
+    },
+    {
+     "date": "2025-05-12",
+     "price": 3.249
+    },
+    {
+     "date": "2025-05-19",
+     "price": 3.302
+    },
+    {
+     "date": "2025-05-26",
+     "price": 3.288
+    },
+    {
+     "date": "2025-06-02",
+     "price": 3.256
+    },
+    {
+     "date": "2025-06-09",
+     "price": 3.235
+    },
+    {
+     "date": "2025-06-16",
+     "price": 3.265
+    },
+    {
+     "date": "2025-06-23",
+     "price": 3.338
+    },
+    {
+     "date": "2025-06-30",
+     "price": 3.288
+    },
+    {
+     "date": "2025-07-07",
+     "price": 3.251
+    },
+    {
+     "date": "2025-07-14",
+     "price": 3.254
+    },
+    {
+     "date": "2025-07-21",
+     "price": 3.246
+    },
+    {
+     "date": "2025-07-28",
+     "price": 3.247
+    },
+    {
+     "date": "2025-08-04",
+     "price": 3.265
+    },
+    {
+     "date": "2025-08-11",
+     "price": 3.243
+    },
+    {
+     "date": "2025-08-18",
+     "price": 3.251
+    },
+    {
+     "date": "2025-08-25",
+     "price": 3.272
+    },
+    {
+     "date": "2025-09-01",
+     "price": 3.303
+    },
+    {
+     "date": "2025-09-08",
+     "price": 3.319
+    },
+    {
+     "date": "2025-09-15",
+     "price": 3.296
+    },
+    {
+     "date": "2025-09-22",
+     "price": 3.301
+    },
+    {
+     "date": "2025-09-29",
+     "price": 3.248
+    },
+    {
+     "date": "2025-10-06",
+     "price": 3.253
+    },
+    {
+     "date": "2025-10-13",
+     "price": 3.193
+    },
+    {
+     "date": "2025-10-20",
+     "price": 3.151
+    },
+    {
+     "date": "2025-10-27",
+     "price": 3.164
+    },
+    {
+     "date": "2025-11-03",
+     "price": 3.151
+    },
+    {
+     "date": "2025-11-10",
+     "price": 3.186
+    },
+    {
+     "date": "2025-11-17",
+     "price": 3.19
+    },
+    {
+     "date": "2025-11-24",
+     "price": 3.19
+    },
+    {
+     "date": "2025-12-01",
+     "price": 3.115
+    },
+    {
+     "date": "2025-12-08",
+     "price": 3.07
+    },
+    {
+     "date": "2025-12-15",
+     "price": 3.024
+    },
+    {
+     "date": "2025-12-22",
+     "price": 2.97
+    },
+    {
+     "date": "2025-12-29",
+     "price": 2.94
+    },
+    {
+     "date": "2026-01-05",
+     "price": 2.925
+    },
+    {
+     "date": "2026-01-12",
+     "price": 2.907
+    },
+    {
+     "date": "2026-01-19",
+     "price": 2.933
+    },
+    {
+     "date": "2026-01-26",
+     "price": 2.98
+    },
+    {
+     "date": "2026-02-02",
+     "price": 2.995
+    },
+    {
+     "date": "2026-02-09",
+     "price": 3.033
+    },
+    {
+     "date": "2026-02-16",
+     "price": 3.057
+    },
+    {
+     "date": "2026-02-23",
+     "price": 3.072
+    },
+    {
+     "date": "2026-03-02",
+     "price": 3.148
+    },
+    {
+     "date": "2026-03-09",
+     "price": 3.633
+    },
+    {
+     "date": "2026-03-16",
+     "price": 3.854
+    },
+    {
+     "date": "2026-03-23",
+     "price": 4.096
+    },
+    {
+     "date": "2026-03-30",
+     "price": 4.126
+    },
+    {
+     "date": "2026-04-06",
+     "price": 4.254
+    },
+    {
+     "date": "2026-04-13",
+     "price": 4.254
+    },
+    {
+     "date": "2026-04-20",
+     "price": 4.178
+    },
+    {
+     "date": "2026-04-27",
+     "price": 4.257
+    },
+    {
+     "date": "2026-05-04",
+     "price": 4.581
+    },
+    {
+     "date": "2026-05-11",
+     "price": 4.628
+    },
+    {
+     "date": "2026-05-18",
+     "price": 4.621
+    },
+    {
+     "date": "2026-05-25",
+     "price": 4.605
+    },
+    {
+     "date": "2026-06-01",
+     "price": 4.439
+    },
+    {
+     "date": "2026-06-08",
+     "price": 4.281
+    },
+    {
+     "date": "2026-06-15",
+     "price": 4.187
+    },
+    {
+     "date": "2026-06-22",
+     "price": 4.048
+    },
+    {
+     "date": "2026-06-29",
+     "price": 3.964
+    },
+    {
+     "date": "2026-07-06",
+     "price": 3.911
+    },
+    {
+     "date": "2026-07-13",
+     "price": 3.987
+    },
+    {
+     "date": "2026-07-20",
+     "price": 4.131
+    },
+    {
+     "date": "2026-07-27",
+     "price": 4.228
+    },
+    {
+     "date": "2026-08-03",
+     "price": 4.211
+    },
+    {
+     "date": "2026-08-10",
+     "price": 4.141
+    },
+    {
+     "date": "2026-08-17",
+     "price": 4.182
+    },
+    {
+     "date": "2026-08-24",
+     "price": 4.218
+    },
+    {
+     "date": "2026-08-31",
+     "price": 4.207
+    },
+    {
+     "date": "2026-09-07",
+     "price": 4.295
+    },
+    {
+     "date": "2026-09-14",
+     "price": 4.455
+    },
+    {
+     "date": "2026-09-21",
+     "price": 4.61
+    },
+    {
+     "date": "2026-09-28",
+     "price": 4.603
+    }
+   ],
+   "baselineDate": "2025-01-20",
+   "latestDate": "2026-09-28"
+  },
+  "error": null,
+  "fetchedAt": "2026-10-02T19:35:22.603Z",
+  "sourceId": "eia-gas"
+ },
+ "census": {
+  "data": {
+   "zip": "98683",
+   "medianIncome": 83821,
+   "medianRent": 1783,
+   "year": 2023,
+   "isFallback": false,
+   "isRentFallback": false,
+   "isCityLevel": false
+  },
+  "error": null,
+  "fetchedAt": "2026-10-02T19:35:22.603Z",
+  "sourceId": "census-acs"
+ },
+ "tariff": {
+  "data": {
+   "medianIncome": 83821,
+   "tariffRate": 0.0205,
+   "estimatedCost": 1718,
+   "source": "Yale Budget Lab",
+   "incomeSource": "census-acs-2023",
+   "isFallback": false
+  },
+  "error": null,
+  "fetchedAt": "2026-10-02T19:35:22.603Z",
+  "sourceId": "yale-budget-lab"
+ },
+ "dollarImpact": {
+  "groceries": 240,
+  "shelter": 1134,
+  "gas": 1.663,
+  "tariff": 1718
+ },
+ "fetchedAt": "2026-10-02T19:35:22.603Z",
+ "cacheStatus": {
+  "unemployment": "hit",
+  "cpi": "hit",
+  "gas": "hit",
+  "census": "hit"
+ },
+ "rent": {
+  "pct": 0.8,
+  "baseRent": 1829,
+  "curRent": 1891,
+  "monthlyChange": 15,
+  "baseMonth": "2025-01",
+  "asOf": "2026-08",
+  "countyFips": "53011",
+  "geoName": "Clark County, WA",
+  "source": "Zillow Observed Rent Index (ZORI)",
+  "sourceUrl": "https://www.zillow.com/research/data/",
+  "adjustment": "seasonally adjusted by whatchanged"
+ }
+}

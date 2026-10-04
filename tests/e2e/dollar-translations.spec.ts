@@ -1,165 +1,62 @@
 import { test, expect } from '@playwright/test'
+import { mockDataApi, enterZip, loadFixture } from './helpers'
 
-const MOCK_SNAPSHOT = {
-  zip: '98683',
-  location: {
-    zip: '98683',
-    countyFips: '53011',
-    countyName: 'Clark County',
-    stateName: 'Washington',
-    stateAbbr: 'WA',
-    cityName: 'Vancouver',
-  },
-  gas: {
-    data: {
-      current: 3.45,
-      baseline: 3.2,
-      change: 0.25,
-      region: 'Washington',
-      geoLevel: 'Washington state avg',
-      isNationalFallback: false,
-      duoarea: 'SWA',
-      series: [],
-      nationalSeries: [],
-    },
-    error: null,
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'eia',
-  },
-  cpi: {
-    data: {
-      groceriesCurrent: 330.5,
-      groceriesBaseline: 320.0,
-      groceriesChange: 3.3,
-      shelterCurrent: 410.2,
-      shelterBaseline: 400.0,
-      shelterChange: 2.6,
-      energyCurrent: 280.0,
-      energyBaseline: 275.0,
-      energyChange: 1.8,
-      metro: 'Seattle-Tacoma-Bellevue',
-      seriesIds: {
-        groceries: 'CUURS49DSAF11',
-        shelter: 'CUURS49DSAH1',
-        energy: 'CUURS49DSA0E',
-      },
-      series: [],
-      nationalSeries: [],
-    },
-    error: null,
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'bls-cpi',
-  },
-  census: {
-    data: {
-      medianIncome: 82000,
-      medianRent: 1500,
-      zip: '98683',
-      year: 2023,
-    },
-    error: null,
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'census',
-  },
-  tariff: {
-    data: {
-      medianIncome: 82000,
-      tariffRate: 0.0205,
-      estimatedCost: 1681,
-      source: 'Yale Budget Lab',
-      incomeSource: 'Census ACS',
-      isFallback: false,
-    },
-    error: null,
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'tariff',
-  },
-  unemployment: {
-    data: {
-      current: 4.2,
-      baseline: 3.8,
-      change: 0.4,
-      countyFips: '53011',
-      seriesId: 'LAUCN530110000000003',
-      series: [],
-      nationalSeries: [],
-    },
-    error: null,
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'bls-laus',
-  },
-  federal: {
-    data: null,
-    error: 'not displayed',
-    fetchedAt: new Date().toISOString(),
-    sourceId: 'usaspending',
-  },
-  fetchedAt: new Date().toISOString(),
-  cacheStatus: {
-    unemployment: 'hit',
-    cpi: 'hit',
-    gas: 'hit',
-    federal: 'hit',
-    census: 'hit',
-  },
+// Rendered dollars must equal the stated formula applied to the API numbers.
+const fx = loadFixture('98683') as {
+  gas: { data: { current: number; change: number } }
+  cpi: { data: { groceriesChange: number; shelterChange: number } }
+  rent: { pct: number; curRent: number }
+  tariff: { data: { medianIncome: number } }
+  census: { data: { medianRent: number } }
 }
+const usd = (v: number, d = 0) =>
+  `${v > 0 ? '+' : v < 0 ? '−' : ''}$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}`
 
-async function enterZipAndWaitForCards(page: import('@playwright/test').Page) {
-  await page.goto('/')
-  await page.getByTestId('zip-input').fill('98683')
-  await page.getByRole('button', { name: /See What Changed/i }).click()
-  await expect(page.getByTestId('stat-cards')).toBeVisible({ timeout: 10000 })
-}
-
-test.describe('Dollar translation accuracy', () => {
+test.describe('Dollar translation accuracy (98683 fixture)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/data/98683', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(MOCK_SNAPSHOT),
-      })
-    })
+    await mockDataApi(page)
+    await enterZip(page, '98683')
   })
 
-  test('gas card shows correct dollar change and price', async ({ page }) => {
-    await enterZipAndWaitForCards(page)
-
-    const cards = page.getByTestId('stat-cards')
-    // Gas: current = $3.45/gal, change = +$0.25
-    await expect(cards).toContainText('$3.45/gal')
-    await expect(cards).toContainText('+$0.25')
+  test('gas: price and signed $/gal change', async ({ page }) => {
+    const card = page.getByTestId('stat-card-gas')
+    await expect(card).toContainText(`$${fx.gas.data.current.toFixed(2)}/gal`)
+    await expect(card).toContainText(`${usd(fx.gas.data.change, 2)}/gal`)
   })
 
-  test('shelter card shows correct dollar impact from median rent', async ({ page }) => {
-    await enterZipAndWaitForCards(page)
-
-    const cards = page.getByTestId('stat-cards')
-    // shelterChange = 2.6%, medianRent = 1500
-    // annualRent = 1500 * 12 = 18000
-    // dollarImpact = Math.round(18000 * 2.6 / 100) = Math.round(468) = 468
-    await expect(cards).toContainText('+2.6%')
-    await expect(cards).toContainText('$468/yr')
+  test('groceries: $6,000/yr × % change', async ({ page }) => {
+    const expected = Math.round((6000 * fx.cpi.data.groceriesChange) / 100)
+    await expect(page.getByTestId('stat-card-groceries')).toContainText(`${usd(expected)}/yr on $6,000/yr`)
   })
 
-  test('grocery card shows correct income-scaled dollar impact', async ({ page }) => {
-    await enterZipAndWaitForCards(page)
-
-    const cards = page.getByTestId('stat-cards')
-    // groceriesChange = 3.3%, medianIncome = 82000
-    // grocerySpend = 6000 * (82000 / 74580) ≈ 6596.94
-    // dollarImpact = Math.round(6596.94 * 3.3 / 100) = Math.round(217.7) = 218
-    await expect(cards).toContainText('+3.3%')
-    await expect(cards).toContainText('$218/yr')
+  test('rent: seasonally adjusted $/mo, raw rent shown only as a dated level', async ({ page }) => {
+    const expected = Math.round(fx.rent.curRent - fx.rent.curRent / (1 + fx.rent.pct / 100))
+    const card = page.getByTestId('stat-card-rent')
+    await expect(card).toContainText(`≈ ${usd(expected)}/mo vs Jan 2025, after adjusting for the usual seasonal`)
+    await expect(card.getByTestId('stat-detail')).toHaveText(/^Typical asking rent: \$[\d,]+\/mo \([A-Z][a-z]{2} \d{4}\)$/)
   })
 
-  test('tariff card shows correct estimate from median income', async ({ page }) => {
-    await enterZipAndWaitForCards(page)
-
-    const cards = page.getByTestId('stat-cards')
-    // medianIncome = 82000, tariffRate = 0.0205
-    // cost = Math.round(82000 * 0.0205) = Math.round(1681) = 1681
-    // formatDollars(1681) = "$1,681"
-    await expect(cards).toContainText('$1,681/yr')
+  test('tariff: median income × 0.0205', async ({ page }) => {
+    const expected = Math.round(fx.tariff.data.medianIncome * 0.0205)
+    await expect(page.getByTestId('stat-card-tariff')).toContainText(`~$${expected.toLocaleString('en-US')}/yr`)
   })
+})
+
+test('CPI shelter fallback: local rent × 12 × % change', async ({ page }) => {
+  await mockDataApi(page, { override: (_z, s) => ({ ...s, rent: null }) })
+  await enterZip(page, '98683')
+  const expected = Math.round((fx.census.data.medianRent * 12 * fx.cpi.data.shelterChange) / 100)
+  const card = page.getByTestId('stat-card-shelter')
+  await expect(card).toContainText('Shelter prices (CPI, all tenants & homeowners)')
+  await expect(card).toContainText(`${usd(expected)}/yr on local median rent`)
+})
+
+test('missing CPI renders "Data unavailable" cards, not 0%', async ({ page }) => {
+  await mockDataApi(page, {
+    override: (_z, s) => ({ ...s, rent: null, cpi: { data: null, error: 'Data unavailable', fetchedAt: '', sourceId: 'bls-cpi' } }),
+  })
+  await enterZip(page, '98683')
+  await expect(page.getByTestId('stat-card-groceries')).toContainText('Data unavailable')
+  await expect(page.getByTestId('stat-card-shelter')).toContainText('Data unavailable')
+  await expect(page.getByTestId('stat-cards')).not.toContainText('0.0%')
 })

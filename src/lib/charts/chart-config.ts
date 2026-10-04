@@ -1,3 +1,5 @@
+import { fmtSignedPct } from '@/lib/format'
+
 export type ChartType = 'area' | 'line' | 'bar'
 export type Timeframe = 'Jan 2025' | '3Y' | '5Y' | '10Y'
 export type ChartSize = 'small' | 'medium' | 'large'
@@ -39,8 +41,8 @@ export interface ChartConfig {
 export const chartConfigs: ChartConfig[] = [
   {
     id: 'gas',
-    title: 'Gas Prices',
-    description: 'Average retail price per gallon for regular gasoline in your state, updated weekly.',
+    title: 'Gas prices (regular)',
+    description: 'EIA average retail price per gallon of regular gasoline for the closest area EIA publishes (city, state, or region), updated weekly.',
     chartType: 'line',
     series: [
       { dataKey: 'price', label: 'Regular Gas ($/gal)', color: '#F59E0B', type: 'monotone' },
@@ -70,7 +72,7 @@ export const chartConfigs: ChartConfig[] = [
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
-    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
+    formatValue: (v) => fmtSignedPct(v),
     sourceLabel: 'BLS Consumer Price Index',
     sourceUrl: 'https://data.bls.gov/timeseries/CUUR0000SAF11',
     geoLevel: 'Metro area (when available)',
@@ -78,8 +80,8 @@ export const chartConfigs: ChartConfig[] = [
   },
   {
     id: 'cpi-shelter',
-    title: 'Housing Costs',
-    description: 'BLS index tracking rent, homeowner costs, and lodging. Covers what people pay for housing.',
+    title: 'Shelter prices (CPI)',
+    description: 'BLS CPI shelter: rent paid by all tenants (including existing leases) plus homeowners\' equivalent rent. It trails new-lease asking rents by about a year.',
     chartType: 'line',
     series: [
       { dataKey: 'shelter', label: 'Shelter', color: '#3B82F6', type: 'monotone' },
@@ -90,7 +92,7 @@ export const chartConfigs: ChartConfig[] = [
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
-    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
+    formatValue: (v) => fmtSignedPct(v),
     sourceLabel: 'BLS Consumer Price Index',
     geoLevel: 'Metro area (when available)',
     showNationalToggle: true,
@@ -98,7 +100,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'cpi-energy',
     title: 'Energy Costs',
-    description: 'BLS index tracking electricity, natural gas, and fuel oil prices for households.',
+    description: 'BLS CPI energy index: household energy (electricity, utility natural gas, fuel oil) plus motor fuel (gasoline), which is roughly half its weight.',
     chartType: 'line',
     series: [
       { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
@@ -109,15 +111,15 @@ export const chartConfigs: ChartConfig[] = [
     eraShading: true,
     yAxisLabel: '% change',
     normalizeToBaseline: true,
-    formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
+    formatValue: (v) => fmtSignedPct(v),
     sourceLabel: 'BLS Consumer Price Index',
     geoLevel: 'Metro area (when available)',
     showNationalToggle: true,
   },
   {
     id: 'unemployment',
-    title: 'Unemployment Rate',
-    description: 'Percentage of the labor force that is jobless and actively seeking work, measured at the county level.',
+    title: 'Unemployment rate',
+    description: 'Share of the labor force that is jobless and looking for work. Chart: monthly county and U.S. rates, not seasonally adjusted, so they rise and fall with the seasons.',
     chartType: 'area',
     series: [
       { dataKey: 'rate', label: 'Unemployment Rate', color: '#F59E0B', type: 'monotone' },

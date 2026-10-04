@@ -8,6 +8,7 @@ export function LocationBanner({ location }: { location: ZipInfo }) {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="text-center py-4"
+      data-testid="location-banner"
     >
       <p className="text-lg text-zinc-300" style={{ fontFamily: 'var(--font-inter, sans-serif)' }}>
         📍 {location.cityName ? `${location.cityName}, ${location.stateAbbr} — ${location.countyName}` : `${location.countyName}, ${location.stateAbbr}`}

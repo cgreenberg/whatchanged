@@ -2,7 +2,10 @@ import { fetchSnapshot } from '@/lib/api/snapshot'
 import { clearMemCache } from '@/lib/cache/kv'
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
-import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from '@/lib/api/source-registry'
+import { blsFixtureFor } from '../mocks/handlers'
+import eiaFixture from '../fixtures/eia-gas.json'
+import { isGasStale } from '@/lib/api/eia'
+import { blsSource, blsCpiSource, eiaSource } from '@/lib/api/source-registry'
 
 describe('fetchSnapshot', () => {
   beforeEach(() => clearMemCache())
@@ -15,18 +18,17 @@ describe('fetchSnapshot', () => {
     expect(snapshot!.unemployment).toBeDefined()
     expect(snapshot!.cpi).toBeDefined()
     expect(snapshot!.gas).toBeDefined()
-    expect(snapshot!.federal).toBeDefined()
+    expect((snapshot as unknown as Record<string, unknown>).federal).toBeUndefined()
     expect(snapshot!.census).toBeDefined()
     expect(snapshot!.fetchedAt).toBeDefined()
   })
 
-  test('all 4 external sources return data (not null)', async () => {
+  test('all 3 external sources return data (not null)', async () => {
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull()
     expect(snapshot!.unemployment.data).not.toBeNull()
     expect(snapshot!.cpi.data).not.toBeNull()
     expect(snapshot!.gas.data).not.toBeNull()
-    expect(snapshot!.federal.data).not.toBeNull()
   })
 
   test('returns null for unknown zip', async () => {
@@ -72,38 +74,162 @@ describe('fetchSnapshot', () => {
     }
   })
 
-  test('snapshot series data spans back to at least 2016 for 10Y charts', async () => {
+  test('BLS requests ask for >= 9 years of history (10Y charts)', async () => {
+    const startYears: number[] = []
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { startyear: string; endyear: string }
+        startYears.push(Number(body.endyear) - Number(body.startyear))
+        return HttpResponse.json({ status: 'REQUEST_SUCCEEDED', Results: { series: [] } })
+      })
+    )
+    await fetchSnapshot('98683')
+    expect(startYears.length).toBeGreaterThan(0)
+    for (const span of startYears) expect(span).toBeGreaterThanOrEqual(9)
+  })
+
+  test('values come from the recorded fixture with their baseline periods', async () => {
     const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
+    const u = snapshot!.unemployment.data!
+    expect(u.seriesId).toBe('LAUCN530110000000003')
+    expect(u.baselinePeriod).toBe('2025-01')
+    expect(u.nationalSeriesId).toBe('LNU04000000')
+    const c = snapshot!.cpi.data!
+    expect(c.seriesIds?.groceries).toBe('CUUR0490SAF11')
+    expect(c.groceriesBaselinePeriod).toBe('2025-01')
+    expect(c.groceriesChange).toBe(4.0)
+    expect(c.shelterChange).toBe(5.3)
+    // BLS footnote "P": the recorded LAUS Aug 2026 value is preliminary
+    expect(u.latestPeriod).toBe('2026-08')
+    expect(u.latestPreliminary).toBe(true)
+    expect(u.series[u.series.length - 1].preliminary).toBe(true)
+    expect(u.series.filter((p) => p.preliminary).length).toBe(1)
+    // Gas: real recorded EIA EPMR (regular) response for Washington state
+    const g = snapshot!.gas.data!
+    expect(g.duoarea).toBe('SWA')
+    expect(g.baselineDate).toBe('2025-01-20')
+    expect(g.baseline).toBe(3.791)
+    expect(g.current).toBe(5.453)
+    expect(g.latestDate).toBe('2026-09-28')
+    expect(g.nationalSeries?.length).toBeGreaterThan(0)
+    expect(snapshot!.gas.stale ?? false).toBe(isGasStale(g.latestDate!))
+    // Dollar translations: $6,000 × 4.0% = $240; local rent × 12 × 5.3%
+    expect(snapshot!.dollarImpact!.groceries).toBe(240)
+    const rent = snapshot!.census.data!.medianRent
+    expect(snapshot!.dollarImpact!.shelter).toBe(Math.round((rent * 12 * 5.3) / 100))
+  })
 
-    // Unemployment series should include pre-2020 data
-    if (snapshot!.unemployment.data) {
-      const dates = snapshot!.unemployment.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('out-of-range values are rejected → source unavailable, not cached', async () => {
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid: string[] }
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: {
+            series: body.seriesid.map((id) => ({
+              seriesID: id,
+              data: [
+                { year: '2026', period: 'M08', value: id.startsWith('LAU') ? '45.0' : '300.0' },
+                { year: '2025', period: 'M01', value: id.startsWith('LAU') ? '4.0' : '100.0' },
+              ],
+            })),
+          },
+        })
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.unemployment.data).toBeNull() // 45% > 25%
+    expect(snapshot!.cpi.data).toBeNull() // +200% > +50%
+    expect(snapshot!.dollarImpact!.groceries).toBeNull()
+  })
 
-    // CPI series should include pre-2020 data
-    if (snapshot!.cpi.data) {
-      const dates = snapshot!.cpi.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('primary gas failure falls back to national, labeled, and not stored under the primary key', async () => {
+    const { getCachedEnvelope } = await import('@/lib/cache/kv')
+    server.use(
+      http.get('https://api.eia.gov/v2/petroleum/pri/gnd/data/', ({ request }) => {
+        const area = new URL(request.url).searchParams.get('facets[duoarea][]')
+        if (area !== 'NUS') return new HttpResponse(null, { status: 503 })
+        return HttpResponse.json(eiaFixture)
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.gas.data!.isNationalFallback).toBe(true)
+    expect(snapshot!.gas.data!.duoarea).toBe('NUS')
+    expect(await getCachedEnvelope('eia:gas:epmr:state:WA')).toBeNull()
+  })
 
-    // Gas series should include pre-2020 data
-    if (snapshot!.gas.data) {
-      const dates = snapshot!.gas.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('local CPI failure → national CPI marked fallback, shelter $ impact null', async () => {
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid: string[] }
+        if (body.seriesid.includes('CUUR0490SAF11')) return new HttpResponse(null, { status: 503 })
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: { series: body.seriesid.map((id) => ({ seriesID: id, data: blsFixtureFor(id) })) },
+        })
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    const c = snapshot!.cpi.data!
+    expect(c.areaCode).toBe('0000')
+    expect(c.fallback).toBe('national')
+    expect(c.shelterChange).toEqual(expect.any(Number))
+    expect(snapshot!.dollarImpact!.shelter).toBeNull()
+    expect(snapshot!.dollarImpact!.groceries).toEqual(expect.any(Number))
+  })
+
+  test('local CPI success → no fallback marker', async () => {
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.cpi.data!.fallback).toBeUndefined()
   })
 })
 
 describe('source registry docsUrls', () => {
   test('all sources have docsUrl for debugging', () => {
-    for (const source of [blsSource, blsCpiSource, eiaSource, usaSpendingSource]) {
+    for (const source of [blsSource, blsCpiSource, eiaSource]) {
       expect(source.docsUrl).toBeTruthy()
       expect(source.docsUrl).toMatch(/^https:\/\//)
     }
+  })
+})
+
+describe('fetchSnapshot — Connecticut LAUS area by zip', () => {
+  beforeEach(() => clearMemCache())
+
+  test('06902 (Stamford) requests the Western CT planning region series', async () => {
+    const requested: string[] = []
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid?: string[] }
+        requested.push(...(body.seriesid ?? []))
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: { series: (body.seriesid ?? []).map(id => ({ seriesID: id, data: blsFixtureFor(id) })) },
+        })
+      })
+    )
+    const snapshot = await fetchSnapshot('06902')
+    expect(requested).toContain('LAUCN091900000000003')
+    expect(requested).not.toContain('LAUCN091200000000003')
+    expect(snapshot!.unemployment.data!.seriesId).toBe('LAUCN091900000000003')
+    expect(snapshot!.unemployment.data!.lausFips).toBe('09190')
+    expect(snapshot!.unemployment.data!.lausAreaName).toBe('Western Connecticut Planning Region')
+  })
+
+  test('zips in one planning region share a single cached LAUS entry', async () => {
+    let lausCalls = 0
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid?: string[] }
+        if ((body.seriesid ?? []).some(id => id.startsWith('LAUCN'))) lausCalls++
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: { series: (body.seriesid ?? []).map(id => ({ seriesID: id, data: blsFixtureFor(id) })) },
+        })
+      })
+    )
+    await fetchSnapshot('06902') // Stamford
+    await fetchSnapshot('06830') // Greenwich
+    expect(lausCalls).toBe(1)
   })
 })
