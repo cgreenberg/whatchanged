@@ -57,7 +57,7 @@ const GOLDEN = [
   ['00901', 'San Juan PR: DACO island-wide monthly gas'],
   ['10950', 'Monroe NY (Orange County): NYSERDA Upper Hudson heating oil, EIA NY propane'],
   ['55401', 'Minneapolis: EIA weekly Minnesota state gas preferred over the BLS monthly metro'],
-  ['35460', 'Epes AL: Census suppresses the zip rent → nearest zip in the county with a Census rent (labeled)'],
+  ['35460', 'Epes AL: Census suppresses the zip rent → nearest zip in the county with a reliable Census rent (labeled)'],
 ] as const
 
 const METRICS = ['gas', 'rent', 'groceries', 'shelter', 'electricity', 'heatingOil', 'propane', 'rentBase'] as const

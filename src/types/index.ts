@@ -135,7 +135,7 @@ export interface CensusData {
    * the nearest same-county zip with a published rent ('nearest-zip'); the county or state median; or 'none'.
    */
   basis?: 'zip' | 'po-donor' | 'nearest-zip' | 'county' | 'state' | 'none'
-  /** Honest label for a borrowed figure, e.g. "borrowed from zip 35401 (nearest with Census rent, 4.2 mi)",
+  /** Honest label for a borrowed figure, e.g. "borrowed from zip 35401 (nearest with a reliable Census rent, 4.2 mi)",
    * "Tuscaloosa County, AL median (no zip figure)", "Alabama median (no zip or county figure)". */
   basisNote?: string
   /** 'county' / 'state' basis: the area named ("Tuscaloosa County, AL", "Alabama"). */
@@ -146,6 +146,15 @@ export interface CensusData {
   donorScope?: 'city' | 'county'
   /** 'nearest-zip': distance to donorZip, miles (Census gazetteer ZCTA points). */
   donorMiles?: number
+  /** 'nearest-zip': a zip in the same town was preferred over a nearer one (label: "nearest in the same town"). */
+  donorSameTown?: boolean
+  /** 'po-donor' / 'nearest-zip': the donor's ACS margin of error, $ (90%); donors need MOE ≤ 30% of the estimate. */
+  donorMoe?: number
+  /**
+   * 'zip' basis only: the zip's own median falls in the open-ended top ("$3,500+") or bottom ("under $100") interval
+   * of ACS B25064, so Census gives only a bound; medianRent is then the published 3501 / 99 and is shown as "$3,500+".
+   */
+  rentCoded?: 'top' | 'bottom'
   /** Human-readable provenance naming the source geography, e.g. "Census ACS 2023 5-year, zip 98683". */
   sourceLabel?: string
   isFallback?: boolean

@@ -441,7 +441,7 @@ exports[`trace snapshots (golden zips) 30303 — Atlanta: BLS metro gas, Atlanta
 }
 `;
 
-exports[`trace snapshots (golden zips) 35460 — Epes AL: Census suppresses the zip rent → nearest zip in the county with a Census rent (labeled) 1`] = `
+exports[`trace snapshots (golden zips) 35460 — Epes AL: Census suppresses the zip rent → nearest zip in the county with a reliable Census rent (labeled) 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | Alabama (statewide) [state] | 2026-07 | ELEC.PRICE.AL-RES.M",
@@ -476,8 +476,8 @@ exports[`trace snapshots (golden zips) 35460 — Epes AL: Census suppresses the 
   ],
   "rentBase": [
     "not-applicable | rentBase.zip | zip 35460 [zip] |  |  | Census publishes no median rent for zip 35460 (suppressed for a small sample, or a PO-box zip with no Census area).",
-    "not-applicable | rentBase.po-donor | zip 35460 [zip] |  |  | Not a PO-box zip with a residential donor.",
-    "used | rentBase.nearest-zip | zip 35464 [zip] |  |  | borrowed from zip 35464 (nearest with Census rent, 5.3 mi): $725/mo (Census ACS 2023 5-year).",
+    "not-applicable | rentBase.po-donor | zip 35460 [zip] |  |  | Not a PO-box zip with a reliable residential donor.",
+    "used | rentBase.nearest-zip | zip 35470 [zip] |  |  | borrowed from zip 35470 (nearest with a reliable Census rent, 13.4 mi): $933 ± $230/mo (Census ACS 2023 5-year).",
     "not-needed | rentBase.county | Sumter County, AL [county]",
     "not-needed | rentBase.state | Alabama [state]",
   ],

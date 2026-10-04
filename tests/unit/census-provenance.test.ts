@@ -34,7 +34,7 @@ describe('getCensusData — rent provenance', () => {
   test('zip without its own rent (Rockefeller Center) → nearest same-county zip with one, labeled with the distance', () => {
     expect(getCensusData('10020')).toMatchObject({
       basis: 'nearest-zip', donorZip: '10019', source: 'acs', isFallback: false, isRentFallback: false,
-      basisNote: 'borrowed from zip 10019 (nearest with Census rent, 0.5 mi)',
+      basisNote: 'borrowed from zip 10019 (nearest with a reliable Census rent, 0.5 mi)',
     })
   })
 

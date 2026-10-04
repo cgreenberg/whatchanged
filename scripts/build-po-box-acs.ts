@@ -11,9 +11,14 @@
  *      housing units (ACS 2023 5-year B25001), else
  *   2. the most populous ZCTA in the same county (ACS 2023 5-year B01003).
  *
- * Donors must have both a published ACS median income and a published median rent in census-acs.json
- * (a suppressed rent is null there), so a PO-box zip never borrows a donor whose rent can't back a $ figure. A ZCTA's county is
- * its zip-county.json county (most housing units).
+ * Donors must have both a published ACS median income and a RELIABLE published median rent (see below), so a
+ * PO-box zip never borrows a donor whose rent can't back a $ figure. A ZCTA's county is its zip-county.json county
+ * (most housing units).
+ *
+ * Reliable donor rent (round 12): the ZCTA's B25064 median has a margin of error (90%) of at most 30% of the
+ * estimate (MAX_DONOR_MOE_SHARE), and is not top- or bottom-coded (MOE annotation -333333333: "3,500+" / "100-",
+ * which says only that the median is at least $3,500 / under $100). A zip with no reliable donor uses the county
+ * median, then the state median. (A zip's OWN coded median is still shown for that zip, labeled "$3,500+".)
  *
  * Inputs (no API key needed): ACS table-based summary files
  *   https://www2.census.gov/programs-surveys/acs/summary_file/2023/table-based-SF/data/5YRData/acsdt5y2023-{b25001,b01003,b25064}.dat
@@ -25,18 +30,23 @@
  * Every other zip whose own ACS median rent is suppressed (or missing) also gets a rent basis, so the
  * Shelter card's "≈ $/yr in rent" is never blank and never a national constant (owner decision, round 11):
  *
- *   nearest  — the nearest residential ZCTA in the SAME county with a published median rent (same city name
- *              preferred; distance between Census 2023 gazetteer ZCTA points, else GeoNames zip points), with miles;
- *              at most NEAREST_MAX_MILES away (vast Alaska boroughs: a village hundreds of miles off is less
- *              representative than the borough's own median, which is used instead);
- *   counties — the county's ACS 2023 5-year median gross rent (B25064, county rows; published values only);
+ *   nearest  — the nearest residential ZCTA in the SAME county with a reliable median rent, at most
+ *              NEAREST_MAX_MILES away (vast Alaska boroughs: a village hundreds of miles off is less representative
+ *              than the borough's own median, which is used instead); within that cap a ZCTA with the same city name
+ *              is preferred (flagged when that passes over a nearer zip, so the label says "nearest in the same town"). Distance between Census 2023
+ *              gazetteer ZCTA points, else GeoNames zip points;
+ *   counties — the county's ACS 2023 5-year median gross rent (B25064, county rows; published values only). Census
+ *              reports Connecticut by its 9 planning regions (FIPS 09110-09190), not the legacy counties zip-county.json
+ *              uses, so CT zips use their planning region's median (ct-planning-regions.json byZip, else byCounty),
+ *              stored under the region FIPS and named "... Planning Region, CT";
  *   states   — the state's ACS 2023 5-year median gross rent (B25064, state rows).
  *
  * src/lib/data/census-acs.ts picks, in order: own zip → PO-box donor → nearest → county → state.
  *
  * Output: src/lib/data/po-box-acs.json
- *   { byZip: { [poZip]: donorZip }, nearest: { [zip]: [donorZip, miles] },
- *     counties: { [countyFips]: { rent, name } }, states: { [ST]: { rent, name } } }
+ *   { byZip: { [poZip]: donorZip }, nearest: { [zip]: [donorZip, miles] | [donorZip, miles, 1 (same town)] },
+ *     donorMoe: { [donorZip]: B25064 margin of error, $ (90%) }, counties: { [countyFips]: { rent, name } },
+ *     states: { [ST]: { rent, name } } }
  *
 
  * Run: npx tsx scripts/build-po-box-acs.ts   (after build:zip-county / build:census-acs)
@@ -47,6 +57,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
+import { CT_PLANNING_REGION_NAMES } from '../src/lib/mappings/laus-area'
 
 export {}
 
@@ -85,6 +96,22 @@ function readZctaTable(file: string): Map<string, number> {
   }
   return out
 }
+
+/** ZCTA → raw B25064 margin-of-error cell (GEO_ID|E001|M001), annotations included (e.g. -333333333). */
+function readZctaMoe(file: string): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    const m = /^860Z200US(\d{5})\|-?\d+\|(-?\d+)/.exec(line)
+    if (m) out.set(m[1], Number(m[2]))
+  }
+  return out
+}
+
+/** Largest margin of error (90%, as a share of the estimate) a borrowed donor rent may carry. */
+const MAX_DONOR_MOE_SHARE = 0.3
+/** Census MOE annotations: median in an open-ended (top/bottom) interval; estimate controlled (no sampling error). */
+const MOE_OPEN_INTERVAL = -333333333
+const MOE_CONTROLLED = -555555555
 
 /** County / state rows of a table-based summary file: published estimates only (negative = suppressed). */
 function readGeoTable(file: string, prefix: '0500000US' | '0400000US'): Map<string, number> {
@@ -134,14 +161,38 @@ async function main() {
   const zips = JSON.parse(readFileSync(join(DATA_DIR, 'zip-county.json'), 'utf8')) as Record<string, ZipEntry>
   const acs = JSON.parse(readFileSync(join(DATA_DIR, 'census-acs.json'), 'utf8')) as Record<
     string,
-    { medianIncome?: number | null; medianRent?: number | null } | undefined
+    { medianIncome?: number | null; medianRent?: number | null; rentCoded?: 'top' | 'bottom' } | undefined
   >
+  const ct = JSON.parse(readFileSync(join(DATA_DIR, 'ct-planning-regions.json'), 'utf8')) as {
+    byZip: Record<string, string>
+    byCounty: Record<string, string>
+  }
+
+  const rentTable = await download(`${SF_BASE}/acsdt5y2023-b25064.dat`, join(CACHE, 'acsdt5y2023-b25064.dat'))
+  const rentMoe = readZctaMoe(rentTable)
+  if (rentMoe.size < 30000) throw new Error(`Too few ZCTA rent MOEs (${rentMoe.size})`)
+  /** A donor rent: published, not top/bottom-coded, MOE ≤ MAX_DONOR_MOE_SHARE of the estimate. */
+  const unreliable = { coded: 0, moe: 0 }
+  const reliableRent = (zip: string): boolean => {
+    const r = acs[zip]?.medianRent
+    if (!(typeof r === 'number' && r > 0)) return false
+    const moe = rentMoe.get(zip)
+    if (acs[zip]?.rentCoded || moe === MOE_OPEN_INTERVAL) return false
+    if (moe === MOE_CONTROLLED) return true
+    return typeof moe === 'number' && moe > 0 && moe <= MAX_DONOR_MOE_SHARE * r
+  }
+  for (const [zip, e] of Object.entries(zips)) {
+    const r = acs[zip]?.medianRent
+    if (e.zcta === false || !(typeof r === 'number' && r > 0) || reliableRent(zip)) continue
+    if (acs[zip]?.rentCoded || rentMoe.get(zip) === MOE_OPEN_INTERVAL) unreliable.coded++
+    else unreliable.moe++
+  }
 
   // Donor candidates per county
   const byCounty = new Map<string, string[]>()
   for (const [zip, e] of Object.entries(zips)) {
     const a = acs[zip]
-    if (e.zcta === false || !(a?.medianIncome && a.medianIncome > 0) || !(a.medianRent && a.medianRent > 0)) continue
+    if (e.zcta === false || !(a?.medianIncome && a.medianIncome > 0) || !reliableRent(zip)) continue
     const list = byCounty.get(e.countyFips) ?? []
     list.push(zip)
     byCounty.set(e.countyFips, list)
@@ -175,7 +226,6 @@ async function main() {
   }
 
   // ---- Rent basis for every other zip without its own published median rent ----
-  const rentTable = await download(`${SF_BASE}/acsdt5y2023-b25064.dat`, join(CACHE, 'acsdt5y2023-b25064.dat'))
   const countyRent = readGeoTable(rentTable, '0500000US')
   const stateRent = readGeoTable(rentTable, '0400000US')
   const points = readPoints(
@@ -186,20 +236,20 @@ async function main() {
     throw new Error(`Too few rows (county rent ${countyRent.size}, state rent ${stateRent.size}, points ${points.size})`)
   }
 
-  // Residential donors with a published median rent (income not required here: only the rent is borrowed)
+  // Residential donors with a reliable median rent (income not required here: only the rent is borrowed)
   const rentDonors = new Map<string, string[]>()
   for (const [zip, e] of Object.entries(zips)) {
-    const r = acs[zip]?.medianRent
-    if (e.zcta === false || !(typeof r === 'number' && r > 0)) continue
+    if (e.zcta === false || !reliableRent(zip)) continue
     const list = rentDonors.get(e.countyFips) ?? []
     list.push(zip)
     rentDonors.set(e.countyFips, list)
   }
 
-  const nearest: Record<string, [string, number]> = {}
+  const nearest: Record<string, [string, number] | [string, number, 1]> = {}
   const counties: Record<string, { rent: number; name: string }> = {}
   const states: Record<string, { rent: number; name: string }> = {}
   let nNearest = 0
+  let nSameTown = 0
   let nNoPoint = 0
   for (const [zip, e] of Object.entries(zips).sort(([a], [b]) => a.localeCompare(b))) {
     const own = acs[zip]?.medianRent
@@ -208,25 +258,43 @@ async function main() {
     const here = points.get(zip)
     const cands = (rentDonors.get(e.countyFips) ?? []).filter((z) => z !== zip && points.has(z))
     if (here && cands.length) {
-      const sameCity = cands.filter((z) => e.cityName && norm(zips[z].cityName) === norm(e.cityName))
-      const pool = sameCity.length ? sameCity : cands
-      const best = pool
+      // The 100-mile cap first, then the same-town preference within it (a same-town zip 150 mi off never beats
+      // the county median)
+      const near = cands
         .map((z) => [z, miles(here, points.get(z)!)] as [string, number])
-        .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))[0]
-      if (best[1] <= NEAREST_MAX_MILES) {
-        nearest[zip] = [best[0], Math.round(best[1] * 10) / 10]
+        .filter(([, d]) => d <= NEAREST_MAX_MILES)
+        .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+      const sameTown = near.filter(([z]) => e.cityName && norm(zips[z].cityName) === norm(e.cityName))
+      const best = sameTown[0] ?? near[0]
+      if (best) {
+        const mi = Math.round(best[1] * 10) / 10
+        // Flagged only when the same-town rule passed over a nearer zip (else "nearest" is literally true)
+        const townRule = best[0] !== near[0][0]
+        nearest[zip] = townRule ? [best[0], mi, 1] : [best[0], mi]
         nNearest++
+        if (townRule) nSameTown++
       }
     } else if (!here && cands.length) {
       nNoPoint++
     }
   }
   // County and state medians for every county/state the crosswalk uses (published values only)
-  for (const e of Object.values(zips)) {
+  for (const [zip, e] of Object.entries(zips)) {
     const c = countyRent.get(e.countyFips)
     if (c && !counties[e.countyFips]) counties[e.countyFips] = { rent: c, name: `${e.countyName}, ${e.stateAbbr}` }
+    // Connecticut: ACS county rows are the 2022 planning regions
+    const region = e.stateAbbr === 'CT' ? ct.byZip[zip] ?? ct.byCounty[e.countyFips] : undefined
+    const rr = region ? countyRent.get(region) : undefined
+    if (region && rr && !counties[region]) counties[region] = { rent: rr, name: `${CT_PLANNING_REGION_NAMES[region] ?? region}, CT` }
     const s = stateRent.get(e.countyFips.slice(0, 2))
     if (s && !states[e.stateAbbr]) states[e.stateAbbr] = { rent: s, name: e.stateName }
+  }
+
+  // Margin of error of every donor used (shown in the trace; tests check the ≤30% rule against it)
+  const donorMoe: Record<string, number> = {}
+  for (const d of [...Object.values(byZip), ...Object.values(nearest).map((n) => n[0])]) {
+    const m = rentMoe.get(d)
+    if (typeof m === 'number' && m > 0) donorMoe[d] = m
   }
 
   writeFileSync(
@@ -234,16 +302,20 @@ async function main() {
     JSON.stringify({
       _source:
         'Built by scripts/build-po-box-acs.ts. byZip: USPS-only zip → ZCTA in the same county and city with the most housing units (ACS 2023 B25001), else the most populous ZCTA in the county (B01003). ' +
-        'nearest: zip without its own published ACS median rent → [nearest residential ZCTA in the same county with one (same city preferred), miles] (Census 2023 gazetteer points). ' +
-        'counties / states: ACS 2023 5-year median gross rent (B25064), published values only.',
+        'Donors need a reliable B25064 median rent: margin of error <= 30% of the estimate and not top/bottom-coded (3,500+ / 100-). ' +
+        'nearest: zip without its own published ACS median rent → [nearest residential ZCTA in the same county with a reliable one within 100 mi, miles, 1 if a same-town zip was preferred over a nearer one] (Census 2023 gazetteer points). ' +
+        'donorMoe: donor zip → B25064 margin of error ($, 90%). ' +
+        'counties / states: ACS 2023 5-year median gross rent (B25064), published values only; Connecticut zips use their 2022 planning region (keys 09110-09190).',
       byZip,
       nearest,
+      donorMoe,
       counties,
       states,
     }) + '\n'
   )
   console.log(`po-box-acs.json: ${sameCity} same-city donors, ${county} county donors, ${none} without a donor`)
-  console.log(`  rent basis: ${nNearest} nearest-zip donors (${nNoPoint} zips without a point), ${Object.keys(counties).length} county medians, ${Object.keys(states).length} state medians`)
+  console.log(`  unreliable as donors: ${unreliable.coded} top/bottom-coded, ${unreliable.moe} MOE > ${MAX_DONOR_MOE_SHARE * 100}% or not computable`)
+  console.log(`  rent basis: ${nNearest} nearest-zip donors (${nSameTown} same-town, ${nNoPoint} zips without a point), ${Object.keys(counties).length} county medians, ${Object.keys(states).length} state medians`)
 }
 
 main().catch((err) => {

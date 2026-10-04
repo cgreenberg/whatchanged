@@ -36929,8 +36929,8 @@
     "cityName": "Baltimore"
   },
   "21240": {
-    "countyFips": "24510",
-    "countyName": "Baltimore city",
+    "countyFips": "24003",
+    "countyName": "Anne Arundel County",
     "stateName": "Maryland",
     "stateAbbr": "MD",
     "cityName": "Baltimore"
@@ -50593,8 +50593,8 @@
     "cityName": "Mullens"
   },
   "25888": {
-    "countyFips": "54081",
-    "countyName": "Raleigh County",
+    "countyFips": "54019",
+    "countyName": "Fayette County",
     "stateName": "West Virginia",
     "stateAbbr": "WV",
     "cityName": "Mount Hope",
@@ -145616,8 +145616,8 @@
     "zcta": false
   },
   "55572": {
-    "countyFips": "27171",
-    "countyName": "Wright County",
+    "countyFips": "27053",
+    "countyName": "Hennepin County",
     "stateName": "Minnesota",
     "stateAbbr": "MN",
     "cityName": "Rockford",
@@ -236257,8 +236257,8 @@
     "cityName": "Skull Valley"
   },
   "86339": {
-    "countyFips": "04025",
-    "countyName": "Yavapai County",
+    "countyFips": "04005",
+    "countyName": "Coconino County",
     "stateName": "Arizona",
     "stateAbbr": "AZ",
     "cityName": "Sedona",

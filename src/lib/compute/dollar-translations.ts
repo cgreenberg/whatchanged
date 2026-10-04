@@ -11,6 +11,16 @@ export const NATIONAL_MEDIAN_RENT = 1271
 /** Typical household annual food-at-home spend (~$6,000/yr). */
 export const ANNUAL_GROCERY_BASE = 6000
 
+/**
+ * A median gross rent as Census publishes it: a top-coded median ("3,500+", stored as 3501) is "$3,500+", a
+ * bottom-coded one ("100-", stored as 99) "under $100"; anything else "$1,234".
+ */
+export function fmtRentFigure(rent: number, coded?: 'top' | 'bottom' | null): string {
+  if (coded === 'top') return '$3,500+'
+  if (coded === 'bottom') return 'under $100'
+  return `$${Math.round(rent).toLocaleString('en-US')}`
+}
+
 export interface DollarImpact {
   /** $/yr: ANNUAL_GROCERY_BASE × groceries % change (signed). null if CPI unavailable. */
   groceries: number | null

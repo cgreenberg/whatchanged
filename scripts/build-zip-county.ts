@@ -324,16 +324,27 @@ async function main() {
   // zips with housing in this state, none of them in the assigned county, AND GeoNames' own coordinate
   // for the zip lies nearer the city's county than the assigned one, use the city's county. (The
   // coordinate test keeps genuine border cases — Wayne PA, Fairfax city — where they are.)
+  // The zip's own evidence overrides the rule: a ZCTA that GeoNames also files under its assigned county, or a zip
+  // whose town has >= CITY_SHARE_MIN of its housed ZCTAs' housing units in the assigned county, stays (21240 BWI,
+  // 25888 Mount Hope WV).
   const MAIL_ONLY_MAX_HU = 50
+  /** A town whose housed ZCTAs hold at least this share of their housing units in a county genuinely extends into it. */
+  const CITY_SHARE_MIN = 0.1
   const housed = new Set<string>()
   for (const [zcta, counties] of zctaCounty) {
     if ([...counties.values()].reduce((a, w) => a + w[0], 0) >= MAIL_ONLY_MAX_HU) housed.add(zcta)
   }
   const housedCityCounty: Record<string, Map<string, Weights>> = {}
+  /** The city's housed ZCTAs' housing units by county (every county they touch, not only each one's main county). */
+  const housedCityHu: Record<string, Map<string, Weights>> = {}
   const countyPts: Record<string, [number, number, number]> = {}
   for (const [zip, e] of Object.entries(result)) {
     if (!housed.has(zip)) continue
-    if (e.cityName) addWeights((housedCityCounty[`${e.stateAbbr}|${e.cityName.toLowerCase()}`] ??= new Map()), e.countyFips, 1, 0, 0)
+    if (e.cityName) {
+      const k = `${e.stateAbbr}|${e.cityName.toLowerCase()}`
+      addWeights((housedCityCounty[k] ??= new Map()), e.countyFips, 1, 0, 0)
+      for (const [c, w] of zctaCounty.get(zip) ?? []) addWeights((housedCityHu[k] ??= new Map()), c, w[0], w[1], w[2])
+    }
     const g = geonames[zip]
     if (g && Number.isFinite(g.lat) && Number.isFinite(g.lng)) {
       const c = (countyPts[e.countyFips] ??= [0, 0, 0])
@@ -349,12 +360,21 @@ async function main() {
   }
   const cityFixes: string[] = []
   /** The city's county when the evidence says the assigned county is the operator's, not the post office's. */
-  function cityCountyFix(zip: string, stateAbbr: string, countyFips: string): string | null {
+  function cityCountyFix(zip: string, stateAbbr: string, countyFips: string, isZcta: boolean): string | null {
     const g = geonames[zip]
     if (!g || !Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return null
     const city = cityFor(zip, stateAbbr) || g.city
-    const via = housedCityCounty[`${stateAbbr}|${city.toLowerCase()}`]
+    const key = `${stateAbbr}|${city.toLowerCase()}`
+    const via = housedCityCounty[key]
     if (!via || via.has(countyFips)) return null
+    // The zip's own evidence wins (round 12): a ZCTA that GeoNames' USPS record also files under the assigned county
+    // (21240 BWI airport, "Baltimore" mail, Anne Arundel County) stays; so does a zip whose town's housed ZCTAs have
+    // a real share (>= CITY_SHARE_MIN of housing units) in the assigned county (25888 Mount Hope WV: the town is in
+    // Fayette, its 25880 ZCTA mostly in Raleigh).
+    if (isZcta && g.countyFips === countyFips) return null
+    const hu = housedCityHu[key]
+    const total = hu ? [...hu.values()].reduce((a, w) => a + w[0], 0) : 0
+    if (total > 0 && (hu!.get(countyFips)?.[0] ?? 0) / total >= CITY_SHARE_MIN) return null
     const to = best(via)
     const dTo = km(g.lat, g.lng, to)
     const dFrom = km(g.lat, g.lng, countyFips)
@@ -365,7 +385,7 @@ async function main() {
   // ZCTAs with (almost) no housing units: mail/business/worksite zips
   for (const [zcta, e] of Object.entries(result)) {
     if (housed.has(zcta) || zcta.startsWith('09')) continue
-    const to = cityCountyFix(zcta, e.stateAbbr, e.countyFips)
+    const to = cityCountyFix(zcta, e.stateAbbr, e.countyFips, true)
     if (to) result[zcta] = { ...e, countyFips: to, countyName: countyNames[to] ?? e.countyName }
   }
   let added = 0
@@ -377,7 +397,7 @@ async function main() {
     let countyFips = g.countyFips
     let ctRegion: string | undefined
     if (g.state === 'CT' && /^091[1-9]0$/.test(countyFips)) ctRegion = countyFips
-    if (countyNames[countyFips] && !ctRegion) countyFips = cityCountyFix(g.zip, g.state, countyFips) ?? countyFips
+    if (countyNames[countyFips] && !ctRegion) countyFips = cityCountyFix(g.zip, g.state, countyFips, false) ?? countyFips
     if (!countyNames[countyFips]) {
       const viaCity = cityCounty[`${g.state}|${g.city.toLowerCase()}`]
       if (viaCity) {

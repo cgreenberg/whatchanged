@@ -31,6 +31,7 @@ import { CPI_CHANGE_RANGE } from '@/lib/api/validate'
 import { isBlsPeriodStale, isElectricityPeriodStale, monthOlderThan, RENT_STALE_DAYS } from '@/lib/staleness'
 import type { CountyRentLookup } from '@/lib/rent'
 import { rentRangeText } from '@/lib/rent-range'
+import { fmtRentFigure } from '@/lib/compute/dollar-translations'
 import type { StaticGasLookup } from '@/lib/static-gas'
 import {
   DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME, DCRA_STALE_DAYS,
@@ -884,11 +885,14 @@ function rentBaseRung(basis: Exclude<RentBasis, 'none'>, o: { label: string; pil
       const c = ctx.censusRent!(zip)
       if (c.basis === basis && c.medianRent > 0) {
         const name = basis === 'zip' ? `zip ${zip}` : basis === 'county' || basis === 'state' ? c.basisArea ?? o.label : `zip ${c.donorZip}`
-        const figure = `$${c.medianRent.toLocaleString('en-US')}/mo (Census ACS ${c.year} 5-year)`
+        const moe = c.donorMoe ? ` ± $${c.donorMoe.toLocaleString('en-US')}` : ''
+        const figure = `${fmtRentFigure(c.medianRent, c.rentCoded)}${moe}/mo (Census ACS ${c.year} 5-year)`
         return {
           status: 'used', value: c,
           geography: { name, level: o.level },
-          reason: c.basisNote && basis !== 'zip' ? `${c.basisNote}: ${figure}.` : `Median gross rent ${figure}.`,
+          reason: c.basisNote && basis !== 'zip'
+            ? `${c.basisNote}: ${figure}.`
+            : `Median gross rent ${figure}${c.rentCoded && c.basisNote ? `; ${c.basisNote}` : ''}.`,
         }
       }
       return { status: 'not-applicable', reason: o.why(l) }
@@ -901,30 +905,32 @@ const RENT_BASE = {
   title: 'Rent base for the Shelter (CPI) $ figure',
   method:
     'The Shelter (CPI) card\'s ≈ $/yr in rent applies the CPI rent-of-primary-residence % to a median gross rent × 12. ' +
-    'That rent is the zip\'s own Census figure; where Census suppresses it (small samples) or the zip is a PO box, it is ' +
-    'borrowed and labeled: a PO box\'s residential donor zip, else the nearest zip in the same county with a Census rent ' +
-    '(within 100 miles), else the county median, else the state median. Never a national constant.',
+    'That rent is the zip\'s own Census figure (a top-coded median is shown as "$3,500+", and the $ is then a floor); ' +
+    'where Census suppresses it (small samples) or the zip is a PO box, it is borrowed and labeled: a PO box\'s ' +
+    'residential donor zip, else the nearest zip in the same county with a reliable Census rent (margin of error at ' +
+    'most 30% of the estimate, not top- or bottom-coded) within 100 miles, preferring one in the same town, else the ' +
+    'county median (Connecticut: the planning region), else the state median. Never a national constant.',
   noData: 'No $ figure (Guam, the Virgin Islands and other areas the ACS doesn’t cover).',
   rungs: [
     rentBaseRung('zip', {
       label: 'Census median rent for the zip', level: 'zip',
-      covers: 'Zips with a published ACS median gross rent.',
+      covers: 'Zips with a published ACS median gross rent (a top-coded median shows as "$3,500+").',
       why: (l) => `Census publishes no median rent for zip ${l.zip} (suppressed for a small sample, or a PO-box zip with no Census area).`,
     }),
     rentBaseRung('po-donor', {
       label: 'PO-box zip: residential donor zip', pill: 'PO-box donor', level: 'zip',
-      covers: 'USPS-only zips (PO boxes): the largest residential zip in the same city, else the most populous in the county.',
-      why: () => 'Not a PO-box zip with a residential donor.',
+      covers: 'USPS-only zips (PO boxes): the largest residential zip in the same city, else the most populous in the county, with a reliable Census rent (margin of error ≤ 30%, not top/bottom-coded).',
+      why: () => 'Not a PO-box zip with a reliable residential donor.',
     }),
     rentBaseRung('nearest-zip', {
-      label: 'Nearest zip in the county with a Census rent', pill: 'Nearest zip', level: 'zip',
-      covers: 'Zips whose rent Census suppresses: the nearest zip in the same county (same city name preferred) with a published rent, within 100 miles.',
-      why: (l) => `No zip in ${countyOnly(l)} with a Census rent within 100 miles.`,
+      label: 'Nearest zip in the county with a reliable Census rent', pill: 'Nearest zip', level: 'zip',
+      covers: 'Zips whose rent Census suppresses: the nearest zip in the same county with a reliable published rent (margin of error ≤ 30% of the estimate, not top/bottom-coded) within 100 miles; within that, a zip in the same town is preferred.',
+      why: (l) => `No zip in ${countyOnly(l)} with a reliable Census rent (margin of error ≤ 30%, not top/bottom-coded) within 100 miles.`,
     }),
     rentBaseRung('county', {
       label: 'County median rent', level: 'county',
-      covers: 'Counties with no usable zip figure: the county’s ACS median gross rent.',
-      why: (l) => `Census suppresses ${countyOnly(l)}’s median rent.`,
+      covers: 'Counties with no usable zip figure: the county’s ACS median gross rent (Connecticut: the zip’s planning region, the county-level geography Census now reports).',
+      why: () => 'Census publishes no median rent for this county-level area.',
     }),
     rentBaseRung('state', {
       label: 'State median rent', level: 'state',

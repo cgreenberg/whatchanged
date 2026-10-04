@@ -17,21 +17,25 @@
   "10004": {
     "medianIncome": 220592,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10005": {
     "medianIncome": 211810,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10006": {
     "medianIncome": 209972,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10007": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10009": {
@@ -77,6 +81,7 @@
   "10018": {
     "medianIncome": 133042,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10019": {
@@ -197,6 +202,7 @@
   "10069": {
     "medianIncome": 226151,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10075": {
@@ -212,21 +218,25 @@
   "10162": {
     "medianIncome": 110349,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10279": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10280": {
     "medianIncome": 206250,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10282": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10301": {
@@ -422,6 +432,7 @@
   "10502": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10503": {
@@ -532,6 +543,7 @@
   "10532": {
     "medianIncome": 134662,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10533": {
@@ -572,6 +584,7 @@
   "10546": {
     "medianIncome": 213250,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10547": {
@@ -637,6 +650,7 @@
   "10576": {
     "medianIncome": 227344,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10577": {
@@ -672,6 +686,7 @@
   "10589": {
     "medianIncome": 123293,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10590": {
@@ -1042,6 +1057,7 @@
   "10996": {
     "medianIncome": 139700,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "10998": {
@@ -1147,6 +1163,7 @@
   "11109": {
     "medianIncome": 198773,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11201": {
@@ -1612,6 +1629,7 @@
   "11530": {
     "medianIncome": 202841,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11542": {
@@ -1632,6 +1650,7 @@
   "11548": {
     "medianIncome": 107386,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11550": {
@@ -1697,11 +1716,13 @@
   "11568": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11569": {
     "medianIncome": 108371,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11570": {
@@ -1957,6 +1978,7 @@
   "11747": {
     "medianIncome": 154914,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11749": {
@@ -2022,6 +2044,7 @@
   "11765": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "11766": {
@@ -2747,6 +2770,7 @@
   "12137": {
     "medianIncome": 96678,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "12138": {
@@ -15652,6 +15676,7 @@
   "19035": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "19036": {
@@ -16277,6 +16302,7 @@
   "19436": {
     "medianIncome": 57125,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "19437": {
@@ -17672,6 +17698,7 @@
   "20759": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "20762": {
@@ -17767,6 +17794,7 @@
   "20812": {
     "medianIncome": 195000,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "20814": {
@@ -18047,6 +18075,7 @@
   "21029": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "21030": {
@@ -18717,6 +18746,7 @@
   "21622": {
     "medianIncome": 69792,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "21623": {
@@ -19497,6 +19527,7 @@
   "22066": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "22079": {
@@ -19627,11 +19658,13 @@
   "22211": {
     "medianIncome": 234250,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "22213": {
     "medianIncome": 169201,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "22301": {
@@ -19672,6 +19705,7 @@
   "22308": {
     "medianIncome": 204177,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "22309": {
@@ -36502,6 +36536,7 @@
   "32702": {
     "medianIncome": 51762,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "32703": {
@@ -37392,6 +37427,7 @@
   "33149": {
     "medianIncome": 171982,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "33150": {
@@ -37422,6 +37458,7 @@
   "33158": {
     "medianIncome": 180357,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "33160": {
@@ -37992,6 +38029,7 @@
   "33498": {
     "medianIncome": 129615,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "33503": {
@@ -39102,6 +39140,7 @@
   "34201": {
     "medianIncome": 124000,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "34202": {
@@ -42962,6 +43001,7 @@
   "37046": {
     "medianIncome": 162712,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "37047": {
@@ -48797,6 +48837,7 @@
   "40771": {
     "medianIncome": null,
     "medianRent": 99,
+    "rentCoded": "bottom",
     "year": 2023
   },
   "40806": {
@@ -48947,6 +48988,7 @@
   "40913": {
     "medianIncome": 47009,
     "medianRent": 99,
+    "rentCoded": "bottom",
     "year": 2023
   },
   "40914": {
@@ -83582,6 +83624,7 @@
   "60043": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "60044": {
@@ -84072,6 +84115,7 @@
   "60184": {
     "medianIncome": 170074,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "60185": {
@@ -84427,6 +84471,7 @@
   "60461": {
     "medianIncome": 108203,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "60462": {
@@ -85117,6 +85162,7 @@
   "60712": {
     "medianIncome": 107950,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "60714": {
@@ -111492,6 +111538,7 @@
   "76092": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "76093": {
@@ -128067,6 +128114,7 @@
   "90067": {
     "medianIncome": 135328,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90068": {
@@ -128087,6 +128135,7 @@
   "90094": {
     "medianIncome": 159904,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90201": {
@@ -128197,6 +128246,7 @@
   "90265": {
     "medianIncome": 191080,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90266": {
@@ -128217,11 +128267,13 @@
   "90274": {
     "medianIncome": 222273,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90275": {
     "medianIncome": 175212,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90277": {
@@ -128242,6 +128294,7 @@
   "90290": {
     "medianIncome": 142148,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90291": {
@@ -128252,6 +128305,7 @@
   "90292": {
     "medianIncome": 136964,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "90293": {
@@ -128672,6 +128726,7 @@
   "91108": {
     "medianIncome": 186023,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "91201": {
@@ -128717,6 +128772,7 @@
   "91210": {
     "medianIncome": 102721,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "91214": {
@@ -128752,6 +128808,7 @@
   "91307": {
     "medianIncome": 136154,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "91311": {
@@ -129287,6 +129344,7 @@
   "91916": {
     "medianIncome": 110833,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "91917": {
@@ -129507,6 +129565,7 @@
   "92067": {
     "medianIncome": 238397,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "92069": {
@@ -129562,6 +129621,7 @@
   "92091": {
     "medianIncome": 86705,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "92101": {
@@ -130497,6 +130557,7 @@
   "92625": {
     "medianIncome": 197628,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "92626": {
@@ -130567,6 +130628,7 @@
   "92657": {
     "medianIncome": 202813,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "92660": {
@@ -130737,6 +130799,7 @@
   "92823": {
     "medianIncome": 176543,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "92831": {
@@ -130982,6 +131045,7 @@
   "93108": {
     "medianIncome": 223694,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "93109": {
@@ -132112,6 +132176,7 @@
   "93953": {
     "medianIncome": 154730,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "93954": {
@@ -132177,11 +132242,13 @@
   "94022": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94024": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94025": {
@@ -132192,11 +132259,13 @@
   "94027": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94028": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94030": {
@@ -132257,6 +132326,7 @@
   "94065": {
     "medianIncome": 213361,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94066": {
@@ -132312,6 +132382,7 @@
   "94105": {
     "medianIncome": 239781,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94107": {
@@ -132392,11 +132463,13 @@
   "94127": {
     "medianIncome": 205429,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94129": {
     "medianIncome": 236190,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94130": {
@@ -132472,6 +132545,7 @@
   "94404": {
     "medianIncome": 182417,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94501": {
@@ -132482,6 +132556,7 @@
   "94502": {
     "medianIncome": 194821,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94503": {
@@ -132497,11 +132572,13 @@
   "94506": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94507": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94508": {
@@ -132547,6 +132624,7 @@
   "94517": {
     "medianIncome": 164860,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94518": {
@@ -132582,6 +132660,7 @@
   "94526": {
     "medianIncome": 216974,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94530": {
@@ -132802,6 +132881,7 @@
   "94586": {
     "medianIncome": 198942,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94587": {
@@ -132977,6 +133057,7 @@
   "94720": {
     "medianIncome": null,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94801": {
@@ -133022,6 +133103,7 @@
   "94920": {
     "medianIncome": 238304,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94922": {
@@ -133077,6 +133159,7 @@
   "94938": {
     "medianIncome": 150250,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "94939": {
@@ -133212,6 +133295,7 @@
   "95014": {
     "medianIncome": 229074,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "95017": {
@@ -133332,6 +133416,7 @@
   "95070": {
     "medianIncome": 240980,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "95073": {
@@ -133392,6 +133477,7 @@
   "95120": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "95121": {
@@ -133467,6 +133553,7 @@
   "95135": {
     "medianIncome": 196179,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "95136": {
@@ -133482,6 +133569,7 @@
   "95139": {
     "medianIncome": 193061,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "95148": {
@@ -138347,6 +138435,7 @@
   "98039": {
     "medianIncome": 249688,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "98040": {
@@ -139662,6 +139751,7 @@
   "98592": {
     "medianIncome": 111000,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "98593": {
@@ -143732,6 +143822,7 @@
   "01731": {
     "medianIncome": 101194,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "01740": {
@@ -144282,6 +144373,7 @@
   "02109": {
     "medianIncome": 177500,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "02110": {
@@ -144422,6 +144514,7 @@
   "02142": {
     "medianIncome": 168788,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "02143": {
@@ -144472,6 +144565,7 @@
   "02163": {
     "medianIncome": 74028,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "02169": {
@@ -144537,6 +144631,7 @@
   "02210": {
     "medianIncome": 178833,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "02215": {
@@ -150852,6 +150947,7 @@
   "06481": {
     "medianIncome": 109228,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06482": {
@@ -151217,6 +151313,7 @@
   "06820": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06824": {
@@ -151237,11 +151334,13 @@
   "06831": {
     "medianIncome": 218785,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06840": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06850": {
@@ -151272,6 +151371,7 @@
   "06870": {
     "medianIncome": 227727,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06877": {
@@ -151292,6 +151392,7 @@
   "06883": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "06890": {
@@ -151427,6 +151528,7 @@
   "07021": {
     "medianIncome": 250001,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07022": {
@@ -151532,6 +151634,7 @@
   "07045": {
     "medianIncome": 179279,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07046": {
@@ -151717,6 +151820,7 @@
   "07092": {
     "medianIncome": 210100,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07093": {
@@ -151862,6 +151966,7 @@
   "07311": {
     "medianIncome": 179928,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07401": {
@@ -152007,6 +152112,7 @@
   "07458": {
     "medianIncome": 244155,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07460": {
@@ -152167,6 +152273,7 @@
   "07627": {
     "medianIncome": 175078,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07628": {
@@ -152187,6 +152294,7 @@
   "07632": {
     "medianIncome": 222192,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07640": {
@@ -152407,6 +152515,7 @@
   "07733": {
     "medianIncome": 175559,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07734": {
@@ -152432,6 +152541,7 @@
   "07739": {
     "medianIncome": 220746,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07740": {
@@ -152787,6 +152897,7 @@
   "07946": {
     "medianIncome": 213393,
     "medianRent": 3501,
+    "rentCoded": "top",
     "year": 2023
   },
   "07950": {

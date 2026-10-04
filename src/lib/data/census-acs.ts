@@ -2,20 +2,26 @@ import censusData from './census-acs.json'
 import poBoxAcs from './po-box-acs.json'
 import { lookupZip } from './zip-lookup'
 import { CITY_ZIP_LOOKUP } from './city-zip-lookup'
+import { getLausAreaFipsForZip } from '@/lib/mappings/laus-area'
 import type { CensusData } from '@/types'
 
 // Census ACS 5-year median gross rent by zip (bundled; scripts/build-census-acs.ts). Its only use on
 // the site is the base of the Shelter (CPI) card's "≈ $/yr in rent" figure. (The bundled file also
 // carries median household income, which nothing reads since the tariff estimate was removed.)
-type ZipCensusEntry = { medianRent: number | null; year: number }
+type ZipCensusEntry = { medianRent: number | null; year: number; rentCoded?: 'top' | 'bottom' }
 const ZIP_CENSUS = censusData as unknown as Record<string, ZipCensusEntry | undefined>
 /** Rent bases for zips without their own published ACS rent; built by scripts/build-po-box-acs.ts. */
 interface RentBasisFile {
   /** USPS-only zip (no ZCTA) → residential donor ZCTA. */
   byZip: Record<string, string | undefined>
-  /** Zip whose own ACS rent is suppressed/missing → [nearest same-county residential zip with one, miles]. */
-  nearest?: Record<string, [string, number] | undefined>
-  /** ACS 5-year county / state median gross rent (B25064), published values only. */
+  /**
+   * Zip whose own ACS rent is suppressed/missing → [nearest same-county residential zip with a reliable one (MOE ≤ 30%,
+   * not top/bottom-coded) within 100 mi, miles, 1 when a same-town zip was preferred over a nearer one].
+   */
+  nearest?: Record<string, [string, number] | [string, number, 1] | undefined>
+  /** Donor zip → its B25064 margin of error ($, 90%). */
+  donorMoe?: Record<string, number | undefined>
+  /** ACS 5-year county / state median gross rent (B25064), published values only (CT: planning-region FIPS keys). */
   counties?: Record<string, { rent: number; name: string } | undefined>
   states?: Record<string, { rent: number; name: string } | undefined>
 }
@@ -25,6 +31,21 @@ const PO_BOX_DONOR = BASIS.byZip
 const ACS_GEO_YEAR = 2023
 
 const acsLabel = (year: number, where: string) => `Census ACS ${year} 5-year, ${where}`
+
+/** A donor's rent must be a published, uncoded median (the build also requires MOE ≤ 30%; this guards stale data). */
+const usableDonor = (e: ZipCensusEntry | undefined): e is ZipCensusEntry & { medianRent: number } =>
+  !!e && typeof e.medianRent === 'number' && e.medianRent > 0 && !e.rentCoded
+
+/** Note for a zip's own top/bottom-coded median. */
+const CODED_NOTE = {
+  top: 'top-coded: Census reports only that the median is $3,500 or more, so the $ figure is a floor',
+  bottom: 'bottom-coded: Census reports only that the median is under $100',
+} as const
+
+/** County key for the rent median: Connecticut's ACS "counties" are its 2022 planning regions. */
+function rentCountyKey(zip: string, stateAbbr: string, countyFips: string): string {
+  return stateAbbr === 'CT' ? getLausAreaFipsForZip(zip) ?? countyFips : countyFips
+}
 
 /** 'city' when the donor shares the zip's county and city name (build-po-box-acs.ts tier 1), else 'county'. */
 function donorScopeOf(zip: string, donor: string): 'city' | 'county' {
@@ -56,16 +77,18 @@ export function cityContainsZip(zip: string, city: string, state: string): boole
 /**
  * Local median gross rent for a zip — the base of the Shelter card's "≈ $/yr in rent". Never blank and never a
  * national constant; each step is labeled (basis + basisNote + sourceLabel):
- *   1. the zip's own ACS figure ('zip');
+ *   1. the zip's own ACS figure ('zip'; a top-coded "$3,500+" median is kept and flagged rentCoded);
  *   2. USPS-only zips: a residential donor zip in the same city, else county ('po-donor');
- *   3. suppressed/missing rent: the nearest residential zip in the same county with a published rent ('nearest-zip');
- *   4. the county's ACS median gross rent ('county');
+ *   3. suppressed/missing rent: the nearest residential zip in the same county with a reliable rent — margin of
+ *      error ≤ 30%, not top/bottom-coded — within 100 mi, same town preferred ('nearest-zip');
+ *   4. the county's ACS median gross rent ('county'; Connecticut: the zip's planning region);
  *   5. the state's ACS median gross rent ('state').
  * Only a zip with none of these (territories ACS doesn't cover, unknown zips) → basis 'none', isRentFallback.
  */
 export function getCensusData(zip: string): CensusData {
   const entry = ZIP_CENSUS[zip]
   if (entry && typeof entry.medianRent === 'number' && entry.medianRent > 0) {
+    const coded = entry.rentCoded
     return {
       zip,
       medianRent: entry.medianRent,
@@ -73,7 +96,8 @@ export function getCensusData(zip: string): CensusData {
       year: entry.year,
       source: 'acs',
       basis: 'zip',
-      sourceLabel: acsLabel(entry.year, `zip ${zip}`),
+      ...(coded ? { rentCoded: coded, basisNote: CODED_NOTE[coded] } : {}),
+      sourceLabel: acsLabel(entry.year, coded ? `zip ${zip} (${coded === 'top' ? '$3,500+, top-coded' : 'under $100, bottom-coded'})` : `zip ${zip}`),
       isFallback: false,
       isRentFallback: false,
     }
@@ -81,9 +105,10 @@ export function getCensusData(zip: string): CensusData {
 
   const donor = PO_BOX_DONOR[zip]
   const donorEntry = donor ? ZIP_CENSUS[donor] : undefined
-  if (!entry && donor && donorEntry && typeof donorEntry.medianRent === 'number' && donorEntry.medianRent > 0) {
+  if (!entry && donor && usableDonor(donorEntry)) {
     const donorScope = donorScopeOf(zip, donor)
     const where = `zip ${donor} (largest residential zip in the same ${donorScope === 'city' ? 'city' : 'county'})`
+    const moe = BASIS.donorMoe?.[donor]
     return {
       zip,
       medianRent: donorEntry.medianRent,
@@ -94,6 +119,7 @@ export function getCensusData(zip: string): CensusData {
       basisNote: `borrowed from ${where}`,
       donorZip: donor,
       donorScope,
+      ...(moe ? { donorMoe: moe } : {}),
       sourceLabel: acsLabel(donorEntry.year, where),
       isFallback: false,
       isRentFallback: false,
@@ -103,9 +129,12 @@ export function getCensusData(zip: string): CensusData {
 
   const near = BASIS.nearest?.[zip]
   const nearEntry = near ? ZIP_CENSUS[near[0]] : undefined
-  if (near && nearEntry && typeof nearEntry.medianRent === 'number' && nearEntry.medianRent > 0) {
+  if (near && usableDonor(nearEntry)) {
     const [nz, mi] = near
-    const note = `borrowed from zip ${nz} (nearest with Census rent, ${mi.toFixed(1)} mi)`
+    const sameTown = near[2] === 1
+    const what = `${sameTown ? 'nearest in the same town' : 'nearest'} with a reliable Census rent, ${mi.toFixed(1)} mi`
+    const note = `borrowed from zip ${nz} (${what})`
+    const moe = BASIS.donorMoe?.[nz]
     return {
       zip,
       medianRent: nearEntry.medianRent,
@@ -116,7 +145,9 @@ export function getCensusData(zip: string): CensusData {
       basisNote: note,
       donorZip: nz,
       donorMiles: mi,
-      sourceLabel: acsLabel(nearEntry.year, `zip ${nz} (nearest with Census rent, ${mi.toFixed(1)} mi)`),
+      ...(sameTown ? { donorSameTown: true } : {}),
+      ...(moe ? { donorMoe: moe } : {}),
+      sourceLabel: acsLabel(nearEntry.year, `zip ${nz} (${what})`),
       isFallback: false,
       isRentFallback: false,
       approxFromZip: nz,
@@ -124,7 +155,7 @@ export function getCensusData(zip: string): CensusData {
   }
 
   const loc = lookupZip(zip)
-  const county = loc ? BASIS.counties?.[loc.countyFips] : undefined
+  const county = loc ? BASIS.counties?.[rentCountyKey(zip, loc.stateAbbr, loc.countyFips)] : undefined
   if (loc && county && county.rent > 0) {
     return {
       zip,

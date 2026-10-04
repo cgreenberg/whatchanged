@@ -8,7 +8,7 @@ import {
 } from '@/lib/baseline'
 import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
-import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
+import { ANNUAL_GROCERY_BASE, fmtRentFigure } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
@@ -147,10 +147,13 @@ export const groceriesBasisNote = () => `$/yr on ${fmtDollars(ANNUAL_GROCERY_BAS
  * Shelter $/yr in rent = median rent × 12 × BLS CPI rent of primary residence % (not the shelter %). The rent names
  * where it comes from when it isn't the zip's own Census figure (borrowed zip, county or state median).
  */
-export function shelterBasisNote(medianRent: number, c?: { basis?: string; donorZip?: string } | null): string {
-  const r = `(${fmtDollars(medianRent)}/mo)`
+export function shelterBasisNote(
+  medianRent: number,
+  c?: { basis?: string; donorZip?: string; basisArea?: string; rentCoded?: 'top' | 'bottom' } | null
+): string {
+  const r = `(${fmtRentFigure(medianRent, c?.basis === 'zip' ? c.rentCoded : undefined)}/mo)`
   if ((c?.basis === 'nearest-zip' || c?.basis === 'po-donor') && c.donorZip) return `BLS rent index × zip ${c.donorZip} rent ${r}`
-  if (c?.basis === 'county') return `BLS rent index × county median ${r}`
+  if (c?.basis === 'county') return `BLS rent index × ${/Planning Region/.test(c.basisArea ?? '') ? 'planning-region' : 'county'} median ${r}`
   if (c?.basis === 'state') return `BLS rent index × state median ${r}`
   return `BLS rent index × local rent ${r}`
 }

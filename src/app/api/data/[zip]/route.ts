@@ -40,6 +40,7 @@ function buildAudit(snapshot: EconomicSnapshot) {
       year: snapshot.census.data.year,
       donorZip: snapshot.census.data.donorZip ?? null,
       donorScope: snapshot.census.data.donorScope ?? null,
+      rentCoded: snapshot.census.data.rentCoded ?? null,
       label: snapshot.census.data.sourceLabel ?? null,
     } : null,
     blsSeriesIds: {

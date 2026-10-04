@@ -7,7 +7,7 @@ import type { Provenance } from '@/lib/provenance'
 import { RENT_STALE_DAYS, monthOlderThan } from '@/lib/staleness'
 import type { TraceMetric } from '@/lib/resolution/types'
 import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
-import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
+import { ANNUAL_GROCERY_BASE, fmtRentFigure } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
 import {
@@ -348,9 +348,10 @@ export function censusDonorZip(c: CensusData | null | undefined): string | undef
 
 /** "borrowed from zip 10025 (largest residential zip in the city)". */
 export function donorPhrase(c: CensusData | null | undefined): string | null {
-  // Borrowed bases name their source: "borrowed from zip 35464 (nearest with Census rent, 5.3 mi)",
-  // "Cameron Parish, LA median (no zip figure)", "Louisiana median (no zip or county figure)"
-  if (c?.basisNote && c.basis && c.basis !== 'zip') return c.basisNote
+  // Borrowed bases name their source: "borrowed from zip 35464 (nearest with a reliable Census rent, 5.3 mi)",
+  // "Cameron Parish, LA median (no zip figure)", "Louisiana median (no zip or county figure)"; the zip's own
+  // top-coded median says so ("top-coded: Census reports only that the median is $3,500 or more, ...")
+  if (c?.basisNote && c.basis && (c.basis !== 'zip' || c.rentCoded)) return c.basisNote
   const donor = censusDonorZip(c)
   if (!donor) return null
   const where = c?.donorScope === 'city' ? 'the city' : c?.donorScope === 'county' ? 'the county' : 'the area'
@@ -672,7 +673,7 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
   const donor = donorPhrase(census)
   const rentIdxSince = sinceMonth(c.rentIndexBaselinePeriod ?? BASELINE_MONTH)
   const detail = dollars !== null
-    ? `Base: ${fmtDollars(census!.medianRent)}/mo median rent (${censusLabel(census!)}${donor ? `, ${donor}` : ''}) × 12 × ` +
+    ? `Base: ${fmtRentFigure(census!.medianRent, census!.rentCoded)}/mo median rent (${censusLabel(census!)}${donor ? `, ${donor}` : ''}) × 12 × ` +
       `rent of primary residence (BLS) ${fmtSignedPct(rentIdx!)} ${rentIdxSince}.`
     : cpiIsNational
       ? `No dollar estimate: ${c.fallback === 'national' ? 'local shelter CPI is unavailable, so this is the national figure' : 'BLS publishes no local shelter CPI here, so this is the national figure'}, which is not applied to local rent.`
