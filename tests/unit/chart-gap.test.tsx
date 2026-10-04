@@ -5,7 +5,7 @@ import '@testing-library/jest-dom'
  * say which months are missing.
  */
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { EraChart } from '@/components/charts/EraChart'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import { parseCpiResponse } from '@/lib/api/bls-cpi'
@@ -68,5 +68,36 @@ describe('CPI chart with a data gap (recorded Phoenix food at home)', () => {
     const s = parseCpiResponse({ ...Object.fromEntries(ids.map(id => [id, RECORDED[id]])), CUURS48ASAH1: raw, CUURS48ASAF11: raw.map(d => ({ ...d })), CUURS48ASA0E: raw.map(d => ({ ...d })) }, { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
     expect(s.series.some(p => p.date === '2025-06')).toBe(false)
     expect(findGaps(s.series.map(p => ({ date: p.date, shelter: p.shelter })), 'shelter')).toEqual([])
+  })
+})
+
+describe('national overlay', () => {
+  const config = chartConfigs.find(c => c.id === 'cpi-groceries')!
+  const months = ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06']
+  const local = months.map((date, i) => ({ date, groceries: 100 + i }))
+  // U.S. series is missing 2025-04: the dashed U.S. line must mark the gap, not silently bridge it
+  const national = months.filter(d => d !== '2025-04').map((date, i) => ({ date, groceries: 100 + i * 0.5 }))
+  const prov = { source: 'BLS CPI food at home', geography: 'Phoenix', adjustment: 'not seasonally adjusted' }
+
+  test('legend names the national series with the supplied national label', () => {
+    const { container } = render(<EraChart config={config} data={local} nationalData={national} provenance={prov} nationalLabel="U.S. city avg, BLS monthly" />)
+    fireEvent.click(screen.getByLabelText('Show national'))
+    expect(container.querySelector('.recharts-legend-wrapper')).toHaveTextContent('Groceries (U.S. city avg, BLS monthly)')
+    expect(container.querySelector('.recharts-legend-wrapper')).not.toHaveTextContent('Groceries (U.S.)')
+  })
+
+  test('legend falls back to "(U.S.)" without a national label', () => {
+    const { container } = render(<EraChart config={config} data={local} nationalData={national} provenance={prov} />)
+    fireEvent.click(screen.getByLabelText('Show national'))
+    expect(container.querySelector('.recharts-legend-wrapper')).toHaveTextContent('Groceries (U.S.)')
+  })
+
+  test('a month missing only from the national series is marked with a connector and named', () => {
+    const { container } = render(<EraChart config={config} data={local} nationalData={national} provenance={prov} />)
+    expect(container.querySelector('.national-gap-connector')).toBeNull()
+    expect(screen.queryByTestId('chart-gap-note')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Show national'))
+    expect(container.querySelector('.national-gap-connector path, path.national-gap-connector')).not.toBeNull()
+    expect(screen.getByTestId('chart-gap-note')).toHaveTextContent(/^No U\.S\. data for Apr 2025$/)
   })
 })

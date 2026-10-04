@@ -192,13 +192,13 @@ test('OG + share card: HI stand-in outside the Honolulu CBSA is marked * with a 
   await generateShareCard('78701')
   const share = textOf(mockRendered[mockRendered.length - 1])
   expect(share).toContain("Honolulu-area price* · thru Aug '26")
-  expect(share).toContain('* No gas series for Hawaii Co. (Big Island); local prices typically higher.')
+  expect(share).toContain('* No gas series for Hawaii Co. (Big Island); local prices typically higher, may have changed differently.')
   const { GET } = await import('@/app/api/og/route')
   const { NextRequest } = await import('next/server')
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   const og = textOf(mockRendered[mockRendered.length - 1])
   expect(og).toContain('Honolulu-area price*')
-  expect(og).toContain('* no BLS or EIA gas series for Hawaii Co. (Big Island); local prices are typically higher')
+  expect(og).toContain('* no BLS or EIA gas series for Hawaii Co. (Big Island); local prices are typically higher and may have changed differently')
 }, 30000)
 
 test('share card: EIA national is tagged EIA', async () => {

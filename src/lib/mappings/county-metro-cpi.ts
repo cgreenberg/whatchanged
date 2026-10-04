@@ -59,7 +59,17 @@ export const CPI_METRO_SHORT_NAMES: Record<string, string> = {
   S37A: 'Dallas-Fort Worth', S37B: 'Houston',
   S48A: 'Phoenix', S48B: 'Denver', S49A: 'Los Angeles', S49B: 'San Francisco',
   S49C: 'Riverside-San Bernardino', S49D: 'Seattle', S49E: 'San Diego',
-  S49F: 'Urban Hawaii', S49G: 'Urban Alaska',
+  S49F: 'Honolulu', S49G: 'Anchorage',
+}
+
+/**
+ * Honolulu / Anchorage: BLS titles these CPI areas "Urban Hawaii" / "Urban Alaska" (the official name,
+ * kept in provenance), but they are the Honolulu and Anchorage metros only — gas names them the same way.
+ * Returns the official BLS area name for those two areas, else undefined.
+ */
+export function hiAkCpiOfficialName(code: string | undefined, name: string): string | undefined {
+  const c = code ?? Object.values(BLS_CPI_AREAS).find((a) => a.name === name)?.code
+  return c === 'S49F' || c === 'S49G' ? BLS_CPI_AREAS[c].name : undefined
 }
 
 /** Short name for a CPI metro, by area code or (older payloads) by its full BLS name; else the full name. */

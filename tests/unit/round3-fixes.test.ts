@@ -331,7 +331,7 @@ describe('geography + header labels', () => {
   test('gas caveats: HI/AK stand-in note (BLS), territories with only the U.S. average', () => {
     const s = (st: string, g: GasPriceData) => ({ location: { stateAbbr: st }, gas: { data: g } }) as unknown as Parameters<typeof gasCaveatFor>[0]
     expect(gasCaveatFor(s('HI', gas({ duoarea: undefined, source: 'bls', frequency: 'monthly', blsArea: 'S49F', areaName: 'Honolulu', standIn: true, isNationalFallback: false }))))
-      .toBe('Honolulu-area price — no BLS or EIA series for this area; local prices are typically higher.')
+      .toBe('Honolulu-area price — no BLS or EIA series for this area; local prices are typically higher and may have changed differently.')
     // Inside the Honolulu CBSA: the metro's own series, no caveat
     expect(gasCaveatFor(s('HI', gas({ duoarea: undefined, source: 'bls', frequency: 'monthly', blsArea: 'S49F', areaName: 'Honolulu', isNationalFallback: false })))).toBeUndefined()
     expect(gasCaveatFor(s('HI', gas({ duoarea: 'R5XCA', isNationalFallback: false })))).toBeUndefined()

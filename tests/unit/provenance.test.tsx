@@ -154,6 +154,6 @@ describe('stale CPI tier inference (entries cached before `tier` existed)', () =
   })
   test('Urban Hawaii (metro S49F) is not mislabeled as a region', () => {
     expect(cpiGeoLabel({ metro: 'Urban Hawaii', seriesIds: { groceries: 'CUURS49FSAF11', shelter: '', energy: '' } } as never))
-      .toBe('metro: Urban Hawaii')
+      .toBe('metro: Honolulu (BLS area: Urban Hawaii)')
   })
 })

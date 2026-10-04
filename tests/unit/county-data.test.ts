@@ -99,9 +99,12 @@ describe('movers', () => {
     expect(ids).not.toContain('a'); expect(ids).not.toContain('b'); expect(ids).not.toContain('c')
     expect(top[0][0]).toBe('d'); expect(bottom[0][0]).toBe('g')
   })
-  it('an approximated jobs count (approx: emp, e.g. CT planning regions) does not exclude a price mover', () => {
+  it('a county with an approximated jobs count (approx: emp, e.g. CT) is excluded from movers, however large its change', () => {
     const data: CountyMap = { h: mk(40, { approx: ['emp'] }), d: mk(5), e: mk(4), f: mk(-3), g: mk(-4) }
-    expect(moversFor(data, 'hv').top[0][0]).toBe('h')
+    const { top, bottom } = moversFor(data, 'hv')
+    const ids = [...top, ...bottom].map(([f]) => f)
+    expect(ids).not.toContain('h')
+    expect(top[0][0]).toBe('d')
   })
 })
 

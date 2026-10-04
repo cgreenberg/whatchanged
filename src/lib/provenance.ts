@@ -4,6 +4,7 @@
 
 import type { CpiData } from '@/types'
 import { DATE_UNAVAILABLE } from '@/lib/format'
+import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 
 export interface Provenance {
   source: string
@@ -69,7 +70,10 @@ export function cpiGeoLabel(
     case 4: return 'national'
     case 3: return `region: ${cpi.metro}`
     case 2: return `division: ${cpi.metro}`
-    case 1: return `metro: ${cpi.metro}`
+    case 1: {
+      const official = hiAkCpiOfficialName(cpi.areaCode, cpi.metro)
+      return official ? `metro: ${cpiMetroShortName(cpi.areaCode, cpi.metro)} (BLS area: ${official})` : `metro: ${cpi.metro}`
+    }
     default: return `area: ${cpi.metro}`
   }
 }

@@ -207,15 +207,17 @@ export function metricFooter(def: MetricDef, meta: LocalMeta | null, geography =
 
 export const MOVERS_MIN_JOBS = 75000
 
-/** Biggest movers among large counties, excluding approximated counties and flagged outliers.
- * Top and bottom lists never overlap. */
+/** Biggest movers among large counties (jobs count above the cut), excluding counties whose jobs count is
+ * approximated (`approx` includes 'emp': Connecticut), counties with an approximated figure for this metric,
+ * and flagged outliers. Top and bottom lists never overlap. */
 export function moversFor(data: CountyMap, metric: MetricKey, n = 5) {
   const rows = Object.entries(data)
     .filter(([, c]) =>
       typeof c[metric] === 'number' && Number.isFinite(c[metric]) &&
-      // `approx` lists approximated fields (in practice only `emp`, the jobs count used for the size
-      // cut): only an approximated figure for THIS metric excludes a county, never an estimated jobs count
-      (c.emp ?? 0) >= MOVERS_MIN_JOBS && !c.approx?.includes(metric) && !c.flags?.includes(metric))
+      // An approximated `emp` (borrowed jobs count, e.g. Connecticut planning regions) can't honestly pass
+      // the size cut, and relaxing the cut would let tiny counties in: such counties are excluded
+      (c.emp ?? 0) >= MOVERS_MIN_JOBS && !c.approx?.includes('emp') &&
+      !c.approx?.includes(metric) && !c.flags?.includes(metric))
     .sort((a, b) => (b[1][metric] as number) - (a[1][metric] as number))
   const k = Math.min(n, Math.floor(rows.length / 2))
   return { top: rows.slice(0, k), bottom: rows.slice(rows.length - k).reverse() }

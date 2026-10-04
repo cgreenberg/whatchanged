@@ -253,7 +253,7 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
             </div>
           ))}
           <p className="col-span-2 text-[11px] text-zinc-500">
-            Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure.
+            Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure and counties whose job counts are approximated (Connecticut).
           </p>
         </div>
       )}

@@ -203,11 +203,17 @@ describe('refresh-cache safety', () => {
 describe('hero-card geography tags and caveats', () => {
   test('short geography names', () => {
     expect(shortCountyName('Buncombe County, NC')).toBe('Buncombe Co.')
-    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu Parish')
+    expect(shortCountyName('Calcasieu Parish, LA')).toBe('Calcasieu')
+    expect(shortCountyName('Fairbanks North Star Borough, AK')).toBe('Fairbanks North Star')
+    expect(shortCountyName('Yukon-Koyukuk Census Area, AK')).toBe('Yukon-Koyukuk')
+    expect(shortCountyName('Anchorage Municipality, AK')).toBe('Anchorage')
+    expect(shortCountyName('Juneau City and Borough, AK')).toBe('Juneau')
     const cpi = (o: Partial<CpiData>) => ({ ...snap().cpi.data!, ...o }) as CpiData
     expect(cpiShortGeo(cpi({ tier: 2, metro: 'South Atlantic', areaCode: '0350' }))).toBe('South Atlantic div.')
     expect(cpiShortGeo(cpi({ tier: 1, metro: 'Chicago-Naperville-Elgin', areaCode: 'S23A' }))).toBe('Chicago metro')
-    expect(cpiShortGeo(cpi({ tier: 1, metro: 'Urban Hawaii', areaCode: 'S49F' }))).toBe('Urban Hawaii')
+    expect(cpiShortGeo(cpi({ tier: 1, metro: 'Urban Hawaii', areaCode: 'S49F' }))).toBe('Honolulu metro')
+    expect(cpiShortGeo(cpi({ tier: 1, metro: 'Urban Alaska', areaCode: 'S49G' }))).toBe('Anchorage metro')
+    expect(cpiShortGeo(cpi({ tier: 1, metro: 'Urban Hawaii' }))).toBe('Honolulu metro') // older payload without areaCode
     // never cut a CBSA title at the first hyphen ("Washington metro" would read as Washington State)
     expect(cpiShortGeo(cpi({ tier: 1, metro: 'Washington-Arlington-Alexandria', areaCode: 'S35A' }))).toBe('Washington DC metro')
     expect(cpiShortGeo(cpi({ tier: 1, metro: 'Washington-Arlington-Alexandria' }))).toBe('Washington DC metro')
@@ -253,11 +259,11 @@ describe('hero-card geography tags and caveats', () => {
     s.gas.data = blsGasData('S49F', { standIn: true })
     const card = buildGasCard(s)
     expect(card.caveat).toBe(HI_AK_STANDIN_GAS_NOTE('Honolulu', 'Kauai County'))
-    expect(card.caveat).toBe('Honolulu-area price — no BLS or EIA series for Kauai County; local prices are typically higher.')
+    expect(card.caveat).toBe('Honolulu-area price — no BLS or EIA series for Kauai County; local prices are typically higher and may have changed differently.')
     expect(card.geoTag).toBe('Honolulu-area price*')
     s.location = { ...s.location, stateAbbr: 'AK', countyFips: '02110', countyName: 'Juneau City and Borough' }
     s.gas.data = blsGasData('S49G', { standIn: true })
-    expect(buildGasCard(s).caveat).toBe('Anchorage-area price — no BLS or EIA series for Juneau City and Borough; local prices are typically higher.')
+    expect(buildGasCard(s).caveat).toBe('Anchorage-area price — no BLS or EIA series for Juneau City and Borough; local prices are typically higher and may have changed differently.')
     s.location = { ...s.location, stateAbbr: 'PA' }
     s.gas.data = blsGasData('S12B')
     expect(buildGasCard(s).caveat).toBeUndefined()

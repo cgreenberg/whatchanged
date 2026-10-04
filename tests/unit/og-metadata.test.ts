@@ -144,7 +144,7 @@ test('BLS gas tiers: og:description tags the BLS geography and month (Honolulu m
   mockFetch.mockResolvedValue(h)
   const hd = (await meta({ zip: '78701' })).openGraph?.description as string
   expect(hd).toContain("Gas +$0.99/gal (Honolulu-area price*, thru Aug '26)")
-  expect(hd).toContain('* no BLS or EIA gas series for Maui Co.; local prices are typically higher')
+  expect(hd).toContain('* no BLS or EIA gas series for Maui Co.; local prices are typically higher and may have changed differently')
   const p = snap()
   p.location = { ...p.location, stateAbbr: 'PA' }
   p.gas.data = blsGasData('S12B')

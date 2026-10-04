@@ -61,11 +61,11 @@ export const OUTLIER_FOOTNOTE = '† unusual value: far outside most U.S. counti
  * Honolulu (S49F) and Anchorage (S49G), so that metro's series stands in — said plainly.
  */
 export const HI_AK_STANDIN_GAS_NOTE = (metro: string, place: string) =>
-  `${metro}-area price — no BLS or EIA series for ${place}; local prices are typically higher.`
+  `${metro}-area price — no BLS or EIA series for ${place}; local prices are typically higher and may have changed differently.`
 /** Short marker + footnote for the stand-in on the share card, OG image and og:description. */
 export const GAS_STANDIN_MARK = '*'
 export const GAS_STANDIN_FOOTNOTE = (place: string) =>
-  `${GAS_STANDIN_MARK} no BLS or EIA gas series for ${place}; local prices are typically higher`
+  `${GAS_STANDIN_MARK} no BLS or EIA gas series for ${place}; local prices are typically higher and may have changed differently`
 /** BLS monthly gas series failed: the zip's EIA weekly tier is shown instead (local and national both EIA). */
 export const GAS_EIA_FALLBACK_NOTE = 'Local BLS monthly gas price unavailable right now; showing the EIA weekly regional average instead.'
 
@@ -99,10 +99,12 @@ export function gasCaveatFor(s: Pick<EconomicSnapshot, 'gas' | 'location'>): str
   return undefined
 }
 
-/** "Buncombe County, NC" → "Buncombe Co."; "Calcasieu Parish, LA" → "Calcasieu Parish". */
+/** "Buncombe County, NC" → "Buncombe Co."; "Calcasieu Parish, LA" → "Calcasieu"; "Fairbanks North Star Borough, AK" → "Fairbanks North Star". */
 export function shortCountyName(name: string | null | undefined): string {
   if (!name) return 'county'
-  return name.replace(/,\s*[A-Z]{2}$/, '').replace(/ County$/, ' Co.').trim()
+  return name.replace(/,\s*[A-Z]{2}$/, '').replace(/ County$/, ' Co.')
+    .replace(/ (City and Borough|Census Area|Municipality|Borough|Parish)$/, '')
+    .trim()
 }
 
 /** Short CPI geography: "Chicago metro", "South Atlantic div.", "South region", "U.S. avg". */
@@ -114,7 +116,7 @@ export function cpiShortGeo(c: CpiData | null | undefined): string | undefined {
   if (tier === 4) return 'U.S. avg'
   if (tier === 3) return `${name.replace(/ Urban$/, '')} region`
   if (tier === 2) return `${name} div.`
-  if (tier === 1) return /^Urban /.test(name) ? name : `${cpiMetroShortName(c.areaCode, name)} metro`
+  if (tier === 1) return `${cpiMetroShortName(c.areaCode, name)} metro`
   return name || undefined
 }
 
@@ -422,7 +424,7 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
   }
   const base = {
     id: 'shelter' as const,
-    label: 'Shelter prices (CPI, all tenants & homeowners)',
+    label: "Shelter prices (CPI: rents + owners' equivalent rent)",
     accentColor: ACCENTS.shelter,
     provenance,
     stale: cpiItemStale(s, 'shelter'),

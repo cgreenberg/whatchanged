@@ -89,7 +89,7 @@ export interface GasPriceData {
   areaName?: string
   /**
    * HI / AK zip outside the Honolulu / Anchorage CBSA: no EIA or BLS series covers it, so that
-   * metro's series stands in ("Honolulu-area price"); local prices are typically higher.
+   * metro's series stands in ("Honolulu-area price"); local prices are typically higher and may have changed differently.
    */
   standIn?: boolean
   tier?: 1 | 2 | 3

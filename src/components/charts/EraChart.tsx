@@ -181,11 +181,23 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
   // drawn as a faint dashed connector, with isolated points and the latest point dotted.
   const prelimKey = `${mainKey}${PRELIM_SUFFIX}`
   const gaps = useMemo(() => (config.chartType === 'bar' ? [] : findGaps(splitData, mainKey, [prelimKey])), [splitData, mainKey, prelimKey, config.chartType])
-  const displayData = useMemo(() => withGapConnectors(splitData, mainKey, gaps, [prelimKey]), [splitData, mainKey, gaps, prelimKey])
+  // The national overlay marks its own missing months the same way (e.g. Oct 2025 in the BLS series)
+  const natKey = `national_${mainKey}`
+  const natGaps = useMemo(() => (config.chartType === 'bar' || !showNational ? [] : findGaps(splitData, natKey)), [splitData, natKey, config.chartType, showNational])
+  const displayData = useMemo(
+    () => withGapConnectors(withGapConnectors(splitData, mainKey, gaps, [prelimKey]), natKey, natGaps),
+    [splitData, mainKey, gaps, prelimKey, natKey, natGaps],
+  )
   const dotted = useMemo(() => dotDates(splitData, mainKey, !hasPreliminary), [splitData, mainKey, hasPreliminary])
   const sourceShort = provenance.source.split(' ')[0]
-  const gapNote = gaps.length
-    ? `No ${sourceShort} data for ${gaps.map(g => g.from === g.to ? fmtPoint(g.from) : `${fmtPoint(g.from)}–${fmtPoint(g.to)}`).join(', ')}`
+  const gapRange = (g: { from: string; to: string }) => g.from === g.to ? fmtPoint(g.from) : `${fmtPoint(g.from)}–${fmtPoint(g.to)}`
+  // National-only gaps (the U.S. series missing a month the local one has) are named too; shared ones are not repeated
+  const natOnlyGaps = natGaps.filter(n => !gaps.some(g => g.from === n.from && g.to === n.to))
+  const gapNote = gaps.length || natOnlyGaps.length
+    ? [
+        gaps.length ? `No ${sourceShort} data for ${gaps.map(gapRange).join(', ')}` : '',
+        natOnlyGaps.length ? `${gaps.length ? 'U.S. line: no' : 'No'} U.S. data for ${natOnlyGaps.map(gapRange).join(', ')}` : '',
+      ].filter(Boolean).join('; ')
     : null
 
   const hasLocal = displayData.some(d => typeof d[mainKey] === 'number' || typeof d[`${mainKey}${PRELIM_SUFFIX}`] === 'number')
@@ -308,6 +320,11 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
                 strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="2 4" dot={false} activeDot={false} connectNulls
                 isAnimationActive={false} legendType="none" tooltipType="none" className="gap-connector" />
             ))}
+            {natGaps.map((g, i) => (
+              <Line key={`natgap-${i}-${timeframe}`} type="linear" dataKey={`${natKey}${GAP_SUFFIX}${i}`} stroke={config.series[0]?.color}
+                strokeOpacity={0.3} strokeWidth={1} strokeDasharray="1 4" dot={false} activeDot={false} connectNulls
+                isAnimationActive={false} legendType="none" tooltipType="none" className="national-gap-connector" />
+            ))}
             {hasPreliminary && config.series[0] && (() => {
               const s = config.series[0]
               const pk = `${s.dataKey}${PRELIM_SUFFIX}`
@@ -326,7 +343,7 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
             })()}
             {showNational && config.series.map(s => (
               <Line key={`national_${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={`national_${s.dataKey}`}
-                stroke={s.color} strokeWidth={1} strokeDasharray="6 3" strokeOpacity={0.5} name={`${s.label} (U.S.)`}
+                stroke={s.color} strokeWidth={1} strokeDasharray="6 3" strokeOpacity={0.5} name={`${s.label} (${nationalLabel ?? 'U.S.'})`}
                 dot={false} animationDuration={600} animationEasing="ease-out" />
             ))}
             {config.trendline && (

@@ -8,6 +8,7 @@ import {
 } from '@/lib/baseline'
 import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
+import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { buildLineSparklineV3 } from '@/lib/share-card/sparklines'
@@ -95,7 +96,7 @@ export function cpiShareLabel(c: CpiData | null | undefined): string | null {
   if (!c?.metro) return null
   if (c.fallback === 'national') return 'CPI: national (local data unavailable)'
   switch (cpiTierOf(c)) {
-    case 1: return `CPI: ${c.metro} (metro)`
+    case 1: return `CPI: ${hiAkCpiOfficialName(c.areaCode, c.metro) ? cpiMetroShortName(c.areaCode, c.metro) : c.metro} (metro)`
     case 2: return `CPI: ${c.metro} (Census division)`
     case 3: return `CPI: ${c.metro} (Census region)`
     case 4: return 'CPI: national'
@@ -160,7 +161,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const gasGeo = gasGeoName && gasThru ? `${gasGeoName} · ${gasThru}` : gasGeoName
   // HI/AK outside Honolulu/Anchorage: footnote for the "*" on the stand-in label
   const gasStandInNote = gasOk && isGasStandIn(gasData)
-    ? `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices typically higher.`
+    ? `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, true)}; local prices typically higher, may have changed differently.`
     : null
   // National carries its source and as-of (BLS monthly vs EIA weekly national figures differ)
   const natGasTag = natGas
@@ -678,7 +679,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {sectionLabel('SHELTER', '(CPI, all tenants & homeowners)')}
+                {sectionLabel('SHELTER', "(CPI: rents + owners' equiv. rent)")}
                 {shelterSparkline && (
                   <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
                     {shelterSparkline}
