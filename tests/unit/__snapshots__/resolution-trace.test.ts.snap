@@ -1,0 +1,257 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`trace snapshots (golden zips) 00601 — Adjuntas PR: national gas + CPI, no electricity 1`] = `
+{
+  "electricity": [
+    "not-applicable | electricity.eia-state | Puerto Rico [state] |  |  | EIA publishes no residential electricity price for Puerto Rico.",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Adjuntas Municipio, PR [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | gas.bls-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | gas.bls-hiak-standin | Puerto Rico [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Puerto Rico [state] |  |  | EIA publishes weekly state averages for 9 states; Puerto Rico isn't one.",
+    "not-applicable | gas.eia-padd | Puerto Rico [state] |  |  | Puerto Rico isn't in an EIA PADD region.",
+    "used | gas.eia-national | United States [national] | 2026-09-28 | EMM_EPMR_PTE_NUS_DPG | EIA publishes no gas price for Puerto Rico; this is the U.S. average.",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | groceries.bls-cpi-division | Puerto Rico [state] |  |  | BLS publishes no Census-division CPI for Puerto Rico.",
+    "not-applicable | groceries.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
+    "used | groceries.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAF11 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Adjuntas Municipio, PR [county] |  |  | Zillow has no rent series for Adjuntas Municipio with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
+    "used | rent.bls-cpi-shelter | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | shelter.bls-cpi-division | Puerto Rico [state] |  |  | BLS publishes no Census-division CPI for Puerto Rico.",
+    "not-applicable | shelter.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
+    "used | shelter.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Zillow county rent, New England division CPI 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Maine (statewide) [state] | 2026-07 | ELEC.PRICE.ME-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Cumberland County, ME [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Cumberland County isn't in one.",
+    "not-applicable | gas.bls-metro | Cumberland County, ME [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Cumberland County isn't in one.",
+    "not-applicable | gas.bls-hiak-standin | Maine [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Maine [state] |  |  | EIA publishes weekly state averages for 9 states; Maine isn't one.",
+    "stale | gas.eia-padd | New England (PADD 1A) [padd] | 2025-02-24 | EMM_EPMR_PTE_R1X_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Cumberland County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Cumberland County isn't in one.",
+    "used | groceries.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAF11",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Cumberland County, ME [county] | 2026-08",
+    "not-needed | rent.bls-cpi-shelter | New England division [division]",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Cumberland County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Cumberland County isn't in one.",
+    "used | shelter.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAH1",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 04240 — Lewiston ME: no Zillow rent for Androscoggin County → New England division shelter 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Maine (statewide) [state] | 2026-07 | ELEC.PRICE.ME-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Androscoggin County, ME [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Androscoggin County isn't in one.",
+    "not-applicable | gas.bls-metro | Androscoggin County, ME [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Androscoggin County isn't in one.",
+    "not-applicable | gas.bls-hiak-standin | Maine [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Maine [state] |  |  | EIA publishes weekly state averages for 9 states; Maine isn't one.",
+    "stale | gas.eia-padd | New England (PADD 1A) [padd] | 2025-02-24 | EMM_EPMR_PTE_R1X_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Androscoggin County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Androscoggin County isn't in one.",
+    "used | groceries.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAF11",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Androscoggin County, ME [county] |  |  | Zillow has no rent series for Androscoggin County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
+    "used | rent.bls-cpi-shelter | New England division [division] | 2026-08 | CUUR0110SAH1",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Androscoggin County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Androscoggin County isn't in one.",
+    "used | shelter.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAH1",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 10509 — Brewster NY: no Zillow rent for Putnam County → NY metro shelter 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | New York (statewide) [state] | 2026-07 | ELEC.PRICE.NY-RES.M",
+  ],
+  "gas": [
+    "stale | gas.eia-city | New York City area [city] | 2025-02-24 | EMM_EPMR_PTE_Y35NY_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.bls-metro | New York-Newark-Jersey City metro [metro]",
+    "not-needed | gas.bls-hiak-standin",
+    "not-needed | gas.eia-state | New York state [state]",
+    "not-needed | gas.eia-padd | Central Atlantic (PADD 1B) [padd]",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAF11",
+    "not-needed | groceries.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Putnam County, NY [county] |  |  | Zillow has no rent series for Putnam County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
+    "used | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
+    "not-needed | shelter.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 19103 — Philadelphia: BLS metro gas 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Pennsylvania (statewide) [state] | 2026-07 | ELEC.PRICE.PA-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Philadelphia County, PA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Philadelphia County isn't in one.",
+    "used | gas.bls-metro | Philadelphia-Camden-Wilmington metro [metro] | 2026-08 | APUS12B74714",
+    "not-needed | gas.bls-hiak-standin",
+    "not-needed | gas.eia-state",
+    "not-needed | gas.eia-padd | Central Atlantic (PADD 1B) [padd]",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | Philadelphia-Camden-Wilmington metro [metro] | 2026-08 | CUURS12BSAF11",
+    "not-needed | groceries.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Philadelphia County, PA [county] | 2026-08",
+    "not-needed | rent.bls-cpi-shelter | Philadelphia-Camden-Wilmington metro [metro]",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | Philadelphia-Camden-Wilmington metro [metro] | 2026-08 | CUURS12BSAH1",
+    "not-needed | shelter.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 30303 — Atlanta: BLS metro gas, Atlanta metro CPI 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Georgia (statewide) [state] | 2026-07 | ELEC.PRICE.GA-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Fulton County, GA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Fulton County isn't in one.",
+    "used | gas.bls-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | APUS35C74714",
+    "not-needed | gas.bls-hiak-standin",
+    "not-needed | gas.eia-state",
+    "not-needed | gas.eia-padd | Lower Atlantic (PADD 1C) [padd]",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | CUURS35CSAF11",
+    "not-needed | groceries.bls-cpi-division | South Atlantic division [division]",
+    "not-needed | groceries.bls-cpi-region | South region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Fulton County, GA [county] | 2026-08",
+    "not-needed | rent.bls-cpi-shelter | Atlanta-Sandy Springs-Roswell metro [metro]",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | CUURS35CSAH1",
+    "not-needed | shelter.bls-cpi-division | South Atlantic division [division]",
+    "not-needed | shelter.bls-cpi-region | South region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no Zillow rent → Pacific division shelter 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Hawaii (statewide) [state] | 2026-07 | ELEC.PRICE.HI-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Hawaii County, HI [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Hawaii County isn't in one.",
+    "not-applicable | gas.bls-metro | Hawaii County, HI [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Hawaii County isn't in one.",
+    "used | gas.bls-hiak-standin | Honolulu metro (stand-in) [metro] | 2026-08 | APUS49F74714 | No BLS or EIA gas series covers Hawaii County; the Honolulu price stands in. Local prices are typically higher and may have changed differently.",
+    "not-needed | gas.eia-state",
+    "not-needed | gas.eia-padd",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Hawaii County, HI [county] |  |  | BLS publishes its own CPI for 23 metro areas; Hawaii County isn't in one.",
+    "used | groceries.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAF11",
+    "not-needed | groceries.bls-cpi-region | West region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Hawaii County, HI [county] |  |  | Zillow has no rent series for Hawaii County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
+    "used | rent.bls-cpi-shelter | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Hawaii County, HI [county] |  |  | BLS publishes its own CPI for 23 metro areas; Hawaii County isn't in one.",
+    "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+    "not-needed | shelter.bls-cpi-region | West region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 98683 — Vancouver WA: EIA Washington state gas 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Washington (statewide) [state] | 2026-07 | ELEC.PRICE.WA-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Clark County, WA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Clark County isn't in one.",
+    "not-applicable | gas.bls-metro | Clark County, WA [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Clark County isn't in one.",
+    "not-applicable | gas.bls-hiak-standin | Washington [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "used | gas.eia-state | Washington state [state] | 2026-09-28 | EMM_EPMR_PTE_SWA_DPG",
+    "not-needed | gas.eia-padd | West Coast excl. California (PADD 5) [padd]",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Clark County, WA [county] |  |  | BLS publishes its own CPI for 23 metro areas; Clark County isn't in one.",
+    "used | groceries.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAF11",
+    "not-needed | groceries.bls-cpi-region | West region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Clark County, WA [county] | 2026-08",
+    "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Clark County, WA [county] |  |  | BLS publishes its own CPI for 23 metro areas; Clark County isn't in one.",
+    "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+    "not-needed | shelter.bls-cpi-region | West region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;

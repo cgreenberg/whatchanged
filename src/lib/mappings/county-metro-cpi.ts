@@ -1,4 +1,4 @@
-import cbsaCrosswalk from '@/lib/data/cbsa-cpi-crosswalk.json'
+import { selectCpiArea } from '@/lib/resolution/ladders'
 
 // BLS CPI area codes — verified against https://data.bls.gov/timeseries/CUUR{code}SAF11
 // on 2026-03-22. Each code was checked by loading the series page and reading the Area field.
@@ -152,28 +152,13 @@ export const STATE_TO_DIVISION: Record<string, { code: string; name: string }> =
   WA: { code: '0490', name: 'Pacific' },
 }
 
+/**
+ * CPI area for a county (metro → Census division → region → national). The tiers live in the CPI
+ * ladders (src/lib/resolution/ladders.ts): this is their first applicable rung.
+ */
 export function getMetroCpiAreaForCounty(
   countyFips: string,
   stateAbbr: string
 ): { areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 } {
-  // Tier 1: CBSA-based lookup (official OMB → BLS mapping)
-  const cbsaArea = (cbsaCrosswalk as Record<string, string>)[countyFips]
-  if (cbsaArea && BLS_CPI_AREAS[cbsaArea]) {
-    return { areaCode: cbsaArea, areaName: BLS_CPI_AREAS[cbsaArea].name, tier: 1 }
-  }
-
-  // Tier 2: Census Division lookup
-  const division = STATE_TO_DIVISION[stateAbbr.toUpperCase()]
-  if (division) {
-    return { areaCode: division.code, areaName: division.name, tier: 2 }
-  }
-
-  // Tier 3: Regional CPI fallback
-  const regionCode = STATE_TO_REGION[stateAbbr.toUpperCase()]
-  if (regionCode && BLS_CPI_AREAS[regionCode]) {
-    return { areaCode: regionCode, areaName: BLS_CPI_AREAS[regionCode].name, tier: 3 }
-  }
-
-  // Tier 4: National fallback (territories)
-  return { areaCode: '0000', areaName: 'National', tier: 4 }
+  return selectCpiArea(countyFips, stateAbbr)
 }

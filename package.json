@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "verify:live": "npx tsx scripts/verify-live.ts",
     "audit:mappings": "npx tsx scripts/audit-zip-mappings.ts",
+    "docs:ladders": "npx tsx scripts/gen-ladder-docs.ts",
     "build:zip-county": "NODE_OPTIONS=--max-old-space-size=6144 npx tsx scripts/build-zip-county.ts",
     "build:county-geo": "npx tsx scripts/build-county-geo.ts",
     "build:cbsa-crosswalk": "npx tsx scripts/build-cbsa-cpi-crosswalk.ts",

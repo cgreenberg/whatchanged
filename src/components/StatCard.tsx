@@ -4,6 +4,8 @@ import { useId, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Provenance } from '@/lib/provenance'
 import { ProvenanceLine } from '@/components/ProvenanceLine'
+import { SourceTrace } from '@/components/SourceTrace'
+import type { TraceStep } from '@/lib/resolution/types'
 
 export interface StatCardProps {
   testId?: string
@@ -28,6 +30,8 @@ export interface StatCardProps {
   accentColor?: string
   stale?: boolean
   unavailable?: boolean
+  /** How the number's source was picked (ladder trace): "Where does this come from?" in the ⓘ panel. */
+  trace?: TraceStep[]
 }
 
 /**
@@ -37,7 +41,7 @@ export interface StatCardProps {
  */
 export function StatCard({
   testId, label, value, inline, change, direction = 'neutral', secondary, sourceLine, tags, info = [],
-  provenance, moreProvenance = [], accentColor, stale, unavailable,
+  provenance, moreProvenance = [], accentColor, stale, unavailable, trace,
 }: StatCardProps) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
@@ -127,6 +131,7 @@ export function StatCard({
         {info.map((line, i) => <p key={i} data-testid="stat-info-line">{line}</p>)}
         <ProvenanceLine provenance={provenance} />
         {moreProvenance.map((p, i) => <ProvenanceLine key={i} provenance={p} />)}
+        <SourceTrace steps={trace} subject={label.toLowerCase()} className="pt-0.5" />
       </div>
     </motion.div>
   )

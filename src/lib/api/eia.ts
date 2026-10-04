@@ -1,14 +1,7 @@
 import type { GasPriceData } from '@/types'
-import {
-  CPI_TO_EIA_CITY,
-  COUNTY_EIA_CITY_OVERRIDES,
-  STATE_LEVEL_CODES,
-  STATE_TO_PAD,
-  PAD_NAMES,
-  PAD_DUOAREA,
-} from '@/lib/mappings/eia-gas'
-import { BLS_GAS_STATE_AREA, isBlsGasMetro } from '@/lib/mappings/bls-gas'
-import { describeBlsGasArea, fetchBlsGasSeries } from './bls-gas'
+import { STATE_LEVEL_CODES } from '@/lib/mappings/eia-gas'
+import { selectGasLookup } from '@/lib/resolution/ladders'
+import { fetchBlsGasSeries } from './bls-gas'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
 
@@ -119,52 +112,18 @@ function describeEiaCode(code: string, label?: string): Pick<GasLookupResult, 'd
   return { duoarea: code, geoLevel: label ?? `${code} avg`, tier: 3, cacheKey: `${GAS_KEY_PREFIX}:area:${code}` }
 }
 
+/**
+ * The gas series for a place (most local first). The tiers live in the gas ladder
+ * (src/lib/resolution/ladders.ts): this is its first applicable rung. `eiaOnly` = the BLS-outage
+ * fallback: the first applicable EIA rung (state / PADD; U.S. for HI/AK).
+ */
 export function getGasLookup(
   stateAbbr: string,
   cpiAreaCode?: string,
   countyFips?: string,
   opts: { eiaOnly?: boolean } = {}
 ): GasLookupResult {
-  // Tier 1a: county FIPS overrides (may point at a city, state or PADD series)
-  if (countyFips) {
-    const override = COUNTY_EIA_CITY_OVERRIDES[countyFips]
-    if (override) return describeDuoarea(override.duoarea, override.label)
-  }
-
-  // Tier 1b: CPI metro → EIA city
-  if (cpiAreaCode) {
-    const city = CPI_TO_EIA_CITY[cpiAreaCode]
-    if (city) return describeDuoarea(city.duoarea, city.label)
-  }
-
-  const upper = stateAbbr.toUpperCase()
-
-  if (!opts.eiaOnly) {
-    // BLS monthly: CPI metro without an EIA city series (incl. Honolulu S49F, Anchorage S49G)
-    if (isBlsGasMetro(cpiAreaCode)) return describeBlsGasArea(cpiAreaCode)
-
-    // BLS monthly: rest of Hawaii / Alaska → the Honolulu / Anchorage series as a labeled stand-in
-    // (EIA publishes no HI/AK series and BLS nothing outside those two CBSAs)
-    const hiAk = BLS_GAS_STATE_AREA[upper]
-    if (hiAk) return describeBlsGasArea(hiAk, { standIn: true })
-  } else if (BLS_GAS_STATE_AREA[upper]) {
-    // EIA-only (BLS outage fallback): EIA has nothing for HI/AK; the West Coast PADD would mislead
-    return describeDuoarea('NUS')
-  }
-
-  // EIA state-level
-  const state = STATE_LEVEL_CODES[upper]
-  if (state) return describeDuoarea(state.duoarea, state.label)
-
-  // EIA PAD district / sub-district
-  const pad = STATE_TO_PAD[upper]
-  if (pad !== undefined) {
-    const duoarea = PAD_DUOAREA[pad] ?? `R${pad}0`
-    return describeDuoarea(duoarea, `${PAD_NAMES[pad]} avg`)
-  }
-
-  // National fallback
-  return describeDuoarea('NUS')
+  return selectGasLookup({ stateAbbr, cpiAreaCode, countyFips }, opts)
 }
 
 // --- Parsing ---

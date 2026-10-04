@@ -1,5 +1,6 @@
 import type { DollarImpact } from '@/lib/compute/dollar-translations'
 import type { ElectricitySeriesData, ElectricityPoint } from '@/lib/api/eia-electricity'
+import type { SnapshotTrace } from '@/lib/resolution/types'
 
 export interface ZipInfo {
   zip: string
@@ -186,4 +187,9 @@ export interface EconomicSnapshot {
   dollarImpact?: DollarImpact
   fetchedAt: string
   cacheStatus?: CacheStatus
+  /**
+   * How each metric's number was chosen: one step per rung of its ladder (src/lib/resolution/ladders.ts),
+   * most local first, with ✓ used / ✗ unavailable / – not needed outcomes. Absent on older payloads.
+   */
+  trace?: SnapshotTrace
 }

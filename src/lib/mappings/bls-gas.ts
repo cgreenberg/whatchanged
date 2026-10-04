@@ -6,7 +6,7 @@
 // 2021 BLS builds these from crowdsourced station prices (~91k stations),
 // weighted by county expenditure (https://www.bls.gov/cpi/factsheets/acm-gasoline.htm).
 //
-// Lookup order (getGasLookup, most local first):
+// Lookup order (the gas ladder in src/lib/resolution/ladders.ts; getGasLookup = its first applicable rung):
 //   1 EIA weekly city (county override / CPI metro → EIA city)
 //   2 BLS monthly CPI metro without an EIA city (incl. Honolulu S49F, Anchorage S49G)
 //   3 HI / AK zips outside those two CBSAs → the Honolulu (S49F) / Anchorage (S49G)

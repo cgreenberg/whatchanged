@@ -7,6 +7,7 @@
 
 import { getCachedOrFetch, TTL_BLS, TTL_EIA, type CachedResult } from '@/lib/cache/kv'
 import type { CpiData } from '@/types'
+import type { CpiArea } from '@/lib/resolution/ladders'
 import { fetchCpiArea, cpiCacheKey, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchLookupSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
 import { BLS_NATIONAL_GAS_LOOKUP } from './bls-gas'
@@ -33,7 +34,7 @@ export interface FetchOpts {
   forceRefresh?: boolean
 }
 
-export type CpiArea = { areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 }
+export type { CpiArea }
 
 export const NATIONAL_CPI: CpiArea = { areaCode: NATIONAL_CPI_AREA, areaName: 'National', tier: 4 }
 

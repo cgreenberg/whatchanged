@@ -10,6 +10,9 @@ import {
 import { fmtMonthYear } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
 import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE } from '@/lib/hero-cards'
+import { LADDERS } from '@/lib/resolution/ladders'
+import { resolveLadderSync } from '@/lib/resolution/resolve'
+import type { TraceStep } from '@/lib/resolution/types'
 
 export type HousingTab = 'rent' | 'homePrices' | 'shelter'
 
@@ -50,6 +53,18 @@ export function zillowTabInput(
       adjustment: rent ? ZILLOW_RENT_ADJ : ZILLOW_HV_ADJ,
     },
   }
+}
+
+/**
+ * Trace for the Home prices tab: the home-prices ladder resolved here, against the county shard (the
+ * series ships only in the static per-state shard, so the server snapshot doesn't carry it).
+ */
+export function homePricesTrace(location: EconomicSnapshot['location'], county: CountyRecord | null, now: Date = new Date()): TraceStep[] {
+  const rows = seriesRows(county?.hvS, 'hv')
+  return resolveLadderSync(LADDERS.homePrices, location, {
+    now,
+    countyHomeValue: () => (rows.length ? { asOf: rows[rows.length - 1].date } : null),
+  }).steps
 }
 
 /** Housing graph: Rent (Zillow ZORI) | Home prices (Zillow ZHVI) | Shelter (CPI). */
@@ -170,6 +185,7 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
         headline={<>{tabs}{headline}</>}
         note={input.note}
         info={input.info}
+        trace={active === 'shelter' ? snapshot.trace?.shelter : active === 'rent' ? snapshot.trace?.rent : homePricesTrace(snapshot.location, c)}
       />
     </div>
   )

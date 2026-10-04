@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { fmtDay } from '@/lib/format'
+import { HowWePick } from '@/components/HowWePick'
 
 /**
  * Revision date of THIS PAGE'S CONTENT (YYYY-MM-DD). Change it whenever the text below changes.
@@ -88,6 +89,10 @@ export default function AboutPage() {
           and electricity are published for metro areas, regions or states, not counties, so neighboring
           counties share a color and there is no playback or ranking for them.
         </p>
+      </Section>
+
+      <Section title="How we pick your numbers">
+        <HowWePick />
       </Section>
 
       {/* Data Sources */}

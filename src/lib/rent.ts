@@ -35,27 +35,39 @@ export function rentMonthlyChange(curRent: number, pct: number): number {
   return Object.is(v, -0) ? 0 : v
 }
 
-export function getCountyRent(countyFips: string | null | undefined): RentData | null {
-  if (!countyFips || !/^\d{5}$/.test(countyFips)) return null
+/** County rent lookup with the reason when there is no usable figure (for the resolution trace). */
+export type CountyRentLookup =
+  | { data: RentData }
+  | { data: null; why: 'no-county' | 'no-series' | 'out-of-range' | 'malformed' }
+
+export function lookupCountyRent(countyFips: string | null | undefined): CountyRentLookup {
+  if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }
   const row = FILE.counties?.[countyFips]
-  if (!row) return null
+  if (!row) return { data: null, why: 'no-series' }
   const { pct, baseRent, curRent, asOf, name, flagged, note } = row
-  if (!finite(pct) || pct < PCT_MIN || pct > PCT_MAX) return null
-  if (!finite(baseRent) || baseRent <= 0 || !finite(curRent) || curRent <= 0) return null
-  if (typeof asOf !== 'string' || !/^\d{4}-\d{2}$/.test(asOf)) return null
+  if (!finite(pct)) return { data: null, why: 'malformed' }
+  if (pct < PCT_MIN || pct > PCT_MAX) return { data: null, why: 'out-of-range' }
+  if (!finite(baseRent) || baseRent <= 0 || !finite(curRent) || curRent <= 0) return { data: null, why: 'malformed' }
+  if (typeof asOf !== 'string' || !/^\d{4}-\d{2}$/.test(asOf)) return { data: null, why: 'malformed' }
   return {
-    pct,
-    baseRent,
-    curRent,
-    monthlyChange: rentMonthlyChange(curRent, pct),
-    baseMonth: FILE.meta.baseMonth,
-    asOf,
-    countyFips,
-    geoName: name,
-    source: FILE.meta.source,
-    sourceUrl: RENT_SOURCE_URL,
-    adjustment: FILE.meta.adjustment,
-    ...(flagged === true ? { flagged: true } : {}),
-    ...(typeof note === 'string' && note ? { note } : {}),
+    data: {
+      pct,
+      baseRent,
+      curRent,
+      monthlyChange: rentMonthlyChange(curRent, pct),
+      baseMonth: FILE.meta.baseMonth,
+      asOf,
+      countyFips,
+      geoName: name,
+      source: FILE.meta.source,
+      sourceUrl: RENT_SOURCE_URL,
+      adjustment: FILE.meta.adjustment,
+      ...(flagged === true ? { flagged: true } : {}),
+      ...(typeof note === 'string' && note ? { note } : {}),
+    },
   }
+}
+
+export function getCountyRent(countyFips: string | null | undefined): RentData | null {
+  return lookupCountyRent(countyFips).data
 }

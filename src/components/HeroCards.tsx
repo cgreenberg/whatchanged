@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { StatCard } from '@/components/StatCard'
-import { buildHeroCards, asOfRange, type HeroCountyContext } from '@/lib/hero-cards'
+import { buildHeroCards, asOfRange, TRACE_FOR_CARD, type HeroCountyContext } from '@/lib/hero-cards'
 import { fetchCounty } from '@/lib/county-data'
 import type { EconomicSnapshot } from '@/types'
 
@@ -43,6 +43,7 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
             accentColor={c.accentColor}
             stale={c.stale}
             unavailable={c.status === 'unavailable'}
+            trace={snapshot.trace?.[TRACE_FOR_CARD[c.id]]}
           />
         ))}
       </div>

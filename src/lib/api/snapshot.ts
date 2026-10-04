@@ -10,45 +10,18 @@ import type {
   GasPriceData,
   ElectricityData,
 } from '@/types'
-import { getCountyRent } from '@/lib/rent'
+import type { RentData } from '@/types'
 import { computeDollarImpact } from '@/lib/compute/dollar-translations'
-import { getGasLookup, isGasStale, toGasPriceData } from './eia'
-import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+import { toGasPriceData, type GasLookupResult, type GasSeriesData } from './eia'
 import { NATIONAL_CPI_AREA } from './bls-cpi'
-import { monthOlderThan } from '@/lib/hero-cards'
-import {
-  getCpiCached,
-  getGasSeriesCached,
-  getElectricityCached,
-  getNationalElectricityCached,
-  nationalGasLookupFor,
-  NATIONAL_CPI,
-  NATIONAL_GAS_LOOKUP,
-  settle,
-} from './cached-sources'
+import { nationalGasLookupFor, NATIONAL_GAS_LOOKUP, settle } from './cached-sources'
 import { hasElectricitySeries, type ElectricitySeriesData } from './eia-electricity'
+import { isBlsPeriodStale } from '@/lib/staleness'
+import { selectCpiArea, selectGasLookup, isNationalRung, type LadderLocation } from '@/lib/resolution/ladders'
+import { serverLadderContext } from '@/lib/resolution/server-context'
+import type { Attempt, LadderResult } from '@/lib/resolution/resolve'
 
-/**
- * BLS data whose latest month ended more than this many days ago is shown with the stale badge.
- * Normal lag at its worst (just before the next release) is ~45 days for CPI, so 75 days means at
- * least one monthly release was missed (refresh stuck, or BLS stopped).
- */
-export const BLS_STALE_DAYS = 75
-
-/** true when a YYYY-MM BLS period ended more than BLS_STALE_DAYS before `now`. Unknown period → false. */
-export function isBlsPeriodStale(period: string | null | undefined, now: Date = new Date()): boolean {
-  return monthOlderThan(period?.slice(0, 7), BLS_STALE_DAYS, now)
-}
-
-/**
- * EIA monthly electricity is published ~2 months after the month ends (Jul data in late Sep), so a
- * latest month older than this means a release was missed.
- */
-export const ELECTRICITY_STALE_DAYS = 100
-
-export function isElectricityPeriodStale(period: string | null | undefined, now: Date = new Date()): boolean {
-  return monthOlderThan(period?.slice(0, 7), ELECTRICITY_STALE_DAYS, now)
-}
+export { BLS_STALE_DAYS, isBlsPeriodStale, ELECTRICITY_STALE_DAYS, isElectricityPeriodStale } from '@/lib/staleness'
 
 /**
  * Attach the U.S. series and the U.S. seasonally adjusted % change over the SAME months as the
@@ -104,73 +77,68 @@ export async function fetchSnapshot(
   if (!location) return null
 
   const now = new Date().toISOString()
-  const opts = { forceRefresh: options.forceRefresh }
+  const nowDate = new Date(now)
 
-  const cpiArea = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
-  const gasLookup = getGasLookup(location.stateAbbr, cpiArea.areaCode, location.countyFips)
+  // Every metric is resolved by walking its ladder (src/lib/resolution/ladders.ts): most local rung
+  // first, first one with data wins, every rung's outcome recorded as the trace.
+  const cpiArea = selectCpiArea(location.countyFips, location.stateAbbr)
+  const loc: LadderLocation = {
+    stateAbbr: location.stateAbbr,
+    stateName: location.stateName,
+    countyFips: location.countyFips,
+    countyName: location.countyName,
+    cpiAreaCode: cpiArea.areaCode,
+  }
+  const ctx = serverLadderContext(loc, nowDate, { forceRefresh: options.forceRefresh })
+
   // National gas comes from the same source as the local series (BLS monthly tiers → BLS U.S.
   // average; EIA weekly tiers → EIA NUS), so comparisons never mix sources or frequencies.
-  const gasNationalLookup = nationalGasLookupFor(gasLookup)
-  const gasIsNational = gasLookup.cacheKey === gasNationalLookup.cacheKey
-  const gasLabel = gasLookup.source === 'bls' ? 'bls-gas' : 'eia-gas'
-
-  // Fetch all external sources in parallel, each through its own cache key.
-  // National gas is a single shared key per source (used for the overlay and as fallback).
+  const gasPrimary = selectGasLookup(loc)
+  const gasNationalLookup = nationalGasLookupFor(gasPrimary)
+  const gasIsNational = gasPrimary.cacheKey === gasNationalLookup.cacheKey
+  const gasLabel = gasPrimary.source === 'bls' ? 'bls-gas' : 'eia-gas'
   // Electricity: the zip's state (statewide average) + the shared U.S. key. Territories: EIA publishes none.
   const elecState = hasElectricitySeries(location.stateAbbr) ? location.stateAbbr.toUpperCase() : null
-  const [cpiPrimary, gasPrimary, gasNational, elecLocal, elecNational] = await Promise.all([
-    settle(getCpiCached(cpiArea, opts), 'bls-cpi'),
-    settle(getGasSeriesCached(gasLookup, opts), gasLabel),
-    gasIsNational ? Promise.resolve(null) : settle(getGasSeriesCached(gasNationalLookup, opts), `${gasLabel}-national`),
-    elecState ? settle(getElectricityCached(elecState, opts), 'eia-electricity') : Promise.resolve(null),
-    elecState ? settle(getNationalElectricityCached(opts), 'eia-electricity-national') : Promise.resolve(null),
+
+  // All ladders and the national comparisons in parallel; each series is fetched once (memoized context).
+  const [gasWalk, groceriesWalk, shelterWalk, rentWalk, elecWalk, gasNational, elecNational] = await Promise.all([
+    ctx.ladder('gas') as Promise<LadderResult<CachedResult<GasSeriesData>>>,
+    ctx.ladder('groceries') as Promise<LadderResult<CachedResult<CpiData>>>,
+    ctx.ladder('shelter'),
+    ctx.ladder('rent'),
+    ctx.ladder('electricity') as Promise<LadderResult<CachedResult<ElectricitySeriesData>>>,
+    gasIsNational ? Promise.resolve(null) : settle(ctx.gasSeries(gasNationalLookup), `${gasLabel}-national`),
+    elecState ? settle(ctx.electricity('US'), 'eia-electricity-national') : Promise.resolve(null),
   ])
 
-  // CPI: if the local area failed, fall back to the shared national CPI key
-  // (labeled national, tier 4, fallback: 'national').
-  let cpiResult: CachedResult<CpiData> | null = cpiPrimary
-  let cpiIsNationalFallback = false
-  if (!cpiResult && cpiArea.areaCode !== NATIONAL_CPI_AREA) {
-    cpiResult = await settle(getCpiCached(NATIONAL_CPI), 'bls-cpi-national')
-    cpiIsNationalFallback = !!cpiResult
-  }
+  // CPI (groceries and shelter share one fetch per area): the area the walk ended on. When the local
+  // area failed, that is the shared national CPI key, labeled national (tier 4, fallback: 'national').
+  const cpiAttempt = shown(groceriesWalk)
+  const cpiResult: CachedResult<CpiData> | null = cpiAttempt?.outcome.value ?? null
+  const cpiIsNationalFallback = !!cpiAttempt && isNationalRung(cpiAttempt.rung.id) && cpiArea.areaCode !== NATIONAL_CPI_AREA
 
-  // Gas: primary series + shared national overlay; national fallback is composed
-  // here and never written under the primary cache key.
+  // Gas: the winning rung's series + the national overlay from the same source. A national stand-in
+  // for a failed local series is composed here and never written under the local cache key.
   let gasData: GasPriceData | null = null
   let gasMeta: CachedResult<unknown> | null = null
-  if (gasPrimary) {
-    gasData = toGasPriceData(gasLookup, gasPrimary.data, {
-      nationalSeries: gasIsNational ? undefined : gasNational?.data.series,
-    })
-    gasMeta = gasPrimary
-  } else if (gasLookup.source === 'bls') {
-    // BLS outage: show the zip's EIA weekly tier (state / PADD) as a whole — local AND national
-    // from EIA, labeled as a fallback — never a BLS local against an EIA national (or vice versa).
-    const eiaLookup = getGasLookup(location.stateAbbr, cpiArea.areaCode, location.countyFips, { eiaOnly: true })
-    const eiaIsNational = eiaLookup.cacheKey === NATIONAL_GAS_LOOKUP.cacheKey
-    const [eiaLocal, eiaNational] = await Promise.all([
-      settle(getGasSeriesCached(eiaLookup, opts), 'eia-gas-fallback'),
-      eiaIsNational ? Promise.resolve(null) : settle(getGasSeriesCached(NATIONAL_GAS_LOOKUP, opts), 'eia-gas-national'),
-    ])
-    if (eiaLocal && !eiaIsNational) {
-      gasData = { ...toGasPriceData(eiaLookup, eiaLocal.data, { nationalSeries: eiaNational?.data.series }), fallback: 'eia' }
-      gasMeta = eiaLocal
-    } else if (eiaLocal ?? eiaNational) {
-      const nat = (eiaLocal ?? eiaNational)!
-      gasData = { ...toGasPriceData(NATIONAL_GAS_LOOKUP, nat.data, { isNationalFallback: true }), fallback: 'national' }
-      gasMeta = nat
+  const gw = gasWalk.winner
+  if (gw?.outcome.value) {
+    const lookup = gw.target as GasLookupResult
+    const r = gw.outcome.value
+    gasMeta = r
+    if (!gasWalk.afterFailure) {
+      gasData = toGasPriceData(lookup, r.data, { nationalSeries: gasIsNational ? undefined : gasNational?.data.series })
+    } else if (isNationalRung(gw.rung.id)) {
+      gasData = { ...toGasPriceData(lookup, r.data, { isNationalFallback: true }), fallback: 'national' }
+    } else {
+      // BLS outage: the zip's EIA weekly tier as a whole — local AND national from EIA, labeled as a
+      // fallback — never a BLS local against an EIA national (or vice versa).
+      const nat = await settle(ctx.gasSeries(NATIONAL_GAS_LOOKUP), 'eia-gas-national')
+      gasData = { ...toGasPriceData(lookup, r.data, { nationalSeries: nat?.data.series }), fallback: 'eia' }
     }
-  } else if (gasNational) {
-    gasData = { ...toGasPriceData(gasNationalLookup, gasNational.data, { isNationalFallback: true }), fallback: 'national' }
-    gasMeta = gasNational
   }
-  const gasStale = !!gasData && (
-    !!gasMeta?.stale ||
-    (gasData.frequency === 'monthly' ? isBlsPeriodStale(gasData.latestDate, new Date(now)) : isGasStale(gasData.latestDate ?? ''))
-  )
+  const gasStale = !!gasData && gw?.outcome.status === 'stale'
 
-  const nowDate = new Date(now)
   const cpiBase: CpiData | null = cpiResult?.data
     ? cpiIsNationalFallback
       ? { ...cpiResult.data, fallback: 'national' }
@@ -199,10 +167,11 @@ export async function fetchSnapshot(
   }
 
   // Electricity: statewide EIA price, with the U.S. average over the same months
+  const elecLocal = shown(elecWalk)?.outcome.value ?? null
   const electricityData: ElectricityData | null = elecLocal
     ? withNationalElectricity(elecLocal.data, elecNational?.data ?? null)
     : null
-  const electricityStale = !!electricityData && (!!elecLocal?.stale || isElectricityPeriodStale(electricityData.latestPeriod, nowDate))
+  const electricityStale = !!electricityData && elecWalk.winner?.outcome.status === 'stale'
   const electricity: DataResult<ElectricityData> = elecState
     ? wrap(electricityData, 'eia-electricity', elecLocal?.fetchedAt, now, electricityStale)
     : { data: null, error: 'EIA publishes no residential electricity price for this area', fetchedAt: now, sourceId: 'eia-electricity' }
@@ -225,8 +194,11 @@ export async function fetchSnapshot(
     electricityUsageKwh: electricityData?.usageKwh,
   })
 
-  // County rent on new leases (bundled Zillow data, keyed by the zip's county)
-  const rent = getCountyRent(location.countyFips)
+  // Housing card: county rent on new leases (bundled Zillow data) when the rent ladder's Zillow rung
+  // wins; otherwise null and the card falls back to CPI shelter (the ladder's next rung).
+  const rent: RentData | null = rentWalk.winner?.rung.id === 'rent.zillow-county'
+    ? (rentWalk.winner.outcome.value as RentData)
+    : null
 
   const cacheStatus: CacheStatus = {
     cpi: cacheStatusOf(cpiResult),
@@ -246,5 +218,18 @@ export async function fetchSnapshot(
     dollarImpact,
     fetchedAt: now,
     cacheStatus,
+    trace: {
+      gas: gasWalk.steps,
+      rent: rentWalk.steps,
+      groceries: groceriesWalk.steps,
+      shelter: shelterWalk.steps,
+      electricity: elecWalk.steps,
+    },
   }
+}
+
+/** The attempt whose data is shown: the winner, or a final 'invalid' (its value is still passed on). */
+function shown<V>(w: LadderResult<V>): Attempt<V> | undefined {
+  if (w.winner) return w.winner
+  return w.last?.outcome.value !== undefined ? w.last : undefined
 }

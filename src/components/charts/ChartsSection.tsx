@@ -6,6 +6,7 @@ import { EraChart, ChartHeadline } from './EraChart'
 import { HousingChart } from './HousingChart'
 import { getChartInput } from './chart-inputs'
 import type { EconomicSnapshot } from '@/types'
+import type { TraceMetric } from '@/lib/resolution/types'
 
 export { getChartInput, NOT_SA, type ChartInput, type ChartProvenance } from './chart-inputs'
 
@@ -14,8 +15,12 @@ interface ChartsSectionProps {
 }
 
 /** One plain (non-tabbed) chart from its config. */
+/** Ladder trace behind each plain graph. */
+const TRACE_FOR_CHART: Record<string, TraceMetric> = { gas: 'gas', 'cpi-groceries': 'groceries', electricity: 'electricity' }
+
 function PlainChart({ config, snapshot }: { config: ChartConfig; snapshot: EconomicSnapshot }) {
   const input = getChartInput(config.id, snapshot)
+  const metric = TRACE_FOR_CHART[config.id]
   return (
     <EraChart
       config={{ ...config, ...input.configOverrides }}
@@ -27,6 +32,7 @@ function PlainChart({ config, snapshot }: { config: ChartConfig; snapshot: Econo
       nationalLabel={input.nationalLabel}
       note={input.note}
       info={input.info}
+      trace={metric ? snapshot.trace?.[metric] : undefined}
       headline={input.headline ? <ChartHeadline pct={input.headline.pct} detail={input.headline.detail} /> : undefined}
     />
   )

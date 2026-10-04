@@ -3,6 +3,8 @@
 
 import type { EconomicSnapshot, CensusData, CpiData, GasPriceData, ElectricityData } from '@/types'
 import type { Provenance } from '@/lib/provenance'
+import { RENT_STALE_DAYS, monthOlderThan } from '@/lib/staleness'
+import type { TraceMetric } from '@/lib/resolution/types'
 import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
@@ -29,6 +31,11 @@ import {
 } from '@/lib/format'
 
 export type HeroCardId = 'gas' | 'rent' | 'shelter' | 'groceries' | 'electricity'
+
+/** The ladder trace behind each card: the Shelter (CPI) card is the rent ladder's fallback rung, so it shows that trace. */
+export const TRACE_FOR_CARD: Record<HeroCardId, TraceMetric> = {
+  gas: 'gas', rent: 'rent', shelter: 'rent', groceries: 'groceries', electricity: 'electricity',
+}
 
 export interface HeroCardModel {
   id: HeroCardId
@@ -270,17 +277,8 @@ export function gasSourceInfo(g: GasPriceData | null | undefined): { source: str
     sourceUrl: g?.tier === 3 ? 'https://www.eia.gov/petroleum/weekly/includes/padds.php' : 'https://www.eia.gov/petroleum/gasdiesel/',
   }
 }
-/** County rent older than this (from the end of its as-of month) gets a stale badge. */
-export const RENT_STALE_DAYS = 60
-const DAY_MS = 86_400_000
-
-/** True when a YYYY-MM month ended more than `days` days before `now`. */
-export function monthOlderThan(ym: string | null | undefined, days: number, now: Date = new Date()): boolean {
-  const m = /^(\d{4})-(\d{2})$/.exec(ym ?? '')
-  if (!m) return false
-  const monthEnd = Date.UTC(Number(m[1]), Number(m[2]), 0) // last day of that month
-  return now.getTime() - monthEnd > days * DAY_MS
-}
+/** County rent older than this (from the end of its as-of month) gets a stale badge (rules in staleness.ts). */
+export { RENT_STALE_DAYS, monthOlderThan }
 
 /**
  * National % change over the same months as the local figure (same baseline period and the same latest

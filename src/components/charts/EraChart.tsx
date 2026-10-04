@@ -20,6 +20,8 @@ import { fmtMonthYear, fmtDay, fmtSignedPct, monthsBetween, DATE_UNAVAILABLE } f
 import { BASELINE_MONTH_LABEL } from '@/lib/baseline'
 import type { Provenance } from '@/lib/provenance'
 import { ProvenanceLine } from '@/components/ProvenanceLine'
+import { SourceTrace } from '@/components/SourceTrace'
+import type { TraceStep } from '@/lib/resolution/types'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -82,6 +84,8 @@ interface EraChartProps {
   note?: string
   /** Lines shown in the graph's ⓘ disclosure after the description (e.g. the Housing graph's CPI-vs-Zillow note). */
   info?: string[]
+  /** Ladder trace for "Where does this come from?" under the graph. */
+  trace?: TraceStep[]
 }
 
 /** "+3.1% since Jan 2025 · detail" above a graph: the same % as the matching card. */
@@ -184,7 +188,7 @@ function ChartHeader({
   )
 }
 
-export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note, info }: EraChartProps) {
+export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note, info, trace }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
   const mainKey = config.series[0]?.dataKey ?? ''
@@ -289,6 +293,7 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
         </div>
         {note && <p className="text-[11px] text-zinc-400 mt-2" data-testid="chart-note">{note}</p>}
         <ProvenanceLine provenance={fullProvenance} className="mt-2 pt-2 border-t border-zinc-800" />
+        <SourceTrace steps={trace} subject={config.title.toLowerCase()} className="mt-1" />
       </div>
     )
   }
@@ -406,6 +411,7 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
       {gapNote && <p className="text-[11px] text-zinc-500 mt-1" data-testid="chart-gap-note">{gapNote}</p>}
       {note && <p className="text-[11px] text-zinc-400 mt-2" data-testid="chart-note">{note}</p>}
       <ProvenanceLine provenance={fullProvenance} className="mt-2 pt-2 border-t border-zinc-800" />
+        <SourceTrace steps={trace} subject={config.title.toLowerCase()} className="mt-1" />
     </div>
   )
 }
