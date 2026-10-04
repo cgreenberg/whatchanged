@@ -6,6 +6,9 @@ import eiaGas from '../fixtures/eia-gas.json'
 import eiaEpmrSWA from '../fixtures/eia-epmr-SWA.json'
 import eiaEpmrNUS from '../fixtures/eia-epmr-NUS.json'
 import eiaElectricity from '../fixtures/eia-electricity-res.json'
+import eiaHeating from '../fixtures/eia-heating-shopp.json'
+import nyserdaHeatingOil from '../fixtures/nyserda-heating-oil.json'
+import { HEATING_STATES } from '@/lib/api/eia-heating'
 
 type RawPoint = { year: string; period: string; value: string }
 
@@ -42,6 +45,30 @@ export function electricityRowsFor(states: string[]): ElecRow[] {
     for (const r of ELEC_ROWS) if (r.stateid === src) out.push({ ...r, stateid: st, stateDescription: src === st ? r.stateDescription : st })
   }
   return out.sort((a, b) => a.period.localeCompare(b.period) || a.stateid.localeCompare(b.stateid))
+}
+
+type HeatRow = (typeof eiaHeating.response.data)[number]
+const HEAT_ROWS = eiaHeating.response.data as HeatRow[]
+const HEAT_RECORDED = new Set(HEAT_ROWS.map((r) => `${r.duoarea}:${r.product}`))
+const HEAT_PRODUCT: Record<string, 'oil' | 'propane'> = { EPD2F: 'oil', EPLLPA: 'propane' }
+
+/**
+ * Recorded SHOPP rows (ME, NY, GA, U.S.; since Oct 2024) for the requested duoareas × products, like the real API:
+ * only states SHOPP publishes for that product get rows; other states reuse Maine's recorded rows, relabeled.
+ */
+export function heatingRowsFor(duoareas: string[], products: string[]): HeatRow[] {
+  const out: HeatRow[] = []
+  for (const duo of duoareas) {
+    for (const prod of products) {
+      const st = duo.slice(1)
+      if (duo !== 'NUS' && !HEATING_STATES[HEAT_PRODUCT[prod]]?.includes(st)) continue
+      const src = HEAT_RECORDED.has(`${duo}:${prod}`) ? duo : 'SME'
+      for (const r of HEAT_ROWS) {
+        if (r.duoarea === src && r.product === prod) out.push({ ...r, duoarea: duo, series: r.series.replace(`_${src}_`, `_${duo}_`) })
+      }
+    }
+  }
+  return out.sort((a, b) => a.period.localeCompare(b.period) || a.duoarea.localeCompare(b.duoarea))
 }
 
 export const handlers = [
@@ -81,4 +108,15 @@ export const handlers = [
     const length = Number(url.searchParams.get('length') ?? 5000)
     return HttpResponse.json({ response: { total: String(rows.length), data: rows.slice(offset, offset + Math.min(length, 5000)) } })
   }),
+  // EIA SHOPP weekly residential heating oil / propane (petroleum/pri/wfr, process PRS), paged like the real API.
+  http.get('https://api.eia.gov/v2/petroleum/pri/wfr/data/', ({ request }) => {
+    const url = new URL(request.url)
+    if (url.searchParams.get('facets[process][]') !== 'PRS') return HttpResponse.json({ response: { total: '0', data: [] } })
+    const rows = heatingRowsFor(url.searchParams.getAll('facets[duoarea][]'), url.searchParams.getAll('facets[product][]'))
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const length = Number(url.searchParams.get('length') ?? 5000)
+    return HttpResponse.json({ response: { total: String(rows.length), data: rows.slice(offset, offset + Math.min(length, 5000)) } })
+  }),
+  // NYSERDA heating oil by region (data.ny.gov, Socrata): recorded rows since Sep 2024
+  http.get('https://data.ny.gov/resource/rc94-5y2u.json', () => HttpResponse.json(nyserdaHeatingOil)),
 ]

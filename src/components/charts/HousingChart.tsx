@@ -9,7 +9,7 @@ import {
 } from '@/lib/county-data'
 import { fmtMonthYear } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
-import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE } from '@/lib/hero-cards'
+import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE, rentPoolNote } from '@/lib/hero-cards'
 import { LADDERS } from '@/lib/resolution/ladders'
 import { resolveLadderSync } from '@/lib/resolution/resolve'
 import type { TraceStep } from '@/lib/resolution/types'
@@ -28,6 +28,8 @@ const ZILLOW_HV_ADJ = 'smoothed and seasonally adjusted by Zillow'
 /** The one short line under each Zillow tab; the full description and the CPI-vs-Zillow note are in the graph's ⓘ. */
 export const ZORI_SHORT_NOTE = 'Asking rents on new leases (Zillow), same series as the Rent card.'
 export const ZHVI_SHORT_NOTE = 'Typical home value (Zillow), smoothed and seasonally adjusted.'
+/** Rent tab for a county without a Zillow county series: its metro's series. */
+export const ZORI_METRO_NOTE = (metro: string) => `No usable Zillow county series; asking rents on new leases in the ${metro} (same as the Rent card).`
 
 type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | null } | { status: 'error' }
 
@@ -37,9 +39,10 @@ type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | 
  */
 export function zillowTabInput(
   tab: 'rent' | 'homePrices', county: CountyRecord | null, us: UsHousing | null, geoName: string, now: Date = new Date(),
+  opts: { metro?: boolean } = {},
 ): ChartInput {
   const rent = tab === 'rent'
-  const data = seriesRows(rent ? county?.rentS : county?.hvS, rent ? 'rent' : 'hv')
+  const data = seriesRows(rent ? (opts.metro ? county?.rentMS : county?.rentS) : county?.hvS, rent ? 'rent' : 'hv')
   const nationalData = seriesRows(rent ? us?.rentS : us?.hvS, rent ? 'rent' : 'hv')
   return {
     data,
@@ -86,7 +89,13 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
 
   const c = county.status === 'ok' ? county.data : null
   const geoName = c?.n ?? countyLabel
-  const hasRent = county.status === 'loading' ? !!snapshot.rent : seriesRows(c?.rentS, 'rent').length > 0
+  // Metro rent (no Zillow county series): the Rent tab shows the same metro series as the Rent card
+  // Only when the server's rent ladder picked the metro, so the tab never graphs a figure the card rejected
+  const metroRent = snapshot.rent?.level === 'metro'
+  const rentGeo = metroRent ? snapshot.rent!.geoName : geoName
+  const hasRent = county.status === 'loading'
+    ? !!snapshot.rent
+    : seriesRows(metroRent ? c?.rentMS : c?.rentS, 'rent').length > 0
   const hasHv = county.status === 'loading' ? true : seriesRows(c?.hvS, 'hv').length > 0
   const available: Record<HousingTab, boolean> = { rent: hasRent, homePrices: hasHv, shelter: true }
   const fallback: HousingTab = hasRent ? 'rent' : 'shelter'
@@ -144,13 +153,16 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
       headline = <ChartHeadline testId="housing-headline" pct={pct} detail="CPI shelter (all renters and homeowners)" />
     }
   } else {
-    input = zillowTabInput(active, c, us, geoName)
+    const metroTab = active === 'rent' && metroRent
+    input = zillowTabInput(active, c, us, active === 'rent' ? rentGeo : geoName, undefined, { metro: metroTab })
     config = active === 'rent' ? housingTabConfigs.rent : housingTabConfigs.homePrices
-    const series = active === 'rent' ? c?.rentS : c?.hvS
+    const series = active === 'rent' ? (metroTab ? c?.rentMS : c?.rentS) : c?.hvS
     const pct = seriesChangeSinceBaseline(series)
-    const level = active === 'rent' ? c?.rentCur : c?.hvCur
+    const level = active === 'rent' ? (metroTab ? c?.rentM?.cur : c?.rentCur) : c?.hvCur
     const last = input.data[input.data.length - 1]?.date
-    const caveat = flagNote(c, active === 'rent' ? 'rent' : 'hv')
+    const caveat = metroTab
+      ? (c?.rentM?.flag ? 'Unusual value: far outside the range most U.S. counties show, so treat it with caution.' : null)
+      : flagNote(c, active === 'rent' ? 'rent' : 'hv')
     if (pct != null) {
       headline = (
         <ChartHeadline
@@ -165,10 +177,11 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
         />
       )
     }
+    const pool = active === 'rent' ? (metroTab ? c?.rentM?.saPool : c?.rentSaPool) : undefined
     input = {
       ...input,
-      note: active === 'rent' ? ZORI_SHORT_NOTE : ZHVI_SHORT_NOTE,
-      info: [HOUSING_NOTE],
+      note: active === 'rent' ? (metroTab ? ZORI_METRO_NOTE(rentGeo) : ZORI_SHORT_NOTE) : ZHVI_SHORT_NOTE,
+      info: [HOUSING_NOTE, ...(pool ? [rentPoolNote(pool)] : [])],
     }
   }
 

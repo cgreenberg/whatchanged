@@ -134,8 +134,9 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
     return {
       id,
       label: lookup.geoLevel,
-      source: lookup.source,
-      frequency: lookup.frequency,
+      // selectGasLookup / getGasLookup return live rungs only (EIA or BLS); static sources are per-zip
+      source: lookup.source as MapGasArea['source'],
+      frequency: lookup.frequency as MapGasArea['frequency'],
       ...(lookup.standIn ? { standIn: true as const } : {}),
       change: d ? Number(d.change.toFixed(3)) : null,
       current: d ? d.current : null,

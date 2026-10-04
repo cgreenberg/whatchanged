@@ -63,10 +63,11 @@ def month_range(first, last):
     return out
 
 
-def seasonal_adjust(mat, months, additive=False, fit_end="2024-12"):
+def seasonal_adjust(mat, months, additive=False, fit_end="2024-12", return_factors=False):
     """mat: (n_series, n_months) float array with NaNs, months contiguous.
     Returns (SA matrix, ok mask). Series with < MIN_SA_HISTORY in-sample ratios come back as NaN rows
-    (ok=False), so raw data can never be published under an "adjusted" label."""
+    (ok=False), so raw data can never be published under an "adjusted" label. With return_factors, also
+    the (n_series, 12) calendar-month factors (valid where ok) for pooled_adjust."""
     assert months == month_range(months[0], months[-1]), "seasonal_adjust needs contiguous months"
     n, T = mat.shape
     w = np.r_[0.5, np.ones(11), 0.5] / 12.0  # centered 2x12 moving average
@@ -90,7 +91,48 @@ def seasonal_adjust(mat, months, additive=False, fit_end="2024-12"):
     f = factors[:, cal - 1]
     sa = (mat - f) if additive else (mat / f)
     sa[~ok] = np.nan
+    if return_factors:
+        return sa, ok, factors
     return sa, ok
+
+
+MIN_POOL_SERIES = 5  # a state's pooled seasonal pattern needs at least this many self-adjusted county series
+POOL_MAX_START = "2024-01"  # pooled adjustment only for series with >= 12 months of data before the Jan 2025 baseline
+
+
+def pool_factors(factors, ok, groups):
+    """Typical (median) multiplicative seasonal factors per group (state FIPS) from series that have their
+    own (ok) factors, normalized to average 1; '' = the U.S. pool (every ok series)."""
+    out = {}
+    def norm(f):
+        return f / np.nanmean(f)
+    out[""] = norm(np.nanmedian(factors[ok], axis=0))
+    for g in sorted(set(groups)):
+        sel = ok & (np.array(groups) == g)
+        if sel.sum() >= MIN_POOL_SERIES:
+            out[g] = norm(np.nanmedian(factors[sel], axis=0))
+    return out
+
+
+def pooled_adjust(mat, months, sa, ok, groups, pools):
+    """Series too short to fit their own seasonal factors (ok=False) are adjusted with their state's pooled
+    factors (else the U.S. pool), so a county or metro whose Zillow series only starts in 2022-2023 still gets
+    an honest seasonally adjusted change. Series that start after POOL_MAX_START stay unpublished. Returns
+    (SA matrix, pool label per row: None = own factors,
+    state FIPS = that state's pool, '' = U.S. pool). Rows with no data stay NaN."""
+    cal = np.array([int(m[5:]) for m in months]) - 1
+    sa = sa.copy()
+    labels = [None] * len(groups)
+    first_ok = months.index(POOL_MAX_START) if POOL_MAX_START in months else 0
+    for i, g in enumerate(groups):
+        if ok[i] or not np.isfinite(mat[i]).any():
+            continue
+        if not np.isfinite(mat[i, :first_ok + 1]).any():  # too new (thin early Zillow coverage): not published
+            continue
+        key = g if g in pools else ""
+        sa[i] = mat[i] / pools[key][cal]
+        labels[i] = key
+    return sa, labels
 
 
 def load_zillow(path, key_fn):
@@ -161,6 +203,244 @@ def copy_regions(counties, copy_from, keys):
             counties[legacy]["approxFrom"] = REGION_NAMES.get(region, region)
 
 
+# ---------- Metro rent (Zillow metro ZORI) ----------
+# Zillow's metros are OMB CBSAs from the March 2020 delineation (verified: every county Zillow assigns to a
+# metro in its county files falls in exactly that 2020 CBSA; the 2023 delineation disagrees for 95 metros).
+# Linking is by ID only, never by name: county FIPS -> CBSA code (OMB 2020 list 1) and CBSA code -> Zillow metro
+# RegionID (Zillow's CountyCrossWalk_Zillow.csv). Zillow metros missing from that crosswalk are not used.
+METRO_DELINEATION = "OMB CBSA delineation, March 2020 (list 1)"
+
+
+def load_delineation_2020(path):
+    d = pd.read_excel(path, header=2, dtype=str)
+    d = d[d["CBSA Code"].notna() & d["FIPS State Code"].notna()]
+    fips = (d["FIPS State Code"].str.zfill(2) + d["FIPS County Code"].str.zfill(3)).tolist()
+    return dict(zip(fips, d["CBSA Code"])), dict(zip(d["CBSA Code"], d["CBSA Title"]))
+
+
+def load_zillow_metro_links(path):
+    """Zillow metro RegionID -> CBSA code from Zillow's own county crosswalk (IDs only). Fails on any 1:many link."""
+    x = pd.read_csv(path, dtype=str, encoding="latin-1").dropna(subset=["CBSACode", "MetroRegionID_Zillow"])
+    pairs = x[["MetroRegionID_Zillow", "CBSACode"]].drop_duplicates()
+    assert pairs.MetroRegionID_Zillow.is_unique and pairs.CBSACode.is_unique, "Zillow crosswalk links are not 1:1"
+    return dict(zip(pairs.MetroRegionID_Zillow, pairs.CBSACode))
+
+
+def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fips):
+    """Metro ZORI rows (same SA method, sanity range and Jan 2025 + latest requirement as counties) for the
+    counties that have no county rent series. Returns (metros by CBSA code, county FIPS -> CBSA code, series by CBSA)."""
+    c2cbsa, titles = load_delineation_2020(R("cbsa_list1_2020.xls"))
+    links = load_zillow_metro_links(R("zillow_county_crosswalk.csv"))
+    mk, mm, mmonths, mdf = load_zillow(R("zori_metro.csv"), lambda d: d.RegionID.astype(str).tolist())
+    keep = [i for i, t in enumerate(mdf.RegionType.tolist()) if t == "msa"]
+    mk = [mk[i] for i in keep]; mm = mm[keep]
+    msa, mok, _ = seasonal_adjust(mm, mmonths, return_factors=True)
+    cbsa_of = [links.get(k) for k in mk]
+    # pooled seasonal pattern: the state of the metro's first principal city (e.g. "Bluefield, WV-VA" -> WV)
+    groups = [abbr_to_fips.get((titles.get(c) or ", ").rsplit(", ", 1)[1][:2], "") if c else "" for c in cbsa_of]
+    msa, mpool = pooled_adjust(mm, mmonths, msa, mok, groups, rent_pools)
+    msa = np.round(msa, 2)  # shipped precision (rentMS reproduces pct exactly)
+    _, _, pct = change_since(msa, mmonths)
+    bi = mmonths.index(BASE)
+    # Outlier flags against the same distribution as county rent (counties with >= 20k jobs, |robust z| > 5)
+    pool_vals = np.array([c["rent"] for c in counties.values()
+                          if "rent" in c and (c.get("emp") or 0) >= OUTLIER_POOL_JOBS and "approx" not in c], float)
+    med = np.median(pool_vals); mad = np.median(np.abs(pool_vals - med)) * 1.4826 or 1.0
+    metros, series, unlinked = {}, {}, 0
+    for i, cb in enumerate(cbsa_of):
+        if not cb or cb not in titles:
+            unlinked += 1
+            continue
+        if not (np.isfinite(pct[i]) and np.isfinite(mm[i, bi]) and np.isfinite(mm[i, -1])):
+            continue
+        if not RENT_HERO_MIN <= pct[i] <= RENT_HERO_MAX:
+            continue
+        row = {"name": titles[cb], "pct": round(float(pct[i]), 1), "baseRent": int(round(mm[i, bi])),
+               "curRent": int(round(mm[i, -1])), "asOf": mmonths[-1]}
+        if mpool[i] is not None:
+            row["saPool"] = pool_name(mpool[i])
+        if abs(pct[i] - med) / mad > OUTLIER_Z:
+            row["flagged"] = True
+        metros[cb] = row
+        series[cb] = compact_series(msa[i], mmonths, 2)
+    # Only counties with NO Zillow county series (a county series out of the sanity range is not replaced by its metro)
+    county_map = {f: cb for f, cb in sorted(c2cbsa.items())
+                  if cb in metros and f not in county_rent and f in counties and "rent" not in counties[f]}
+    used = {cb for cb in county_map.values()}
+    print(f"metro rent: {len(mk)} Zillow metros, {unlinked} without an ID link to a 2020 CBSA; "
+          f"{len(metros)} usable; {len(used)} used by {len(county_map)} counties without a county series")
+    return {cb: metros[cb] for cb in sorted(used)}, county_map, series, mmonths[-1]
+
+
+# ---------- Alaska: DCRA Community Fuel Price Survey (gasoline) ----------
+# Twice-yearly survey (January "Winter" and July "Summer") of ~100 rural communities, published by the Alaska
+# Department of Commerce, Community, and Economic Development (DCCED), Division of Community and Regional Affairs,
+# under CC BY 4.0. Read from DCRA's ArcGIS service (layer "Gas Prices, All Years"; regional averages layer "Regional
+# Gas Prices"; community -> borough/region from DCRA's community database). Zips (outside the Anchorage CBSA, which
+# BLS prices monthly) map to: the surveyed community with the zip's own USPS city name in the same borough ('c');
+# else the nearest surveyed community in the same borough within AK_NEAREST_MAX_KM of the zip's ZCTA point ('n');
+# else the DCRA region average ('r'). Only communities/regions with both the Jan 2025 survey and the latest
+# survey are used (baseline and current from the same series).
+AK_BASE_SURVEY = "2025-01"
+AK_NEAREST_MAX_KM = 100
+AK_SERIES_START = "2016-01"
+AK_ANCHORAGE_CBSA = {"02020", "02170"}  # Anchorage Municipality, Mat-Su: BLS monthly metro gas price
+AK_GAS_RANGE = (1.0, 20.0)  # $/gal sanity range for remote Alaska (delivered by barge/air; > $10 is real)
+
+
+def _survey_month(year, season):
+    return f"{int(year):04d}-{'01' if str(season).lower().startswith('w') else '07'}"
+
+
+def _semiannual(first, last):
+    out, y, m = [], int(first[:4]), int(first[5:])
+    while f"{y:04d}-{m:02d}" <= last:
+        out.append(f"{y:04d}-{m:02d}")
+        y, m = (y, 7) if m == 1 else (y + 1, 1)
+    return out
+
+
+def _haversine_km(a, b):
+    import math
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 6371 * 2 * math.asin(math.sqrt(h))
+
+
+def build_ak_gas(R, zip_county):
+    pages = sorted(glob.glob(R("dcra_gas_*.json")))
+    need = [R(f) for f in ("dcra_regional_gas.json", "dcra_communities.json", "dcra_boroughs.json", "dcra_community_points.json", "gaz_zcta.zip")]
+    if not pages or not all(os.path.exists(f) for f in need):
+        print("WARN: Alaska DCRA fuel survey files missing; keeping the existing src/lib/data/ak-gas.json")
+        return None
+    rows = []
+    for f in pages:
+        rows += [dict(r["attributes"], geom=r.get("geometry")) for r in json.load(open(f))["features"]]
+    obs, pts = defaultdict(dict), {}
+    seen = defaultdict(int)
+    for r in rows:
+        seen[(r["CommunityName"], r["ReportingYear"], r["ReportingSeason"])] += 1
+    dup = [k for k, n in seen.items() if n > 1]
+    assert not dup, f"DCRA layer has several rows per community and survey: {dup[:5]}"
+    for r in rows:
+        v = r.get("GasRetailGal")
+        if isinstance(v, (int, float)) and AK_GAS_RANGE[0] <= v <= AK_GAS_RANGE[1]:
+            obs[r["CommunityName"]][_survey_month(r["ReportingYear"], r["ReportingSeason"])] = round(float(v), 3)
+        if r.get("geom"):
+            pts[r["CommunityName"]] = (r["geom"]["y"], r["geom"]["x"])
+    latest = max(m for c in obs.values() for m in c)
+    reg_obs = defaultdict(dict)
+    for f in json.load(open(R("dcra_regional_gas.json")))["features"]:
+        a_ = f["attributes"]
+        if isinstance(a_.get("AvgGas"), (int, float)) and AK_GAS_RANGE[0] <= a_["AvgGas"] <= AK_GAS_RANGE[1]:
+            reg_obs[a_["Region"]][_survey_month(a_["ReportingYear"], a_["Season"])] = round(float(a_["AvgGas"]), 3)
+    # DCRA community database: borough (FIPS via DCRA's own borough layer) and DCRA region per community.
+    # DCRA still codes Kusilvak Census Area as 02270 (Wade Hampton); Census renumbered it 02158 in 2015.
+    bfips = {b["attributes"]["CommunityName"]: ("02158" if b["attributes"]["FIPS"] == "02270" else b["attributes"]["FIPS"])
+             for b in json.load(open(R("dcra_boroughs.json")))["features"]}
+    cdb = {}
+    for f in json.load(open(R("dcra_communities.json")))["features"]:
+        a_ = f["attributes"]
+        cdb[a_["CommunityName"]] = (bfips.get(a_["BoroughCensusArea"]), (a_.get("DCRAAlaskaRegion") or "").replace(" Region", ""))
+    cpts = {f["attributes"]["CommunityName"]: (f["attributes"]["y"], f["attributes"]["x"])
+            for f in json.load(open(R("dcra_community_points.json")))["features"] if f["attributes"].get("x") is not None}
+    usable = {c: v for c, v in obs.items() if AK_BASE_SURVEY in v and latest in v and c in cdb and cdb[c][0]}
+    regions_ok = {r: v for r, v in reg_obs.items() if AK_BASE_SURVEY in v and latest in v}
+    with zipfile.ZipFile(R("gaz_zcta.zip")) as zf:
+        lines = zf.read(zf.namelist()[0]).decode("utf-8").splitlines()
+    hdr = [h.strip() for h in lines[0].split("\t")]
+    zi, la, lo = hdr.index("GEOID"), hdr.index("INTPTLAT"), hdr.index("INTPTLONG")
+    zpt = {}
+    for line in lines[1:]:
+        p = line.split("\t")
+        if p[zi].startswith("99"):
+            zpt[p[zi]] = (float(p[la]), float(p[lo].strip()))
+    norm = lambda t: re.sub(r"[^a-z]", "", (t or "").lower())
+    by_name = {norm(c): c for c in usable}
+    cdb_by = {(norm(c), b): c for c, (b, _) in cdb.items()}
+    borough_region = defaultdict(lambda: defaultdict(int))
+    for c, (b, rg) in cdb.items():
+        if b and rg:
+            borough_region[b][rg] += 1
+    zips, kinds = {}, defaultdict(int)
+    for z, v in sorted(zip_county.items()):
+        f = v["countyFips"]
+        if v["stateAbbr"] != "AK" or f in AK_ANCHORAGE_CBSA:
+            continue
+        city = norm(v.get("cityName"))
+        c = by_name.get(city)
+        if c and cdb[c][0] == f:
+            zips[z] = {"k": "c", "c": c}; kinds["community"] += 1
+            continue
+        here = zpt.get(z) or cpts.get(cdb_by.get((city, f)))
+        cand = sorted((_haversine_km(here, pts[c]), c) for c in usable if cdb[c][0] == f and c in pts) if here else []
+        if cand and cand[0][0] <= AK_NEAREST_MAX_KM:
+            zips[z] = {"k": "n", "c": cand[0][1], "km": int(round(cand[0][0]))}; kinds["nearest"] += 1
+            continue
+        own = cdb.get(cdb_by.get((city, f)), (None, ""))[1]
+        rg = own if own in regions_ok else max(borough_region[f].items(), key=lambda t: t[1])[0] if borough_region[f] else None
+        if rg in regions_ok:
+            zips[z] = {"k": "r", "r": rg}; kinds["region"] += 1
+        else:
+            kinds["none"] += 1
+    used_c = sorted({z["c"] for z in zips.values() if "c" in z})
+    used_r = sorted({z["r"] for z in zips.values() if "r" in z})
+    months = _semiannual(AK_SERIES_START, latest)
+    series = lambda o: [o.get(m) for m in months]
+    out = {"meta": {"source": "Alaska DCRA Community Fuel Price Survey (gasoline, retail $/gal)",
+                    "publisher": "Alaska Department of Commerce, Community, and Economic Development, Division of Community and Regional Affairs",
+                    "license": "CC BY 4.0", "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+                    "url": "https://gis.data.alaska.gov/maps/DCCED::gas-prices-all-years",
+                    "frequency": "twice yearly (January and July surveys)", "baseSurvey": AK_BASE_SURVEY, "latestSurvey": latest,
+                    "start": AK_SERIES_START, "step": "6 months",
+                    "changes": "whatchanged maps each zip to a surveyed community or region average; prices are as published"},
+           "communities": {c: {"b": cdb[c][0], "r": cdb[c][1], "v": series(usable[c])} for c in used_c},
+           "regions": {r: {"v": series(regions_ok[r])} for r in used_r},
+           "zips": zips}
+    print(f"ak-gas.json: {len(usable)} usable communities (of {len(obs)}), latest survey {latest}; zips {dict(kinds)}")
+    return out
+
+
+# ---------- Puerto Rico: DACO monthly average retail gasoline ----------
+# Departamento de Asuntos del Consumidor (DACO) monthly island-wide average consumer prices (cents/gal), published
+# as an xlsx linked from https://www.daco.pr.gov/recursos. Column A = month (Excel date), column C = regular.
+PR_SERIES_START = "2016-01"
+PR_GAS_URL = ("https://docs.pr.gov/files/DACO/Gasolina/Precios%20Promedio%20Mensual%20al%20Consumidor/"
+              "Precios-Promedios-de-Gasolina-y-Diesel%20(1).xlsx")
+
+
+def build_pr_gas(R):
+    path = R("daco_gas.xlsx")
+    if not os.path.exists(path):
+        print("WARN: DACO Puerto Rico gas workbook missing; keeping the existing src/lib/data/pr-gas.json")
+        return None
+    import datetime, openpyxl
+    ws = openpyxl.load_workbook(path, read_only=True, data_only=True).worksheets[0]
+    hdr_ok, vals = False, {}
+    for row in ws.iter_rows(values_only=True):
+        if not row:
+            continue
+        if not hdr_ok:
+            hdr_ok = isinstance(row[0], str) and row[0].strip().lower().startswith("fecha") and \
+                isinstance(row[2], str) and row[2].strip().lower() == "regular"
+            continue
+        d, reg = row[0], row[2]
+        if isinstance(d, (datetime.datetime, datetime.date)) and isinstance(reg, (int, float)) and 100 <= reg <= 1000:
+            vals[f"{d.year:04d}-{d.month:02d}"] = round(reg / 100.0, 4)  # cents -> $/gal
+    assert hdr_ok, "DACO workbook layout changed (expected 'Fecha … Regular' header with Regular in column C)"
+    latest = max(vals)
+    assert BASE in vals, "DACO workbook has no January 2025 value"
+    months = month_range(PR_SERIES_START, latest)
+    out = {"meta": {"source": "DACO monthly average retail price, regular gasoline (Puerto Rico, island-wide)",
+                    "publisher": "Departamento de Asuntos del Consumidor (DACO), Puerto Rico",
+                    "url": PR_GAS_URL, "page": "https://www.daco.pr.gov/recursos", "unit": "$/gal (published in cents per gallon)",
+                    "baseMonth": BASE, "asOf": latest, "start": PR_SERIES_START},
+           "v": [vals.get(m) for m in months]}
+    missing = [m for m in months if m not in vals]
+    print(f"pr-gas.json: {len(vals)} months through {latest}; Jan 2025 ${vals[BASE]:.3f} -> ${vals[latest]:.3f}; missing since {PR_SERIES_START}: {missing}")
+    return out
+
+
 def load_county_geo(repo):
     """county FIPS -> {state, cpiArea, cpiName, lausFips, ...} from src/lib/data/county-geo.json (shared with
     the live site). Fails loudly if the file is missing or looks wrong."""
@@ -229,8 +509,18 @@ def main():
             # Monthly ZHVI levels since SERIES_START for the Housing graph (Zillow-adjusted; 1 decimal so the graph reproduces `hv`)
             counties[f]["hvS"] = compact_series(chv[i], cm, 1)
     ck, cr, crm, _ = load_zillow(R("zori_county.csv"), cfips)
-    cr_sa, _ = seasonal_adjust(cr, crm)
+    # ZORI rows whose first value comes after POOL_MAX_START: "too new" (others unpublished for other reasons, e.g. no Jan 2025 value)
+    _first_ok = crm.index(POOL_MAX_START)
+    zori_rows = {f for i, f in enumerate(ck) if np.isfinite(cr[i]).any() and not np.isfinite(cr[i, :_first_ok + 1]).any() and np.isfinite(cr[i, -1])}
+    cr_sa, cr_ok, cr_factors = seasonal_adjust(cr, crm, return_factors=True)
+    # Short series (Zillow coverage that starts in 2022-2023, e.g. Androscoggin ME) get their state's typical
+    # seasonal pattern instead of being dropped; labeled wherever they are shown (rentSaPool / saPool).
+    rent_pools = pool_factors(cr_factors, cr_ok, [f[:2] for f in ck])
+    cr_sa, cr_pool = pooled_adjust(cr, crm, cr_sa, cr_ok, [f[:2] for f in ck], rent_pools)
+    cr_sa = np.round(cr_sa, 2)  # the shipped series' precision, so the Rent tab reproduces the card's % exactly
     _, _, pct = change_since(cr_sa, crm)
+    state_names = {v["countyFips"][:2]: v["stateName"] for v in zip_county.values()}
+    pool_name = lambda key: f"{state_names.get(key, key)} counties" if key else "U.S. counties"
     meta["sources"]["zori"] = {"latest": crm[-1], "short": "Zillow ZORI", "adjustment": "seasonally adjusted by whatchanged",
                                "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases", "url": "https://www.zillow.com/research/data/"}
     county_rent = {}
@@ -249,9 +539,12 @@ def main():
             # Seasonally adjusted ZORI levels since SERIES_START for the Housing graph (2 decimals so the
             # graph's latest % change reproduces `rent` exactly)
             counties[f]["rentS"] = compact_series(cr_sa[i], crm, 2)
+            if cr_pool[i] is not None:
+                counties[f]["rentSaPool"] = pool_name(cr_pool[i])
             if RENT_HERO_MIN <= pct[i] <= RENT_HERO_MAX and np.isfinite(cr[i, bi]):
                 county_rent[f] = {"pct": round(float(pct[i]), 1), "baseRent": int(round(cr[i, bi])),
-                                  "curRent": int(round(cr[i, -1])), "asOf": crm[-1]}
+                                  "curRent": int(round(cr[i, -1])), "asOf": crm[-1],
+                                  **({"saPool": pool_name(cr_pool[i])} if cr_pool[i] is not None else {})}
 
     # QCEW (latest quarter only): county jobs. Used for ONE thing: the "biggest movers" lists only rank counties with
     # >= 75,000 jobs, and the outlier pool is counties with >= 20,000 jobs. Not displayed.
@@ -307,7 +600,21 @@ def main():
         del counties[f]
     print(f"dropped {len(unnamed)} counties with no known name: {unnamed[:20]}")
 
-    SERIES_KEYS = ("hvS", "rentS")  # monthly series ship only in the per-state shards (the map file stays small)
+    # Metro rent for counties with no county rent series (Rent card's next rung; the Housing graph's Rent tab)
+    abbr_to_fips = {v["stateAbbr"]: v["countyFips"][:2] for v in zip_county.values()}
+    metro_rows, metro_counties, metro_series, metro_asof = build_metro_rent(
+        R, counties, county_rent, rent_pools, pool_name, abbr_to_fips)
+    for f, cb in metro_counties.items():
+        m = metro_rows[cb]
+        counties[f]["rentM"] = {k: v for k, v in {"n": m["name"], "cbsa": cb, "rent": m["pct"], "cur": m["curRent"],
+                                                   "flag": m.get("flagged"), "saPool": m.get("saPool")}.items() if v is not None}
+        counties[f]["rentMS"] = metro_series[cb]
+    meta["sources"]["zoriMetro"] = {"latest": metro_asof, "short": "Zillow ZORI (metro)", "adjustment": "seasonally adjusted by whatchanged",
+                                    "label": "Zillow Observed Rent Index (ZORI), metro", "geography": METRO_DELINEATION,
+                                    "url": "https://www.zillow.com/research/data/"}
+
+    # monthly series (and the metro fallback) ship only in the per-state shards (the map file stays small)
+    SERIES_KEYS = ("hvS", "rentS", "rentM", "rentMS")
     with open(os.path.join(a.out, "counties.json"), "w") as fh:
         json.dump({f: {k: v for k, v in c.items() if k not in SERIES_KEYS} for f, c in counties.items()}, fh,
                   separators=(",", ":"), sort_keys=True)
@@ -341,9 +648,32 @@ def main():
                             "baseMonth": BASE, "asOf": crm[-1],
                             "levels": "baseRent/curRent are observed (not seasonally adjusted) typical asking rents, $/mo",
                             "dollarChange": "monthly change consistent with pct = curRent - curRent / (1 + pct/100)"},
-                   "counties": dict(sorted(cr_out.items()))}, fh, separators=(",", ":"))
+                   "counties": dict(sorted(cr_out.items())),
+                   # Counties Zillow publishes a ZORI row for, but whose series is too new to measure since Jan 2025
+                   # (needs data from POOL_MAX_START): the trace and the metro stand-in say so instead of "no series".
+                   "tooNew": sorted(f for f in zori_rows if f in counties and f not in cr_out and "rent" not in counties[f])},
+                  fh, separators=(",", ":"))
     zc_cov = sum(1 for v in zip_county.values() if v["countyFips"] in cr_out)
     print(f"county-rent.json: {len(cr_out)} counties, covers {zc_cov}/{len(zip_county)} crosswalk zips ({zc_cov / len(zip_county):.1%})")
+    # Server-importable metro rent: same fields as county rows; `counties` maps county FIPS -> CBSA code for counties
+    # with no county row (OMB March 2020 delineation, the vintage Zillow's metros use).
+    with open(os.path.join(a.repo, "src/lib/data/metro-rent.json"), "w") as fh:
+        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI), metro", "adjustment": "seasonally adjusted by whatchanged",
+                            "baseMonth": BASE, "asOf": metro_asof, "geography": METRO_DELINEATION,
+                            "levels": "baseRent/curRent are observed (not seasonally adjusted) typical asking rents, $/mo"},
+                   "metros": metro_rows, "counties": metro_counties}, fh, separators=(",", ":"))
+    m_cov = defaultdict(int)
+    for v in zip_county.values():
+        if v["countyFips"] not in cr_out and v["countyFips"] in metro_counties:
+            m_cov[v["stateAbbr"]] += 1
+    print(f"metro-rent.json: {len(metro_rows)} metros for {len(metro_counties)} counties; covers {sum(m_cov.values())} more zips:",
+          dict(sorted(m_cov.items(), key=lambda t: -t[1])))
+
+    # Static gas series for places EIA/BLS don't price: Alaska communities (DCRA) and Puerto Rico (DACO)
+    for name, built in (("ak-gas.json", build_ak_gas(R, zip_county)), ("pr-gas.json", build_pr_gas(R))):
+        if built is not None:
+            with open(os.path.join(a.repo, "src/lib/data", name), "w") as fh:
+                json.dump(built, fh, separators=(",", ":"))
 
     with open(os.path.join(a.out, "counties-timeline.json"), "w") as fh:
         json.dump(timeline, fh, separators=(",", ":"))

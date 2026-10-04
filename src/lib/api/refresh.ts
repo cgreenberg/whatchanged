@@ -13,6 +13,9 @@
 //     series per POST) → 3 BLS calls for a full refresh
 //   - Gas: one EIA GET per EIA duoarea (~27 calls)
 //   - Electricity: every state + US in ONE paged EIA query (≈ 7,900 rows → 2 calls)
+//   - Home heating fuel: EIA SHOPP heating oil + propane, every state with a series + US, in ONE paged EIA
+//     query since 2016 (≈ 17,400 rows → 4 calls); NYSERDA New York regional heating oil: 1 keyless call
+//   Static sources (Zillow rent, Alaska DCRA survey, Puerto Rico DACO) ship with the build: no calls here.
 
 import zipCountyData from '@/lib/data/zip-county.json'
 import { lookupZip } from '@/lib/data/zip-lookup'
@@ -32,7 +35,13 @@ import {
   type EiaElectricityRow,
 } from './eia-electricity'
 import {
+  buildHeatingByArea, fetchHeatingRows, hasHeatingSeries, heatingCacheKey, isValidHeating, NATIONAL_HEATING,
+  type EiaHeatingRow, type HeatingProduct,
+} from './eia-heating'
+import { fetchNyserdaHeatingOil, isValidNyserda, NYSERDA_CACHE_KEY, type NyserdaHeatingOil } from './nyserda'
+import {
   CPI_TTL,
+  HEATING_TTL,
   ELECTRICITY_TTL,
   gasTtlFor,
   NATIONAL_CPI,
@@ -59,6 +68,10 @@ export interface RefreshPlan {
   gasLookups: GasLookupResult[]
   /** Every state any zip resolves to that EIA publishes a residential electricity price for, plus 'US'. */
   electricityStates?: string[]
+  /** EIA SHOPP heating oil / propane series any zip resolves to (state), plus each product's U.S. comparison. */
+  heating?: Array<{ product: HeatingProduct; area: string }>
+  /** NYSERDA New York regional heating oil (one key, every region) when any New York zip is in the plan. */
+  nyserda?: boolean
 }
 
 const ALL_ZIPS = Object.keys(zipCountyData as Record<string, unknown>)
@@ -68,10 +81,19 @@ export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
   const cpi = new Map<string, CpiArea>([[NATIONAL_CPI.areaCode, NATIONAL_CPI]])
   const gas = new Map<string, GasLookupResult>([[NATIONAL_GAS_LOOKUP.cacheKey, NATIONAL_GAS_LOOKUP]])
   const states = new Set<string>([NATIONAL_ELECTRICITY])
+  const heating = new Map<string, { product: HeatingProduct; area: string }>()
+  let nyserda = false
   for (const zip of zips) {
     const location = lookupZip(zip)
     if (!location) continue
-    if (hasElectricitySeries(location.stateAbbr)) states.add(location.stateAbbr.toUpperCase())
+    const st = location.stateAbbr.toUpperCase()
+    if (hasElectricitySeries(st)) states.add(st)
+    for (const product of ['oil', 'propane'] as const) {
+      if (!hasHeatingSeries(product, st)) continue
+      heating.set(`${product}:${st}`, { product, area: st })
+      heating.set(`${product}:${NATIONAL_HEATING}`, { product, area: NATIONAL_HEATING })
+    }
+    if (st === 'NY') nyserda = true
     const area = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
     if (!cpi.has(area.areaCode)) cpi.set(area.areaCode, area)
     const lookup = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips)
@@ -87,6 +109,8 @@ export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
     cpiAreas: [...cpi.values()].sort((a, b) => a.areaCode.localeCompare(b.areaCode)),
     gasLookups: [...gas.values()].sort((a, b) => a.cacheKey.localeCompare(b.cacheKey)),
     electricityStates: [...states].sort(),
+    heating: [...heating.values()].sort((a, b) => `${a.product}:${a.area}`.localeCompare(`${b.product}:${b.area}`)),
+    nyserda,
   }
 }
 
@@ -153,6 +177,8 @@ export interface RefreshReport {
   results: ItemResult[]
   blsCalls: number
   eiaCalls: number
+  /** Keyless non-BLS/EIA calls (NYSERDA, data.ny.gov). */
+  otherCalls?: number
   /** Batches that failed after all retries (every key in them is 'error'). */
   failedBatches: number
 }
@@ -162,6 +188,10 @@ export interface RefreshDeps {
   fetchGas: (duoarea: string) => Promise<GasSeriesData>
   /** All requested states' electricity rows in one (paged) EIA query (default: the live EIA API). */
   fetchElectricity?: (states: string[]) => Promise<{ rows: EiaElectricityRow[]; requests: number }>
+  /** Every heating product × area in one (paged) EIA SHOPP query (default: the live EIA API). */
+  fetchHeating?: (products: HeatingProduct[], areas: string[]) => Promise<{ rows: EiaHeatingRow[]; requests: number }>
+  /** NYSERDA New York heating oil, every region (default: data.ny.gov). */
+  fetchNyserda?: () => Promise<NyserdaHeatingOil>
   write: <T>(key: string, data: T, ttl: number) => Promise<unknown>
   /** Record that upstream has no usable data for `key`, so the runtime does not keep re-fetching it. */
   markMissing?: (key: string) => Promise<unknown>
@@ -173,6 +203,8 @@ export const defaultRefreshDeps: RefreshDeps = {
   fetchBls: (ids) => fetchBlsSeries(ids, { timeoutMs: 60_000, label: 'BLS refresh' }),
   fetchGas: (duoarea) => fetchGasSeries(duoarea, { timeoutMs: 30_000 }),
   fetchElectricity: (states) => fetchElectricityRows(states, { timeoutMs: 30_000 }),
+  fetchHeating: (products, areas) => fetchHeatingRows(products, areas, { timeoutMs: 30_000 }),
+  fetchNyserda: () => fetchNyserdaHeatingOil({ timeoutMs: 30_000 }),
   write: (key, data, ttl) => writeEnvelope(key, data, ttl),
   markMissing: (key) => setCached(missingKey(key), true, MISSING_TTL),
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
@@ -214,17 +246,19 @@ export async function runRefresh(
   options: RefreshOptions = {}
 ): Promise<RefreshReport> {
   const { retries = 2, backoffMs = 2000, blsPauseMs = 1000, eiaConcurrency = 2, writeConcurrency = 8 } = options
-  const report: RefreshReport = { results: [], blsCalls: 0, eiaCalls: 0, failedBatches: 0 }
+  const report: RefreshReport = { results: [], blsCalls: 0, eiaCalls: 0, otherCalls: 0, failedBatches: 0 }
   let blsHalted: string | null = null
 
-  async function withRetry<T>(kind: 'bls' | 'eia', fn: () => Promise<T>): Promise<T> {
+  async function withRetry<T>(kind: 'bls' | 'eia' | 'other', fn: () => Promise<T>): Promise<T> {
     let lastErr: unknown
     for (let attempt = 0; attempt <= retries; attempt++) {
       if (kind === 'bls') {
         if (blsHalted) throw new Error(`BLS halted: ${blsHalted}`)
         report.blsCalls++
-      } else {
+      } else if (kind === 'eia') {
         report.eiaCalls++
+      } else {
+        report.otherCalls = (report.otherCalls ?? 0) + 1
       }
       try {
         return await fn()
@@ -314,6 +348,42 @@ export async function runRefresh(
     deps.log(`  EIA electricity: ${elecStates.length} states (incl. US)`)
   }
 
+  // EIA SHOPP heating oil + propane — every product × area in one paged query (counted per page).
+  const heatTargets = plan.heating ?? []
+  if (heatTargets.length) {
+    const products = [...new Set(heatTargets.map((t) => t.product))]
+    const areas = [...new Set(heatTargets.map((t) => t.area))].sort()
+    try {
+      const fetchHeating = deps.fetchHeating ?? defaultRefreshDeps.fetchHeating!
+      const { rows, requests } = await withRetry('eia', () => fetchHeating(products, areas))
+      report.eiaCalls += Math.max(0, requests - 1)
+      const parsed = buildHeatingByArea(rows, heatTargets)
+      for (const t of heatTargets) {
+        const key = heatingCacheKey(t.product, t.area)
+        const d = parsed.get(key)
+        if (!d || d instanceof Error) record(key, /No heating/.test(d?.message ?? 'No heating') ? 'missing' : 'invalid', msg(d ?? 'no rows'))
+        else if (!isValidHeating(d)) record(key, 'invalid', 'failed sanity validation')
+        else pending.push({ key, ttl: HEATING_TTL, data: d })
+      }
+    } catch (e) {
+      for (const t of heatTargets) record(heatingCacheKey(t.product, t.area), 'error', msg(e))
+    }
+    deps.log(`  EIA heating fuel: ${heatTargets.length} series (oil + propane, states + US)`)
+  }
+
+  // NYSERDA New York regional heating oil — one keyless request.
+  if (plan.nyserda) {
+    try {
+      const fetchNy = deps.fetchNyserda ?? defaultRefreshDeps.fetchNyserda!
+      const d = await withRetry('other', () => fetchNy())
+      if (!isValidNyserda(d)) record(NYSERDA_CACHE_KEY, 'invalid', 'failed sanity validation')
+      else pending.push({ key: NYSERDA_CACHE_KEY, ttl: HEATING_TTL, data: d })
+    } catch (e) {
+      record(NYSERDA_CACHE_KEY, 'error', msg(e))
+    }
+    deps.log('  NYSERDA heating oil: 1 request (statewide + 8 regions)')
+  }
+
   // Writes: key + key:lastgood, clears key:failed (same as a runtime fetch).
   await runBounded(pending, writeConcurrency, async (p) => {
     try {
@@ -349,6 +419,7 @@ export function summarize(report: RefreshReport) {
     errors: count('error'),
     blsCalls: report.blsCalls,
     eiaCalls: report.eiaCalls,
+    otherCalls: report.otherCalls ?? 0,
     failedBatches: report.failedBatches,
   }
 }
@@ -380,8 +451,8 @@ export function shouldSkipRecentRun(
   return age >= 0 && age < intervalMs
 }
 
-export type RefreshSource = 'cpi' | 'gas' | 'electricity'
-const SOURCES: RefreshSource[] = ['cpi', 'gas', 'electricity']
+export type RefreshSource = 'cpi' | 'gas' | 'electricity' | 'heating'
+const SOURCES: RefreshSource[] = ['cpi', 'gas', 'electricity', 'heating']
 
 export interface RefreshArgs {
   dryRun: boolean
@@ -424,5 +495,6 @@ export function parseRefreshArgs(argv: string[]): RefreshArgs | { error: string 
 
 /** Total number of upstream targets in a plan. */
 export function planSize(plan: RefreshPlan): number {
-  return plan.cpiAreas.length + plan.gasLookups.length + (plan.electricityStates?.length ?? 0)
+  return plan.cpiAreas.length + plan.gasLookups.length + (plan.electricityStates?.length ?? 0) +
+    (plan.heating?.length ?? 0) + (plan.nyserda ? 1 : 0)
 }

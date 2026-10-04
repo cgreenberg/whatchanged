@@ -3,17 +3,20 @@
 // series read by several ladders (CPI for groceries + shelter + the rent card's fallback, the U.S. gas
 // average as both comparison and last rung) is fetched once.
 //
-// Adding a static-pipeline rung (Zillow metro rent, AK DCRA, PR DACO…): load its bundled JSON in a
-// small lookup module and expose it here as a context accessor; the rung in ladders.ts calls it.
+// Static-pipeline rungs (Zillow county/metro rent, Alaska DCRA survey, Puerto Rico DACO) read bundled JSON
+// through small lookup modules exposed here as context accessors; the rung in ladders.ts calls them.
 
 import type { CachedResult } from '@/lib/cache/kv'
 import type { CpiData } from '@/types'
 import {
-  getCpiCached, getGasSeriesCached, getElectricityCached, type FetchOpts,
+  getCpiCached, getGasSeriesCached, getElectricityCached, getHeatingCached, getNyserdaCached, type FetchOpts,
 } from '@/lib/api/cached-sources'
 import type { GasLookupResult, GasSeriesData } from '@/lib/api/eia'
 import type { ElectricitySeriesData } from '@/lib/api/eia-electricity'
-import { lookupCountyRent } from '@/lib/rent'
+import type { HeatingProduct, HeatingSeriesData } from '@/lib/api/eia-heating'
+import type { NyserdaHeatingOil } from '@/lib/api/nyserda'
+import { lookupCountyRent, lookupMetroRent } from '@/lib/rent'
+import { lookupAkGas, lookupPrGas } from '@/lib/static-gas'
 import { resolveLadder, type Ladder, type LadderResult } from './resolve'
 import { LADDERS, type CpiArea, type LadderContext, type LadderLocation, type MetricId } from './ladders'
 
@@ -33,6 +36,8 @@ export interface ServerLadderContext extends LadderContext {
   gasSeries(lookup: GasLookupResult): Promise<CachedResult<GasSeriesData>>
   cpi(area: CpiArea): Promise<CachedResult<CpiData>>
   electricity(state: string): Promise<CachedResult<ElectricitySeriesData>>
+  heating(product: HeatingProduct, area: string): Promise<CachedResult<HeatingSeriesData>>
+  nyserda(): Promise<CachedResult<NyserdaHeatingOil>>
   ladder(metric: MetricId): Promise<LadderResult<unknown>>
 }
 
@@ -40,13 +45,20 @@ export function serverLadderContext(loc: LadderLocation, now: Date, opts: FetchO
   const gas = new Map<string, Promise<CachedResult<GasSeriesData>>>()
   const cpi = new Map<string, Promise<CachedResult<CpiData>>>()
   const elec = new Map<string, Promise<CachedResult<ElectricitySeriesData>>>()
+  const heat = new Map<string, Promise<CachedResult<HeatingSeriesData>>>()
+  const ny = new Map<string, Promise<CachedResult<NyserdaHeatingOil>>>()
   const ladders = new Map<string, Promise<LadderResult<unknown>>>()
   const ctx: ServerLadderContext = {
     now,
     gasSeries: (lookup) => memo(gas, lookup.cacheKey, lookup.source === 'bls' ? 'bls-gas' : 'eia-gas', () => getGasSeriesCached(lookup, opts)),
     cpi: (area) => memo(cpi, area.areaCode, 'bls-cpi', () => getCpiCached(area, opts)),
     electricity: (state) => memo(elec, state, 'eia-electricity', () => getElectricityCached(state, opts)),
+    heating: (product, area) => memo(heat, `${product}:${area}`, 'eia-heating', () => getHeatingCached(product, area, opts)),
+    nyserda: () => memo(ny, 'all', 'nyserda', () => getNyserdaCached(opts)),
     countyRent: lookupCountyRent,
+    metroRent: lookupMetroRent,
+    akGas: lookupAkGas,
+    prGas: lookupPrGas,
     ladder: (metric) =>
       memo(ladders, metric, `ladder:${metric}`, () =>
         resolveLadder(LADDERS[metric] as unknown as Ladder<LadderLocation, unknown, LadderContext>, loc, ctx)),

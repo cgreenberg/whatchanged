@@ -4,10 +4,11 @@ import type { Row } from '@/lib/charts/chart-data'
 import { cpiGeoLabel, type Provenance } from '@/lib/provenance'
 import { fmtDay, fmtMonthYear, DATE_UNAVAILABLE } from '@/lib/format'
 import {
-  HOUSING_NOTE, SHELTER_SHORT_NOTE, gasCaveatFor, gasSourceInfo, isMonthlyGas, cpiItemStale,
+  HOUSING_NOTE, SHELTER_SHORT_NOTE, gasCaveatFor, gasSourceInfo, isMonthDatedGas, cpiItemStale,
   ELECTRICITY_SOURCE, ELECTRICITY_SOURCE_URL, ELECTRICITY_SEASONAL_NOTE, electricityPlace, fmtCents,
 } from '@/lib/hero-cards'
-import type { EconomicSnapshot } from '@/types'
+import type { EconomicSnapshot, HeatingFuelData } from '@/types'
+import { HEATING_NOTE, NYSERDA_NOTE } from '@/lib/charts/chart-config'
 
 export const NOT_SA = 'not seasonally adjusted'
 
@@ -69,9 +70,17 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
       const latest = g?.latestDate ?? series[series.length - 1]?.date
       // BLS tiers are monthly (dates YYYY-MM): monthly x-axis and the Jan 2025 baseline month;
       // the national overlay is the BLS U.S. average (same source and frequency).
-      const monthly = isMonthlyGas(g)
+      const monthly = isMonthDatedGas(g)
       const geography = g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable'
       const src = gasSourceInfo(g)
+      const cadence = g?.source === 'dcra' ? 'twice yearly (Jan & Jul surveys)' : 'monthly'
+      const description = g?.source === 'dcra'
+        ? 'Alaska DCRA Community Fuel Price Survey: retail price per gallon of gasoline in surveyed communities, each January and July. No U.S. line: the survey covers Alaska only.'
+        : g?.source === 'daco'
+          ? 'DACO (Puerto Rico Department of Consumer Affairs) monthly island-wide average retail price per gallon of regular gasoline. No U.S. line: DACO publishes Puerto Rico only.'
+          : 'BLS CPI average price per gallon of regular gasoline, published monthly. Used for metros where EIA publishes no weekly city series, and for Hawaii/Alaska.'
+      const sourceLabel = g?.source === 'dcra' ? 'Alaska DCRA Community Fuel Price Survey (CC BY 4.0)'
+        : g?.source === 'daco' ? 'DACO Puerto Rico' : 'BLS CPI Average Price Data'
       return {
         // Unpublished BLS months stay as empty rows so the chart marks the gap
         data: withEmptyRows(series.map(p => ({ date: p.date, price: p.price })), g?.unpublished),
@@ -80,21 +89,26 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
         weeklyGasBaseline: !monthly,
         // Name the overlay's source: BLS monthly and EIA weekly U.S. averages differ
         nationalLabel: national.length ? (monthly ? 'U.S. city avg, BLS monthly' : 'U.S. avg, EIA weekly') : undefined,
-        note: gasCaveatFor(snapshot),
+        note: gasCaveatFor(snapshot) ??
+          (g?.source === 'dcra' ? 'Survey prices each January and July; the line connects the surveys.' : undefined),
         ...(monthly
           ? {
               configOverrides: {
-                description: 'BLS CPI average price per gallon of regular gasoline, published monthly. Used for metros where EIA publishes no weekly city series, and for Hawaii/Alaska.',
-                sourceLabel: 'BLS CPI Average Price Data',
+                description,
+                sourceLabel,
                 sourceUrl: src.sourceUrl,
+                // Two points a year: straight segments between surveys (a smoothed curve would invent in-between prices)
+                ...(g?.source === 'dcra'
+                  ? { series: [{ dataKey: 'price', label: 'Regular gas ($/gal), survey', color: '#F59E0B', type: 'linear' as const }] }
+                  : {}),
               },
             }
           : {}),
         provenance: {
           source: src.source,
           sourceUrl: src.sourceUrl,
-          geography: monthly ? `${geography} · monthly` : geography,
-          asOf: latest ? (monthly ? fmtMonthYear(latest.slice(0, 7)) : `week of ${fmtDay(latest)}`) : DATE_UNAVAILABLE,
+          geography: monthly ? `${geography} · ${cadence}` : geography,
+          asOf: latest ? (monthly ? `${fmtMonthYear(latest.slice(0, 7))}${g?.source === 'dcra' ? ' survey' : ''}` : `week of ${fmtDay(latest)}`) : DATE_UNAVAILABLE,
           adjustment: NOT_SA,
         },
       }
@@ -129,3 +143,47 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
   }
 }
 
+/** Weekly rows with an empty row at each side of a gap > 5 weeks (the heating survey's April–September break), so the graph shows the gap. */
+export function withSeasonGaps(points: ReadonlyArray<{ date: string; price: number }>): Row[] {
+  const rows: Row[] = []
+  const DAY = 86_400_000
+  const iso = (t: number) => new Date(t).toISOString().slice(0, 10)
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i]
+    if (i > 0) {
+      const a = Date.parse(`${points[i - 1].date}T00:00:00Z`)
+      const b = Date.parse(`${p.date}T00:00:00Z`)
+      if (b - a > 35 * DAY) rows.push({ date: iso(a + 7 * DAY) }, { date: iso(b - 7 * DAY) })
+    }
+    rows.push({ date: p.date, price: p.price })
+  }
+  return rows
+}
+
+/** Home heating graph tab (Heating oil | Propane): rows, same-source comparison and provenance. */
+export function getHeatingInput(product: 'oil' | 'propane', snapshot: EconomicSnapshot): ChartInput {
+  const r = snapshot.heating?.[product] ?? null
+  const h: HeatingFuelData | null = r?.data ?? null
+  const fuel = product === 'oil' ? 'heating oil' : 'propane'
+  const step = snapshot.trace?.[product === 'oil' ? 'heatingOil' : 'propane']?.find(s => s.status === 'used' || s.status === 'stale')
+  const nyserda = h?.source === 'nyserda'
+  return {
+    data: h ? withSeasonGaps(h.series) : [],
+    nationalData: h?.nationalSeries ? withSeasonGaps(h.nationalSeries) : [],
+    stale: !!r?.stale,
+    weeklyGasBaseline: true,
+    nationalLabel: h?.nationalSeries?.length ? h.nationalLabel : undefined,
+    note: h ? h.offSeasonNote ?? (nyserda ? `${h.geography}: NYSERDA survey, year-round.` : `Statewide average for ${h.geography.replace(/ \(statewide\)$/, '')}.`) : r?.error ?? undefined,
+    info: nyserda ? [NYSERDA_NOTE] : [HEATING_NOTE],
+    ...(h && Number.isFinite(h.change)
+      ? { headline: { pct: h.change, detail: `$${h.current.toFixed(2)}/gal, week of ${fmtDay(h.latestDate)}` } }
+      : {}),
+    provenance: {
+      source: nyserda ? 'NYSERDA home heating oil survey (Open NY)' : `EIA weekly residential ${fuel} (SHOPP)`,
+      sourceUrl: step?.citationUrl ?? (nyserda ? 'https://data.ny.gov/d/rc94-5y2u' : 'https://www.eia.gov/petroleum/heatingoilpropane/'),
+      geography: h ? `${h.geography}, ${nyserda ? 'weekly Sep–Mar, twice monthly Apr–Aug' : 'weekly in heating season'}` : snapshot.location?.stateName ?? 'this area',
+      asOf: h ? `week of ${fmtDay(h.latestDate)}` : DATE_UNAVAILABLE,
+      adjustment: NOT_SA,
+    },
+  }
+}

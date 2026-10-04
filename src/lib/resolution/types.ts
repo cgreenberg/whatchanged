@@ -35,10 +35,12 @@ export interface TraceStep {
   /** YYYY-MM or YYYY-MM-DD of the latest data point used. */
   asOf?: string
   seriesId?: string
+  /** With 'stale': the source is between survey seasons (its normal schedule, e.g. EIA SHOPP in summer), not overdue. */
+  seasonal?: boolean
 }
 
 /** Metrics resolved on the server and returned as `trace` in /api/data. */
-export type TraceMetric = 'gas' | 'rent' | 'groceries' | 'shelter' | 'electricity'
+export type TraceMetric = 'gas' | 'rent' | 'groceries' | 'shelter' | 'electricity' | 'heatingOil' | 'propane'
 
 export type SnapshotTrace = Partial<Record<TraceMetric, TraceStep[]>>
 

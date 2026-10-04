@@ -59,7 +59,7 @@ export function buildCountyGeo(
       cpiArea: cpi.areaCode,
       cpiTier: cpi.tier,
       cpiName: cpi.areaName,
-      gasSource: gas.source,
+      gasSource: gas.source as 'eia' | 'bls', // getGasLookup returns live rungs only
       gasDuoarea: gas.areaCode,
       gasTier: gas.tier,
       lausFips: laus.fips,

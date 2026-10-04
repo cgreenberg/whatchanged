@@ -11,6 +11,8 @@ import { clearMemCache } from '@/lib/cache/kv'
 import { buildHeroCards, TRACE_FOR_CARD } from '@/lib/hero-cards'
 import { getChartInput } from '@/components/charts/chart-inputs'
 import { homePricesTrace } from '@/components/charts/HousingChart'
+import { heatingTabs } from '@/components/charts/HeatingChart'
+import { getHeatingInput } from '@/components/charts/chart-inputs'
 import { isUsedStatus, type TraceStep } from '@/lib/resolution/types'
 import { LADDERS } from '@/lib/resolution/ladders'
 import type { EconomicSnapshot } from '@/types'
@@ -44,11 +46,19 @@ const GOLDEN = [
   ['30303', 'Atlanta: BLS metro gas, Atlanta metro CPI'],
   ['96720', 'Hilo: Honolulu stand-in gas, no Zillow rent → Pacific division shelter'],
   ['00601', 'Adjuntas PR: national gas + CPI, no electricity'],
-  ['10509', 'Brewster NY: no Zillow rent for Putnam County → NY metro shelter'],
+  ['10509', 'Brewster NY: Putnam County Zillow rent (pooled seasonal pattern), NY metro CPI'],
+  ['55334', 'Gaylord MN: no Zillow county or metro rent for Sibley County → Minneapolis metro shelter'],
   ['19103', 'Philadelphia: BLS metro gas'],
   ['98683', 'Vancouver WA: EIA Washington state gas'],
-  ['04240', 'Lewiston ME: no Zillow rent for Androscoggin County → New England division shelter'],
+  ['04240', 'Lewiston ME: Androscoggin County Zillow rent (short series, pooled seasonal pattern)'],
+  ['04530', 'Bath ME: Sagadahoc county series too new → Portland-South Portland metro rent'],
+  ['99701', 'Fairbanks AK: DCRA community survey gas (own community)'],
+  ['99559', 'Bethel AK: DCRA community survey gas (own community)'],
+  ['00901', 'San Juan PR: DACO island-wide monthly gas'],
+  ['10950', 'Monroe NY (Orange County): NYSERDA Upper Hudson heating oil, EIA NY propane'],
 ] as const
+
+const METRICS = ['gas', 'rent', 'groceries', 'shelter', 'electricity', 'heatingOil', 'propane'] as const
 
 describe('trace snapshots (golden zips)', () => {
   test.each(GOLDEN)('%s — %s', async (zip) => {
@@ -60,7 +70,7 @@ describe('trace snapshots (golden zips)', () => {
 describe('trace semantics', () => {
   test.each(GOLDEN.map(([z]) => z))('%s: every ladder in order, at most one winner, not-needed after it', async (zip) => {
     const s = (await fetchSnapshot(zip))!
-    for (const metric of ['gas', 'rent', 'groceries', 'shelter', 'electricity'] as const) {
+    for (const metric of METRICS) {
       const steps = s.trace![metric]!
       expect(steps.map((st) => st.rungId)).toEqual(LADDERS[metric].rungs.map((r) => r.id))
       const wi = steps.findIndex((st) => isUsedStatus(st.status))
@@ -91,16 +101,98 @@ describe('trace semantics', () => {
   test('rent: Zillow county wins where it has a series, otherwise CPI shelter with the reason', async () => {
     const portland = (await fetchSnapshot('04101'))!
     expect(portland.rent).not.toBeNull()
-    expect(portland.trace!.rent!.map((x) => x.status)).toEqual(['used', 'not-needed'])
-    expect(portland.trace!.rent![1].geography).toEqual({ name: 'New England division', level: 'division' })
+    expect(portland.trace!.rent!.map((x) => x.status)).toEqual(['used', 'not-needed', 'not-needed'])
+    expect(portland.trace!.rent![2].geography).toEqual({ name: 'New England division', level: 'division' })
 
-    const brewster = (await fetchSnapshot('10509'))!
-    expect(brewster.rent).toBeNull()
-    const [z, cpi] = brewster.trace!.rent!
-    expect(z).toMatchObject({ status: 'not-applicable', geography: { name: 'Putnam County, NY', level: 'county' } })
-    expect(z.reason).toMatch(/^Zillow has no rent series for Putnam County/)
-    expect(cpi).toMatchObject({ status: 'used', seriesId: 'CUURS12ASAH1', geography: { level: 'metro' } })
-    expect(buildHeroCards(brewster)[1].id).toBe('shelter')
+    const gaylord = (await fetchSnapshot('55334'))!
+    expect(gaylord.rent).toBeNull()
+    const [z, metro, cpi] = gaylord.trace!.rent!
+    expect(z).toMatchObject({ status: 'not-applicable', geography: { name: 'Sibley County, MN', level: 'county' } })
+    expect(z.reason).toMatch(/^Zillow has no usable county rent series for Sibley County/)
+    expect(metro).toMatchObject({ rungId: 'rent.zillow-metro', status: 'not-applicable' })
+    expect(metro.reason).toMatch(/^Sibley County isn't in a metro with a Zillow rent series/)
+    expect(cpi).toMatchObject({ status: 'used', seriesId: 'CUURS24ASAH1', geography: { level: 'metro' } })
+    expect(buildHeroCards(gaylord)[1].id).toBe('shelter')
+  })
+
+  test('rent: Zillow metro rent where the county has no series (Sagadahoc ME → Portland metro), labeled on the card', async () => {
+    const bath = (await fetchSnapshot('04530'))!
+    expect(bath.rent).toMatchObject({ level: 'metro', cbsa: '38860', geoName: 'Portland-South Portland, ME metro', countyFips: '23023' })
+    expect(bath.trace!.rent!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
+      'rent.zillow-county:not-applicable', 'rent.zillow-metro:used', 'rent.bls-cpi-shelter:not-needed',
+    ])
+    expect(bath.trace!.rent![1].geography).toEqual({ name: 'Portland-South Portland, ME metro', level: 'metro' })
+    const card = buildHeroCards(bath)[1]
+    expect(card).toMatchObject({ id: 'rent', status: 'ok', geoTag: 'Portland-South Portland metro' })
+    expect(card.sourceLine).toMatch(/^Portland-South Portland metro · Zillow · /)
+    expect(card.info.join(' ')).toMatch(/series for Sagadahoc County is too new .* to measure since Jan 2025; this is the Portland-South Portland, ME metro series/)
+    // Androscoggin: a short county series, adjusted with a pooled seasonal pattern and said so
+    const lewiston = (await fetchSnapshot('04240'))!
+    expect(lewiston.rent).toMatchObject({ level: 'county', countyFips: '23001', saPool: expect.stringMatching(/counties$/) })
+    expect(buildHeroCards(lewiston)[1].info.join(' ')).toMatch(/Seasonally adjusted with the typical pattern of .* counties/)
+  })
+
+  test('gas: Alaska DCRA community survey (own community / nearest / region), no U.S. comparison, CC BY credit', async () => {
+    for (const zip of ['99701', '99559']) {
+      const s = (await fetchSnapshot(zip))!
+      expect(s.gas.data).toMatchObject({ source: 'dcra', frequency: 'semiannual', baselineDate: '2025-01', staticSource: { kind: 'dcra', match: 'community' } })
+      expect(s.gas.data!.nationalSeries).toBeUndefined()
+      const steps = s.trace!.gas!
+      expect(steps.find((x) => isUsedStatus(x.status))).toMatchObject({ rungId: 'gas.dcra-community', geography: { level: 'community' } })
+      expect(steps.find((x) => x.rungId === 'gas.bls-hiak-standin')!.status).toBe('not-needed')
+      const card = buildHeroCards(s)[0]
+      expect(card.sourceLine).toMatch(/ survey · DCRA · Jul 2026$/)
+      expect(card.nationalValue).toBeUndefined()
+      expect(card.info.join(' ')).toMatch(/CC BY 4\.0/)
+    }
+    // Nome has no surveyed community of its own: the nearest surveyed one in Nome Census Area, labeled
+    const nome = (await fetchSnapshot('99762'))!
+    expect(nome.gas.data!.staticSource).toMatchObject({ kind: 'dcra', match: 'nearest' })
+    expect(buildHeroCards(nome)[0].caveat).toMatch(/nearest surveyed community in Nome Census Area/)
+    // Anchorage stays on BLS's monthly Anchorage price
+    const anc = (await fetchSnapshot('99501'))!
+    expect(anc.gas.data).toMatchObject({ source: 'bls', blsArea: 'S49G' })
+  })
+
+  test('gas: Puerto Rico DACO island-wide monthly (before the U.S. average), no U.S. comparison', async () => {
+    const s = (await fetchSnapshot('00901'))!
+    expect(s.gas.data).toMatchObject({ source: 'daco', frequency: 'monthly', baselineDate: '2025-01', region: 'Puerto Rico' })
+    expect(s.trace!.gas!.map((x) => `${x.rungId}:${x.status}`).slice(-2)).toEqual([
+      expect.stringMatching(/^gas\.daco-pr:(used|stale)$/), 'gas.eia-national:not-needed',
+    ])
+    const card = buildHeroCards(s)[0]
+    expect(card.sourceLine).toMatch(/^Puerto Rico avg · DACO · /)
+    expect(card.caveat).toBeUndefined()
+  })
+
+  test('home heating: SHOPP off-season labeled honestly; NYSERDA region for NY; tabs only where data exists', async () => {
+    const portland = (await fetchSnapshot('04101'))!
+    const oil = portland.heating!.oil!.data!
+    expect(oil).toMatchObject({ source: 'eia', seriesId: 'W_EPD2F_PRS_SME_DPG', baselineDate: '2025-01-20', latestDate: '2026-03-30' })
+    expect(oil.offSeasonNote).toBe('Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct')
+    expect(portland.heating!.oil!.stale).toBeFalsy()
+    expect(portland.trace!.heatingOil!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
+      'heatingOil.nyserda-region:not-applicable', 'heatingOil.eia-shopp-state:stale',
+    ])
+    // Off-season is the survey's schedule: flagged so the traceback says "between survey seasons", not "out of date"
+    expect(portland.trace!.heatingOil![1]).toMatchObject({ seasonal: true, reason: oil.offSeasonNote })
+    expect(heatingTabs(portland)).toEqual(['oil', 'propane'])
+    expect(getHeatingInput('oil', portland).provenance.sourceUrl).toBe(winner(portland.trace!.heatingOil)!.citationUrl)
+
+    const monroe = (await fetchSnapshot('10950'))!
+    expect(monroe.heating!.oil!.data).toMatchObject({ source: 'nyserda', geography: 'Upper Hudson region (NY)', nationalLabel: 'NY statewide avg, NYSERDA' })
+    expect(monroe.trace!.heatingOil!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
+      'heatingOil.nyserda-region:used', 'heatingOil.eia-shopp-state:not-needed',
+    ])
+
+    // Georgia: no SHOPP heating oil, propane only → one tab
+    const atl = (await fetchSnapshot('30303'))!
+    expect(atl.heating!.oil).toBeNull()
+    expect(atl.heating!.propane!.data).toMatchObject({ seriesId: 'W_EPLLPA_PRS_SGA_DPG' })
+    expect(heatingTabs(atl)).toEqual(['propane'])
+    // No source at all (Alaska, Puerto Rico): no graph
+    expect(heatingTabs((await fetchSnapshot('99701'))!)).toEqual([])
+    expect(heatingTabs((await fetchSnapshot('00901'))!)).toEqual([])
   })
 
   test('the trace keeps the response small', async () => {
@@ -140,12 +232,14 @@ describe('trace during a BLS gas outage (19103)', () => {
     expect(s.trace!.gas!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
       'gas.eia-city:not-applicable',
       'gas.bls-metro:unavailable',
+      'gas.dcra-community:not-applicable',
       'gas.bls-hiak-standin:not-applicable',
       'gas.eia-state:not-applicable',
       expect.stringMatching(/^gas\.eia-padd:(used|stale)$/),
+      'gas.daco-pr:not-needed',
       'gas.eia-national:not-needed',
     ])
-    expect(s.trace!.gas![4].reason).toMatch(/source above was unavailable|hasn't updated/)
+    expect(s.trace!.gas!.find((x) => x.rungId === 'gas.eia-padd')!.reason).toMatch(/source above was unavailable|hasn't updated/)
   })
 
   test('Hilo: stand-in unavailable → EIA has no HI series → U.S. average, labeled', async () => {
@@ -154,9 +248,11 @@ describe('trace during a BLS gas outage (19103)', () => {
     expect(s.trace!.gas!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
       'gas.eia-city:not-applicable',
       'gas.bls-metro:not-applicable',
+      'gas.dcra-community:not-applicable',
       'gas.bls-hiak-standin:unavailable',
       'gas.eia-state:not-applicable',
       'gas.eia-padd:not-applicable',
+      'gas.daco-pr:not-applicable',
       expect.stringMatching(/^gas\.eia-national:(used|stale)$/),
     ])
   })

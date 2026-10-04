@@ -71,9 +71,11 @@ export function pctChange(current: number | null | undefined, baseline: number |
  * (null when national lacks either); weekly EIA → the shared weekly baseline rule.
  */
 export function gasNationalMatching(
-  g: { frequency?: 'weekly' | 'monthly'; baselineDate?: string; latestDate?: string; nationalSeries?: ReadonlyArray<{ date: string; price: number }> } | null | undefined
+  g: { frequency?: 'weekly' | 'monthly' | 'semiannual'; baselineDate?: string; latestDate?: string; nationalSeries?: ReadonlyArray<{ date: string; price: number }> } | null | undefined
 ): { current: number; baseline: number; change: number; latestDate: string; baselineDate: string } | null {
   if (!g) return null
+  // Static sources (Alaska DCRA, Puerto Rico DACO) carry no national series: no comparison.
+  if (g.frequency === 'semiannual' || !g.nationalSeries?.length) return null
   if (g.frequency !== 'monthly') return gasChangeSinceBaseline(g.nationalSeries)
   const nat = g.nationalSeries ?? []
   const b = nat.find((p) => p.date === (g.baselineDate ?? BASELINE_MONTH))

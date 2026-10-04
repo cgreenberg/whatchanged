@@ -30,11 +30,24 @@ import { hasElectricitySeries, electricitySeriesId, type ElectricitySeriesData }
 import { CPI_CHANGE_RANGE } from '@/lib/api/validate'
 import { isBlsPeriodStale, isElectricityPeriodStale, monthOlderThan, RENT_STALE_DAYS } from '@/lib/staleness'
 import type { CountyRentLookup } from '@/lib/rent'
+import type { StaticGasLookup } from '@/lib/static-gas'
+import {
+  DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME, DCRA_STALE_DAYS,
+  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, DACO_STALE_DAYS,
+} from '@/lib/static-gas-meta'
+import {
+  HEATING_STATES, hasHeatingSeries, isValidHeating, heatingSeriesId, heatingSeriesUrl, heatingSeasonStatus, NATIONAL_HEATING,
+  type HeatingProduct, type HeatingSeriesData,
+} from '@/lib/api/eia-heating'
+import { nyserdaSeries, NYSERDA_DATASET_URL, NYSERDA_PAGE, NYSERDA_STALE_DAYS, type NyserdaHeatingOil } from '@/lib/api/nyserda'
+import { nyserdaRegionForCounty, NYSERDA_STATEWIDE_COLUMN, type NyserdaRegion } from '@/lib/mappings/nyserda-regions'
 
 // ------------------------------------------------------------------ location + context
 
 /** What a ladder resolves for (from the zip's ZipInfo). */
 export interface LadderLocation {
+  /** The zip itself (rungs keyed by zip: the Alaska community survey). */
+  zip?: string
   stateAbbr: string
   stateName?: string
   countyFips?: string
@@ -56,6 +69,15 @@ export interface LadderContext {
   electricity?(state: string): Promise<CachedResult<ElectricitySeriesData>>
   /** Static (bundled) county rent: src/lib/data/county-rent.json via lookupCountyRent. */
   countyRent?(countyFips: string): CountyRentLookup
+  /** Static metro rent for a county without a county series: src/lib/data/metro-rent.json via lookupMetroRent. */
+  metroRent?(countyFips: string, countyName?: string): CountyRentLookup
+  /** Static gas: Alaska DCRA community survey by zip / Puerto Rico DACO (src/lib/static-gas.ts). */
+  akGas?(zip: string): StaticGasLookup
+  prGas?(): StaticGasLookup
+  /** EIA SHOPP weekly residential heating oil / propane for a state or 'US'. */
+  heating?(product: HeatingProduct, area: string): Promise<CachedResult<HeatingSeriesData>>
+  /** NYSERDA New York heating oil, every region. */
+  nyserda?(): Promise<CachedResult<NyserdaHeatingOil>>
   /** Static county home values (client: the county shard). `null` = no series. */
   countyHomeValue?(countyFips: string): { asOf?: string } | null
   /** Resolve another metric's ladder for the same place (memoized by the caller). */
@@ -145,10 +167,49 @@ const blsGasRung = {
   onUnavailable: 'next-source' as const,
 }
 
+/** Gas ladder value: the cached series, plus the lookup when a static rung (no cache key) produced it. */
+export type GasRungValue = CachedResult<GasSeriesData> & { lookup?: GasLookupResult; staticHit?: StaticHitInfo }
+export type StaticHitInfo = { kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number }
+
+/** A static gas series (bundled): used unless its latest survey/month is overdue. */
+function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, l: L): RungOutcome<GasRungValue> {
+  if (!r.hit) {
+    return {
+      status: 'not-applicable',
+      reason: kind === 'dcra'
+        ? `No DCRA survey community or region average covers ${countyOnly(l)}.`
+        : 'DACO has no usable Puerto Rico series right now.',
+    }
+  }
+  const h = r.hit
+  const stale = monthOlderThan(h.data.latestDate.slice(0, 7), kind === 'dcra' ? DCRA_STALE_DAYS : DACO_STALE_DAYS, now)
+  const geography = kind === 'daco'
+    ? { name: 'Puerto Rico (island-wide)', level: 'island' as const }
+    : h.match === 'region'
+      ? { name: `${h.place} Alaska region (DCRA average)`, level: 'region' as const }
+      : { name: h.match === 'nearest' ? `${h.place} (nearest surveyed community${h.km !== undefined ? `, ${h.km} km` : ''})` : h.place, level: 'community' as const }
+  const note = kind === 'dcra' && h.match === 'nearest'
+    ? `DCRA doesn't survey ${l.countyName ? `this zip's town` : 'this town'}; ${h.place} is the nearest surveyed community in ${countyOnly(l)}.`
+    : kind === 'dcra' && h.match === 'region'
+      ? `No usable surveyed community near this zip in ${countyOnly(l)}; this is DCRA's ${h.place} region average.`
+      : undefined
+  return {
+    status: stale ? 'stale' : 'used',
+    value: {
+      data: h.data, cacheHit: true, stale: false, fetchedAt: now.toISOString(), lookup: h.lookup,
+      staticHit: { kind, ...(h.match ? { match: h.match } : {}), place: h.place, ...(h.km !== undefined ? { km: h.km } : {}) },
+    },
+    asOf: h.data.latestDate,
+    seriesId: h.lookup.seriesId,
+    geography,
+    ...(stale ? { reason: STALE_REASON } : note ? { reason: note } : {}),
+  }
+}
+
 const GAS = {
   metric: 'gas',
   title: 'Gas (regular)',
-  comparison: 'U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average).',
+  comparison: 'U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average); none for the Alaska survey or Puerto Rico DACO, which publish no U.S. figure.',
   rungs: [
     defineRung<L, GasLookupResult, CachedResult<GasSeriesData>, C>({
       ...eiaGasRung,
@@ -184,13 +245,35 @@ const GAS = {
       geography: (g) => `${g.areaName} metro`,
       place: countyPlace,
     }),
+    defineRung<L, string, GasRungValue, C>({
+      id: 'gas.dcra-community',
+      label: 'Alaska community fuel survey',
+      pill: 'AK community survey',
+      source: 'DCRA',
+      sourceName: `${DCRA_SOURCE} (${DCRA_PUBLISHER})`,
+      level: 'community',
+      frequency: 'twice yearly (January and July surveys)',
+      license: `${DCRA_LICENSE} (attribution: ${DCRA_PUBLISHER})`,
+      pipeline: 'static',
+      homepage: DCRA_HOME,
+      covers: 'Alaska outside the Anchorage metro: the zip’s own surveyed community, else the nearest surveyed community in the same borough or census area (within 100 km), else the DCRA region average — labeled which.',
+      applies: (l) => {
+        if (up(l) !== 'AK') return 'The Alaska DCRA community survey covers Alaska only.'
+        return !isBlsGasMetro(l.cpiAreaCode) || 'Anchorage-area zips use BLS’s monthly Anchorage price.'
+      },
+      target: (l) => l.zip ?? '',
+      geography: () => 'Alaska community survey',
+      place: statePlace,
+      citationUrl: () => DCRA_DATA_URL,
+      resolve: (zip, ctx, l) => staticGasOutcome('dcra', ctx.akGas!(zip), ctx.now, l),
+    }),
     defineRung<L, GasLookupResult, CachedResult<GasSeriesData>, C>({
       ...blsGasRung,
       id: 'gas.bls-hiak-standin',
       label: 'Honolulu / Anchorage price as a stand-in',
       pill: 'HI/AK stand-in',
       level: 'metro',
-      covers: 'Hawaii and Alaska outside the Honolulu and Anchorage metros: neither EIA nor BLS publishes a closer gas price, so that metro’s BLS price stands in, marked “*”.',
+      covers: 'Hawaii outside the Honolulu metro (and Alaska zips the community survey doesn’t cover): neither EIA nor BLS publishes a closer gas price, so that metro’s BLS price stands in, marked “*”.',
       applies: (l) => !!BLS_GAS_STATE_AREA[up(l)] || 'Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.',
       target: (l) => describeBlsGasArea(BLS_GAS_STATE_AREA[up(l)], { standIn: true }),
       geography: (g) => `${g.areaName} metro (stand-in)`,
@@ -237,12 +320,31 @@ const GAS = {
       place: statePlace,
       citationUrl: () => EIA_PADD_PAGE,
     }),
+    defineRung<L, string, GasRungValue, C>({
+      id: 'gas.daco-pr',
+      label: 'Puerto Rico monthly average (DACO)',
+      pill: 'Puerto Rico (island)',
+      source: 'DACO',
+      sourceName: `${DACO_SOURCE} (${DACO_PUBLISHER})`,
+      level: 'island',
+      frequency: 'monthly',
+      license: 'Public data of the Government of Puerto Rico (DACO); cited',
+      pipeline: 'static',
+      homepage: DACO_HOME,
+      covers: 'Puerto Rico: DACO’s island-wide monthly average retail price of regular gasoline (EIA and BLS publish none).',
+      applies: (l) => up(l) === 'PR' || 'DACO publishes Puerto Rico prices only.',
+      target: () => 'PR',
+      geography: () => 'Puerto Rico (island-wide)',
+      place: statePlace,
+      citationUrl: () => DACO_DATA_URL,
+      resolve: (_t, ctx, l) => staticGasOutcome('daco', ctx.prGas!(), ctx.now, l),
+    }),
     defineRung<L, GasLookupResult, CachedResult<GasSeriesData>, C>({
       ...eiaGasRung,
       id: 'gas.eia-national',
       label: 'EIA weekly U.S. average',
       level: 'national',
-      covers: 'Territories (no EIA series), and any place whose local series is down — then labeled “U.S. avg (local n/a)”.',
+      covers: 'Territories other than Puerto Rico (no EIA series), and any place whose local series is down — then labeled “U.S. avg (local n/a)”.',
       applies: () => true,
       target: () => describeDuoarea('NUS'),
       geography: () => 'United States',
@@ -250,7 +352,7 @@ const GAS = {
       usedNote: (_g, l) => (TERRITORY_NAMES[up(l)] ? `EIA publishes no gas price for ${stateLabel(l)}; this is the U.S. average.` : undefined),
     }),
   ],
-} satisfies Ladder<L, CachedResult<GasSeriesData>, C>
+} satisfies Ladder<L, GasRungValue, C>
 
 // ------------------------------------------------------------------ CPI (groceries, shelter)
 
@@ -405,7 +507,7 @@ const RENT = {
       license: ZILLOW_LICENSE,
       pipeline: 'static',
       homepage: ZILLOW_HOME,
-      covers: 'Counties where Zillow’s rent series reaches back to January 2025 with enough history (3+ years) to remove seasonal swings.',
+      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses its state’s typical one, and says so).',
       applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
       target: (l) => l.countyFips!,
       geography: (_f, l) => countyLabel(l),
@@ -420,7 +522,45 @@ const RENT = {
           status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
           reason: r.why === 'out-of-range'
             ? `Zillow's figure for ${countyOnly(l)} is outside our sanity range (−20% to +50%), so it isn't shown.`
-            : `Zillow has no rent series for ${countyOnly(l)} with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).`,
+            : r.why === 'too-new'
+              ? `Zillow's series for ${countyOnly(l)} is too new (it needs data from Jan 2024) to measure since Jan 2025.`
+              : `Zillow has no usable county rent series for ${countyOnly(l)} back to Jan 2025.`,
+        }
+      },
+    }),
+    defineRung<L, string, RentData, C>({
+      id: 'rent.zillow-metro',
+      label: 'Zillow metro rent (new leases)',
+      source: 'Zillow',
+      sourceName: 'Zillow Observed Rent Index (ZORI), metro',
+      level: 'metro',
+      frequency: 'monthly',
+      license: ZILLOW_LICENSE,
+      pipeline: 'static',
+      homepage: ZILLOW_HOME,
+      covers: 'Counties without a Zillow county series, in a metro Zillow publishes back to January 2025: that metro’s series (OMB 2020 metro areas, the definitions Zillow uses; county-to-metro by FIPS code, never by name).',
+      applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
+      target: (l) => l.countyFips!,
+      // The metro's name comes from the data (the used row overrides this); otherwise the county checked
+      geography: (_f, l) => `${countyLabel(l)}’s metro area`,
+      place: countyPlace,
+      resolve: (fips, ctx, l) => {
+        const r = ctx.metroRent!(fips, l.countyName)
+        if (r.data) {
+          const stale = monthOlderThan(r.data.asOf, RENT_STALE_DAYS, ctx.now)
+          return {
+            status: stale ? 'stale' : 'used',
+            value: r.data,
+            asOf: r.data.asOf,
+            geography: { name: r.data.geoName, level: 'metro' },
+            reason: stale ? STALE_REASON : `No usable Zillow county series for ${countyOnly(l)}; its metro’s series stands in.`,
+          }
+        }
+        return {
+          status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
+          reason: r.why === 'out-of-range'
+            ? `Zillow's metro figure for ${countyOnly(l)} is outside our sanity range (−20% to +50%), so it isn't shown.`
+            : `${countyOnly(l)} isn't in a metro with a Zillow rent series back to Jan 2025.`,
         }
       },
     }),
@@ -435,7 +575,7 @@ const RENT = {
       license: 'Public domain (U.S. government)',
       pipeline: 'live',
       homepage: 'https://www.bls.gov/cpi/',
-      covers: 'Where Zillow has no county rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.).',
+      covers: 'Where Zillow has no county or metro rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.).',
       applies: () => true,
       // The area the shelter ladder picks when BLS answers (its first applicable rung).
       target: (l) => firstApplicable(SHELTER, l)!.target as CpiArea,
@@ -529,6 +669,124 @@ const HOME_PRICES = {
   ],
 } satisfies Ladder<L, { asOf?: string }, C>
 
+// ------------------------------------------------------------------ home heating fuel (Home heating graph)
+
+/** A heating rung's value: the local series, its same-source comparison, and the off-season note. */
+export interface HeatingRungValue {
+  series: HeatingSeriesData
+  /** Same source, same weeks: EIA U.S. average, or the NYSERDA statewide average for a NY region. */
+  comparison?: HeatingSeriesData
+  comparisonLabel: string
+  geography: string
+  offSeasonNote?: string
+  /** When the cached series was fetched upstream. */
+  fetchedAt?: string
+}
+
+const HEATING_NAMES: Record<HeatingProduct, string> = { oil: 'heating oil', propane: 'propane' }
+const EIA_SHOPP_HOME = 'https://www.eia.gov/petroleum/heatingoilpropane/'
+
+function shoppRung(product: HeatingProduct) {
+  const name = HEATING_NAMES[product]
+  return defineRung<L, string, HeatingRungValue, C>({
+    id: `${product === 'oil' ? 'heatingOil' : 'propane'}.eia-shopp-state`,
+    label: `EIA weekly ${name} (state)`,
+    source: 'EIA',
+    sourceName: `EIA State Heating Oil and Propane Program (SHOPP), residential ${name}`,
+    level: 'state',
+    frequency: 'weekly, October–March only (heating-season survey)',
+    license: 'Public domain (U.S. government)',
+    pipeline: 'live',
+    homepage: EIA_SHOPP_HOME,
+    get covers() {
+      const list = HEATING_STATES[product]
+      const n = list.filter((st) => st !== 'DC').length
+      return `The ${n} states${list.includes('DC') ? ' + DC' : ''} EIA surveys for residential ${name}: ${list.join(', ')}. Off-season (April to mid-October) the latest reading is the end of March, labeled as such.`
+    },
+    applies: (l) => hasHeatingSeries(product, l.stateAbbr) ||
+      `EIA's heating-season survey has no residential ${name} price for ${stateLabel(l)}.`,
+    target: (l) => up(l),
+    geography: (_st, l) => `${stateLabel(l)} (statewide)`,
+    place: statePlace,
+    seriesId: (st) => heatingSeriesId(product, st),
+    citationUrl: (st) => heatingSeriesUrl(product, st),
+    resolve: async (st, ctx, l) => {
+      const r = await ctx.heating!(product, st)
+      let comparison: HeatingSeriesData | undefined
+      try {
+        comparison = (await ctx.heating!(product, NATIONAL_HEATING)).data
+      } catch { /* U.S. comparison is optional */ }
+      const season = heatingSeasonStatus(r.data.latestDate, ctx.now)
+      const stale = r.stale || season.stale
+      return {
+        // Off-season is the survey's schedule: shown as 'stale' (⚠) in the trace, with the honest reason.
+        status: stale || season.offSeason ? 'stale' : 'used',
+        value: {
+          series: r.data, comparison, comparisonLabel: 'U.S. avg, EIA weekly', geography: `${stateLabel(l)} (statewide)`,
+          fetchedAt: r.fetchedAt, ...(season.note && !stale ? { offSeasonNote: season.note } : {}),
+        },
+        asOf: r.data.latestDate,
+        ...(stale ? { reason: STALE_REASON } : season.note ? { reason: season.note, seasonal: true } : {}),
+      }
+    },
+  })
+}
+
+const NY_REGION = (l: L) => (up(l) === 'NY' ? nyserdaRegionForCounty(l.countyFips) : null)
+
+const HEATING_OIL = {
+  metric: 'heatingOil',
+  title: 'Home heating oil (Home heating graph)',
+  comparison: 'Same survey, same weeks: the EIA U.S. average (SHOPP), or for a New York region the NYSERDA statewide average.',
+  noData: 'No Heating oil tab (and no Home heating graph when propane has no data either).',
+  rungs: [
+    defineRung<L, NyserdaRegion, HeatingRungValue, C>({
+      id: 'heatingOil.nyserda-region',
+      label: 'NYSERDA New York regional average',
+      pill: 'NY region',
+      source: 'NYSERDA',
+      sourceName: 'NYSERDA Average Home Heating Oil Prices by Region (Open NY)',
+      level: 'region',
+      frequency: 'weekly September–March, twice a month April–August',
+      license: 'Open NY open data (NYSERDA); attribution',
+      pipeline: 'live',
+      homepage: NYSERDA_PAGE,
+      covers: 'New York: the county’s NYSERDA survey region (Long Island, New York City, Lower Hudson, Upper Hudson, Capital District, North Country, Central, Western), year-round.',
+      applies: (l) => !!NY_REGION(l) || (up(l) === 'NY' ? 'No NYSERDA region is known for this county.' : 'NYSERDA surveys New York only.'),
+      target: (l) => NY_REGION(l)!,
+      geography: (r) => `${r.name} region (NY)`,
+      place: statePlace,
+      seriesId: (r) => `NYSERDA ${r.column}`,
+      citationUrl: () => NYSERDA_DATASET_URL,
+      resolve: async (region, ctx) => {
+        const r = await ctx.nyserda!()
+        const series = nyserdaSeries(r.data, region.column)
+        if (!isValidHeating(series)) {
+          return { status: 'invalid', reason: 'The NYSERDA regional figure failed our sanity checks, so it isn\'t shown.' }
+        }
+        let comparison: HeatingSeriesData | undefined
+        try { comparison = nyserdaSeries(r.data, NYSERDA_STATEWIDE_COLUMN) } catch { /* optional */ }
+        const stale = r.stale || ctx.now.getTime() - Date.parse(`${series.latestDate}T00:00:00Z`) > NYSERDA_STALE_DAYS * 86_400_000
+        return {
+          status: stale ? 'stale' : 'used',
+          value: { series, comparison, comparisonLabel: 'NY statewide avg, NYSERDA', geography: `${region.name} region (NY)`, fetchedAt: r.fetchedAt },
+          asOf: series.latestDate,
+          ...(stale ? { reason: STALE_REASON } : {}),
+        }
+      },
+    }),
+    shoppRung('oil'),
+  ],
+} satisfies Ladder<L, HeatingRungValue, C>
+
+const PROPANE = {
+  metric: 'propane',
+  title: 'Propane (Home heating graph)',
+  comparison: 'EIA U.S. average, same survey and weeks.',
+  noData: 'No Propane tab (and no Home heating graph when heating oil has no data either).',
+  rungs: [shoppRung('propane')],
+} satisfies Ladder<L, HeatingRungValue, C>
+
 // ------------------------------------------------------------------ registry
 
 export const LADDERS = {
@@ -538,12 +796,14 @@ export const LADDERS = {
   shelter: SHELTER,
   electricity: ELECTRICITY,
   homePrices: HOME_PRICES,
+  heatingOil: HEATING_OIL,
+  propane: PROPANE,
 } as const
 
 export type MetricId = keyof typeof LADDERS
 
 /** Display order (About page, docs). */
-export const LADDER_ORDER: MetricId[] = ['gas', 'rent', 'shelter', 'homePrices', 'groceries', 'electricity']
+export const LADDER_ORDER: MetricId[] = ['gas', 'rent', 'shelter', 'homePrices', 'groceries', 'electricity', 'heatingOil', 'propane']
 
 /** Short pill text for a geography level. */
 export const LEVEL_LABELS: Record<GeoLevel, string> = {
@@ -559,11 +819,13 @@ export function selectCpiArea(countyFips: string, stateAbbr: string): CpiArea {
 }
 
 /**
- * The gas series a place resolves to when every source answers: first applicable gas rung.
+ * The LIVE gas series a place resolves to when every source answers: first applicable live gas rung (what
+ * the refresh plan warms and the map shows). Static rungs (Alaska community survey, Puerto Rico DACO) are
+ * bundled data resolved per zip in the snapshot; for those places this is the live fallback behind them.
  * `eiaOnly`: the BLS-outage fallback (first applicable EIA rung) — what the refresh plan also warms.
  */
 export function selectGasLookup(loc: LadderLocation, opts: { eiaOnly?: boolean } = {}): GasLookupResult {
-  const hit = firstApplicable(GAS, loc, (r) => !opts.eiaOnly || r.source === 'EIA')
+  const hit = firstApplicable(GAS, loc, (r) => r.pipeline === 'live' && (!opts.eiaOnly || r.source === 'EIA'))
   return hit!.target as GasLookupResult
 }
 

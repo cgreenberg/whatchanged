@@ -51,8 +51,8 @@ export function renderLadderDoc(): string {
   out.push('Every metric has one **ladder**: an ordered list of rungs, most local first. For a zip, the first rung that')
   out.push('applies and returns data is shown; `/api/data/{zip}` returns every rung\'s outcome as `trace` (✓ used, ✗ unavailable /')
   out.push('no series, – not needed, ⚠ stale), and the site shows it under "Where does this come from?" on each card and graph.')
-  out.push('The ladders live in `src/lib/resolution/ladders.ts` (walker: `resolve.ts`); `getGasLookup()` and')
-  out.push('`getMetroCpiAreaForCounty()` are their first applicable rung, so the snapshot, refresh plan, map and scripts agree.')
+  out.push('The ladders live in `src/lib/resolution/ladders.ts` (walker: `resolve.ts`); `getGasLookup()` (first applicable live')
+  out.push('rung) and `getMetroCpiAreaForCounty()` (first applicable rung) read them, so the snapshot, refresh plan, map and scripts agree.')
   out.push('')
   out.push('When an applicable rung fails at runtime, the rung\'s `onUnavailable` decides what is tried next: the next rung')
   out.push('(default), the next rung from a *different* source (a BLS outage skips the other BLS rungs), or straight to the')
@@ -83,27 +83,31 @@ export function renderLadderDoc(): string {
 /** Kept in sync with the "Resolution ladders" section of CLAUDE.md. */
 export const HOW_TO_ADD = `## How to add a rung
 
-1. **Data.** Live source (BLS, EIA): add a fetcher + cache key and a \`LadderContext\` accessor in
+1. **Data.** Live source (BLS, EIA, NYSERDA): add a fetcher + cache key and a \`LadderContext\` accessor in
    \`src/lib/resolution/server-context.ts\` (through \`cached-sources.ts\`, so it is budgeted and warmed by the refresh
-   plan). Static-pipeline source (Zillow metro rent, Alaska DCRA community survey, Puerto Rico DACO): ship compact JSON
-   from \`scripts/build-local-data.py\` (+ validator), read it in a small lookup module (like \`src/lib/rent.ts\`) and expose
-   it as a context accessor. \`ladders.ts\` never imports data files, so it stays client-safe.
+   plan in \`src/lib/api/refresh.ts\`). Static-pipeline source (Zillow county/metro rent, Alaska DCRA community survey,
+   Puerto Rico DACO): ship compact JSON from \`scripts/build-local-data.py\` (+ checks in \`validate-local-data.py\`), read
+   it in a small lookup module (\`src/lib/rent.ts\`, \`src/lib/static-gas.ts\`) and expose it as a context accessor.
+   \`ladders.ts\` never imports data files, so it stays client-safe (shared facts live in e.g. \`static-gas-meta.ts\`).
 2. **Rung.** Insert one \`defineRung({...})\` object at the right position of the metric's \`rungs\` array in
    \`src/lib/resolution/ladders.ts\` (order = most local first): \`id\` (\`{metric}.{slug}\`), plain-English \`label\`,
    \`source\` / \`sourceName\` / \`homepage\` / \`license\`, \`level\`, \`frequency\`, \`pipeline\`, \`covers\`, \`applies(loc)\`
    (true or the reason it doesn't apply), \`target(loc)\`, \`geography(target)\`, \`citationUrl(target)\`, \`resolve(target, ctx)\`
-   (used / stale / not-applicable / unavailable / invalid, with \`asOf\` and \`seriesId\`) and \`onUnavailable\`.
-   Example: Zillow metro rent goes between \`rent.zillow-county\` and \`rent.bls-cpi-shelter\`; AK DCRA community gas goes
-   before \`gas.bls-hiak-standin\` with \`applies\` = AK outside the Anchorage CBSA; PR DACO goes before \`gas.eia-national\`
-   with \`applies\` = PR.
+   (used / stale / not-applicable / unavailable / invalid, with \`asOf\`, \`seriesId\` and — when only the data knows it —
+   a \`geography\` override) and \`onUnavailable\`. Examples: \`rent.zillow-metro\` (static, between the county rung and
+   CPI shelter), \`gas.dcra-community\` (static, keyed by zip, before the HI/AK stand-in), \`gas.daco-pr\` (static, before
+   the U.S. average), \`heatingOil.nyserda-region\` (live, before the EIA state rung). A static gas rung returns its own
+   \`lookup\` with the value (no cache key); \`selectGasLookup()\` (the refresh plan and map) considers live rungs only.
 3. **Snapshot.** If the rung returns a new value shape, map it in \`fetchSnapshot\` (\`src/lib/api/snapshot.ts\`) — e.g. a
-   metro rent row becomes \`rent\` with the metro as its geography. Labels and citations come from the winning rung.
+   metro rent row becomes \`rent\` with \`level: 'metro'\`. Labels and citations come from the winning rung.
 4. **Regenerate + test.** \`npm run docs:ladders\`, add the zip to \`tests/unit/resolution-trace.test.ts\` (trace snapshot)
    and \`tests/unit/golden-zips.test.ts\` if the lookup changes, then \`npm test\`. The About page updates itself.
 
 ## How to add a metric (e.g. home heating fuel)
 
-Add a ladder (e.g. \`heatingFuel\`: NYSERDA regional heating oil for NY → EIA SHOPP state heating oil / propane) to \`LADDERS\`
-and \`LADDER_ORDER\`, its context accessors, a \`TraceMetric\` entry in \`types.ts\` and the snapshot wiring, then a graph that
-passes \`snapshot.trace.heatingFuel\` to \`EraChart\`'s \`trace\` prop. Seasonal sources resolve as \`stale\` off-season with a reason.
+Add a ladder to \`LADDERS\` and \`LADDER_ORDER\` (home heating: \`heatingOil\` = NYSERDA New York region → EIA SHOPP state;
+\`propane\` = EIA SHOPP state), its context accessors, a \`TraceMetric\` entry in \`types.ts\`, the snapshot wiring
+(\`snapshot.heating\`), the refresh plan, then a graph that passes \`snapshot.trace.{metric}\` to \`EraChart\`'s \`trace\`
+prop (\`HeatingChart.tsx\`, tabs only where a source has data). Seasonal sources resolve as \`stale\` off-season with a
+plain reason (EIA SHOPP: "Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct").
 `

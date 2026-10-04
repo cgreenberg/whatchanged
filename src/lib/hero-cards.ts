@@ -1,7 +1,7 @@
 // Pure view-model builder for the four hero cards. Everything displayed comes from the
 // API snapshot (no frontend dollar fallbacks, no national stand-ins shown as local).
 
-import type { EconomicSnapshot, CensusData, CpiData, GasPriceData, ElectricityData } from '@/types'
+import type { EconomicSnapshot, CensusData, CpiData, GasPriceData, ElectricityData, RentData } from '@/types'
 import type { Provenance } from '@/lib/provenance'
 import { RENT_STALE_DAYS, monthOlderThan } from '@/lib/staleness'
 import type { TraceMetric } from '@/lib/resolution/types'
@@ -9,6 +9,9 @@ import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
+import {
+  DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL,
+} from '@/lib/static-gas-meta'
 import {
   BASELINE_MONTH,
   BASELINE_MONTH_LABEL,
@@ -124,6 +127,17 @@ export function isGasStandIn(g: GasPriceData | null | undefined): boolean {
   return !!g && g.standIn === true && g.source === 'bls' && !g.fallback
 }
 
+/** Alaska zip without its own surveyed community: the nearest surveyed one in the same borough stands in. */
+export const DCRA_NEAREST_NOTE = (community: string, km: number | undefined, place: string) =>
+  `No survey for this town; ${community}${km !== undefined ? ` (${km} km away)` : ''} is the nearest surveyed community in ${place}.`
+export const DCRA_REGION_NOTE = (region: string, place: string) =>
+  `No usable surveyed community near this zip in ${place}; this is DCRA's ${region} region average.`
+
+/** true for the bundled per-place gas sources (Alaska DCRA survey, Puerto Rico DACO). */
+export function isStaticGas(g: Pick<GasPriceData, 'source'> | null | undefined): boolean {
+  return !!g && (g.source === 'dcra' || g.source === 'daco')
+}
+
 /** Territories (PR, VI, GU, …) have no EIA retail gasoline series; their native gas series is the U.S. average. */
 export const TERRITORY_GAS_CAVEAT = (place: string) => `No EIA gas price series for ${place}; showing the U.S. average.`
 const TERRITORY_NAMES: Record<string, string> = {
@@ -137,6 +151,11 @@ export function gasCaveatFor(s: Pick<EconomicSnapshot, 'gas' | 'location'>): str
   if (!g || !st) return undefined
   if (g.fallback === 'eia') return GAS_EIA_FALLBACK_NOTE
   if (isGasStandIn(g)) return HI_AK_STANDIN_GAS_NOTE(g.areaName ?? g.region, standInPlace(s.location))
+  const st0 = g.staticSource
+  if (st0?.kind === 'dcra' && st0.match === 'nearest') {
+    return DCRA_NEAREST_NOTE(st0.place, st0.km, standInPlace(s.location))
+  }
+  if (st0?.kind === 'dcra' && st0.match === 'region') return DCRA_REGION_NOTE(st0.place, standInPlace(s.location))
   if (TERRITORY_NAMES[st] && g.duoarea === 'NUS' && g.fallback !== 'national') return TERRITORY_GAS_CAVEAT(TERRITORY_NAMES[st])
   return undefined
 }
@@ -196,6 +215,12 @@ export function gasShortGeo(g: GasPriceData | null | undefined, stateAbbr?: stri
   // Outage fallback (local series failed) vs. an area whose native series is national (e.g. PR).
   // A state with its own EIA series showing NUS is an outage even without `fallback` (older cache).
   if (g.fallback === 'national') return 'U.S. avg; local n/a'
+  if (g.source === 'daco') return 'Puerto Rico avg'
+  if (g.source === 'dcra') {
+    const st = g.staticSource
+    if (st?.match === 'region') return `${st.place} AK region avg`
+    return `${st?.place ?? g.region} survey${st?.match === 'nearest' ? ' (nearest)' : ''}`
+  }
   if (g.isNationalFallback || g.duoarea === 'NUS') return isNativeNationalGas(g, stateAbbr) ? 'U.S. avg' : 'U.S. avg; local n/a'
   if (g.source === 'bls' && g.blsArea) {
     const name = (g.areaName ?? g.region ?? g.blsArea).trim()
@@ -264,8 +289,15 @@ export function isMonthlyGas(g: Pick<GasPriceData, 'frequency' | 'source'> | nul
   return !!g && (g.frequency === 'monthly' || g.source === 'bls')
 }
 
+/** Month-dated gas series (YYYY-MM): BLS and DACO monthly, and DCRA's January / July surveys. */
+export function isMonthDatedGas(g: Pick<GasPriceData, 'frequency' | 'source'> | null | undefined): boolean {
+  return isMonthlyGas(g) || g?.frequency === 'semiannual'
+}
+
 /** Source text, link and (for BLS) window for the gas card and gas chart. */
 export function gasSourceInfo(g: GasPriceData | null | undefined): { source: string; sourceUrl: string } {
+  if (g?.source === 'dcra') return { source: `${DCRA_SOURCE} (${DCRA_LICENSE})`, sourceUrl: DCRA_DATA_URL }
+  if (g?.source === 'daco') return { source: `${DACO_SOURCE} (DACO, Puerto Rico)`, sourceUrl: DACO_DATA_URL }
   if (g && isMonthlyGas(g)) {
     return {
       source: GAS_SOURCE_BLS,
@@ -368,6 +400,7 @@ export function cpiCardArea(c: CpiData | null | undefined): string | undefined {
 
 export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
   const g = s.gas.data
+  if (g && isStaticGas(g)) return buildStaticGasCard(s, g)
   const geography = g ? `${g.geoLevel ?? g.region}${g.isNationalFallback ? ' (local data unavailable)' : ''}` : 'area unavailable'
   const series = Array.isArray(g?.series) ? g!.series : []
   const latestDate = g?.latestDate ?? series[series.length - 1]?.date
@@ -423,6 +456,62 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
   }
 }
 
+/** Sanity ranges for the static gas sources ($/gal; remote Alaska villages pay well over $10). */
+const STATIC_GAS_RANGE: Record<'dcra' | 'daco', readonly [number, number]> = { dcra: [1, 20], daco: [1, 10] }
+
+/**
+ * Alaska community survey (DCRA, twice yearly) or Puerto Rico DACO (monthly): the local series alone — neither
+ * source publishes a U.S. figure, so there is no national comparison (never another source's).
+ */
+function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel {
+  const dcra = g.source === 'dcra'
+  const latest = g.latestDate?.slice(0, 7)
+  const baseline = g.baselineDate?.slice(0, 7) ?? BASELINE_MONTH
+  const when = (ym: string | undefined) => (ym ? `${fmtMonthYear(ym)}${dcra ? ' survey' : ''}` : DATE_UNAVAILABLE)
+  const info = gasSourceInfo(g)
+  const provenance: Provenance = {
+    ...info,
+    geography: g.geoLevel ?? g.region,
+    window: dcra ? `twice yearly (Jan & Jul) · since ${when(baseline)}` : `monthly · since ${fmtMonthYear(baseline)}`,
+    asOf: when(latest),
+    adjustment: NOT_SA,
+  }
+  const base = {
+    id: 'gas' as const,
+    label: 'Gas (regular)',
+    accentColor: ACCENTS.gas,
+    provenance,
+    stale: !!s.gas.stale,
+    sourceLine: sourceLineOf(gasShortGeo(g, s.location?.stateAbbr), dcra ? 'DCRA' : 'DACO', latest ? fmtMonthYear(latest) : undefined),
+  }
+  const range = STATIC_GAS_RANGE[dcra ? 'dcra' : 'daco']
+  if (!inRange(g.current, range) || !inRange(g.baseline, range) || !Number.isFinite(g.change)) {
+    return { ...base, status: 'unavailable', info: [] }
+  }
+  const caveat = gasCaveatFor(s)
+  const dollarNote = `${fmtSignedDollars(g.change)}/gal since ${when(baseline)}`
+  const detail = dcra
+    ? `Twice-yearly community survey: ${when(baseline)} vs ${when(latest)}`
+    : `Island-wide monthly average: ${fmtMonthYear(baseline)} vs ${fmtMonthYear(latest)}`
+  const noUs = dcra
+    ? 'No U.S. comparison: the survey covers Alaska communities only.'
+    : 'No U.S. comparison: DACO publishes Puerto Rico prices only.'
+  return {
+    ...base,
+    status: 'ok',
+    geoTag: gasShortGeo(g, s.location?.stateAbbr),
+    caveat,
+    value: `$${g.current.toFixed(2)}/gal`,
+    change: `${fmtSignedDollars(g.change)} since ${dcra ? `${fmtMonthYear(baseline)} survey` : BASELINE_MONTH_LABEL}`,
+    direction: directionOf(g.change, 2),
+    secondary: dcra ? 'twice-yearly survey' : 'island-wide, monthly',
+    detail,
+    dollarNote,
+    info: compact([`${dollarNote}.`, detail, caveat, noUs, dcra ? DCRA_ATTRIBUTION : undefined]),
+    asOfPeriod: latest,
+  }
+}
+
 // ---------------------------------------------------------------- Rent / Shelter
 
 /** "rise" in spring/summer, when asking rents usually climb; a neutral word otherwise. */
@@ -460,13 +549,15 @@ export function buildRentCard(
     : flagged
       ? 'Unusual value: far outside the range most U.S. counties show, so treat it with caution.'
       : undefined
+  const metro = r.level === 'metro'
+  const area = metro ? metroShortName(r.geoName) : countyOnly(r.geoName)
   const base = {
     id: 'rent' as const,
     label: 'Rent (new leases)',
     accentColor: ACCENTS.rent,
     provenance,
     stale: monthOlderThan(r.asOf, RENT_STALE_DAYS, now),
-    sourceLine: sourceLineOf(countyOnly(r.geoName), 'Zillow', fmtMonthYear(r.asOf)),
+    sourceLine: sourceLineOf(area, 'Zillow', fmtMonthYear(r.asOf)),
   }
   if (!inRange(r.pct, SANITY.pctChange) || !(r.curRent > 0) || !Number.isFinite(r.monthlyChange)) {
     return { ...base, status: 'unavailable', info: [SHELTER_VS_RENT_NOTE] }
@@ -475,6 +566,8 @@ export function buildRentCard(
   // the raw level is shown only as a level, with its month.
   const dollarNote = `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
   const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
+  const metroNote = metro ? rentMetroNote(r) : undefined
+  const poolNote = r.saPool ? rentPoolNote(r.saPool) : undefined
   return {
     ...base,
     status: 'ok',
@@ -486,11 +579,31 @@ export function buildRentCard(
     dollarNote,
     detail,
     caveat,
-    info: compact([`${dollarNote}.`, detail, caveat, SHELTER_VS_RENT_NOTE]),
+    info: compact([`${dollarNote}.`, detail, metroNote, poolNote, caveat, SHELTER_VS_RENT_NOTE]),
     asOfPeriod: r.asOf,
-    geoTag: shortCountyName(r.geoName),
+    // Long metro titles ("Nashville-Davidson--Murfreesboro--Franklin") shorten to the first city for images/meta
+    geoTag: metro ? (area.length > 32 ? `${area.split(/-+/)[0]} metro` : area) : shortCountyName(r.geoName),
     ...(caveat ? { outlier: true } : {}),
   }
+}
+
+/** "Portland-South Portland, ME metro" → "Portland-South Portland metro" (state codes dropped). */
+export function metroShortName(geoName: string): string {
+  return geoName.replace(/, [A-Z]{2}(-[A-Z]{2})* metro$/, ' metro').replace(/, [A-Z]{2}(-[A-Z]{2})*$/, '')
+}
+
+/** Why a metro figure is on a county's card. */
+export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'countyWhy'>): string {
+  const county = r.countyName ? countyOnly(r.countyName) : 'this county'
+  const why = r.countyWhy === 'too-new'
+    ? `Zillow's series for ${county} is too new (it needs data from Jan 2024) to measure since Jan 2025`
+    : `Zillow publishes no rent series for ${county}`
+  return `${why}; this is the ${r.geoName} series (the county's metro area).`
+}
+
+/** Pooled seasonal adjustment, said plainly. */
+export function rentPoolNote(pool: string): string {
+  return `Seasonally adjusted with the typical pattern of ${pool}: this series is too new to estimate its own.`
 }
 
 /** Wording for the shelter card's dollar figure (owner-approved). */
@@ -717,6 +830,21 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
 
 // ---------------------------------------------------------------- All
 
+/**
+ * Source credits for the share card / OG footer: "BLS · EIA · Zillow", plus the Alaska survey (CC BY 4.0 requires
+ * credit) or DACO where they supply the gas number; "Census" when the shelter card's $ uses local median rent.
+ */
+export function imageSourcesLine(s: EconomicSnapshot, cards: HeroCardModel[]): string {
+  const ok = (id: HeroCardId) => cards.some(c => c.id === id && c.status === 'ok')
+  const g = ok('gas') ? s.gas.data : null
+  const parts = ['BLS']
+  if ((g && (!g.source || g.source === 'eia')) || ok('electricity')) parts.push('EIA')
+  parts.push(ok('rent') ? 'Zillow' : 'Census')
+  if (g?.source === 'dcra') parts.push('AK DCRA (CC BY 4.0)')
+  if (g?.source === 'daco') parts.push('DACO')
+  return parts.join(' · ')
+}
+
 /** Gas, Rent (or CPI shelter fallback), Groceries, Electricity — always four cards. */
 export function buildHeroCards(s: EconomicSnapshot, county?: HeroCountyContext | null): HeroCardModel[] {
   return [
@@ -775,7 +903,7 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
     if (c.id === 'gas' && snapshot.gas.data) {
       // Monthly BLS gas runs weeks behind weekly EIA: name its month ("Philadelphia metro, thru Aug '26")
       const g = snapshot.gas.data
-      const thru = isMonthlyGas(g) && c.asOfPeriod ? `thru ${fmtMonthShort(c.asOfPeriod)}` : ''
+      const thru = isMonthDatedGas(g) && c.asOfPeriod ? `thru ${fmtMonthShort(c.asOfPeriod)}` : ''
       const gtag = c.geoTag ? ` (${c.geoTag}${thru ? `, ${thru}` : ''})` : thru ? ` (${thru})` : ''
       parts.push(`Gas ${fmtSignedDollars(g.change)}/gal${gtag}`)
     }

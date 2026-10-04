@@ -8,10 +8,12 @@ exports[`trace snapshots (golden zips) 00601 — Adjuntas PR: national gas + CPI
   "gas": [
     "not-applicable | gas.eia-city | Adjuntas Municipio, PR [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Adjuntas Municipio isn't in one.",
     "not-applicable | gas.bls-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | gas.dcra-community | Puerto Rico [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
     "not-applicable | gas.bls-hiak-standin | Puerto Rico [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
     "not-applicable | gas.eia-state | Puerto Rico [state] |  |  | EIA publishes weekly state averages for 9 states; Puerto Rico isn't one.",
     "not-applicable | gas.eia-padd | Puerto Rico [state] |  |  | Puerto Rico isn't in an EIA PADD region.",
-    "used | gas.eia-national | United States [national] | 2026-09-28 | EMM_EPMR_PTE_NUS_DPG | EIA publishes no gas price for Puerto Rico; this is the U.S. average.",
+    "used | gas.daco-pr | Puerto Rico (island-wide) [island] | 2026-08 | DACO: regular gasoline, island-wide average",
+    "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
     "not-applicable | groceries.bls-cpi-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; Adjuntas Municipio isn't in one.",
@@ -19,12 +21,62 @@ exports[`trace snapshots (golden zips) 00601 — Adjuntas PR: national gas + CPI
     "not-applicable | groceries.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
     "used | groceries.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAF11 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Puerto Rico [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential heating oil price for Puerto Rico.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential propane price for Puerto Rico.",
+  ],
   "rent": [
-    "not-applicable | rent.zillow-county | Adjuntas Municipio, PR [county] |  |  | Zillow has no rent series for Adjuntas Municipio with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
+    "not-applicable | rent.zillow-county | Adjuntas Municipio, PR [county] |  |  | Zillow has no usable county rent series for Adjuntas Municipio back to Jan 2025.",
+    "not-applicable | rent.zillow-metro | Adjuntas Municipio, PR’s metro area [metro] |  |  | Adjuntas Municipio isn't in a metro with a Zillow rent series back to Jan 2025.",
     "used | rent.bls-cpi-shelter | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; Adjuntas Municipio isn't in one.",
+    "not-applicable | shelter.bls-cpi-division | Puerto Rico [state] |  |  | BLS publishes no Census-division CPI for Puerto Rico.",
+    "not-applicable | shelter.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
+    "used | shelter.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 00901 — San Juan PR: DACO island-wide monthly gas 1`] = `
+{
+  "electricity": [
+    "not-applicable | electricity.eia-state | Puerto Rico [state] |  |  | EIA publishes no residential electricity price for Puerto Rico.",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | San Juan Municipio, PR [county] |  |  | EIA publishes weekly city prices for 10 metro areas; San Juan Municipio isn't in one.",
+    "not-applicable | gas.bls-metro | San Juan Municipio, PR [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; San Juan Municipio isn't in one.",
+    "not-applicable | gas.dcra-community | Puerto Rico [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
+    "not-applicable | gas.bls-hiak-standin | Puerto Rico [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Puerto Rico [state] |  |  | EIA publishes weekly state averages for 9 states; Puerto Rico isn't one.",
+    "not-applicable | gas.eia-padd | Puerto Rico [state] |  |  | Puerto Rico isn't in an EIA PADD region.",
+    "used | gas.daco-pr | Puerto Rico (island-wide) [island] | 2026-08 | DACO: regular gasoline, island-wide average",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | San Juan Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; San Juan Municipio isn't in one.",
+    "not-applicable | groceries.bls-cpi-division | Puerto Rico [state] |  |  | BLS publishes no Census-division CPI for Puerto Rico.",
+    "not-applicable | groceries.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
+    "used | groceries.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAF11 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Puerto Rico [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential heating oil price for Puerto Rico.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential propane price for Puerto Rico.",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | San Juan Municipio, PR [county] |  |  | Zillow has no usable county rent series for San Juan Municipio back to Jan 2025.",
+    "not-applicable | rent.zillow-metro | San Juan Municipio, PR’s metro area [metro] |  |  | San Juan Municipio isn't in a metro with a Zillow rent series back to Jan 2025.",
+    "used | rent.bls-cpi-shelter | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | San Juan Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; San Juan Municipio isn't in one.",
     "not-applicable | shelter.bls-cpi-division | Puerto Rico [state] |  |  | BLS publishes no Census-division CPI for Puerto Rico.",
     "not-applicable | shelter.bls-cpi-region | Puerto Rico [state] |  |  | BLS publishes no regional CPI for Puerto Rico.",
     "used | shelter.bls-cpi-national | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
@@ -40,9 +92,11 @@ exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Z
   "gas": [
     "not-applicable | gas.eia-city | Cumberland County, ME [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Cumberland County isn't in one.",
     "not-applicable | gas.bls-metro | Cumberland County, ME [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Cumberland County isn't in one.",
+    "not-applicable | gas.dcra-community | Maine [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
     "not-applicable | gas.bls-hiak-standin | Maine [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
     "not-applicable | gas.eia-state | Maine [state] |  |  | EIA publishes weekly state averages for 9 states; Maine isn't one.",
     "stale | gas.eia-padd | New England (PADD 1A) [padd] | 2025-02-24 | EMM_EPMR_PTE_R1X_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -51,8 +105,16 @@ exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Z
     "not-needed | groceries.bls-cpi-region | Northeast region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Maine [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
   "rent": [
     "used | rent.zillow-county | Cumberland County, ME [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Cumberland County, ME’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | New England division [division]",
   ],
   "shelter": [
@@ -64,7 +126,7 @@ exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Z
 }
 `;
 
-exports[`trace snapshots (golden zips) 04240 — Lewiston ME: no Zillow rent for Androscoggin County → New England division shelter 1`] = `
+exports[`trace snapshots (golden zips) 04240 — Lewiston ME: Androscoggin County Zillow rent (short series, pooled seasonal pattern) 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | Maine (statewide) [state] | 2026-07 | ELEC.PRICE.ME-RES.M",
@@ -72,9 +134,11 @@ exports[`trace snapshots (golden zips) 04240 — Lewiston ME: no Zillow rent for
   "gas": [
     "not-applicable | gas.eia-city | Androscoggin County, ME [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Androscoggin County isn't in one.",
     "not-applicable | gas.bls-metro | Androscoggin County, ME [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Androscoggin County isn't in one.",
+    "not-applicable | gas.dcra-community | Maine [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
     "not-applicable | gas.bls-hiak-standin | Maine [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
     "not-applicable | gas.eia-state | Maine [state] |  |  | EIA publishes weekly state averages for 9 states; Maine isn't one.",
     "stale | gas.eia-padd | New England (PADD 1A) [padd] | 2025-02-24 | EMM_EPMR_PTE_R1X_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -83,9 +147,17 @@ exports[`trace snapshots (golden zips) 04240 — Lewiston ME: no Zillow rent for
     "not-needed | groceries.bls-cpi-region | Northeast region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Maine [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
   "rent": [
-    "not-applicable | rent.zillow-county | Androscoggin County, ME [county] |  |  | Zillow has no rent series for Androscoggin County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
-    "used | rent.bls-cpi-shelter | New England division [division] | 2026-08 | CUUR0110SAH1",
+    "used | rent.zillow-county | Androscoggin County, ME [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Androscoggin County, ME’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | New England division [division]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Androscoggin County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Androscoggin County isn't in one.",
@@ -96,7 +168,49 @@ exports[`trace snapshots (golden zips) 04240 — Lewiston ME: no Zillow rent for
 }
 `;
 
-exports[`trace snapshots (golden zips) 10509 — Brewster NY: no Zillow rent for Putnam County → NY metro shelter 1`] = `
+exports[`trace snapshots (golden zips) 04530 — Bath ME: Sagadahoc county series too new → Portland-South Portland metro rent 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Maine (statewide) [state] | 2026-07 | ELEC.PRICE.ME-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Sagadahoc County, ME [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Sagadahoc County isn't in one.",
+    "not-applicable | gas.bls-metro | Sagadahoc County, ME [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Sagadahoc County isn't in one.",
+    "not-applicable | gas.dcra-community | Maine [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
+    "not-applicable | gas.bls-hiak-standin | Maine [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Maine [state] |  |  | EIA publishes weekly state averages for 9 states; Maine isn't one.",
+    "stale | gas.eia-padd | New England (PADD 1A) [padd] | 2025-02-24 | EMM_EPMR_PTE_R1X_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Sagadahoc County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Sagadahoc County isn't in one.",
+    "used | groceries.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAF11",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Maine [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Maine (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SME_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Sagadahoc County, ME [county] |  |  | Zillow's series for Sagadahoc County is too new (it needs data from Jan 2024) to measure since Jan 2025.",
+    "used | rent.zillow-metro | Portland-South Portland, ME metro [metro] | 2026-08 |  | No usable Zillow county series for Sagadahoc County; its metro’s series stands in.",
+    "not-needed | rent.bls-cpi-shelter | New England division [division]",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Sagadahoc County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Sagadahoc County isn't in one.",
+    "used | shelter.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAH1",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 10509 — Brewster NY: Putnam County Zillow rent (pooled seasonal pattern), NY metro CPI 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | New York (statewide) [state] | 2026-07 | ELEC.PRICE.NY-RES.M",
@@ -104,9 +218,11 @@ exports[`trace snapshots (golden zips) 10509 — Brewster NY: no Zillow rent for
   "gas": [
     "stale | gas.eia-city | New York City area [city] | 2025-02-24 | EMM_EPMR_PTE_Y35NY_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
     "not-needed | gas.bls-metro | New York-Newark-Jersey City metro [metro]",
+    "not-needed | gas.dcra-community",
     "not-needed | gas.bls-hiak-standin",
     "not-needed | gas.eia-state | New York state [state]",
     "not-needed | gas.eia-padd | Central Atlantic (PADD 1B) [padd]",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -115,9 +231,59 @@ exports[`trace snapshots (golden zips) 10509 — Brewster NY: no Zillow rent for
     "not-needed | groceries.bls-cpi-region | Northeast region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "used | heatingOil.nyserda-region | Lower Hudson region (NY) [region] | 2026-09-21 | NYSERDA lower_hudson_average_gal",
+    "not-needed | heatingOil.eia-shopp-state | New York (statewide) [state]",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | New York (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SNY_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
   "rent": [
-    "not-applicable | rent.zillow-county | Putnam County, NY [county] |  |  | Zillow has no rent series for Putnam County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
-    "used | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
+    "used | rent.zillow-county | Putnam County, NY [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Putnam County, NY’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro]",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
+    "not-needed | shelter.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | shelter.bls-cpi-region | Northeast region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 10950 — Monroe NY (Orange County): NYSERDA Upper Hudson heating oil, EIA NY propane 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | New York (statewide) [state] | 2026-07 | ELEC.PRICE.NY-RES.M",
+  ],
+  "gas": [
+    "stale | gas.eia-city | New York City area [city] | 2025-02-24 | EMM_EPMR_PTE_Y35NY_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.bls-metro | New York-Newark-Jersey City metro [metro]",
+    "not-needed | gas.dcra-community",
+    "not-needed | gas.bls-hiak-standin",
+    "not-needed | gas.eia-state | New York state [state]",
+    "not-needed | gas.eia-padd | Central Atlantic (PADD 1B) [padd]",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAF11",
+    "not-needed | groceries.bls-cpi-division | Middle Atlantic division [division]",
+    "not-needed | groceries.bls-cpi-region | Northeast region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "used | heatingOil.nyserda-region | Upper Hudson region (NY) [region] | 2026-09-21 | NYSERDA upper_hudson_average_gal",
+    "not-needed | heatingOil.eia-shopp-state | New York (statewide) [state]",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | New York (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SNY_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Orange County, NY [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Orange County, NY’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro]",
   ],
   "shelter": [
     "used | shelter.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
@@ -136,9 +302,11 @@ exports[`trace snapshots (golden zips) 19103 — Philadelphia: BLS metro gas 1`]
   "gas": [
     "not-applicable | gas.eia-city | Philadelphia County, PA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Philadelphia County isn't in one.",
     "used | gas.bls-metro | Philadelphia-Camden-Wilmington metro [metro] | 2026-08 | APUS12B74714",
+    "not-needed | gas.dcra-community",
     "not-needed | gas.bls-hiak-standin",
     "not-needed | gas.eia-state",
     "not-needed | gas.eia-padd | Central Atlantic (PADD 1B) [padd]",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -147,8 +315,16 @@ exports[`trace snapshots (golden zips) 19103 — Philadelphia: BLS metro gas 1`]
     "not-needed | groceries.bls-cpi-region | Northeast region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Pennsylvania [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Pennsylvania (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SPA_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Pennsylvania (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SPA_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
   "rent": [
     "used | rent.zillow-county | Philadelphia County, PA [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Philadelphia County, PA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Philadelphia-Camden-Wilmington metro [metro]",
   ],
   "shelter": [
@@ -168,9 +344,11 @@ exports[`trace snapshots (golden zips) 30303 — Atlanta: BLS metro gas, Atlanta
   "gas": [
     "not-applicable | gas.eia-city | Fulton County, GA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Fulton County isn't in one.",
     "used | gas.bls-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | APUS35C74714",
+    "not-needed | gas.dcra-community",
     "not-needed | gas.bls-hiak-standin",
     "not-needed | gas.eia-state",
     "not-needed | gas.eia-padd | Lower Atlantic (PADD 1C) [padd]",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -179,14 +357,64 @@ exports[`trace snapshots (golden zips) 30303 — Atlanta: BLS metro gas, Atlanta
     "not-needed | groceries.bls-cpi-region | South region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Georgia [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Georgia [state] |  |  | EIA's heating-season survey has no residential heating oil price for Georgia.",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Georgia (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SGA_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
   "rent": [
     "used | rent.zillow-county | Fulton County, GA [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Fulton County, GA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Atlanta-Sandy Springs-Roswell metro [metro]",
   ],
   "shelter": [
     "used | shelter.bls-cpi-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | CUURS35CSAH1",
     "not-needed | shelter.bls-cpi-division | South Atlantic division [division]",
     "not-needed | shelter.bls-cpi-region | South region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 55334 — Gaylord MN: no Zillow county or metro rent for Sibley County → Minneapolis metro shelter 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Minnesota (statewide) [state] | 2026-07 | ELEC.PRICE.MN-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Sibley County, MN [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Sibley County isn't in one.",
+    "used | gas.bls-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | APUS24A74714",
+    "not-needed | gas.dcra-community",
+    "not-needed | gas.bls-hiak-standin",
+    "not-needed | gas.eia-state | Minnesota state [state]",
+    "not-needed | gas.eia-padd | Midwest (PADD 2) [padd]",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAF11",
+    "not-needed | groceries.bls-cpi-division | West North Central division [division]",
+    "not-needed | groceries.bls-cpi-region | Midwest region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Minnesota [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Minnesota (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SMN_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Minnesota (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SMN_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Sibley County, MN [county] |  |  | Zillow has no usable county rent series for Sibley County back to Jan 2025.",
+    "not-applicable | rent.zillow-metro | Sibley County, MN’s metro area [metro] |  |  | Sibley County isn't in a metro with a Zillow rent series back to Jan 2025.",
+    "used | rent.bls-cpi-shelter | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAH1",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAH1",
+    "not-needed | shelter.bls-cpi-division | West North Central division [division]",
+    "not-needed | shelter.bls-cpi-region | Midwest region [region]",
     "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
   ],
 }
@@ -200,9 +428,11 @@ exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no
   "gas": [
     "not-applicable | gas.eia-city | Hawaii County, HI [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Hawaii County isn't in one.",
     "not-applicable | gas.bls-metro | Hawaii County, HI [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Hawaii County isn't in one.",
+    "not-applicable | gas.dcra-community | Hawaii [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
     "used | gas.bls-hiak-standin | Honolulu metro (stand-in) [metro] | 2026-08 | APUS49F74714 | No BLS or EIA gas series covers Hawaii County; the Honolulu price stands in. Local prices are typically higher and may have changed differently.",
     "not-needed | gas.eia-state",
     "not-needed | gas.eia-padd",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -211,9 +441,17 @@ exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no
     "not-needed | groceries.bls-cpi-region | West region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Hawaii [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Hawaii [state] |  |  | EIA's heating-season survey has no residential heating oil price for Hawaii.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Hawaii [state] |  |  | EIA's heating-season survey has no residential propane price for Hawaii.",
+  ],
   "rent": [
-    "not-applicable | rent.zillow-county | Hawaii County, HI [county] |  |  | Zillow has no rent series for Hawaii County with enough history (data back to Jan 2025, and 3+ years to remove seasonal swings).",
-    "used | rent.bls-cpi-shelter | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+    "used | rent.zillow-county | Hawaii County, HI [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Hawaii County, HI’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Hawaii County, HI [county] |  |  | BLS publishes its own CPI for 23 metro areas; Hawaii County isn't in one.",
@@ -232,9 +470,11 @@ exports[`trace snapshots (golden zips) 98683 — Vancouver WA: EIA Washington st
   "gas": [
     "not-applicable | gas.eia-city | Clark County, WA [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Clark County isn't in one.",
     "not-applicable | gas.bls-metro | Clark County, WA [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Clark County isn't in one.",
+    "not-applicable | gas.dcra-community | Washington [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
     "not-applicable | gas.bls-hiak-standin | Washington [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
     "used | gas.eia-state | Washington state [state] | 2026-09-28 | EMM_EPMR_PTE_SWA_DPG",
     "not-needed | gas.eia-padd | West Coast excl. California (PADD 5) [padd]",
+    "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
   ],
   "groceries": [
@@ -243,12 +483,104 @@ exports[`trace snapshots (golden zips) 98683 — Vancouver WA: EIA Washington st
     "not-needed | groceries.bls-cpi-region | West region [region]",
     "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
   ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Washington [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Washington [state] |  |  | EIA's heating-season survey has no residential heating oil price for Washington.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Washington [state] |  |  | EIA's heating-season survey has no residential propane price for Washington.",
+  ],
   "rent": [
     "used | rent.zillow-county | Clark County, WA [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Clark County, WA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Clark County, WA [county] |  |  | BLS publishes its own CPI for 23 metro areas; Clark County isn't in one.",
+    "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+    "not-needed | shelter.bls-cpi-region | West region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 99559 — Bethel AK: DCRA community survey gas (own community) 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Alaska (statewide) [state] | 2026-07 | ELEC.PRICE.AK-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Bethel Census Area, AK [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Bethel Census Area isn't in one.",
+    "not-applicable | gas.bls-metro | Bethel Census Area, AK [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Bethel Census Area isn't in one.",
+    "used | gas.dcra-community | Bethel [community] | 2026-07 | DCRA survey: Bethel",
+    "not-needed | gas.bls-hiak-standin | Anchorage metro (stand-in) [metro]",
+    "not-needed | gas.eia-state",
+    "not-needed | gas.eia-padd",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Bethel Census Area, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Bethel Census Area isn't in one.",
+    "used | groceries.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAF11",
+    "not-needed | groceries.bls-cpi-region | West region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Alaska [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Alaska [state] |  |  | EIA's heating-season survey has no residential heating oil price for Alaska.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Alaska [state] |  |  | EIA's heating-season survey has no residential propane price for Alaska.",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Bethel Census Area, AK [county] |  |  | Zillow has no usable county rent series for Bethel Census Area back to Jan 2025.",
+    "not-applicable | rent.zillow-metro | Bethel Census Area, AK’s metro area [metro] |  |  | Bethel Census Area isn't in a metro with a Zillow rent series back to Jan 2025.",
+    "used | rent.bls-cpi-shelter | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Bethel Census Area, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Bethel Census Area isn't in one.",
+    "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+    "not-needed | shelter.bls-cpi-region | West region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 99701 — Fairbanks AK: DCRA community survey gas (own community) 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Alaska (statewide) [state] | 2026-07 | ELEC.PRICE.AK-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Fairbanks North Star Borough, AK [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Fairbanks North Star Borough isn't in one.",
+    "not-applicable | gas.bls-metro | Fairbanks North Star Borough, AK [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Fairbanks North Star Borough isn't in one.",
+    "used | gas.dcra-community | Fairbanks [community] | 2026-07 | DCRA survey: Fairbanks",
+    "not-needed | gas.bls-hiak-standin | Anchorage metro (stand-in) [metro]",
+    "not-needed | gas.eia-state",
+    "not-needed | gas.eia-padd",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Fairbanks North Star Borough, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Fairbanks North Star Borough isn't in one.",
+    "used | groceries.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAF11",
+    "not-needed | groceries.bls-cpi-region | West region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Alaska [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Alaska [state] |  |  | EIA's heating-season survey has no residential heating oil price for Alaska.",
+  ],
+  "propane": [
+    "not-applicable | propane.eia-shopp-state | Alaska [state] |  |  | EIA's heating-season survey has no residential propane price for Alaska.",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Fairbanks North Star Borough, AK [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Fairbanks North Star Borough, AK’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Fairbanks North Star Borough, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Fairbanks North Star Borough isn't in one.",
     "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
     "not-needed | shelter.bls-cpi-region | West region [region]",
     "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",

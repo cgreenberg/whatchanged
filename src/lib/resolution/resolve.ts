@@ -30,6 +30,8 @@ export interface RungOutcome<V = unknown> {
   citationUrl?: string
   /** End the walk here even though nothing was used. */
   final?: boolean
+  /** 'stale' only because the source is between survey seasons (shown as such, not as out of date). */
+  seasonal?: boolean
 }
 
 export type OnUnavailable = 'next' | 'next-source' | 'last'
@@ -209,6 +211,7 @@ class Walk<L, V, C> {
       ...(outcome.citationUrl ? { citationUrl: outcome.citationUrl } : {}),
       asOf: outcome.asOf,
       seriesId: outcome.seriesId ?? rung.seriesId?.(target),
+      ...(outcome.seasonal ? { seasonal: true } : {}),
     }))
     if (used) {
       this.winner = attempt

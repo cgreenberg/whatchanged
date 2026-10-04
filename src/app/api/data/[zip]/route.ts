@@ -72,8 +72,9 @@ function buildAudit(snapshot: EconomicSnapshot) {
         source: g.source ?? 'eia',
         frequency: g.frequency ?? 'weekly',
         seriesId: g.seriesId ?? (g.duoarea ? eiaGasSeriesId(g.duoarea) : null),
-        // EIA product code (EPMR = regular); BLS tiers use item 74714 (unleaded regular) instead
-        product: g.source === 'bls' ? null : EIA_GAS_PRODUCT,
+        // EIA product code (EPMR = regular); BLS tiers use item 74714 (unleaded regular); static sources none
+        product: !g.source || g.source === 'eia' ? EIA_GAS_PRODUCT : null,
+        ...(g.staticSource ? { staticSource: g.staticSource } : {}),
         duoarea: g.duoarea ?? null,
         baseline: { period: g.baselineDate ?? null, value: g.baseline },
         latest: { period: g.latestDate ?? null, value: g.current },
@@ -91,6 +92,15 @@ function buildAudit(snapshot: EconomicSnapshot) {
         usage: { kwhPerMonth: e.usageKwh, from: e.usageFrom ?? null, to: e.usageTo ?? null },
         stale: snapshot.electricity.stale ?? false,
       } : null,
+      heating: (['oil', 'propane'] as const).map((product) => {
+        const h = snapshot.heating?.[product]?.data
+        return h ? {
+          product, source: h.source, seriesId: h.seriesId, geography: h.geography,
+          baseline: { period: h.baselineDate, value: h.baseline },
+          latest: { period: h.latestDate, value: h.current },
+          change: h.change, offSeason: h.offSeasonNote ?? null,
+        } : null
+      }).filter(Boolean),
     },
     computations: {
       gasChange: g ? {

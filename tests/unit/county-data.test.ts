@@ -193,12 +193,28 @@ describe('built local data sanity', () => {
   it('county shards match the full county file, plus the monthly Zillow series', () => {
     for (const f of ['48453', '09001', '51590', '02063']) {
       const shard = readJson<CountyMap>(path.join(dir, 'county', `${f.slice(0, 2)}.json`))
-      const { hvS, rentS, ...rest } = shard[f]
+      const { hvS, rentS, rentM, rentMS, ...rest } = shard[f]
       expect(rest).toEqual(counties[f])
       if (counties[f].hv != null) expect(hvS?.v.length).toBeGreaterThan(24)
       if (counties[f].rent != null) expect(rentS?.v.length).toBeGreaterThan(24)
+      // Metro rent ships only for counties without a county series, with its own monthly series
+      if (rentM) expect(counties[f].rent == null && (rentMS?.v.length ?? 0) > 24).toBe(true)
     }
-    expect(Object.values(counties).some(c => c.hvS || c.rentS)).toBe(false)
+    expect(Object.values(counties).some(c => c.hvS || c.rentS || c.rentM || c.rentMS)).toBe(false)
+  })
+
+  it('metro rent (Rent card + Rent tab) for counties without a county series: same % in the shard and metro-rent.json', () => {
+    const mr = readJson<{ metros: Record<string, { pct: number; name: string }>; counties: Record<string, string> }>(
+      path.join(process.cwd(), 'src/lib/data/metro-rent.json'))
+    const cr = readJson<{ counties: Record<string, unknown> }>(path.join(process.cwd(), 'src/lib/data/county-rent.json'))
+    // Sagadahoc ME has no Jan 2025 county series → Portland-South Portland metro (OMB 2020 CBSA 38860)
+    expect(mr.counties['23023']).toBe('38860')
+    expect(mr.metros['38860'].name).toBe('Portland-South Portland, ME')
+    // Androscoggin ME: its short county series (since late 2022) is now published with a pooled seasonal pattern
+    expect(cr.counties['23001']).toMatchObject({ saPool: expect.any(String) })
+    const me = readJson<CountyMap>(path.join(dir, 'county', '23.json'))
+    expect(me['23023'].rentM).toMatchObject({ cbsa: '38860', rent: mr.metros['38860'].pct })
+    for (const f of Object.keys(mr.counties)) expect(cr.counties[f]).toBeUndefined()
   })
   it('Rent graph series reproduce the Rent card % for every county (and Home prices the map %)', () => {
     const cr = readJson<{ counties: Record<string, { pct: number }> }>(path.join(process.cwd(), 'src/lib/data/county-rent.json'))

@@ -13,6 +13,10 @@ import { fetchLookupSeries, describeDuoarea, type GasLookupResult, type GasSerie
 import { BLS_NATIONAL_GAS_LOOKUP } from './bls-gas'
 import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
 import {
+  fetchHeatingSeries, heatingCacheKey, isValidHeating, type HeatingProduct, type HeatingSeriesData,
+} from './eia-heating'
+import { fetchNyserdaHeatingOil, isValidNyserda, NYSERDA_CACHE_KEY, type NyserdaHeatingOil } from './nyserda'
+import {
   electricityCacheKey,
   fetchElectricitySeries,
   NATIONAL_ELECTRICITY,
@@ -82,6 +86,26 @@ export function getElectricityCached(state: string, opts: FetchOpts = {}): Promi
 /** Shared U.S. average key (eia:electricity:US): national comparison for every state. */
 export function getNationalElectricityCached(opts: FetchOpts = {}): Promise<CachedResult<ElectricitySeriesData>> {
   return getElectricityCached(NATIONAL_ELECTRICITY, opts)
+}
+
+/** EIA SHOPP weekly heating oil / propane (eia:heating:{product}:{ST|US}); EIA TTL, refreshed weekly in season. */
+export const HEATING_TTL = TTL_EIA
+
+export function getHeatingCached(product: HeatingProduct, area: string, opts: FetchOpts = {}): Promise<CachedResult<HeatingSeriesData>> {
+  return getCachedOrFetch(heatingCacheKey(product, area), HEATING_TTL, () => fetchHeatingSeries(product, area), {
+    validate: isValidHeating,
+    forceRefresh: opts.forceRefresh,
+    budget: 'eia',
+  })
+}
+
+/** NYSERDA New York heating oil, every region in one key (nyserda:heating-oil). */
+export function getNyserdaCached(opts: FetchOpts = {}): Promise<CachedResult<NyserdaHeatingOil>> {
+  return getCachedOrFetch(NYSERDA_CACHE_KEY, HEATING_TTL, () => fetchNyserdaHeatingOil(), {
+    validate: isValidNyserda,
+    forceRefresh: opts.forceRefresh,
+    budget: 'nyserda',
+  })
 }
 
 /** Resolve a promise to its value, or null on rejection (logging the error). */

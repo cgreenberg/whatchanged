@@ -1,5 +1,10 @@
 import { server } from '../mocks/server'
-import { blsFixtureFor, electricityRowsFor } from '../mocks/handlers'
+import { blsFixtureFor, electricityRowsFor, heatingRowsFor } from '../mocks/handlers'
+import { hasHeatingSeries, heatingCacheKey, type EiaHeatingRow } from '@/lib/api/eia-heating'
+import { parseNyserdaRows, NYSERDA_CACHE_KEY } from '@/lib/api/nyserda'
+import { LADDERS } from '@/lib/resolution/ladders'
+import { firstApplicable } from '@/lib/resolution/resolve'
+import nyserdaFixture from '../fixtures/nyserda-heating-oil.json'
 import { hasElectricitySeries, electricityCacheKey, type EiaElectricityRow } from '@/lib/api/eia-electricity'
 import {
   clearMemCache,
@@ -42,8 +47,17 @@ function runtimeKeysFor(zip: string): string[] {
   const loc = lookupZip(zip)!
   const area = getMetroCpiAreaForCounty(loc.countyFips, loc.stateAbbr)
   const gas = getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips)
+  // A static gas rung (Puerto Rico DACO, Alaska survey) answers from bundled data: no gas keys at runtime
+  const ladderLoc = { zip, stateAbbr: loc.stateAbbr, countyFips: loc.countyFips, countyName: loc.countyName, cpiAreaCode: area.areaCode }
+  const staticGas = firstApplicable(LADDERS.gas, ladderLoc)?.rung.pipeline === 'static'
   const elec = hasElectricitySeries(loc.stateAbbr) ? [electricityCacheKey(loc.stateAbbr), electricityCacheKey('US')] : []
-  return [...new Set([cpiCacheKey(area.areaCode), gas.cacheKey, nationalGasLookupFor(gas).cacheKey, ...elec])]
+  // Heating: NY heating oil comes from NYSERDA (one key); elsewhere the EIA state series + its U.S. comparison
+  const heat: string[] = []
+  const st = loc.stateAbbr
+  if (st === 'NY') heat.push(NYSERDA_CACHE_KEY)
+  else if (hasHeatingSeries('oil', st)) heat.push(heatingCacheKey('oil', st), heatingCacheKey('oil', 'US'))
+  if (hasHeatingSeries('propane', st)) heat.push(heatingCacheKey('propane', st), heatingCacheKey('propane', 'US'))
+  return [...new Set([cpiCacheKey(area.areaCode), ...(staticGas ? [] : [gas.cacheKey, nationalGasLookupFor(gas).cacheKey]), ...elec, ...heat])]
 }
 
 const fastOpts = { blsPauseMs: 0, backoffMs: 0 }
@@ -69,7 +83,17 @@ describe('planRefresh', () => {
 
   test('plans prices only: no county unemployment (LAUS) targets', () => {
     expect(plan).not.toHaveProperty('lausAreas')
-    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'electricityStates', 'gasLookups'])
+    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'electricityStates', 'gasLookups', 'heating', 'nyserda'])
+  })
+
+  test('home heating: every SHOPP state series a zip resolves to + each product\'s U.S. average; NYSERDA once', () => {
+    const keys = plan.heating!.map((h) => `${h.product}:${h.area}`)
+    expect(keys).toEqual(expect.arrayContaining(['oil:ME', 'oil:NY', 'oil:US', 'propane:GA', 'propane:US']))
+    expect(keys).not.toContain('oil:GA')
+    expect(keys.filter((k) => k.startsWith('oil:'))).toHaveLength(22) // 21 states + US (EIA's DC series is empty)
+    expect(keys.filter((k) => k.startsWith('propane:'))).toHaveLength(39) // 38 states + US
+    expect(plan.nyserda).toBe(true)
+    expect(planRefresh(['30303']).nyserda).toBe(false)
   })
 
   test('electricity: every state + DC that any zip resolves to, plus US; no territories', () => {
@@ -123,6 +147,8 @@ describe('planRefresh', () => {
       ...plan.cpiAreas.map((a) => cpiCacheKey(a.areaCode)),
       ...plan.gasLookups.map((g) => g.cacheKey),
       ...plan.electricityStates!.map((st) => electricityCacheKey(st)),
+      ...plan.heating!.map((h) => heatingCacheKey(h.product, h.area)),
+      ...(plan.nyserda ? [NYSERDA_CACHE_KEY] : []),
     ])
     for (const zip of SAMPLE_ZIPS) for (const key of runtimeKeysFor(zip)) expect(planned).toContain(key)
   })
@@ -142,11 +168,20 @@ describe('runRefresh — full plan with mocked upstreams', () => {
         elecRequests.push(states)
         return { rows: electricityRowsFor(states) as EiaElectricityRow[], requests: 2 }
       },
+      fetchHeating: async (products, areas) => {
+        heatRequests.push(areas)
+        const codes = products.map((p) => (p === 'oil' ? 'EPD2F' : 'EPLLPA'))
+        const duo = areas.map((a) => (a === 'US' ? 'NUS' : `S${a}`))
+        // the real query (since 2016, ~17,400 rows) takes 4 pages
+        return { rows: heatingRowsFor(duo, codes) as EiaHeatingRow[], requests: 4 }
+      },
+      fetchNyserda: async () => parseNyserdaRows(nyserdaFixture),
       write: async () => undefined,
       sleep: async () => undefined,
       log: () => undefined,
     }
     const elecRequests: string[][] = []
+    const heatRequests: string[][] = []
     const report = await runRefresh(plan, deps, fastOpts)
     const s = summarize(report)
     expect(blsBatches.every((b) => b.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
@@ -159,9 +194,12 @@ describe('runRefresh — full plan with mocked upstreams', () => {
     // 32 local CPI areas × 3 items (+ national) + 17 BLS gas series → 3 BLS requests per full refresh
     expect(s.blsCalls).toBe(3)
     expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
-    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length + 2)
+    // EIA: one GET per gas duoarea + electricity (2 pages) + heating fuel (one query, 4 pages); NYSERDA: 1 keyless call
+    expect(heatRequests).toHaveLength(1)
+    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length + 2 + 4)
+    expect(s.otherCalls).toBe(1)
     expect(s.errors).toBe(0)
-    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length + plan.electricityStates!.length)
+    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length + plan.electricityStates!.length + plan.heating!.length + 1)
     expect(report.results.filter((r) => r.key.startsWith('eia:electricity:')).every((r) => r.status === 'written')).toBe(true)
   })
 

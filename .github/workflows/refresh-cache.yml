@@ -1,12 +1,16 @@
-name: Refresh data cache (BLS CPI + gas, EIA gas + electricity → Upstash)
+name: Refresh data cache (BLS CPI + gas, EIA gas + electricity + heating fuel, NYSERDA → Upstash)
 
 # Preloads every series the site can request, so user requests are cache hits
 # and runtime never has to spend the BLS 500/day quota. Runtime TTLs (BLS 21d,
 # EIA 10d) are longer than this schedule, so keys never expire between runs.
 #   - weekly, Tuesday 15:00 UTC: EIA publishes weekly retail gas Monday evening
 #   - 16th and 28th: after the BLS CPI release (~10th–15th)
-# A full run uses 3 BLS requests and ~28 EIA requests (worst case with 2
-# retries per request: 9 BLS / ~84 EIA). A scheduled run that starts < 12h after a successful
+# A full run uses 3 BLS requests, ~33 EIA requests (~27 gas + 2 electricity
+# pages + 4 heating-fuel pages: SHOPP heating oil + propane since 2016) and 1
+# keyless NYSERDA request (worst case with 2 retries per request: 9 BLS / ~99
+# EIA / 3 NYSERDA). Static sources (Zillow rent, Alaska DCRA survey, Puerto
+# Rico DACO) ship with the monthly local-data build instead.
+# A scheduled run that starts < 12h after a successful
 # full refresh (Redis key refresh:last-success) is skipped; manual runs can
 # pass force=true.
 

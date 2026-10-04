@@ -14,6 +14,14 @@
    "adjustment": "seasonally adjusted by whatchanged",
    "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases",
    "url": "https://www.zillow.com/research/data/"
+  },
+  "zoriMetro": {
+   "latest": "2026-08",
+   "short": "Zillow ZORI (metro)",
+   "adjustment": "seasonally adjusted by whatchanged",
+   "label": "Zillow Observed Rent Index (ZORI), metro",
+   "geography": "OMB CBSA delineation, March 2020 (list 1)",
+   "url": "https://www.zillow.com/research/data/"
   }
  }
 }

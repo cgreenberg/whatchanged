@@ -28,7 +28,7 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 | `npm run build:county-geo` | Rebuild `county-geo.json` from the TS lookup functions; run after either build above |
 | `npm run build:census-acs` | Rebuild `census-acs.json` (zip median rent; `CENSUS_API_KEY`) |
 | `npm run data:local` | Fetch → build → validate the static local-data pipeline (`RAW=/path` for the download dir) |
-| `npm run cache:refresh [-- --dry-run] [--only=cpi\|gas\|electricity] [--zips=a,b] [--force]` | Fetch every CPI/gas/electricity series and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
+| `npm run cache:refresh [-- --dry-run] [--only=cpi\|gas\|electricity\|heating] [--zips=a,b] [--force]` | Fetch every CPI/gas/electricity/heating-fuel series (3 BLS + ~33 EIA + 1 NYSERDA call) and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
 | `npm run cache:flush -- '<glob>' [--yes] [--include-lastgood]` | List (dry run) or delete matching Redis keys; `:lastgood` copies kept unless flagged |
 | `npm run cache:warm -- <zip...>` | Hit `/api/data/{zip}` sequentially (`BASE_URL` https, or http://localhost) |
 | `npx tsx scripts/audit-gas-assignments.ts [--apply]` | Distance check of county → EIA gas series |
@@ -47,7 +47,9 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
   ├─ electricity  eia-electricity.ts: the zip's STATE (statewide EIA residential price) + shared eia:electricity:US
   │                        (territories: none → "Data unavailable", no fetch)
   ├─ Census ACS  src/lib/data/census-acs.ts (bundled JSON, no runtime API): zip median rent only
-  ├─ Rent      src/lib/rent.ts ← src/lib/data/county-rent.json (built by path 2)
+  ├─ Rent      src/lib/rent.ts ← src/lib/data/county-rent.json, else metro-rent.json (built by path 2)
+  ├─ static gas  src/lib/static-gas.ts ← ak-gas.json (Alaska DCRA survey) / pr-gas.json (Puerto Rico DACO) (path 2)
+  ├─ heating  eia-heating.ts (EIA SHOPP weekly oil/propane, state + US) / nyserda.ts (NY regions) → Home heating graph
   └─ dollarImpact  src/lib/compute/dollar-translations.ts
 → src/lib/hero-cards.ts builds card view-models (page, share card and OG image all use it)
 ```
@@ -86,12 +88,13 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
 ## Resolution ladders (`src/lib/resolution/`) — which series each number comes from
 
 - **One declarative config:** `ladders.ts` has one ladder per metric (`gas`, `rent` = the housing card, `groceries`,
-  `shelter`, `electricity`, `homePrices`): an ordered list of rungs, most local first. Each rung: `id`, plain-English
+  `shelter`, `electricity`, `homePrices`, `heatingOil`, `propane`): an ordered list of rungs, most local first. Each rung: `id`, plain-English
   `label`, source/citation/license, `level`, `frequency`, `pipeline` (live | static), `covers`, `applies(loc)` (true or
   the reason), `target(loc)`, `resolve(target, ctx)` and `onUnavailable` (`next` | `next-source` | `last`). The walker
   (`resolve.ts`) uses the first rung with data and records every rung's outcome; `/api/data` returns it as `trace`
-  (`TraceStep[]` per metric). `getGasLookup()` / `getMetroCpiAreaForCounty()` are the ladders' first applicable rung
-  (thin wrappers) — never re-implement tier logic elsewhere.
+  (`TraceStep[]` per metric). `getGasLookup()` (first applicable **live** rung) / `getMetroCpiAreaForCounty()` (first
+  applicable rung) are thin wrappers — never re-implement tier logic elsewhere. Static gas rungs (Alaska DCRA, PR DACO)
+  resolve per zip in the snapshot and return their own `lookup`; they never touch the cache, refresh plan or map.
 - Fetching is injected (`LadderContext`): `server-context.ts` (cached BLS/EIA accessors + bundled static data,
   memoized per request) and, for the Housing graph's Home prices tab, the client county shard
   (`homePricesTrace` in `HousingChart.tsx`). `ladders.ts` imports mapping tables only, so it stays client-safe;
@@ -99,13 +102,13 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
 - UI: "Where does this come from?" (`SourceTrace.tsx`) in each card's ⓘ panel and under each graph. About page "How
   we pick your numbers" (`HowWePick.tsx`) and `docs/DATA_RESOLUTION.md` (`npm run docs:ladders`; a test fails when
   stale) are generated from the config.
-- **How to add a rung** (e.g. Zillow metro rent, Alaska DCRA community gas, Puerto Rico DACO gas): (1) data — live:
-  a cached fetcher + context accessor in `server-context.ts`; static: compact JSON from `build-local-data.py` read by a
-  small lookup module and exposed as a context accessor; (2) insert one `defineRung({...})` at the right position of the
-  metric's `rungs` (Zillow metro between `rent.zillow-county` and `rent.bls-cpi-shelter`; DCRA before
-  `gas.bls-hiak-standin`; DACO before `gas.eia-national`); (3) map any new value shape in `fetchSnapshot`;
-  (4) `npm run docs:ladders`, add the zip to `tests/unit/resolution-trace.test.ts`, `npm test`. A new metric (home heating
-  fuel) = a new ladder in `LADDERS` + `LADDER_ORDER`, a `TraceMetric`, snapshot wiring and a graph passing its `trace`.
+- **How to add a rung** (examples now in the config: `rent.zillow-metro`, `gas.dcra-community`, `gas.daco-pr`,
+  `heatingOil.nyserda-region`): (1) data — live: a cached fetcher + context accessor in `server-context.ts` (+ the
+  refresh plan); static: compact JSON from `build-local-data.py` (+ validator checks) read by a small lookup module
+  (`rent.ts`, `static-gas.ts`) and exposed as a context accessor; (2) insert one `defineRung({...})` at the right position
+  of the metric's `rungs`; (3) map any new value shape in `fetchSnapshot`; (4) `npm run docs:ladders`, add the zip to
+  `tests/unit/resolution-trace.test.ts`, `npm test`. A new metric = a new ladder in `LADDERS` + `LADDER_ORDER`, a
+  `TraceMetric`, snapshot wiring and a graph passing its `trace` (home heating: `HeatingChart.tsx`).
 
 ## Geography (single source of truth)
 
@@ -129,13 +132,17 @@ used only for the shelter card's dollar figure; verified monthly with a Jan 2025
      Minneapolis, St. Louis, DC, Atlanta, Tampa, Baltimore, Dallas, Phoenix, Riverside, San Diego, Honolulu `S49F`,
      Anchorage `S49G`). BLS titles S49F/S49G "Urban Hawaii/Alaska", but they are the Urban Honolulu CBSA (15003) and
      the Anchorage CBSA (02020, 02170) only: label them "Honolulu metro" / "Anchorage metro".
-  3. HI / AK zips outside those CBSAs → the same S49F / S49G series as a **labeled stand-in** (`standIn: true`):
+  2b. **Alaska outside the Anchorage CBSA → DCRA Community Fuel Price Survey** (static `ak-gas.json`, CC BY 4.0,
+     twice yearly): the zip's own surveyed community, else the nearest surveyed one in the same borough (≤ 100 km),
+     else the DCRA region average — labeled which; baseline = Jan 2025 survey; no U.S. comparison.
+  3. HI zips outside Honolulu (and any AK zip the survey can't cover) → the S49F / S49G series as a **labeled stand-in** (`standIn: true`):
      "Honolulu-area price (BLS)"; card + gas chart caveat "Honolulu-area price — no BLS or EIA series for {county};
      local prices are typically higher" (`HI_AK_STANDIN_GAS_NOTE`); share card / OG / og:description use
      "Honolulu-area price*" plus a footnote (`GAS_STANDIN_FOOTNOTE`). Anchorage analog for AK.
   4. one of EIA's 9 state series
   5. EIA PADD/sub-PADD (1A `R1X`, 1B `R1Y`, 1C `R1Z`, `R20`/`R30`/`R40`; PADD 5 → `R5XCA` "West Coast excl.
-     California", because CA and WA always use their state series)  6. `NUS`.
+     California", because CA and WA always use their state series)  5b. **Puerto Rico → DACO** monthly island-wide
+     regular (static `pr-gas.json`; no U.S. comparison)  6. `NUS` (other territories).
   BLS Census-division gas series (e.g. East North Central `0230`) are deliberately **not** used: they are urban averages
   weighted to the division's big metros and read as more local than they are; Midwest zips keep EIA `R20`.
   BLS outage: the snapshot falls back to the zip's EIA weekly tier as a whole (`getGasLookup(…, { eiaOnly: true })`:
@@ -224,12 +231,19 @@ line = published monthly price; headline "+x% since Jan 2025 · seasonally adjus
 "Show national" adds only the U.S. adjusted line.
 
 **Housing graph** (`src/components/charts/HousingChart.tsx`) has three tabs:
-- **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %).
+- **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %), or for a
+  county with no county series its metro's `rentMS` (shard `rentM`: name, CBSA, %), labeled (`ZORI_METRO_NOTE`).
 - **Home prices**: Zillow ZHVI county `hvS` ("Zillow's smoothed, seasonally adjusted typical home value").
 - **Shelter (CPI)**: BLS CPI shelter `SAH1` from the snapshot (all tenants and homeowners).
 
-Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Electricity (all configs `size: 'medium'`); one
-column below.
+**Home heating graph** (`HeatingChart.tsx`, 5th, after Electricity; not a hero card): tabs Heating oil | Propane, only
+where a source publishes (`snapshot.heating.{oil,propane}` null = no source → no tab; no graph when both are null).
+Weekly $/gal since the week of Jan 20 2025; NY heating oil = NYSERDA region vs NY statewide; elsewhere EIA SHOPP state vs
+EIA U.S. SHOPP is October–March only: off-season the note says "Heating-season survey (Oct–Mar) · latest Mar 30, 2026
+· next update mid-Oct" (trace ⚠ stale with that reason; no Stale badge). The April–September break is drawn as a gap.
+
+Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Electricity (all configs `size: 'medium'`), then
+Home heating where it has data; one column below.
 Default = Rent when the county shard has `rentS`, else Shelter (CPI). Tabs without data are disabled with "No Zillow
 … data for {county}". Zillow tabs compare against `us-housing.json`. `HOUSING_NOTE` (CPI vs Zillow) is in the graph's
 ⓘ; the visible line is a short note per tab (`ZORI_SHORT_NOTE`, `ZHVI_SHORT_NOTE`, `SHELTER_SHORT_NOTE`).
@@ -385,7 +399,9 @@ the refresh-cache workflow once (Actions → workflow_dispatch) **before or righ
   necessarily the nearest zip.
 - Electricity is a statewide average across utilities: a household's own utility rate (and its change) can differ a
   lot from it; the card's ⓘ says so. EIA publishes nothing for territories.
-- Zillow county rent covers only ~41% of residential zips (~590 counties). The rest get the CPI shelter card.
+- Zillow rent (county 877 counties / 57% of zips, incl. 288 short series adjusted with a pooled state pattern; metro
+  for 461 more counties / +3,481 zips; 65% of crosswalk zips together) still leaves ~35% on the CPI shelter card. 14 Zillow metros created after
+  Zillow's crosswalk (e.g. Lebanon NH-VT, Dayton OH) have no ID link to a CBSA and are not used (no name matching).
 - Using the real HUD USPS crosswalk would need a HUD USER API token.
 - Kalawao HI and AS/GU/MP/VI have no county record (no Zillow tabs, not on the map).
 

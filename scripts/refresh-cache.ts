@@ -8,7 +8,7 @@
  *
  *   npm run cache:refresh                      # full refresh → Upstash (needs KV_* env)
  *   npm run cache:refresh -- --dry-run         # fetch + validate, write to in-memory only
- *   npm run cache:refresh -- --only=gas        # just one source: cpi | gas | electricity
+ *   npm run cache:refresh -- --only=gas        # just one source: cpi | gas | electricity | heating
  *   npm run cache:refresh -- --zips=98683,10001  # only the areas behind these zips
  *   npm run cache:refresh -- --force           # run even if a full refresh succeeded < 12h ago
  *
@@ -74,7 +74,7 @@ async function main() {
   const isFullRun = !only && !zips
 
   // Gas includes the BLS monthly average-price tiers, so every source needs the BLS key.
-  if (!process.env.BLS_API_KEY && only !== 'electricity') fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
+  if (!process.env.BLS_API_KEY && only !== 'electricity' && only !== 'heating') fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
   if (!process.env.EIA_API_KEY && only !== 'cpi') fail('EIA_API_KEY is required')
 
   if (dryRun) {
@@ -106,13 +106,17 @@ async function main() {
     cpiAreas: !only || only === 'cpi' ? full.cpiAreas : [],
     gasLookups: !only || only === 'gas' ? full.gasLookups : [],
     electricityStates: !only || only === 'electricity' ? full.electricityStates : [],
+    heating: !only || only === 'heating' ? full.heating : [],
+    nyserda: (!only || only === 'heating') && !!full.nyserda,
   }
   if (planSize(plan) === 0) fail('Refresh plan is empty (check --zips / --only)')
   console.log(
     `refresh-cache${dryRun ? ' (dry run, in-memory)' : ''}: ` +
       `${plan.cpiAreas.length} CPI areas, ${plan.gasLookups.filter((l) => l.source !== 'bls').length} EIA gas series, ` +
       `${plan.gasLookups.filter((l) => l.source === 'bls').length} BLS gas series in ${planBlsRequests(plan).length} BLS requests, ` +
-      `${plan.electricityStates?.length ?? 0} electricity series (states + US) in one paged EIA query`
+      `${plan.electricityStates?.length ?? 0} electricity series (states + US) in one paged EIA query, ` +
+      `${plan.heating?.length ?? 0} heating fuel series (oil + propane, states + US) in one paged EIA query` +
+      `${plan.nyserda ? ', NYSERDA NY heating oil (1 request)' : ''}`
   )
 
   const started = Date.now()
@@ -124,7 +128,7 @@ async function main() {
   }
   console.log(
     `\nSUMMARY written=${s.written} missing=${s.missing} invalid=${s.invalid} errors=${s.errors} ` +
-      `blsCalls=${s.blsCalls} eiaCalls=${s.eiaCalls} failedBatches=${s.failedBatches} ` +
+      `blsCalls=${s.blsCalls} eiaCalls=${s.eiaCalls} otherCalls=${s.otherCalls} failedBatches=${s.failedBatches} ` +
       `(${Math.round((Date.now() - started) / 1000)}s)`
   )
 

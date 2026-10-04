@@ -9,15 +9,19 @@ import type {
   CpiData,
   GasPriceData,
   ElectricityData,
+  HeatingFuelData,
 } from '@/types'
 import type { RentData } from '@/types'
 import { computeDollarImpact } from '@/lib/compute/dollar-translations'
-import { toGasPriceData, type GasLookupResult, type GasSeriesData } from './eia'
+import { toGasPriceData, type GasLookupResult } from './eia'
 import { NATIONAL_CPI_AREA } from './bls-cpi'
 import { nationalGasLookupFor, NATIONAL_GAS_LOOKUP, settle } from './cached-sources'
 import { hasElectricitySeries, type ElectricitySeriesData } from './eia-electricity'
 import { isBlsPeriodStale } from '@/lib/staleness'
-import { selectCpiArea, selectGasLookup, isNationalRung, type LadderLocation } from '@/lib/resolution/ladders'
+import {
+  selectCpiArea, selectGasLookup, isNationalRung, LADDERS, type LadderLocation, type GasRungValue, type HeatingRungValue,
+} from '@/lib/resolution/ladders'
+import { firstApplicable } from '@/lib/resolution/resolve'
 import { serverLadderContext } from '@/lib/resolution/server-context'
 import type { Attempt, LadderResult } from '@/lib/resolution/resolve'
 
@@ -83,6 +87,7 @@ export async function fetchSnapshot(
   // first, first one with data wins, every rung's outcome recorded as the trace.
   const cpiArea = selectCpiArea(location.countyFips, location.stateAbbr)
   const loc: LadderLocation = {
+    zip: location.zip,
     stateAbbr: location.stateAbbr,
     stateName: location.stateName,
     countyFips: location.countyFips,
@@ -92,23 +97,27 @@ export async function fetchSnapshot(
   const ctx = serverLadderContext(loc, nowDate, { forceRefresh: options.forceRefresh })
 
   // National gas comes from the same source as the local series (BLS monthly tiers → BLS U.S.
-  // average; EIA weekly tiers → EIA NUS), so comparisons never mix sources or frequencies.
+  // average; EIA weekly tiers → EIA NUS), so comparisons never mix sources or frequencies. Static
+  // sources (Alaska DCRA survey, Puerto Rico DACO) have no U.S. figure: no comparison, nothing fetched.
   const gasPrimary = selectGasLookup(loc)
+  const gasFirstStatic = firstApplicable(LADDERS.gas, loc)?.rung.pipeline === 'static'
   const gasNationalLookup = nationalGasLookupFor(gasPrimary)
-  const gasIsNational = gasPrimary.cacheKey === gasNationalLookup.cacheKey
+  const gasIsNational = gasFirstStatic || gasPrimary.cacheKey === gasNationalLookup.cacheKey
   const gasLabel = gasPrimary.source === 'bls' ? 'bls-gas' : 'eia-gas'
   // Electricity: the zip's state (statewide average) + the shared U.S. key. Territories: EIA publishes none.
   const elecState = hasElectricitySeries(location.stateAbbr) ? location.stateAbbr.toUpperCase() : null
 
   // All ladders and the national comparisons in parallel; each series is fetched once (memoized context).
-  const [gasWalk, groceriesWalk, shelterWalk, rentWalk, elecWalk, gasNational, elecNational] = await Promise.all([
-    ctx.ladder('gas') as Promise<LadderResult<CachedResult<GasSeriesData>>>,
+  const [gasWalk, groceriesWalk, shelterWalk, rentWalk, elecWalk, gasNational, elecNational, oilWalk, propaneWalk] = await Promise.all([
+    ctx.ladder('gas') as Promise<LadderResult<GasRungValue>>,
     ctx.ladder('groceries') as Promise<LadderResult<CachedResult<CpiData>>>,
     ctx.ladder('shelter'),
     ctx.ladder('rent'),
     ctx.ladder('electricity') as Promise<LadderResult<CachedResult<ElectricitySeriesData>>>,
     gasIsNational ? Promise.resolve(null) : settle(ctx.gasSeries(gasNationalLookup), `${gasLabel}-national`),
     elecState ? settle(ctx.electricity('US'), 'eia-electricity-national') : Promise.resolve(null),
+    ctx.ladder('heatingOil') as Promise<LadderResult<HeatingRungValue>>,
+    ctx.ladder('propane') as Promise<LadderResult<HeatingRungValue>>,
   ])
 
   // CPI (groceries and shelter share one fetch per area): the area the walk ended on. When the local
@@ -122,12 +131,22 @@ export async function fetchSnapshot(
   let gasData: GasPriceData | null = null
   let gasMeta: CachedResult<unknown> | null = null
   const gw = gasWalk.winner
-  if (gw?.outcome.value) {
+  if (gw?.outcome.value?.lookup) {
+    // Static rung (bundled data): its own series, no national comparison (no U.S. figure from that source)
+    const r = gw.outcome.value
+    gasMeta = r
+    gasData = { ...toGasPriceData(r.lookup!, r.data), ...(r.staticHit ? { staticSource: r.staticHit } : {}) }
+  } else if (gw?.outcome.value) {
     const lookup = gw.target as GasLookupResult
     const r = gw.outcome.value
     gasMeta = r
     if (!gasWalk.afterFailure) {
-      gasData = toGasPriceData(lookup, r.data, { nationalSeries: gasIsNational ? undefined : gasNational?.data.series })
+      // A static rung that turned out to have no series for this zip (e.g. a zip new to the crosswalk) falls to a
+      // live rung: its same-source national comparison wasn't fetched up front, so fetch it now.
+      const nat = gasFirstStatic && lookup.cacheKey !== nationalGasLookupFor(lookup).cacheKey
+        ? await settle(ctx.gasSeries(nationalGasLookupFor(lookup)), `${lookup.source}-gas-national`)
+        : gasIsNational ? null : gasNational
+      gasData = toGasPriceData(lookup, r.data, { nationalSeries: nat?.data.series })
     } else if (isNationalRung(gw.rung.id)) {
       gasData = { ...toGasPriceData(lookup, r.data, { isNationalFallback: true }), fallback: 'national' }
     } else {
@@ -155,7 +174,8 @@ export async function fetchSnapshot(
     : []
   const cpiData: CpiData | null = cpiBase ? { ...cpiBase, staleItems: [...cpiStaleItems] } : null
   const cpi: DataResult<CpiData> = wrap(cpiData, 'bls-cpi', cpiResult?.fetchedAt, now, cpiStaleItems.length > 0)
-  const gas: DataResult<GasPriceData> = wrap(gasData, gasData?.source === 'bls' ? 'bls-gas' : 'eia-gas', gasMeta?.fetchedAt, now, gasStale)
+  const gasSourceId = gasData?.source === 'bls' ? 'bls-gas' : gasData?.source === 'dcra' ? 'dcra-gas' : gasData?.source === 'daco' ? 'daco-gas' : 'eia-gas'
+  const gas: DataResult<GasPriceData> = wrap(gasData, gasSourceId, gasMeta?.fetchedAt, now, gasStale)
 
   // Census is synchronous (bundled static data): local median rent for the shelter card's $
   const censusData = getCensusData(zip)
@@ -196,8 +216,9 @@ export async function fetchSnapshot(
 
   // Housing card: county rent on new leases (bundled Zillow data) when the rent ladder's Zillow rung
   // wins; otherwise null and the card falls back to CPI shelter (the ladder's next rung).
-  const rent: RentData | null = rentWalk.winner?.rung.id === 'rent.zillow-county'
-    ? (rentWalk.winner.outcome.value as RentData)
+  const rentRung = rentWalk.winner?.rung.id
+  const rent: RentData | null = rentRung === 'rent.zillow-county' || rentRung === 'rent.zillow-metro'
+    ? (rentWalk.winner!.outcome.value as RentData)
     : null
 
   const cacheStatus: CacheStatus = {
@@ -215,6 +236,7 @@ export async function fetchSnapshot(
     census,
     electricity,
     rent,
+    heating: { oil: heatingResult(oilWalk, 'oil', now), propane: heatingResult(propaneWalk, 'propane', now) },
     dollarImpact,
     fetchedAt: now,
     cacheStatus,
@@ -224,8 +246,42 @@ export async function fetchSnapshot(
       groceries: groceriesWalk.steps,
       shelter: shelterWalk.steps,
       electricity: elecWalk.steps,
+      heatingOil: oilWalk.steps,
+      propane: propaneWalk.steps,
     },
   }
+}
+
+/**
+ * Home heating graph tab: the winning rung's series (with its same-source comparison), "Data unavailable"
+ * when a source covers the place but failed, or null when no source publishes this fuel there (no tab).
+ */
+function heatingResult(w: LadderResult<HeatingRungValue>, product: 'oil' | 'propane', now: string): DataResult<HeatingFuelData> | null {
+  const v = w.winner?.outcome.value
+  if (!v) {
+    const applicable = w.steps.some((st) => st.status !== 'not-applicable')
+    return applicable ? { data: null, error: 'Data unavailable', fetchedAt: now, sourceId: `${product}-heating` } : null
+  }
+  const nyserda = w.winner!.rung.source === 'NYSERDA'
+  const step = w.steps.find((st) => st.rungId === w.winner!.rung.id)
+  const s = v.series
+  const data: HeatingFuelData = {
+    product,
+    source: nyserda ? 'nyserda' : 'eia',
+    seriesId: s.seriesId,
+    geography: v.geography,
+    current: s.current,
+    latestDate: s.latestDate,
+    baseline: s.baseline,
+    baselineDate: s.baselineDate,
+    change: s.change,
+    series: s.series,
+    ...(v.comparison ? { nationalSeries: v.comparison.series, nationalLabel: v.comparisonLabel } : {}),
+    ...(v.offSeasonNote ? { offSeasonNote: v.offSeasonNote } : {}),
+  }
+  // Between survey seasons is the schedule (labeled), not staleness; an overdue series or a last-good copy is stale
+  const stale = w.winner!.outcome.status === 'stale' && !step?.seasonal
+  return wrap(data, nyserda ? 'nyserda-heating-oil' : `eia-heating-${product}`, v.fetchedAt ?? now, now, stale)
 }
 
 /** The attempt whose data is shown: the winner, or a final 'invalid' (its value is still passed on). */

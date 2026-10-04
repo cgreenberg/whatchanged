@@ -10,11 +10,11 @@
   "section": "1. Built JSON matches raw source",
   "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all counties)",
   "status": "PASS",
-  "detail": "median |adj| 1.52 pts, mean -1.45, p95 |adj| 3.18",
+  "detail": "median |adj| 1.52 pts, mean -1.48, p95 |adj| 2.96",
   "metrics": {
-   "n": 589,
+   "n": 877,
    "median_abs": 1.52,
-   "mean": -1.45
+   "mean": -1.48
   }
  },
  {
@@ -35,7 +35,7 @@
   "section": "2. Coverage and geography",
   "check": "Site zips whose county has published rent (SA since Jan 2025)",
   "status": "INFO",
-  "detail": "19689/41195 (48%)",
+  "detail": "23418/41195 (57%)",
   "metrics": {}
  },
  {
@@ -84,14 +84,14 @@
   "section": "4. Rent \u2014 independent source (Apartment List)",
   "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
   "status": "PASS",
-  "detail": "{'n': 364, 'pearson': 0.858, 'spearman': 0.784, 'mae': 2.25, 'bias': 0.59, 'sign_agree': 0.824}",
+  "detail": "{'n': 370, 'pearson': 0.847, 'spearman': 0.767, 'mae': 2.28, 'bias': 0.63, 'sign_agree': 0.822}",
   "metrics": {
-   "n": 364,
-   "pearson": 0.858,
-   "spearman": 0.784,
-   "mae": 2.25,
-   "bias": 0.59,
-   "sign_agree": 0.824
+   "n": 370,
+   "pearson": 0.847,
+   "spearman": 0.767,
+   "mae": 2.28,
+   "bias": 0.63,
+   "sign_agree": 0.822
   }
  },
  {
@@ -107,7 +107,7 @@
   "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "rent %",
   "status": "WARN",
-  "detail": "4 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Calcasieu Parish, LA +23.4, Linn County, IA +19.0",
+  "detail": "4 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Ouachita Parish, LA +25.9, Calcasieu Parish, LA +23.4",
   "metrics": {
    "flagged": [
     [
@@ -121,14 +121,14 @@
      33.6
     ],
     [
+     "22073",
+     "Ouachita Parish, LA",
+     25.9
+    ],
+    [
      "22019",
      "Calcasieu Parish, LA",
      23.4
-    ],
-    [
-     "19113",
-     "Linn County, IA",
-     19.0
     ]
    ]
   }
@@ -213,6 +213,164 @@
  {
   "section": "6. Shipped data invariants",
   "check": "counties.json carries no monthly series (kept in the per-state shards)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Shard records carry only fields the site reads",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County rent seasonally adjusted with a pooled (state / U.S.) seasonal pattern (series too short for their own)",
+  "status": "INFO",
+  "detail": "288 of 877 counties, e.g. ['01001', '01015', '01033', '01043', '01045', '01051']",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: pct in [-30, 60], levels positive, as-of = Zillow metro file's latest month",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: no county with its own county rent row is mapped to a metro",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: every mapped metro has a row",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "No metro-mapped county has its own county rent series in the shards (rentS)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every metro-mapped county is in that CBSA in the OMB March 2020 delineation",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro names are the OMB 2020 CBSA titles",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zillow's own county->metro labels agree with the mapping (same 2020 CBSA title)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zillow county->metro labels vs OMB March 2020 CBSA titles (all Zillow counties; vintage check)",
+  "status": "PASS",
+  "detail": "all 1831 agree",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rent levels = observed Zillow metro ZORI (Jan 2025 and latest), via Zillow's RegionID<->CBSA link",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rent seasonal adjustment size (built SA - raw NSA)",
+  "status": "PASS",
+  "detail": "median |adj| 1.49 pts over 205 metros",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rentMS series reproduce metro-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zips that get metro rent (no county series)",
+  "status": "INFO",
+  "detail": "3481 zips, 461 counties, 205 metros",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: CC BY 4.0 attribution present",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: every community/region has the Jan 2025 and latest surveys, prices $1-$20",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: every AK zip outside the Anchorage CBSA maps to a community or region",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: nearest-community matches are in the zip's own borough and within 100 km",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json community prices match the raw DCRA survey (Jan 2025 and latest)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "AK zips by match (c = own community, n = nearest surveyed community, r = DCRA region average)",
+  "status": "INFO",
+  "detail": {
+   "n": 91,
+   "r": 40,
+   "c": 101
+  },
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json matches the raw DACO workbook (regular, cents -> $/gal) month by month",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: Jan 2025 and latest present, $1-$10/gal",
   "status": "PASS",
   "detail": "none",
   "metrics": {}

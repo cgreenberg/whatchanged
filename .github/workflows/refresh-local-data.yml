@@ -1,4 +1,4 @@
-name: Refresh local data (Zillow home values and rent)
+name: Refresh local data (Zillow home values + county/metro rent, Alaska DCRA gas, Puerto Rico DACO gas)
 
 on:
   schedule:

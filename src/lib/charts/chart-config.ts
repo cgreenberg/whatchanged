@@ -162,3 +162,52 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
     showNationalToggle: true,
   },
 }
+
+/** ⓘ notes for the Home heating graph. */
+export const HEATING_NOTE =
+  "EIA's State Heating Oil and Propane Program (SHOPP) surveys residential prices weekly from October through March only; " +
+  'between seasons the latest reading is the end of March. Prices are per gallon delivered to homes, before taxes.'
+export const NYSERDA_NOTE =
+  'NYSERDA surveys New York heating oil dealers weekly September–March and twice a month April–August; ' +
+  'the regional average for your county, compared with the New York statewide average from the same survey.'
+
+/**
+ * Home heating graph (5th graph, after Electricity; not a hero card): Heating oil | Propane tabs, each only
+ * where a source has data. Weekly $/gal; % headline since the week of Jan 20, 2025.
+ */
+export const heatingTabConfigs: Record<'oil' | 'propane', ChartConfig> = {
+  oil: {
+    id: 'heating-oil',
+    title: 'Home heating fuel',
+    description: 'Average residential price per gallon of No. 2 heating oil delivered to homes, weekly.',
+    chartType: 'line',
+    series: [{ dataKey: 'price', label: 'Heating oil ($/gal)', color: '#F97316', type: 'monotone' }],
+    size: 'medium',
+    order: 5,
+    defaultTimeframe: 'Jan 2025',
+    eraShading: true,
+    yAxisLabel: '$/gal',
+    formatValue: (v) => `$${v.toFixed(2)}`,
+    sourceLabel: 'EIA Heating Oil and Propane Update',
+    sourceUrl: 'https://www.eia.gov/petroleum/heatingoilpropane/',
+    geoLevel: 'State (NY: NYSERDA region)',
+    showNationalToggle: true,
+  },
+  propane: {
+    id: 'heating-propane',
+    title: 'Home heating fuel',
+    description: 'Average residential price per gallon of propane delivered to homes, weekly.',
+    chartType: 'line',
+    series: [{ dataKey: 'price', label: 'Propane ($/gal)', color: '#F97316', type: 'monotone' }],
+    size: 'medium',
+    order: 5,
+    defaultTimeframe: 'Jan 2025',
+    eraShading: true,
+    yAxisLabel: '$/gal',
+    formatValue: (v) => `$${v.toFixed(2)}`,
+    sourceLabel: 'EIA Heating Oil and Propane Update',
+    sourceUrl: 'https://www.eia.gov/petroleum/heatingoilpropane/',
+    geoLevel: 'State',
+    showNationalToggle: true,
+  },
+}

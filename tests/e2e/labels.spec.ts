@@ -78,18 +78,18 @@ test.describe('Geography and concept labels', () => {
 })
 
 test.describe('Data notes and explanations', () => {
-  test('28601 (Catawba NC, no Zillow rent): Housing graph opens on Shelter (CPI) and explains CPI vs Zillow', async ({ page }) => {
-    // Serve a recorded snapshot re-pointed at Catawba County; county shards come from /public/data
+  test('55334 (Sibley MN, no Zillow county or metro rent): Housing graph opens on Shelter (CPI) and explains CPI vs Zillow', async ({ page }) => {
+    // Serve a recorded snapshot re-pointed at Sibley County; county shards come from /public/data
     await page.route('**/api/data/*', async route => {
       const snap = loadFixture('98683') as { zip: string; rent: unknown; location: Record<string, string> }
-      snap.zip = '28601'
+      snap.zip = '55334'
       snap.rent = null
-      snap.location = { ...snap.location, zip: '28601', countyFips: '37035', countyName: 'Catawba County', stateAbbr: 'NC', stateName: 'North Carolina', cityName: 'Hickory' }
+      snap.location = { ...snap.location, zip: '55334', countyFips: '27143', countyName: 'Sibley County', stateAbbr: 'MN', stateName: 'Minnesota', cityName: 'Gaylord' }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snap) })
     })
-    await enterZip(page, '28601')
+    await enterZip(page, '55334')
     const housing = page.getByTestId('housing-chart')
-    await expect(housing.getByTestId('housing-missing-note')).toContainText('No Zillow rent data for Catawba County, NC', { timeout: 15000 })
+    await expect(housing.getByTestId('housing-missing-note')).toContainText('No Zillow rent data for Sibley County, MN', { timeout: 15000 })
     await expect(housing).toHaveAttribute('data-tab', 'shelter')
     await expect(housing.getByTestId('housing-tab-rent')).toBeDisabled()
     await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')

@@ -4,6 +4,7 @@ import { chartConfigs } from '@/lib/charts/chart-config'
 import type { ChartConfig } from '@/lib/charts/chart-config'
 import { EraChart, ChartHeadline } from './EraChart'
 import { HousingChart } from './HousingChart'
+import { HeatingChart } from './HeatingChart'
 import { getChartInput } from './chart-inputs'
 import type { EconomicSnapshot } from '@/types'
 import type { TraceMetric } from '@/lib/resolution/types'
@@ -50,13 +51,16 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
       data-testid="charts-section"
     >
       <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
-      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Electricity, by config order); one column under 768px */}
+      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Electricity, by config order), then Home heating
+          where it has data; one column under 768px */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="charts-grid">
         {sortedCharts.map(config =>
           config.id === 'cpi-shelter'
             ? <HousingChart key={`housing-${snapshot.location.countyFips}`} snapshot={snapshot} shelterConfig={config} />
             : <PlainChart key={config.id} config={config} snapshot={snapshot} />
         )}
+        {/* 5th graph, only where a heating-fuel source publishes for the place */}
+        <HeatingChart snapshot={snapshot} />
       </div>
     </motion.section>
   )

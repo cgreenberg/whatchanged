@@ -35,6 +35,14 @@ export interface CountyRecord {
   hvS?: CompactSeries
   /** Monthly ZORI levels since 2016, seasonally adjusted by whatchanged (county shards only). */
   rentS?: CompactSeries
+  /** Rent seasonally adjusted with this pool's typical pattern (series too short for its own), e.g. "Maine counties". */
+  rentSaPool?: string
+  /**
+   * County shards only, for counties with no Zillow county series: the county's metro (OMB 2020 CBSA) rent —
+   * the Rent card's metro rung and the Rent tab — with its seasonally adjusted monthly levels in `rentMS`.
+   */
+  rentM?: { n: string; cbsa: string; rent: number; cur: number; flag?: boolean; saPool?: string }
+  rentMS?: CompactSeries
 }
 
 export type CountyMap = Record<string, CountyRecord>

@@ -1,8 +1,9 @@
-# Local price data (county), free + keyless
+# Local price data (county / metro / community), free + keyless
 
 Built by `scripts/fetch-local-data.sh` + `scripts/build-local-data.py` into static JSON under `public/data/`
-(no runtime API calls, no keys, no Redis), plus `src/lib/data/county-rent.json` (server-importable county rent
-for the Rent card, share card and OG image). The page shows prices only (home values and rent); everything else
+(no runtime API calls, no keys, no Redis), plus server-importable files under `src/lib/data/`: `county-rent.json`
+and `metro-rent.json` (Rent card, share card, OG image), `ak-gas.json` (Alaska DCRA community gas survey) and
+`pr-gas.json` (Puerto Rico DACO gas). The page shows prices only (home values and rent); everything else
 that earlier versions of the pipeline fetched (zip shards, city files, unemployment, wages, permits, job postings,
 ACA premiums, electricity, Realtor.com listings) has been removed.
 
@@ -15,8 +16,8 @@ python3 scripts/validate-local-data.py --raw "$RAW" --data public/data --out doc
 
 The build reads `src/lib/data/zip-county.json`, `src/lib/data/county-geo.json` (required; the build fails if missing
 or < 3,100 counties) and `src/lib/data/ct-planning-regions.json` at build time, so rebuilding picks up mapping
-changes. Python deps (hash-pinned in the workflow): pandas 2.2.3, numpy 2.1.3, openpyxl 3.1.5 (openpyxl is read by
-the validator for the FHFA workbook).
+changes. Python deps (hash-pinned in the workflow): pandas 2.2.3, numpy 2.1.3, openpyxl 3.1.5 (FHFA and DACO
+workbooks), xlrd 2.0.2 (the OMB 2020 delineation `.xls`).
 
 ## What the app reads
 
@@ -26,14 +27,22 @@ the validator for the FHFA workbook).
 | `public/data/us-housing.json` | Housing graph "Show national" |
 | `public/data/counties.json`, `counties-timeline.json`, `counties-albers-10m.json` | National map (`hv`, `rent`, `hvCur`, `rentCur`, `n`, `z`, `emp`, `approx`, `flags`), time-lapse, geometry (static) |
 | `public/data/meta.json` | Provenance footers (as-of month, source label, adjustment) for Zillow ZHVI / ZORI |
-| `src/lib/data/county-rent.json` | Rent card, share card, OG image |
+| `src/lib/data/county-rent.json` | Rent card, share card, OG image (county rung) |
+| `src/lib/data/metro-rent.json` | Rent card for counties with no county series (metro rung); shards carry `rentM`/`rentMS` for the Rent tab |
+| `src/lib/data/ak-gas.json` | Gas card + graph for Alaska zips outside the Anchorage CBSA (DCRA community survey rung) |
+| `src/lib/data/pr-gas.json` | Gas card + graph for Puerto Rico (DACO rung) |
 
 ## In use
 
 | Metric | Source | Geo | Cadence | Bulk URL | Terms |
 |---|---|---|---|---|---|
 | Home values | Zillow ZHVI (SA by Zillow) | 3.1k counties, U.S. | Monthly (~mid-month) | `files.zillowstatic.com/research/public_csvs/zhvi/…` | Free; attribution to Zillow required |
-| Rent (asking rents on new leases) | Zillow ZORI (we seasonally adjust) | ~1k counties, U.S. | Monthly | `…/public_csvs/zori/…` | Same |
+| Rent (asking rents on new leases) | Zillow ZORI (we seasonally adjust) | ~900 counties, U.S. | Monthly | `…/public_csvs/zori/County_…` | Same |
+| Metro rent (counties without a county series) | Zillow ZORI metro (we seasonally adjust) | ~200 metros used | Monthly | `…/public_csvs/zori/Metro_…` | Same |
+| County → metro | OMB CBSA delineation, March 2020 (list 1) — the vintage Zillow's metros use | County | Static | `www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2020/delineation-files/list1_2020.xls` | Public domain |
+| Zillow metro ID → CBSA code | Zillow `CountyCrossWalk_Zillow.csv` (IDs only) | Metro | Static | `files.zillowstatic.com/research/public/CountyCrossWalk_Zillow.csv` | Zillow |
+| Alaska gasoline (outside Anchorage) | Alaska DCRA Community Fuel Price Survey (DCCED), via DCRA's ArcGIS service; community → borough/region from DCRA's community database; zip points from the Census 2023 ZCTA gazetteer | ~100 communities, 7 regions | Twice yearly (Jan, Jul) | `maps.commerce.alaska.gov/server/rest/services/…` (mirror of `gis.data.alaska.gov/maps/DCCED::gas-prices-all-years`) | **CC BY 4.0** — credit "Alaska DCCED, Division of Community and Regional Affairs" (shown on the card and in the ladder docs) |
+| Puerto Rico gasoline | DACO monthly island-wide average retail price, regular (col C, ¢/gal) | Island | Monthly | `docs.pr.gov/files/DACO/Gasolina/…/Precios-Promedios-de-Gasolina-y-Diesel%20(1).xlsx` (linked from `daco.pr.gov/recursos`) | Public data of the Government of Puerto Rico; cited |
 | Zip order | Zillow ZHVI zip file (SizeRank order only, no values) | Zip | Monthly | `…/public_csvs/zhvi/Zip_…` | Same |
 | County jobs (movers-list eligibility only, not displayed) | BLS QCEW latest quarter | County | Quarterly | `data.bls.gov/cew/data/files/{yr}/csv/{yr}_qtrly_singlefile.zip` (1 file) | Public domain |
 | County names | Census 2020 `national_county2020.txt` | County | Static | `www2.census.gov/geo/docs/reference/codes2020/` | Public domain |
@@ -48,7 +57,8 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
 
 | Metric | Rule | Effect (2026-10 build) |
 |---|---|---|
-| County rent | Seasonally adjust only series with ≥36 in-sample months; shorter series are dropped (never shown raw as "adjusted"). Levels shown are observed (unadjusted). | 589 counties |
+| County rent | Own seasonal factors for series with ≥36 in-sample months; series with ≥12 months before Jan 2025 but too short for their own factors use their state's pooled pattern (median factors of that state's self-adjusted counties, ≥5; else the U.S. pool), labeled `saPool` on the card/graph. Newer series are dropped (never shown raw as "adjusted"). Levels shown are observed (unadjusted). | 877 counties (288 pooled) |
+| Metro rent | Same SA method (pooled pattern by the principal city's state), sanity range (−30%..+60%), Jan 2025 + latest month, outlier flag vs the county distribution; only for counties with no county row | 205 metros, 461 counties |
 | All Zillow series | Must reach the file's latest month (no stale values mixed in) | — |
 | Movers lists | ≥ 75k jobs, not `approx`, not flagged as a robust outlier (abs(z) > 5 vs counties with ≥20k jobs) for that metric; top/bottom never overlap | — |
 
@@ -70,7 +80,24 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
 - Map "biggest movers" are limited to counties with 75k+ jobs to avoid tiny-county noise.
 - `county-rent.json`: `pct` is the SA change since Jan 2025 (counties passing the SA rule, −30%..+60%);
   `baseRent`/`curRent` are observed (unadjusted) asking rents. A monthly dollar change consistent with `pct` is
-  `curRent - curRent / (1 + pct/100)`; `curRent - baseRent` includes seasonality. Covers 589 counties / 47.8% of zip-county.json zips (41.2% excluding PO-box zips flagged `zcta: false`). zip-county.json is a housing-unit-weighted Census 2020 build (`scripts/build-zip-county.ts`), not the HUD crosswalk.
+  `curRent - curRent / (1 + pct/100)`; `curRent - baseRent` includes seasonality. Covers 877 counties / 56.8% of zip-county.json zips (2026-10 build; 589 / 47.8% before pooled seasonal patterns). zip-county.json is a housing-unit-weighted Census 2020 build (`scripts/build-zip-county.ts`), not the HUD crosswalk.
+- Pooled seasonal pattern (why it is honest): ZORI's Jan → Aug swing is mostly the shared spring/summer leasing
+  season, so a series too new to fit its own factors (e.g. Androscoggin ME, Zillow coverage since Nov 2022: only 20
+  in-sample ratios) is adjusted with its state's typical factors rather than dropped or shown raw. Baseline and current
+  still come from the county's own series; the card and graph say which pattern was used.
+- `metro-rent.json` (rent ladder's metro rung): county FIPS → CBSA by the **OMB March 2020** delineation — verified
+  as Zillow's vintage (all 1,831 Zillow county→metro labels agree with it; the 2023 delineation disagrees for 95
+  metros) — and CBSA → Zillow metro by Zillow's own RegionID crosswalk (735 of 749 ZORI metros link; the 14 newer
+  ones, e.g. Lebanon NH-VT, Dayton OH, have no ID link and are not used). No name matching. Adds 3,481 zips
+  (VA 333, MO 179, IL 178, WV 168, …); pooled SA adds 3,729 county zips (WI 239, PA 192, NC 149, NH 132, …).
+- `ak-gas.json`: per surveyed community (borough FIPS, DCRA region, semiannual series since 2016) + DCRA region
+  averages; each Alaska zip outside the Anchorage CBSA maps to its own community (`c`, same name + same borough), else
+  the nearest surveyed community in the same borough within 100 km of its ZCTA point (`n`), else the DCRA region average
+  (`r`). 2026-10 build: 101 / 91 / 40 of 232 zips. Baseline = Winter (January) 2025 survey; current = latest survey.
+- `pr-gas.json`: DACO regular gasoline, ¢/gal → $/gal, monthly since 2016 (null for months DACO did not survey:
+  Sep–Oct 2017 hurricanes, Apr–May 2020 COVID-19). Static (not the refresh-cache job): the workbook URL carries a
+  re-upload suffix "(1)" and needs an xlsx parser, while the monthly local-data job already runs after DACO's update.
+  A failed download keeps the committed file (best effort, like the Alaska survey).
 
 ## Validation-only sources
 

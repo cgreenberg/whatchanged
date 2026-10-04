@@ -36,10 +36,14 @@ export function eiaGasSeriesId(duoarea: string): string {
 // --- Lookup ---
 
 export interface GasLookupResult {
-  /** 'eia' = EIA weekly retail regular gasoline; 'bls' = BLS CPI average price, regular gasoline (monthly). */
-  source: 'eia' | 'bls'
-  frequency: 'weekly' | 'monthly'
-  /** EIA duoarea (source 'eia') or BLS CPI area code (source 'bls'). */
+  /**
+   * 'eia' = EIA weekly retail regular gasoline; 'bls' = BLS CPI average price, regular gasoline (monthly);
+   * 'dcra' / 'daco' = static (bundled) Alaska community survey / Puerto Rico DACO series (src/lib/static-gas.ts),
+   * never fetched through the cache.
+   */
+  source: 'eia' | 'bls' | 'dcra' | 'daco'
+  frequency: 'weekly' | 'monthly' | 'semiannual'
+  /** EIA duoarea (source 'eia'), BLS CPI area code (source 'bls'), or a static source's community / area. */
   areaCode: string
   /** EIA duoarea; set only for source 'eia'. */
   duoarea?: string

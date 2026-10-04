@@ -323,7 +323,8 @@ export async function writeEnvelope<T>(
 // fails closed (no runtime BLS calls; last-good / in-process copies or "Data
 // unavailable"), while EIA and local dev use a per-instance hourly breaker.
 
-export type UpstreamSource = 'bls' | 'eia'
+/** 'nyserda' = data.ny.gov (keyless; its own small budget so it never spends EIA's). */
+export type UpstreamSource = 'bls' | 'eia' | 'nyserda'
 
 /** Positive integer from env; unset, empty, zero, negative or malformed → fallback. */
 const envInt = (name: string, fallback: number): number => {
@@ -335,18 +336,19 @@ const envInt = (name: string, fallback: number): number => {
 
 /** Max runtime (non-refresh) upstream calls per UTC day, across all instances. */
 export function dailyBudget(source: UpstreamSource): number {
+  if (source === 'nyserda') return envInt('NYSERDA_RUNTIME_DAILY_BUDGET', 50)
   return source === 'bls' ? envInt('BLS_RUNTIME_DAILY_BUDGET', 60) : envInt('EIA_RUNTIME_DAILY_BUDGET', 300)
 }
 
 /** Max upstream calls per instance per hour when the Redis budget counter is unreachable. */
 export function breakerPerHour(source: UpstreamSource): number {
-  return source === 'bls' ? 5 : 20
+  return source === 'bls' ? 5 : source === 'nyserda' ? 5 : 20
 }
 
 export const budgetKey = (source: UpstreamSource, now: Date = new Date()) =>
   `budget:${source}:${now.toISOString().slice(0, 10)}`
 
-const breakerLog: Record<UpstreamSource, number[]> = { bls: [], eia: [] }
+const breakerLog: Record<UpstreamSource, number[]> = { bls: [], eia: [], nyserda: [] }
 
 function breakerAllows(source: UpstreamSource, now: number): boolean {
   const log = breakerLog[source]

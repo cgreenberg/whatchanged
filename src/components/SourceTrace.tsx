@@ -21,9 +21,9 @@ export function traceAsOf(asOf: string | undefined): string | undefined {
   return asOf.length > 7 ? `week of ${fmtDay(asOf)}` : fmtMonthYear(asOf)
 }
 
-/** "Used, Aug 2026" / "Not needed" / "No series here". */
-export function traceStatusText(step: Pick<TraceStep, 'status' | 'asOf'>): string {
-  const base = ICONS[step.status]?.text ?? step.status
+/** "Used, Aug 2026" / "Not needed" / "No series here" / "Used (between survey seasons), week of …". */
+export function traceStatusText(step: Pick<TraceStep, 'status' | 'asOf' | 'seasonal'>): string {
+  const base = step.status === 'stale' && step.seasonal ? 'Used (between survey seasons)' : ICONS[step.status]?.text ?? step.status
   const when = traceAsOf(step.asOf)
   return when && (step.status === 'used' || step.status === 'stale') ? `${base}, ${when}` : base
 }

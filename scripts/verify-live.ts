@@ -291,6 +291,12 @@ async function checkZip(zip: string, bls: Map<string, Map<string, number>>, snap
 
   const g = get(snap, 'gas.data')
   if (!g) return add(zip, 'gas', 'SKIP', get(snap, 'gas.error') ?? 'no data in response')
+  // Bundled static sources (Alaska DCRA survey, Puerto Rico DACO) are checked by scripts/validate-local-data.py
+  if (g.source === 'dcra' || g.source === 'daco') {
+    add(zip, 'gas (static)', isNum(g.current) && isNum(g.baseline) && near(g.change, g.current - g.baseline, 0.0011) ? 'PASS' : 'FAIL',
+      `${g.source}: ${g.baseline} (${g.baselineDate}) -> ${g.current} (${g.latestDate}); source values validated by validate-local-data.py`)
+    return
+  }
 
   // Gas, BLS monthly tiers (CPI average price APU{area}74714): baseline Jan 2025, latest month, math,
   // and the national comparison from the BLS U.S. average over the same months

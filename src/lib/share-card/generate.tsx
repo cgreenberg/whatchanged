@@ -6,7 +6,7 @@ import {
   BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
-import { buildHeroCards, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
+import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
@@ -117,6 +117,8 @@ export const GROCERIES_SUBLABEL = '(CPI: food at home)'
 /** BLS shelter is mainly rents + owners' equivalent rent (plus lodging away from home, insurance). */
 export const SHELTER_SUBLABEL = '(CPI: rent + owner-equiv. rent)'
 export const RENT_SUBLABEL = '(new leases, Zillow, county)'
+/** County without a Zillow county series: its metro's series. */
+export const RENT_METRO_SUBLABEL = '(new leases, Zillow, metro)'
 export const ELECTRICITY_SUBLABEL = '(home ¢/kWh, seasonally adj.)'
 
 /** Electricity geography line: "Maine · 32.4¢/kWh (Jul '26)" (published price and its month; DC short). */
@@ -182,7 +184,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
   )?.pct
   // National from the same source over the same period (BLS monthly → same months; EIA weekly → NUS)
   const natGas = gasData?.isNationalFallback ? null : gasNationalMatching(gasData)
-  const gasMonthly = isMonthlyGas(gasData)
+  const gasMonthly = isMonthDatedGas(gasData) // BLS / DACO monthly and DCRA's Jan/Jul surveys are month-dated
   // One line in the cell (else the sparkline shrinks to make room): abbreviate the longest EIA name;
   // BLS tiers use the short tag ("Philadelphia metro", "Honolulu-area price*") plus the month the
   // monthly figure runs through ("thru Aug '26"), since weekly EIA figures elsewhere are weeks newer.
@@ -761,13 +763,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
             {accentStrip(BLUE)}
             {rent ? (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {sectionLabel('RENT', RENT_SUBLABEL)}
+                {sectionLabel('RENT', rent.level === 'metro' ? RENT_METRO_SUBLABEL : RENT_SUBLABEL)}
                 <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_SECONDARY, display: 'flex' }}>
                     {`Asking rent: ${fmtDollars(rent.curRent)}/mo (${fmtMonthShort(rent.asOf)})`}
                   </span>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 20, color: TEXT_TERTIARY, display: 'flex', marginTop: 4 }}>
-                    {rent.geoName}
+                    {rent.level === 'metro' ? card('rent')?.geoTag ?? rent.geoName : rent.geoName}
                   </span>
                   {rentOutlier && (
                     <span style={{ fontFamily: 'DM Mono', fontSize: 19, color: AMBER, display: 'flex', marginTop: 8 }}>
@@ -848,7 +850,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
             color: TEXT_TERTIARY,
           }}
         >
-          {rent ? 'BLS · EIA · Zillow' : 'BLS · EIA · Census'}
+          {imageSourcesLine(snapshot, cards)}
         </span>
         <span
           style={{

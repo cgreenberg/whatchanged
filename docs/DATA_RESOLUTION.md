@@ -7,8 +7,8 @@ Each number compares one series with its own January 2025 value — the same sou
 Every metric has one **ladder**: an ordered list of rungs, most local first. For a zip, the first rung that
 applies and returns data is shown; `/api/data/{zip}` returns every rung's outcome as `trace` (✓ used, ✗ unavailable /
 no series, – not needed, ⚠ stale), and the site shows it under "Where does this come from?" on each card and graph.
-The ladders live in `src/lib/resolution/ladders.ts` (walker: `resolve.ts`); `getGasLookup()` and
-`getMetroCpiAreaForCounty()` are their first applicable rung, so the snapshot, refresh plan, map and scripts agree.
+The ladders live in `src/lib/resolution/ladders.ts` (walker: `resolve.ts`); `getGasLookup()` (first applicable live
+rung) and `getMetroCpiAreaForCounty()` (first applicable rung) read them, so the snapshot, refresh plan, map and scripts agree.
 
 When an applicable rung fails at runtime, the rung's `onUnavailable` decides what is tried next: the next rung
 (default), the next rung from a *different* source (a BLS outage skips the other BLS rungs), or straight to the
@@ -20,20 +20,23 @@ U.S. average (the shared, always-warm key). A static source with nothing for a p
 |---|------|-----------|--------|-----------|----------|----------------|----------|
 | 1 | `gas.eia-city` EIA weekly city average | City | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | Counties in the 10 metro areas EIA prices weekly (Seattle, Los Angeles, San Francisco, New York City, Boston, Chicago, Denver, Houston, Miami, Cleveland). |
 | 2 | `gas.bls-metro` BLS monthly metro average | Metro | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Counties in a BLS CPI metro without an EIA city series (e.g. Philadelphia, Washington DC, Atlanta, Phoenix, Honolulu, Anchorage). |
-| 3 | `gas.bls-hiak-standin` Honolulu / Anchorage price as a stand-in | HI/AK stand-in | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Hawaii and Alaska outside the Honolulu and Anchorage metros: neither EIA nor BLS publishes a closer gas price, so that metro’s BLS price stands in, marked “*”. |
-| 4 | `gas.eia-state` EIA weekly state average | State | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | The 9 states EIA prices weekly: CA, CO, FL, MA, MN, NY, OH, TX, WA. |
-| 5 | `gas.eia-padd` EIA weekly regional (PADD) average | PADD region | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | Everywhere else in the 50 states + DC: the PADD region (PADD 1 split into New England, Central Atlantic, Lower Atlantic; PADD 5 = West Coast excluding California). |
-| 6 | `gas.eia-national` EIA weekly U.S. average | U.S. | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | — | Territories (no EIA series), and any place whose local series is down — then labeled “U.S. avg (local n/a)”. |
+| 3 | `gas.dcra-community` Alaska community fuel survey | AK community survey | Alaska DCRA Community Fuel Price Survey (Alaska DCCED, Division of Community and Regional Affairs) ([link](https://akenergygateway.alaska.edu/explore/data/public_fuel_prices)) | twice yearly (January and July surveys) | static | next step | Alaska outside the Anchorage metro: the zip’s own surveyed community, else the nearest surveyed community in the same borough or census area (within 100 km), else the DCRA region average — labeled which. |
+| 4 | `gas.bls-hiak-standin` Honolulu / Anchorage price as a stand-in | HI/AK stand-in | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Hawaii outside the Honolulu metro (and Alaska zips the community survey doesn’t cover): neither EIA nor BLS publishes a closer gas price, so that metro’s BLS price stands in, marked “*”. |
+| 5 | `gas.eia-state` EIA weekly state average | State | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | The 9 states EIA prices weekly: CA, CO, FL, MA, MN, NY, OH, TX, WA. |
+| 6 | `gas.eia-padd` EIA weekly regional (PADD) average | PADD region | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | Everywhere else in the 50 states + DC: the PADD region (PADD 1 split into New England, Central Atlantic, Lower Atlantic; PADD 5 = West Coast excluding California). |
+| 7 | `gas.daco-pr` Puerto Rico monthly average (DACO) | Puerto Rico (island) | DACO monthly average price, regular gasoline (Departamento de Asuntos del Consumidor (DACO), Puerto Rico) ([link](https://www.daco.pr.gov/recursos)) | monthly | static | next step | Puerto Rico: DACO’s island-wide monthly average retail price of regular gasoline (EIA and BLS publish none). |
+| 8 | `gas.eia-national` EIA weekly U.S. average | U.S. | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | — | Territories other than Puerto Rico (no EIA series), and any place whose local series is down — then labeled “U.S. avg (local n/a)”. |
 
-U.S. comparison: U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average).
-License / attribution: EIA: Public domain (U.S. government); BLS: Public domain (U.S. government).
+U.S. comparison: U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average); none for the Alaska survey or Puerto Rico DACO, which publish no U.S. figure.
+License / attribution: EIA: Public domain (U.S. government); BLS: Public domain (U.S. government); DCRA: CC BY 4.0 (attribution: Alaska DCCED, Division of Community and Regional Affairs); DACO: Public data of the Government of Puerto Rico (DACO); cited.
 
 ## Rent (housing card) (`rent`)
 
 | # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
 |---|------|-----------|--------|-----------|----------|----------------|----------|
-| 1 | `rent.zillow-county` Zillow county rent (new leases) | County | Zillow Observed Rent Index (ZORI) ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties where Zillow’s rent series reaches back to January 2025 with enough history (3+ years) to remove seasonal swings. |
-| 2 | `rent.bls-cpi-shelter` BLS shelter (CPI) | CPI shelter (metro → U.S.) | BLS CPI shelter ([link](https://www.bls.gov/cpi/)) | monthly | live | — | Where Zillow has no county rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.). |
+| 1 | `rent.zillow-county` Zillow county rent (new leases) | County | Zillow Observed Rent Index (ZORI) ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses its state’s typical one, and says so). |
+| 2 | `rent.zillow-metro` Zillow metro rent (new leases) | Metro | Zillow Observed Rent Index (ZORI), metro ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties without a Zillow county series, in a metro Zillow publishes back to January 2025: that metro’s series (OMB 2020 metro areas, the definitions Zillow uses; county-to-metro by FIPS code, never by name). |
+| 3 | `rent.bls-cpi-shelter` BLS shelter (CPI) | CPI shelter (metro → U.S.) | BLS CPI shelter ([link](https://www.bls.gov/cpi/)) | monthly | live | — | Where Zillow has no county or metro rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.). |
 
 License / attribution: Zillow: Zillow Research data; attribution required; BLS: Public domain (U.S. government).
 
@@ -80,28 +83,53 @@ U.S. comparison: EIA U.S. average, same seasonal adjustment and months.
 No rung has data: Territories: EIA publishes no residential price, so the card says “Data unavailable” with the reason.
 License / attribution: EIA: Public domain (U.S. government).
 
+## Home heating oil (Home heating graph) (`heatingOil`)
+
+| # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
+|---|------|-----------|--------|-----------|----------|----------------|----------|
+| 1 | `heatingOil.nyserda-region` NYSERDA New York regional average | NY region | NYSERDA Average Home Heating Oil Prices by Region (Open NY) ([link](https://www.nyserda.ny.gov/Researchers-and-Policymakers/Energy-Prices/Home-Heating-Oil/Average-Home-Heating-Oil-Prices)) | weekly September–March, twice a month April–August | live | next step | New York: the county’s NYSERDA survey region (Long Island, New York City, Lower Hudson, Upper Hudson, Capital District, North Country, Central, Western), year-round. |
+| 2 | `heatingOil.eia-shopp-state` EIA weekly heating oil (state) | State | EIA State Heating Oil and Propane Program (SHOPP), residential heating oil ([link](https://www.eia.gov/petroleum/heatingoilpropane/)) | weekly, October–March only (heating-season survey) | live | — | The 21 states EIA surveys for residential heating oil: CT, DE, IA, IN, KY, MA, MD, ME, MI, MN, NC, NE, NH, NJ, NY, OH, PA, RI, VA, VT, WI. Off-season (April to mid-October) the latest reading is the end of March, labeled as such. |
+
+U.S. comparison: Same survey, same weeks: the EIA U.S. average (SHOPP), or for a New York region the NYSERDA statewide average.
+No rung has data: No Heating oil tab (and no Home heating graph when propane has no data either).
+License / attribution: NYSERDA: Open NY open data (NYSERDA); attribution; EIA: Public domain (U.S. government).
+
+## Propane (Home heating graph) (`propane`)
+
+| # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
+|---|------|-----------|--------|-----------|----------|----------------|----------|
+| 1 | `propane.eia-shopp-state` EIA weekly propane (state) | State | EIA State Heating Oil and Propane Program (SHOPP), residential propane ([link](https://www.eia.gov/petroleum/heatingoilpropane/)) | weekly, October–March only (heating-season survey) | live | — | The 38 states EIA surveys for residential propane: AL, AR, CO, CT, DE, FL, GA, IA, ID, IL, IN, KS, KY, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NY, OH, OK, PA, RI, SD, TN, TX, UT, VA, VT, WI. Off-season (April to mid-October) the latest reading is the end of March, labeled as such. |
+
+U.S. comparison: EIA U.S. average, same survey and weeks.
+No rung has data: No Propane tab (and no Home heating graph when heating oil has no data either).
+License / attribution: EIA: Public domain (U.S. government).
+
 ## How to add a rung
 
-1. **Data.** Live source (BLS, EIA): add a fetcher + cache key and a `LadderContext` accessor in
+1. **Data.** Live source (BLS, EIA, NYSERDA): add a fetcher + cache key and a `LadderContext` accessor in
    `src/lib/resolution/server-context.ts` (through `cached-sources.ts`, so it is budgeted and warmed by the refresh
-   plan). Static-pipeline source (Zillow metro rent, Alaska DCRA community survey, Puerto Rico DACO): ship compact JSON
-   from `scripts/build-local-data.py` (+ validator), read it in a small lookup module (like `src/lib/rent.ts`) and expose
-   it as a context accessor. `ladders.ts` never imports data files, so it stays client-safe.
+   plan in `src/lib/api/refresh.ts`). Static-pipeline source (Zillow county/metro rent, Alaska DCRA community survey,
+   Puerto Rico DACO): ship compact JSON from `scripts/build-local-data.py` (+ checks in `validate-local-data.py`), read
+   it in a small lookup module (`src/lib/rent.ts`, `src/lib/static-gas.ts`) and expose it as a context accessor.
+   `ladders.ts` never imports data files, so it stays client-safe (shared facts live in e.g. `static-gas-meta.ts`).
 2. **Rung.** Insert one `defineRung({...})` object at the right position of the metric's `rungs` array in
    `src/lib/resolution/ladders.ts` (order = most local first): `id` (`{metric}.{slug}`), plain-English `label`,
    `source` / `sourceName` / `homepage` / `license`, `level`, `frequency`, `pipeline`, `covers`, `applies(loc)`
    (true or the reason it doesn't apply), `target(loc)`, `geography(target)`, `citationUrl(target)`, `resolve(target, ctx)`
-   (used / stale / not-applicable / unavailable / invalid, with `asOf` and `seriesId`) and `onUnavailable`.
-   Example: Zillow metro rent goes between `rent.zillow-county` and `rent.bls-cpi-shelter`; AK DCRA community gas goes
-   before `gas.bls-hiak-standin` with `applies` = AK outside the Anchorage CBSA; PR DACO goes before `gas.eia-national`
-   with `applies` = PR.
+   (used / stale / not-applicable / unavailable / invalid, with `asOf`, `seriesId` and — when only the data knows it —
+   a `geography` override) and `onUnavailable`. Examples: `rent.zillow-metro` (static, between the county rung and
+   CPI shelter), `gas.dcra-community` (static, keyed by zip, before the HI/AK stand-in), `gas.daco-pr` (static, before
+   the U.S. average), `heatingOil.nyserda-region` (live, before the EIA state rung). A static gas rung returns its own
+   `lookup` with the value (no cache key); `selectGasLookup()` (the refresh plan and map) considers live rungs only.
 3. **Snapshot.** If the rung returns a new value shape, map it in `fetchSnapshot` (`src/lib/api/snapshot.ts`) — e.g. a
-   metro rent row becomes `rent` with the metro as its geography. Labels and citations come from the winning rung.
+   metro rent row becomes `rent` with `level: 'metro'`. Labels and citations come from the winning rung.
 4. **Regenerate + test.** `npm run docs:ladders`, add the zip to `tests/unit/resolution-trace.test.ts` (trace snapshot)
    and `tests/unit/golden-zips.test.ts` if the lookup changes, then `npm test`. The About page updates itself.
 
 ## How to add a metric (e.g. home heating fuel)
 
-Add a ladder (e.g. `heatingFuel`: NYSERDA regional heating oil for NY → EIA SHOPP state heating oil / propane) to `LADDERS`
-and `LADDER_ORDER`, its context accessors, a `TraceMetric` entry in `types.ts` and the snapshot wiring, then a graph that
-passes `snapshot.trace.heatingFuel` to `EraChart`'s `trace` prop. Seasonal sources resolve as `stale` off-season with a reason.
+Add a ladder to `LADDERS` and `LADDER_ORDER` (home heating: `heatingOil` = NYSERDA New York region → EIA SHOPP state;
+`propane` = EIA SHOPP state), its context accessors, a `TraceMetric` entry in `types.ts`, the snapshot wiring
+(`snapshot.heating`), the refresh plan, then a graph that passes `snapshot.trace.{metric}` to `EraChart`'s `trace`
+prop (`HeatingChart.tsx`, tabs only where a source has data). Seasonal sources resolve as `stale` off-season with a
+plain reason (EIA SHOPP: "Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct").
