@@ -81,7 +81,7 @@ export function gasNationalMatching(
   const b = nat.find((p) => p.date === (g.baselineDate ?? BASELINE_MONTH))
   const l = g.latestDate ? nat.find((p) => p.date === g.latestDate) : undefined
   if (!b || !l) return null
-  return { current: l.price, baseline: b.price, change: l.price - b.price, latestDate: l.date, baselineDate: b.date }
+  return { current: l.price, baseline: b.price, change: displayedChange(l.price, b.price), latestDate: l.date, baselineDate: b.date }
 }
 
 /** National gas change using the same baseline rule as the local series. */
@@ -96,7 +96,7 @@ export function gasChangeSinceBaseline(
   return {
     current: latest.price,
     baseline: base.price,
-    change: latest.price - base.price,
+    change: displayedChange(latest.price, base.price),
     latestDate: latest.date,
     baselineDate: base.date,
   }
@@ -114,4 +114,14 @@ export function monthlyChangeSinceBaseline<T extends { date: string }>(
   const pct = pctChange(value(series[l]), value(series[b]))
   if (pct == null) return null
   return { pct, baselinePeriod: series[b].date, latestPeriod: series[l].date }
+}
+
+/**
+ * Gas $/gal change as displayed: the difference of the two prices AS SHOWN (each rounded to the cent), so
+ * "$4.49 now vs $3.12 then" always reads "+$1.37", never a 3-decimal difference that rounds to "+$1.36".
+ */
+export function displayedChange(current: number, baseline: number): number {
+  const v = Math.round(current * 100) / 100 - Math.round(baseline * 100) / 100
+  const r = Number(v.toFixed(2))
+  return Object.is(r, -0) ? 0 : r
 }

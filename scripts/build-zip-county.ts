@@ -258,7 +258,7 @@ async function main() {
   const abbrToFips: Record<string, string> = {}
   for (const [fips, { abbr }] of Object.entries(STATE_FIPS_MAP)) abbrToFips[abbr] = fips
 
-  interface GeoNamesRow { zip: string; city: string; state: string; countyName: string; countyFips: string }
+  interface GeoNamesRow { zip: string; city: string; state: string; countyName: string; countyFips: string; lat: number; lng: number }
   const geonames: Record<string, GeoNamesRow> = {}
   for (const [country, zipFile] of Object.entries(geonamesZips)) {
     const txt = execFileSync('unzip', ['-p', zipFile, `${country}.txt`], { maxBuffer: 64 * 1024 * 1024 }).toString('utf8')
@@ -277,7 +277,7 @@ async function main() {
       } else if (/^\d{2}$/.test(f[4]) && /^\d{3}$/.test(f[6])) {
         countyFips = `${f[4]}${f[6]}`
       }
-      geonames[f[1]] ??= { zip: f[1], city: f[2], state, countyName: f[5], countyFips }
+      geonames[f[1]] ??= { zip: f[1], city: f[2], state, countyName: f[5], countyFips, lat: Number(f[9]), lng: Number(f[10]) }
     }
   }
 
@@ -317,6 +317,57 @@ async function main() {
     addWeights((cityCounty[k] ??= new Map()), e.countyFips, 1, 0, 0)
     if (ctByZip[zip]) addWeights((cityCounty[`CTREGION|${e.cityName.toLowerCase()}`] ??= new Map()), ctByZip[zip], 1, 0, 0)
   }
+  // City/county mismatch for mail-only zips. PO box and unique zips (and ZCTAs with no housing units,
+  // e.g. 99519 "Anchorage" = Prudhoe Bay oilfield land in North Slope Borough) are often filed under the
+  // county a company or agency operates in, not the post office's. 99519 has 5 housing units (worker
+  // camps), so "no housing" means fewer than MAIL_ONLY_MAX_HU. When the zip's city has Census ZCTA
+  // zips with housing in this state, none of them in the assigned county, AND GeoNames' own coordinate
+  // for the zip lies nearer the city's county than the assigned one, use the city's county. (The
+  // coordinate test keeps genuine border cases — Wayne PA, Fairfax city — where they are.)
+  const MAIL_ONLY_MAX_HU = 50
+  const housed = new Set<string>()
+  for (const [zcta, counties] of zctaCounty) {
+    if ([...counties.values()].reduce((a, w) => a + w[0], 0) >= MAIL_ONLY_MAX_HU) housed.add(zcta)
+  }
+  const housedCityCounty: Record<string, Map<string, Weights>> = {}
+  const countyPts: Record<string, [number, number, number]> = {}
+  for (const [zip, e] of Object.entries(result)) {
+    if (!housed.has(zip)) continue
+    if (e.cityName) addWeights((housedCityCounty[`${e.stateAbbr}|${e.cityName.toLowerCase()}`] ??= new Map()), e.countyFips, 1, 0, 0)
+    const g = geonames[zip]
+    if (g && Number.isFinite(g.lat) && Number.isFinite(g.lng)) {
+      const c = (countyPts[e.countyFips] ??= [0, 0, 0])
+      c[0] += g.lat; c[1] += g.lng; c[2]++
+    }
+  }
+  const km = (lat: number, lng: number, county: string): number | null => {
+    const c = countyPts[county]
+    if (!c) return null
+    const [la, lo] = [c[0] / c[2], c[1] / c[2]]
+    const x = ((lng - lo) * Math.PI / 180) * Math.cos(((lat + la) / 2) * Math.PI / 180)
+    return 6371 * Math.hypot(x, ((lat - la) * Math.PI) / 180)
+  }
+  const cityFixes: string[] = []
+  /** The city's county when the evidence says the assigned county is the operator's, not the post office's. */
+  function cityCountyFix(zip: string, stateAbbr: string, countyFips: string): string | null {
+    const g = geonames[zip]
+    if (!g || !Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return null
+    const city = cityFor(zip, stateAbbr) || g.city
+    const via = housedCityCounty[`${stateAbbr}|${city.toLowerCase()}`]
+    if (!via || via.has(countyFips)) return null
+    const to = best(via)
+    const dTo = km(g.lat, g.lng, to)
+    const dFrom = km(g.lat, g.lng, countyFips)
+    if (dTo === null || dFrom === null || !(dTo < dFrom)) return null
+    cityFixes.push(`${zip} ${city}, ${stateAbbr}: ${countyNames[countyFips]} (${countyFips}) → ${countyNames[to]} (${to}) [${Math.round(dFrom)} km → ${Math.round(dTo)} km]`)
+    return to
+  }
+  // ZCTAs with (almost) no housing units: mail/business/worksite zips
+  for (const [zcta, e] of Object.entries(result)) {
+    if (housed.has(zcta) || zcta.startsWith('09')) continue
+    const to = cityCountyFix(zcta, e.stateAbbr, e.countyFips)
+    if (to) result[zcta] = { ...e, countyFips: to, countyName: countyNames[to] ?? e.countyName }
+  }
   let added = 0
   const unresolved: string[] = []
   for (const g of Object.values(geonames)) {
@@ -326,6 +377,7 @@ async function main() {
     let countyFips = g.countyFips
     let ctRegion: string | undefined
     if (g.state === 'CT' && /^091[1-9]0$/.test(countyFips)) ctRegion = countyFips
+    if (countyNames[countyFips] && !ctRegion) countyFips = cityCountyFix(g.zip, g.state, countyFips) ?? countyFips
     if (!countyNames[countyFips]) {
       const viaCity = cityCounty[`${g.state}|${g.city.toLowerCase()}`]
       if (viaCity) {
@@ -353,6 +405,7 @@ async function main() {
     added++
   }
   console.log(`ZCTA zips: ${zctaCount.toLocaleString()}, USPS-only zips added: ${added.toLocaleString()}`)
+  console.log(`Mail-only zips moved to their city's county: ${cityFixes.length}\n  ${cityFixes.join('\n  ')}`)
   if (unresolved.length) console.log(`Unresolved USPS-only zips (skipped): ${unresolved.length}\n  ${unresolved.join('\n  ')}`)
 
   // 9. Write

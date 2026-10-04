@@ -294,9 +294,9 @@
   "cpiArea": "S35D",
   "cpiTier": 1,
   "cpiName": "Tampa-St. Petersburg-Clearwater",
-  "gasSource": "bls",
-  "gasDuoarea": "S35D",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SFL",
+  "gasTier": 2,
   "lausFips": "12053"
  },
  "12055": {
@@ -314,9 +314,9 @@
   "cpiArea": "S35D",
   "cpiTier": 1,
   "cpiName": "Tampa-St. Petersburg-Clearwater",
-  "gasSource": "bls",
-  "gasDuoarea": "S35D",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SFL",
+  "gasTier": 2,
   "lausFips": "12057"
  },
  "12059": {
@@ -544,9 +544,9 @@
   "cpiArea": "S35D",
   "cpiTier": 1,
   "cpiName": "Tampa-St. Petersburg-Clearwater",
-  "gasSource": "bls",
-  "gasDuoarea": "S35D",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SFL",
+  "gasTier": 2,
   "lausFips": "12101"
  },
  "12103": {
@@ -554,9 +554,9 @@
   "cpiArea": "S35D",
   "cpiTier": 1,
   "cpiName": "Tampa-St. Petersburg-Clearwater",
-  "gasSource": "bls",
-  "gasDuoarea": "S35D",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SFL",
+  "gasTier": 2,
   "lausFips": "12103"
  },
  "12105": {
@@ -9994,9 +9994,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27003"
  },
  "27005": {
@@ -10074,9 +10074,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27019"
  },
  "27021": {
@@ -10104,9 +10104,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27025"
  },
  "27027": {
@@ -10164,9 +10164,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27037"
  },
  "27039": {
@@ -10244,9 +10244,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27053"
  },
  "27055": {
@@ -10274,9 +10274,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27059"
  },
  "27061": {
@@ -10374,9 +10374,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27079"
  },
  "27081": {
@@ -10454,9 +10454,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27095"
  },
  "27097": {
@@ -10594,9 +10594,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27123"
  },
  "27125": {
@@ -10674,9 +10674,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27139"
  },
  "27141": {
@@ -10684,9 +10684,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27141"
  },
  "27143": {
@@ -10694,9 +10694,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27143"
  },
  "27145": {
@@ -10794,9 +10794,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27163"
  },
  "27165": {
@@ -10834,9 +10834,9 @@
   "cpiArea": "S24A",
   "cpiTier": 1,
   "cpiName": "Minneapolis-St. Paul-Bloomington",
-  "gasSource": "bls",
-  "gasDuoarea": "S24A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SMN",
+  "gasTier": 2,
   "lausFips": "27171"
  },
  "27173": {
@@ -22494,9 +22494,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48085"
  },
  "48087": {
@@ -22634,9 +22634,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48113"
  },
  "48115": {
@@ -22674,9 +22674,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48121"
  },
  "48123": {
@@ -22764,9 +22764,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48139"
  },
  "48141": {
@@ -23174,9 +23174,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48221"
  },
  "48223": {
@@ -23224,9 +23224,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48231"
  },
  "48233": {
@@ -23324,9 +23324,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48251"
  },
  "48253": {
@@ -23354,9 +23354,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48257"
  },
  "48259": {
@@ -23904,9 +23904,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48367"
  },
  "48369": {
@@ -24054,9 +24054,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48397"
  },
  "48399": {
@@ -24194,9 +24194,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48425"
  },
  "48427": {
@@ -24264,9 +24264,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48439"
  },
  "48441": {
@@ -24554,9 +24554,9 @@
   "cpiArea": "S37A",
   "cpiTier": 1,
   "cpiName": "Dallas-Fort Worth-Arlington",
-  "gasSource": "bls",
-  "gasDuoarea": "S37A",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "STX",
+  "gasTier": 2,
   "lausFips": "48497"
  },
  "48499": {
@@ -31284,9 +31284,9 @@
   "cpiArea": "S49C",
   "cpiTier": 1,
   "cpiName": "Riverside-San Bernardino-Ontario",
-  "gasSource": "bls",
-  "gasDuoarea": "S49C",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SCA",
+  "gasTier": 2,
   "lausFips": "06065"
  },
  "06067": {
@@ -31314,9 +31314,9 @@
   "cpiArea": "S49C",
   "cpiTier": 1,
   "cpiName": "Riverside-San Bernardino-Ontario",
-  "gasSource": "bls",
-  "gasDuoarea": "S49C",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SCA",
+  "gasTier": 2,
   "lausFips": "06071"
  },
  "06073": {
@@ -31324,9 +31324,9 @@
   "cpiArea": "S49E",
   "cpiTier": 1,
   "cpiName": "San Diego-Carlsbad",
-  "gasSource": "bls",
-  "gasDuoarea": "S49E",
-  "gasTier": 1,
+  "gasSource": "eia",
+  "gasDuoarea": "SCA",
+  "gasTier": 2,
   "lausFips": "06073"
  },
  "06075": {

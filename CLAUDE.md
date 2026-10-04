@@ -60,8 +60,12 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 **Map layers (Gas / Groceries / Electricity):** `/api/map-metrics` (`src/lib/api/map-metrics.ts`) READS THE CACHE
 ONLY (each key, else its `:lastgood` copy; never BLS/EIA, never the runtime budget) and returns one value per gas
 series / CPI area / state plus `counties: {fips: [gasIdx, cpiIdx]}` from `county-geo.json` (state = FIPS prefix).
-Same numbers as the cards (gas $ change, CPI food-at-home %, electricity adjusted %). CDN `s-maxage=3600` when
-every area is cached, `300` when any is missing. A key not in the cache is "no data" on the map until the next refresh.
+Same numbers as the cards (gas $ change, CPI food-at-home %, electricity 12-month-average %); Alaska boroughs outside
+Anchorage take the bundled DCRA survey (borough median of surveyed communities, labeled) and Puerto Rico the DACO series.
+Memoized in-process for 60 s (`buildMapMetricsMemo`); a query string is 308-redirected to the bare path (no CDN bypass).
+A `:lastgood` copy is marked `stale` (and counted). CDN `s-maxage=3600` when every area is fresh, `300` when any is
+missing or stale. A key not in the cache is "no data" on the map until the next refresh. The selected zip's own county
+row shows the card's figure where the county value can't (AK survey community, metro rent: `zipPanelOverrides`).
 
 **2. Static monthly pipeline** (Rent card data, Housing graph Zillow tabs, county map)
 
@@ -128,8 +132,10 @@ used only for the shelter card's dollar figure; verified monthly with a Jan 2025
 - **Gas** the `gas` ladder (`getGasLookup()` in `src/lib/api/eia.ts` = its first applicable rung), tables in `src/lib/mappings/eia-gas.ts` (EIA) and
   `src/lib/mappings/bls-gas.ts` (BLS). Most local first:
   1. EIA weekly city: county override (Cleveland only) or CPI metro → EIA city (`CPI_TO_EIA_CITY`)
-  2. **BLS monthly** CPI average price `APU{area}74714` for a CPI metro **without** an EIA city (Philadelphia, Detroit,
-     Minneapolis, St. Louis, DC, Atlanta, Tampa, Baltimore, Dallas, Phoenix, Riverside, San Diego, Honolulu `S49F`,
+  2. **BLS monthly** CPI average price `APU{area}74714` for a CPI metro **without** an EIA city, **only in states
+     without an EIA weekly state average** (round 11: CA/CO/FL/MA/MN/NY/OH/TX/WA zips take the weekly state series so
+     a state's zips share one weekly basis) — Philadelphia, Detroit, Minneapolis (its WI counties), St. Louis, DC,
+     Atlanta, Baltimore, Phoenix, Honolulu `S49F`,
      Anchorage `S49G`). BLS titles S49F/S49G "Urban Hawaii/Alaska", but they are the Urban Honolulu CBSA (15003) and
      the Anchorage CBSA (02020, 02170) only: label them "Honolulu metro" / "Anchorage metro".
   2b. **Alaska outside the Anchorage CBSA → DCRA Community Fuel Price Survey** (static `ak-gas.json`, CC BY 4.0,
@@ -155,8 +161,9 @@ used only for the shelter card's dollar figure; verified monthly with a Jan 2025
   gasoline)**, `EIA_GAS_PRODUCT` in `eia.ts`; series `EMM_EPMR_PTE_{duoarea}_DPG`. (EPM0 "all grades" ran ~10–15¢
   above regular.) BLS average prices exist monthly (also for bimonthly CPI metros, ~2–6 week lag) with Jan 2025 values
   for every area in `BLS_GAS_PUBLISHED_AREAS`; since 2021 they come from crowdsourced station data and run ~10¢ above
-  EIA. Zip coverage: EIA city 10.1%, BLS metro 9.8% (incl. Honolulu/Anchorage), BLS HI/AK stand-in 0.7%, EIA state
-  21.5%, EIA PADD 57.4%, national 0.5%.
+  EIA. Live-rung zip coverage (41,195 zips, round 11): EIA city 4,181, BLS metro 2,719 (was 4,024 before the
+  weekly-state preference), BLS HI/AK stand-in 298, EIA state 10,139 (was 8,834), EIA PADD/national 23,858. Gas $ changes
+  are the difference of the two prices as displayed (each rounded to the cent: `displayedChange` in `baseline.ts`).
   Monthly BLS figures lag weekly EIA by weeks, so BLS tiers always name their month and source: card detail
   "through Aug 2026 (monthly)"; "National: $x (+$y) · U.S. city avg, BLS, Aug 2026" vs "· U.S. avg, EIA, week of
   Sep 28" (`gasNationalSourceTag`); share card "Philadelphia metro · thru Aug '26" and "Natl (BLS): …"; OG "since Jan
@@ -183,22 +190,22 @@ closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx
 | Card | Number | Dollar line (formula source) |
 |---|---|---|
 | Gas | EIA weekly $/gal: latest vs last weekly reading in [Jan 6, Jan 20] 2025; BLS tiers: latest month vs Jan 2025 ("since Jan 2025", provenance "BLS CPI average price, regular gasoline · {area} · monthly · …") | signed `current − baseline` $/gal (`eia.ts` / `bls-gas.ts`) |
-| Rent (new leases) | Zillow ZORI county % since Jan 2025, SA by whatchanged | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
-| ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without local ACS rent or without SEHA (e.g. older cached CPI) (`computeShelterImpact`) |
-| Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`) |
-| Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = latest **published** monthly price (with its month); "+x% since Jan 2025" = **seasonally adjusted** price change (see below); card "U.S. +y%" = EIA U.S. average, same method, same months | `round((saCurrent − saBaseline) × usageKwh / 100)` $/mo, `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
+| Rent (new leases) | Zillow ZORI county (else metro; a flagged-outlier metro never stands in) % since Jan 2025, SA by whatchanged; range −20…+50 shared by build and runtime (`src/lib/rent-range.ts` = `meta.pctRange`) | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
+| ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without SEHA (validated on its own: `isValidRentIndexChange`) or when CPI is national. Rent base (`rentBase` ladder, `getCensusData`): zip ACS → PO-box donor → nearest zip in the county with a Census rent (≤ 100 mi) → county median → state median, always labeled; never a national constant (`computeShelterImpact`) |
+| Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`); **null** when CPI is national (fallback or territories) |
+| Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = **average of the latest 12 published monthly prices** ("avg, last 12 mo"); "+x% vs 12 mo before Feb 2025" = that average vs the average of Feb 2024–Jan 2025; card "U.S. +y%" = EIA U.S. average, same windows | `round((current − baseline) × usageKwh / 100)` $/mo (change in the 12-month average price), `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
 
-**Electricity seasonality** (`src/lib/api/eia-electricity.ts`): residential prices are seasonal (Georgia's July price
-runs ~17% above January in a typical year), so Jan 2025 → latest raw would mostly measure the season. The % uses
-classical decomposition (centered 2×12 moving average, per-calendar-month median ratio over 2014-07…2024-12,
-normalized to mean 1), the same method as Zillow rents; factors use pre-baseline data only, so the baseline never
-revises. Rejected alternatives: 12-month averages (Feb 2024–Jan 2025 vs the latest 12 months) mix in pre-inauguration
-months and lag ~6 months; same-month-last-year isn't "since Jan 2025". The ⓘ shows the published prices and the
-unadjusted %. Sanity: price 5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo. Point-to-point SA is noisier
-where states reset rates administratively (e.g. CT's Jan/Jul standard-service changes).
+**Electricity: 12-month averages** (`src/lib/api/eia-electricity.ts`, round 11): residential prices are seasonal
+(Georgia's July price runs ~17% above January), so single-month comparisons mostly measure the season. The old
+seasonal adjustment (2014–2024 factors) no longer fit some states (GA headline swung −3.5%…+7.1% month to month) and its
+centered average leaked 2025 data, so it was replaced: `current` = mean of the latest 12 monthly prices, `baseline` =
+mean of the 12 months ending Jan 2025, `change` = their % difference (`method: 'avg12'`; older cached payloads fail
+`isValidElectricity` and are refetched). The ⓘ shows both windows and the latest single month. Before → after (fixture
+through Jul 2026): GA +2.6% / +$4 → +6.6% / +$10; ME +23.3% / +$33 → +21.2% / +$27; U.S. +8.5% → +9.0%. Sanity: price
+5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo.
 
-Shelter dollars are **null** whenever the CPI used is national (outage fallback, or territories like PR whose only CPI
-is national): national CPI % is never applied to local rent; the card says why.
+Shelter and groceries dollars are **null** whenever the CPI used is national (outage fallback, or territories like PR
+whose only CPI is national): a U.S. % is never presented as a local cost; the card says why.
 
 Share card, OG image and `og:description` tag every number with a short geography (`geoTag`: "Buncombe Co.",
 "South Atlantic region", "Lower Atlantic avg", "U.S. avg; local n/a"); flagged county rent (outliers, bundled as
@@ -207,11 +214,14 @@ Share card, OG image and `og:description` tag every number with a short geograph
 title cut at a hyphen) with "since Jan 2025" and "thru {Mon 'YY}"; HI/AK stand-ins get "Honolulu-area price*" and the
 `GAS_STANDIN_FOOTNOTE`. The gas chart for BLS tiers is monthly; unpublished BLS months (e.g. Oct 2025) stay as empty
 rows (`blsUnpublishedMonths`) so charts mark the gap.
-Electricity on those surfaces: share card 4th quadrant = "ELECTRICITY (home ¢/kWh, seasonally adj.)", geography line
-"{State} · {price}¢/kWh ({Mon 'YY})" (DC short), sparkline of the adjusted % since Jan 2025, big number = adjusted %,
-pill "≈ +$Y/mo", basis "$/mo at N kWh/mo (avg {State} home)" (fit tests in `tests/unit/share-card-fit.test.ts` cover
-every state). OG stat = adjusted % with "{State} (statewide)" / "since Jan 2025, seas. adj."; the national OG's bottom
-band is the U.S. average price and %; `og:description` "Electricity +x% ({State})". Footers: "BLS · EIA · Zillow" or
+Electricity on those surfaces: share card 4th quadrant = "ELECTRICITY (home ¢/kWh, 12-month avg)", geography line
+"{State} · {12-mo avg}¢/kWh ({Mon 'YY} = end of window)" (DC short), sparkline of the 12-month average's % vs the 12
+months to Jan 2025, meta "vs 12 mo to Jan 2025", big number = that %, pill "≈ +$Y/mo", basis "$/mo at N kWh/mo (avg
+{State} home)" (fit tests in `tests/unit/share-card-fit.test.ts` cover every state). OG stat = that % with "{State}
+(statewide)" / "12-mo avg vs 12 mo to Jan 2025"; the national OG's bottom band is the U.S. 12-month average price and
+%; national OG panels each end at their own latest month and the header says "data through Aug–Sep 2026";
+`og:description` "Electricity +x% (12-mo avg, {State})". Signed values (big numbers, pills, card inline $, graph
+headlines, end labels) are neutral ink; metric accents only on lines, bars and the cards' top bar. Footers: "BLS · EIA · Zillow" or
 "BLS · EIA · Census" (Census rent is used only by the CPI shelter card).
 
 Dollar amounts are computed server-side in `snapshot.ts` → `dollarImpact`. The frontend never recomputes them or
@@ -222,13 +232,13 @@ change −20 to +50, gas $1–$10. Anything outside shows "Data unavailable".
 
 1. Zip input + location banner. 2. The four hero cards. 3. Graphs (`ChartsSection.tsx`, configs in
 `src/lib/charts/chart-config.ts`): Gas, Groceries, **Housing**, **Electricity** — each with Jan 2025 | 3Y | 5Y | 10Y,
-era shading, "Show national" and an ⓘ disclosure (button with `aria-expanded`/`aria-controls`, Escape closes; panel
+a baseline rule (no party colors), "Show national" and an ⓘ disclosure (button with `aria-expanded`/`aria-controls`, Escape closes; panel
 `chart-info`) holding the description and long notes, leaving at most one short line (`chart-note`) under the graph.
 4. National county map (`src/components/map/NationalMap.tsx`).
 
-**Electricity graph** (`electricity` config): ¢/kWh, bold line = seasonally adjusted (`sa`, the card's %), thin
-line = published monthly price; headline "+x% since Jan 2025 · seasonally adjusted · {price} in {Mon YYYY}";
-"Show national" adds only the U.S. adjusted line.
+**Electricity graph** (`electricity` config): ¢/kWh, bold line = trailing 12-month average (`avg12`, the card's number
+and %), thin line = published monthly price; both end values labeled; headline "+x% 12-month average vs the 12 months
+to Jan 2025 · {avg} ({window}) vs {avg} ({window})"; "Show national" adds only the U.S. 12-month average line.
 
 **Housing graph** (`src/components/charts/HousingChart.tsx`) has three tabs:
 - **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %), or for a
@@ -237,10 +247,15 @@ line = published monthly price; headline "+x% since Jan 2025 · seasonally adjus
 - **Shelter (CPI)**: BLS CPI shelter `SAH1` from the snapshot (all tenants and homeowners).
 
 **Home heating graph** (`HeatingChart.tsx`, 5th, after Electricity; not a hero card): tabs Heating oil | Propane, only
-where a source publishes (`snapshot.heating.{oil,propane}` null = no source → no tab; no graph when both are null).
+where a source publishes (`snapshot.heating.{oil,propane}` null = no source → no tab) **and** at least 5% of the state's
+homes heat with that fuel (Census ACS B25040, `src/lib/data/heating-fuel-share.json`, `src/lib/heating-relevance.ts`;
+the ⓘ states the share); no graph when no tab qualifies (e.g. Georgia: 0.2% oil, 3.6% propane).
 Weekly $/gal since the week of Jan 20 2025; NY heating oil = NYSERDA region vs NY statewide; elsewhere EIA SHOPP state vs
 EIA U.S. SHOPP is October–March only: off-season the note says "Heating-season survey (Oct–Mar) · latest Mar 30, 2026
-· next update mid-Oct" (trace ⚠ stale with that reason; no Stale badge). The April–September break is drawn as a gap.
+· next update mid-Oct" (trace ⚠ stale with that reason; no Stale badge) and the headline reads as last season ("+46.4% ·
+Jan 20, 2025 → Mar 30, 2026 (last heating season)", dimmed). In season a series is stale after 16 days
+(`HEATING_STALE_DAYS`); SHOPP publishes Wednesdays, so refresh-cache.yml also runs `--only=heating` Thursdays 15:00 UTC.
+The April–September break is drawn as a gap.
 
 Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Electricity (all configs `size: 'medium'`), then
 Home heating where it has data; one column below.

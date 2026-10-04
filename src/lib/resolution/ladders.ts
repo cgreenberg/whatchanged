@@ -15,7 +15,7 @@
 
 import cbsaCrosswalk from '@/lib/data/cbsa-cpi-crosswalk.json'
 import type { CachedResult } from '@/lib/cache/kv'
-import type { CpiData, RentData } from '@/types'
+import type { CensusData, CpiData, RentData } from '@/types'
 import type { GeoLevel } from './types'
 import { defineRung, firstApplicable, type Ladder, type LadderResult, type RungOutcome } from './resolve'
 import {
@@ -30,10 +30,11 @@ import { hasElectricitySeries, electricitySeriesId, type ElectricitySeriesData }
 import { CPI_CHANGE_RANGE } from '@/lib/api/validate'
 import { isBlsPeriodStale, isElectricityPeriodStale, monthOlderThan, RENT_STALE_DAYS } from '@/lib/staleness'
 import type { CountyRentLookup } from '@/lib/rent'
+import { rentRangeText } from '@/lib/rent-range'
 import type { StaticGasLookup } from '@/lib/static-gas'
 import {
   DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME, DCRA_STALE_DAYS,
-  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, DACO_STALE_DAYS,
+  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, DACO_STALE_DAYS, dcraStationsText,
 } from '@/lib/static-gas-meta'
 import {
   HEATING_STATES, hasHeatingSeries, isValidHeating, heatingSeriesId, heatingSeriesUrl, heatingSeasonStatus, NATIONAL_HEATING,
@@ -71,6 +72,8 @@ export interface LadderContext {
   countyRent?(countyFips: string): CountyRentLookup
   /** Static metro rent for a county without a county series: src/lib/data/metro-rent.json via lookupMetroRent. */
   metroRent?(countyFips: string, countyName?: string): CountyRentLookup
+  /** Static Census ACS median gross rent basis for a zip (src/lib/data/census-acs.ts getCensusData). */
+  censusRent?(zip: string): CensusData
   /** Static gas: Alaska DCRA community survey by zip / Puerto Rico DACO (src/lib/static-gas.ts). */
   akGas?(zip: string): StaticGasLookup
   prGas?(): StaticGasLookup
@@ -169,7 +172,9 @@ const blsGasRung = {
 
 /** Gas ladder value: the cached series, plus the lookup when a static rung (no cache key) produced it. */
 export type GasRungValue = CachedResult<GasSeriesData> & { lookup?: GasLookupResult; staticHit?: StaticHitInfo }
-export type StaticHitInfo = { kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number }
+export type StaticHitInfo = {
+  kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number; stations?: number; retailer?: string
+}
 
 /** A static gas series (bundled): used unless its latest survey/month is overdue. */
 function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, l: L): RungOutcome<GasRungValue> {
@@ -188,16 +193,22 @@ function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, 
     : h.match === 'region'
       ? { name: `${h.place} Alaska region (DCRA average)`, level: 'region' as const }
       : { name: h.match === 'nearest' ? `${h.place} (nearest surveyed community${h.km !== undefined ? `, ${h.km} km` : ''})` : h.place, level: 'community' as const }
+  const stationsNote = kind === 'dcra' && h.match !== 'region' ? ` ${dcraStationsText(h.place, h.stations, h.retailer)}` : ''
   const note = kind === 'dcra' && h.match === 'nearest'
-    ? `DCRA doesn't survey ${l.countyName ? `this zip's town` : 'this town'}; ${h.place} is the nearest surveyed community in ${countyOnly(l)}.`
+    ? `DCRA doesn't survey ${l.countyName ? `this zip's town` : 'this town'}; ${h.place} is the nearest surveyed community in ${countyOnly(l)}.${stationsNote}`
     : kind === 'dcra' && h.match === 'region'
       ? `No usable surveyed community near this zip in ${countyOnly(l)}; this is DCRA's ${h.place} region average.`
-      : undefined
+      : kind === 'dcra'
+        ? stationsNote.trim()
+        : undefined
   return {
     status: stale ? 'stale' : 'used',
     value: {
       data: h.data, cacheHit: true, stale: false, fetchedAt: now.toISOString(), lookup: h.lookup,
-      staticHit: { kind, ...(h.match ? { match: h.match } : {}), place: h.place, ...(h.km !== undefined ? { km: h.km } : {}) },
+      staticHit: {
+        kind, ...(h.match ? { match: h.match } : {}), place: h.place, ...(h.km !== undefined ? { km: h.km } : {}),
+        ...(h.stations !== undefined ? { stations: h.stations } : {}), ...(h.retailer ? { retailer: h.retailer } : {}),
+      },
     },
     asOf: h.data.latestDate,
     seriesId: h.lookup.seriesId,
@@ -210,6 +221,13 @@ const GAS = {
   metric: 'gas',
   title: 'Gas (regular)',
   comparison: 'U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average); none for the Alaska survey or Puerto Rico DACO, which publish no U.S. figure.',
+  method:
+    'Change in $/gal of the prices as shown (each rounded to the cent). Baseline: EIA weekly, the last reading on or before ' +
+    'Jan 20, 2025; BLS and DACO monthly, January 2025; Alaska DCRA, the January 2025 survey (a January vs July survey compares ' +
+    'different seasons; past surveys show no consistent gap). DCRA community figures can rest on a single retailer\'s price ' +
+    '(the ⓘ says how many stations). Not seasonally adjusted. Where EIA publishes a weekly state average (9 states), it is ' +
+    'preferred over BLS\'s monthly metro price so all of the state\'s zips are on the same weekly basis. Elsewhere in Hawaii ' +
+    '(and Alaska zips the survey doesn\'t cover) the Honolulu or Anchorage price stands in, marked “*” (e.g. “Honolulu-area*”).',
   rungs: [
     defineRung<L, GasLookupResult, CachedResult<GasSeriesData>, C>({
       ...eiaGasRung,
@@ -237,10 +255,16 @@ const GAS = {
       id: 'gas.bls-metro',
       label: 'BLS monthly metro average',
       level: 'metro',
-      covers: 'Counties in a BLS CPI metro without an EIA city series (e.g. Philadelphia, Washington DC, Atlanta, Phoenix, Honolulu, Anchorage).',
-      applies: (l) =>
-        isBlsGasMetro(l.cpiAreaCode) ||
-        `BLS publishes monthly gas prices for ${blsGasMetroCount()} metro areas; ${countyOnly(l)} isn't in one.`,
+      covers: 'Counties in a BLS CPI metro without an EIA city series, in states without an EIA weekly state average (e.g. Philadelphia, Washington DC, Atlanta, Detroit, Phoenix, St. Louis, Honolulu, Anchorage). In the states EIA prices weekly, the weekly state average is used instead, so every zip in the state is on the same weekly basis.',
+      applies: (l) => {
+        if (!isBlsGasMetro(l.cpiAreaCode)) {
+          return `BLS publishes monthly gas prices for ${blsGasMetroCount()} metro areas; ${countyOnly(l)} isn't in one.`
+        }
+        // A weekly EIA state series exists: prefer it, so neighboring zips in one state never mix a monthly
+        // metro figure (weeks older, a different U.S. comparison) with the weekly state figure.
+        return !STATE_LEVEL_CODES[up(l)] ||
+          `EIA publishes a weekly ${stateLabel(l)} average; it is used instead of BLS's monthly metro price so every ${stateLabel(l)} zip is compared on the same weekly basis.`
+      },
       target: (l) => describeBlsGasArea(l.cpiAreaCode!),
       geography: (g) => `${g.areaName} metro`,
       place: countyPlace,
@@ -478,6 +502,10 @@ const GROCERIES = {
   metric: 'groceries',
   title: 'Groceries',
   comparison: 'BLS U.S. city average food at home over the same months.',
+  method:
+    '% change of the CPI food-at-home index since January 2025 (or the nearest earlier month an area publishes). ' +
+    'Not seasonally adjusted. ≈ $/yr = $6,000/yr typical household food-at-home spending × that %; no $ where only the ' +
+    'U.S. CPI applies (national fallback, Puerto Rico and other territories), because a U.S. change is not a local cost.',
   rungs: cpiRungs('groceries'),
 } satisfies Ladder<L, CachedResult<CpiData>, C>
 
@@ -485,6 +513,12 @@ const SHELTER = {
   metric: 'shelter',
   title: 'Shelter (CPI)',
   comparison: 'BLS U.S. city average shelter over the same months.',
+  method:
+    '% change of the CPI shelter index (rents plus owners\' equivalent rent, existing leases included, so it lags new-lease ' +
+    'rents) since January 2025. Not seasonally adjusted. Its ≈ $/yr in rent = the same area\'s CPI rent of primary residence ' +
+    '% × the local Census ACS median gross rent × 12 (no $ where only the U.S. CPI applies, or the rent index fails its ' +
+    'sanity check). Where Census suppresses a zip\'s rent, the rent base is borrowed and labeled: the nearest zip in the ' +
+    'county with a Census rent, else the county median, else the state median.',
   rungs: cpiRungs('shelter'),
 } satisfies Ladder<L, CachedResult<CpiData>, C>
 
@@ -493,9 +527,23 @@ const SHELTER = {
 const ZILLOW_HOME = 'https://www.zillow.com/research/data/'
 const ZILLOW_LICENSE = 'Zillow Research data; attribution required'
 
+/** Why the metro series stands in, with the county's true reason. */
+function metroStandInReason(why: RentData['countyWhy'], county: string): string {
+  if (why === 'too-new') return `Zillow's series for ${county} is too new to measure since Jan 2025; its metro’s series stands in.`
+  if (why === 'no-baseline') return `Zillow's series for ${county} has no Jan 2025 value; its metro’s series stands in.`
+  return `Zillow publishes no rent series for ${county}; its metro’s series stands in.`
+}
+
 const RENT = {
   metric: 'rent',
   title: 'Rent (housing card)',
+  method:
+    '% change of Zillow\'s typical asking rent on new leases since January 2025, seasonally adjusted by whatchanged ' +
+    '(classical decomposition; seasonal factors use only months whose full 13-month window ends by December 2024, so ' +
+    'nothing after the baseline shapes them). A series too short to estimate its own seasonal pattern uses a pooled one ' +
+    '(its state\'s counties, or U.S. counties where the state has too few) and says so. ≈ $/mo = today\'s typical rent − ' +
+    'today\'s rent ÷ (1 + %). Changes outside −20% to +50% are not shown; a county\'s own unusual figure is tagged ' +
+    '“⚠ unusual”, and an unusual metro figure never stands in for a county.',
   rungs: [
     defineRung<L, string, RentData, C>({
       id: 'rent.zillow-county',
@@ -507,7 +555,7 @@ const RENT = {
       license: ZILLOW_LICENSE,
       pipeline: 'static',
       homepage: ZILLOW_HOME,
-      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses its state’s typical one, and says so).',
+      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses a pooled one — its state’s counties, or U.S. counties where the state has too few — and says so).',
       applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
       target: (l) => l.countyFips!,
       geography: (_f, l) => countyLabel(l),
@@ -521,12 +569,12 @@ const RENT = {
         return {
           status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
           reason: r.why === 'out-of-range'
-            ? `Zillow's figure for ${countyOnly(l)} is outside our sanity range (−20% to +50%), so it isn't shown.`
+            ? `Zillow's figure for ${countyOnly(l)} is outside the plausible range (${rentRangeText()}), so it isn't shown.`
             : r.why === 'too-new'
               ? `Zillow's series for ${countyOnly(l)} is too new (it needs data from Jan 2024) to measure since Jan 2025.`
               : r.why === 'no-baseline'
                 ? `Zillow's series for ${countyOnly(l)} has no Jan 2025 value, so its change since Jan 2025 can't be measured.`
-                : `Zillow has no usable county rent series for ${countyOnly(l)} back to Jan 2025.`,
+                : `Zillow publishes no rent series for ${countyOnly(l)}.`,
         }
       },
     }),
@@ -555,14 +603,16 @@ const RENT = {
             value: r.data,
             asOf: r.data.asOf,
             geography: { name: r.data.geoName, level: 'metro' },
-            reason: stale ? STALE_REASON : `No usable Zillow county series for ${countyOnly(l)}; its metro’s series stands in.`,
+            reason: stale ? STALE_REASON : metroStandInReason(r.data.countyWhy, countyOnly(l)),
           }
         }
         return {
-          status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
+          status: r.why === 'out-of-range' || r.why === 'flagged' ? 'invalid' : 'not-applicable',
           reason: r.why === 'out-of-range'
-            ? `Zillow's metro figure for ${countyOnly(l)} is outside our sanity range (−20% to +50%), so it isn't shown.`
-            : `${countyOnly(l)} isn't in a metro with a Zillow rent series back to Jan 2025.`,
+            ? `Zillow's metro figure for ${countyOnly(l)} is outside the plausible range (${rentRangeText()}), so it isn't shown.`
+            : r.why === 'flagged'
+              ? `Zillow's figure for ${countyOnly(l)}’s metro is a statistical outlier among U.S. areas (often a shift in which homes are listed, not in rents), so it doesn't stand in for the county.`
+              : `${countyOnly(l)} isn't in a metro with a Zillow rent series back to Jan 2025.`,
         }
       },
     }),
@@ -611,7 +661,13 @@ const RENT = {
 const ELECTRICITY = {
   metric: 'electricity',
   title: 'Electricity',
-  comparison: 'EIA U.S. average, same seasonal adjustment and months.',
+  comparison: 'EIA U.S. average, same method and the same 12-month windows.',
+  method:
+    'The big number is the average of the latest 12 published monthly prices (¢/kWh); the % compares it with the average ' +
+    'of the 12 months ending January 2025 (Feb 2024–Jan 2025). Residential prices swing with the seasons (summer often ' +
+    'well above winter), so single months mostly measure the calendar; full years count every season once, no seasonal ' +
+    'model needed. ≈ $/mo = change in the 12-month average price × the state\'s average home use (residential sales ÷ ' +
+    'customers, latest 12 months).',
   noData: 'Territories: EIA publishes no residential price, so the card says “Data unavailable” with the reason.',
   rungs: [
     defineRung<L, string, CachedResult<ElectricitySeriesData>, C>({
@@ -644,6 +700,8 @@ const ELECTRICITY = {
 const HOME_PRICES = {
   metric: 'homePrices',
   title: 'Home prices (Housing graph)',
+  method:
+    '% change of Zillow\'s typical home value (smoothed and seasonally adjusted by Zillow) since January 2025.',
   noData: 'The Housing graph’s Home prices tab is disabled, with a note.',
   rungs: [
     defineRung<L, string, { asOf?: string }, C>({
@@ -739,6 +797,10 @@ const NY_REGION = (l: L) => (up(l) === 'NY' ? nyserdaRegionForCounty(l.countyFip
 const HEATING_OIL = {
   metric: 'heatingOil',
   title: 'Home heating oil (Home heating graph)',
+  method:
+    '% change of the weekly residential price since the week of January 20, 2025 (EIA surveys October–March only, so ' +
+    'between seasons the figure is last season\'s, labeled so). Not seasonally adjusted. The graph appears only where at ' +
+    'least 5% of the state\'s homes heat with the fuel (Census ACS table B25040).',
   comparison: 'Same survey, same weeks: the EIA U.S. average (SHOPP), or for a New York region the NYSERDA statewide average.',
   noData: 'No Heating oil tab (and no Home heating graph when propane has no data either).',
   rungs: [
@@ -784,12 +846,93 @@ const HEATING_OIL = {
 const PROPANE = {
   metric: 'propane',
   title: 'Propane (Home heating graph)',
+  method:
+    'Same as heating oil: weekly residential price since the week of January 20, 2025, October–March survey, shown only ' +
+    'where at least 5% of the state\'s homes heat with propane (Census ACS table B25040).',
   comparison: 'EIA U.S. average, same survey and weeks.',
   noData: 'No Propane tab (and no Home heating graph when heating oil has no data either).',
   rungs: [shoppRung('propane')],
 } satisfies Ladder<L, HeatingRungValue, C>
 
 // ------------------------------------------------------------------ registry
+
+
+// ------------------------------------------------------------------ rent base (Shelter card's $ figure)
+
+const CENSUS_RENT_SOURCE = 'U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent)'
+const CENSUS_RENT_HOME = 'https://data.census.gov/table/ACSDT5Y2023.B25064'
+type RentBasis = NonNullable<CensusData['basis']>
+
+/** One rung per basis tier; the bundled lookup picks the tier, each rung reports whether it was the one. */
+function rentBaseRung(basis: Exclude<RentBasis, 'none'>, o: { label: string; pill?: string; level: GeoLevel; covers: string; why: (l: L) => string }) {
+  return defineRung<L, string, CensusData, C>({
+    id: `rentBase.${basis}`,
+    label: o.label,
+    ...(o.pill ? { pill: o.pill } : {}),
+    source: 'Census',
+    sourceName: CENSUS_RENT_SOURCE,
+    level: o.level,
+    frequency: 'yearly (5-year estimates)',
+    license: 'Public domain (U.S. government)',
+    pipeline: 'static',
+    homepage: CENSUS_RENT_HOME,
+    covers: o.covers,
+    applies: (l) => !!l.zip || 'No zip.',
+    target: (l) => l.zip!,
+    geography: (z, l) => (o.level === 'county' ? countyLabel(l) : o.level === 'state' ? stateLabel(l) : `zip ${z}`),
+    resolve: (zip, ctx, l) => {
+      const c = ctx.censusRent!(zip)
+      if (c.basis === basis && c.medianRent > 0) {
+        const name = basis === 'zip' ? `zip ${zip}` : basis === 'county' || basis === 'state' ? c.basisArea ?? o.label : `zip ${c.donorZip}`
+        const figure = `$${c.medianRent.toLocaleString('en-US')}/mo (Census ACS ${c.year} 5-year)`
+        return {
+          status: 'used', value: c,
+          geography: { name, level: o.level },
+          reason: c.basisNote && basis !== 'zip' ? `${c.basisNote}: ${figure}.` : `Median gross rent ${figure}.`,
+        }
+      }
+      return { status: 'not-applicable', reason: o.why(l) }
+    },
+  })
+}
+
+const RENT_BASE = {
+  metric: 'rentBase',
+  title: 'Rent base for the Shelter (CPI) $ figure',
+  method:
+    'The Shelter (CPI) card\'s ≈ $/yr in rent applies the CPI rent-of-primary-residence % to a median gross rent × 12. ' +
+    'That rent is the zip\'s own Census figure; where Census suppresses it (small samples) or the zip is a PO box, it is ' +
+    'borrowed and labeled: a PO box\'s residential donor zip, else the nearest zip in the same county with a Census rent ' +
+    '(within 100 miles), else the county median, else the state median. Never a national constant.',
+  noData: 'No $ figure (Guam, the Virgin Islands and other areas the ACS doesn’t cover).',
+  rungs: [
+    rentBaseRung('zip', {
+      label: 'Census median rent for the zip', level: 'zip',
+      covers: 'Zips with a published ACS median gross rent.',
+      why: (l) => `Census publishes no median rent for zip ${l.zip} (suppressed for a small sample, or a PO-box zip with no Census area).`,
+    }),
+    rentBaseRung('po-donor', {
+      label: 'PO-box zip: residential donor zip', pill: 'PO-box donor', level: 'zip',
+      covers: 'USPS-only zips (PO boxes): the largest residential zip in the same city, else the most populous in the county.',
+      why: () => 'Not a PO-box zip with a residential donor.',
+    }),
+    rentBaseRung('nearest-zip', {
+      label: 'Nearest zip in the county with a Census rent', pill: 'Nearest zip', level: 'zip',
+      covers: 'Zips whose rent Census suppresses: the nearest zip in the same county (same city name preferred) with a published rent, within 100 miles.',
+      why: (l) => `No zip in ${countyOnly(l)} with a Census rent within 100 miles.`,
+    }),
+    rentBaseRung('county', {
+      label: 'County median rent', level: 'county',
+      covers: 'Counties with no usable zip figure: the county’s ACS median gross rent.',
+      why: (l) => `Census suppresses ${countyOnly(l)}’s median rent.`,
+    }),
+    rentBaseRung('state', {
+      label: 'State median rent', level: 'state',
+      covers: 'Last resort: the state’s ACS median gross rent.',
+      why: (l) => `No Census rent for ${stateLabel(l)}.`,
+    }),
+  ],
+} satisfies Ladder<L, CensusData, C>
 
 export const LADDERS = {
   gas: GAS,
@@ -800,12 +943,13 @@ export const LADDERS = {
   homePrices: HOME_PRICES,
   heatingOil: HEATING_OIL,
   propane: PROPANE,
+  rentBase: RENT_BASE,
 } as const
 
 export type MetricId = keyof typeof LADDERS
 
 /** Display order (About page, docs). */
-export const LADDER_ORDER: MetricId[] = ['gas', 'rent', 'shelter', 'homePrices', 'groceries', 'electricity', 'heatingOil', 'propane']
+export const LADDER_ORDER: MetricId[] = ['gas', 'rent', 'shelter', 'rentBase', 'homePrices', 'groceries', 'electricity', 'heatingOil', 'propane']
 
 /** Short pill text for a geography level. */
 export const LEVEL_LABELS: Record<GeoLevel, string> = {

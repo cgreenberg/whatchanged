@@ -64,7 +64,7 @@ const GOLDEN: Golden[] = [
   ['99686', '02063', '0490', 2, 'BLS:S49G', 2, ANC_AREA, '02063', 'Valdez — Chugach Census Area (2019 split of Valdez-Cordova)'],
   ['19103', '42101', 'S12B', 1, 'BLS:S12B', 1, 'Philadelphia-Camden-Wilmington metro avg', '42101', 'Philadelphia — no EIA city series → BLS metro'],
   ['30303', '13121', 'S35C', 1, 'BLS:S35C', 1, 'Atlanta-Sandy Springs-Roswell metro avg', '13121', 'Atlanta'],
-  ['55401', '27053', 'S24A', 1, 'BLS:S24A', 1, 'Minneapolis-St. Paul-Bloomington metro avg', '27053', 'Minneapolis — BLS metro beats EIA Minnesota state'],
+  ['55401', '27053', 'S24A', 1, 'SMN', 2, 'Minnesota state avg', '27053', 'Minneapolis — EIA weekly Minnesota state beats the BLS monthly metro (same weekly basis statewide)'],
   ['53202', '55079', '0230', 2, 'R20', 3, MW, '55079', 'Milwaukee WI — no BLS division gas tier: EIA PADD 2'],
   ['50309', '19153', '0240', 2, 'R20', 3, MW, '19153', 'Des Moines IA — EIA PADD 2'],
   ['46204', '18097', '0230', 2, 'R20', 3, MW, '18097', 'Indianapolis IN — EIA PADD 2'],

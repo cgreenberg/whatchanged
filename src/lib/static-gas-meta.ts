@@ -21,3 +21,11 @@ export const DACO_DATA_URL =
   'https://docs.pr.gov/files/DACO/Gasolina/Precios%20Promedio%20Mensual%20al%20Consumidor/Precios-Promedios-de-Gasolina-y-Diesel%20(1).xlsx'
 /** Monthly, published a few weeks after the month: older than this = a missed month. */
 export const DACO_STALE_DAYS = 75
+
+/** "1 station surveyed (University Chevron)." / "3 stations surveyed." / "Station count not published." */
+export function dcraStationsText(place: string, stations?: number, retailer?: string): string {
+  if (typeof stations !== 'number' || stations < 1) return `DCRA's ${place} figure is a community survey price (station count not published).`
+  return stations === 1
+    ? `DCRA's ${place} figure is one retailer's reported price (1 station surveyed${retailer ? `: ${retailer}` : ''}).`
+    : `DCRA's ${place} figure reflects ${stations} surveyed stations.`
+}

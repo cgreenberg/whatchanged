@@ -93,6 +93,8 @@ export interface Ladder<L, V, C> {
   comparison?: string
   /** One sentence on what happens when no rung has data. */
   noData?: string
+  /** Baseline, adjustment and dollar method, in plain English (About page "Methods by measure" and the doc). */
+  method?: string
   rungs: Array<AnyRung<L, V, C>>
 }
 

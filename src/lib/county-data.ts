@@ -5,7 +5,8 @@
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
-import { fmtSignedDollars, fmtMonthYear, fmtDay } from '@/lib/format'
+import { fmtSignedDollars, fmtSignedPct, fmtMonthYear, fmtDay } from '@/lib/format'
+import type { EconomicSnapshot } from '@/types'
 
 /** Site-wide baseline month (Jan 20 2025 → monthly Zillow data use the January 2025 value). */
 export const BASELINE_MONTH = '2025-01'
@@ -144,10 +145,9 @@ export function seriesChangeSinceBaseline(s: CompactSeries | undefined | null): 
 
 // ---------- Formatting ----------
 
+/** Signed % with a true minus sign ("−2.1%"), the same formatter as the cards. */
 export function fmtPct(v: number, digits = 1): string {
-  const r = Number(v.toFixed(digits))
-  if (r === 0) return '0%'
-  return `${r > 0 ? '+' : ''}${r.toFixed(digits)}%`
+  return fmtSignedPct(v, digits)
 }
 
 export function fmtMoney(v: number): string {
@@ -268,6 +268,9 @@ export interface LiveCountyValue {
   asOf: string | null
 }
 
+/** Appended when the map served a cache entry's last-good copy (the fresh one expired). */
+const STALE_COPY = ' · last available copy, may be out of date'
+
 /** One county's value for a live metric (null when the county's series is not cached / not published). */
 export function liveValue(m: MapMetrics | null | undefined, fips: string, key: LiveMetricKey): LiveCountyValue | null {
   if (!m) return null
@@ -276,8 +279,8 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     const e = st ? m.electricity?.[st] : undefined
     if (!e) return null
     return {
-      value: e.pct, text: `${fmtPct(e.pct)} ${sinceBaseline(null)}`, area: `${e.label} statewide`,
-      detail: `${e.cents.toFixed(1)}¢/kWh in ${fmtMonthYear(e.asOf)} · EIA, seasonally adjusted %`, asOf: e.asOf,
+      value: e.pct, text: `${fmtPct(e.pct)} vs 12 mo to ${fmtMonthYear(BASELINE_MONTH)}`, area: `${e.label} statewide`,
+      detail: `${e.cents.toFixed(1)}¢/kWh avg, 12 months to ${fmtMonthYear(e.asOf)} · EIA${e.stale ? STALE_COPY : ''}`, asOf: e.asOf,
     }
   }
   const row = m.counties?.[fips]
@@ -288,11 +291,11 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     const when = g.asOf
       ? g.frequency === 'weekly' ? `week of ${fmtDay(g.asOf)}` : g.frequency === 'semiannual' ? `${fmtMonthYear(g.asOf)} survey` : fmtMonthYear(g.asOf)
       : ''
-    const how = g.source === 'dcra' ? 'Alaska DCRA survey (twice yearly)' : g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'
+    const how = g.source === 'dcra' ? 'Alaska DCRA survey (twice yearly)' : g.source === 'daco' ? 'Puerto Rico DACO monthly' : g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'
     return {
       value: g.change, text: `${fmtSignedDollars(g.change)}/gal ${sinceBaseline(null)}`,
       area: g.standIn ? `${g.label} (no series for this county)` : g.label,
-      detail: `$${g.current.toFixed(2)}/gal · ${how}${when ? `, ${when}` : ''}`,
+      detail: `$${g.current.toFixed(2)}/gal · ${how}${when ? `, ${when}` : ''}${g.stale ? STALE_COPY : ''}`,
       asOf: g.asOf,
     }
   }
@@ -300,7 +303,7 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
   if (!c || c.pct == null) return null
   return {
     value: c.pct, text: `${fmtPct(c.pct)} ${sinceBaseline(null)}`, area: c.label,
-    detail: `BLS CPI food at home${c.asOf ? `, ${fmtMonthYear(c.asOf)}` : ''}`, asOf: c.asOf,
+    detail: `BLS CPI food at home${c.asOf ? `, ${fmtMonthYear(c.asOf)}` : ''}${c.stale ? STALE_COPY : ''}`, asOf: c.asOf,
   }
 }
 
@@ -319,7 +322,7 @@ export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
   if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
-  return `EIA average residential electricity price · statewide · ${sinceBaseline(null)} · ${latest} · seasonally adjusted by whatchanged`
+  return `EIA average residential electricity price · statewide · 12-month average price vs the 12 months ending ${fmtMonthYear(BASELINE_MONTH)} · ${latest} · no seasonal adjustment needed`
 }
 
 export function metricFooter(def: MetricDef, meta: LocalMeta | null, geography = 'county'): string {
@@ -381,4 +384,35 @@ export function divergingColor(v: number | undefined, clamp: number): string {
 /** Months the county time-lapse rows for `metric` are aligned to (rent may cover different months). */
 export function timelineMonths(t: { months: string[]; rentMonths?: string[] }, metric: string): string[] {
   return metric === 'rent' && t.rentMonths?.length ? t.rentMonths : t.months
+}
+
+/**
+ * The selected zip's own county in the map panel shows the card's figure where the card uses something the
+ * county-wide map value can't: Alaska's per-zip DCRA survey community (the map colors a borough by the median
+ * of its surveyed communities) and a metro rent series standing in for a county with no Zillow county series.
+ */
+export interface ZipPanelOverrides {
+  gas?: { text: string; area: string; detail: string }
+  rent?: { text: string; area: string }
+}
+
+export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPanelOverrides {
+  if (!s) return {}
+  const out: ZipPanelOverrides = {}
+  const g = s.gas?.data
+  if (g && g.source === 'dcra' && Number.isFinite(g.change) && Number.isFinite(g.current)) {
+    out.gas = {
+      text: `${fmtSignedDollars(g.change)}/gal since the ${fmtMonthYear((g.baselineDate ?? BASELINE_MONTH).slice(0, 7))} survey`,
+      area: `${g.geoLevel ?? 'Alaska DCRA survey'} (this zip, as on the card)`,
+      detail: `$${g.current.toFixed(2)}/gal · Alaska DCRA survey (twice yearly)${g.latestDate ? `, ${fmtMonthYear(g.latestDate.slice(0, 7))} survey` : ''}`,
+    }
+  }
+  const r = s.rent
+  if (r && r.level === 'metro' && Number.isFinite(r.pct)) {
+    out.rent = {
+      text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,
+      area: `${r.geoName} (no Zillow county series; the metro's is used)`,
+    }
+  }
+  return out
 }

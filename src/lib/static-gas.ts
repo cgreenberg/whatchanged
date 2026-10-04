@@ -12,7 +12,7 @@
 import akGas from '@/lib/data/ak-gas.json'
 import prGas from '@/lib/data/pr-gas.json'
 import type { GasLookupResult, GasSeriesData } from '@/lib/api/eia'
-import { BASELINE_MONTH } from '@/lib/baseline'
+import { BASELINE_MONTH, displayedChange } from '@/lib/baseline'
 import { lookupZip } from '@/lib/data/zip-lookup'
 
 export * from './static-gas-meta'
@@ -23,7 +23,8 @@ export const STATIC_GAS_RANGE = { dcra: [1, 20], daco: [1, 10] } as const
 interface Series { v: Array<number | null> }
 interface AkFile {
   meta: { latestSurvey: string; baseSurvey: string; start: string; url: string }
-  communities: Record<string, Series & { b: string; r: string }>
+  /** stations: retailers the survey reports for the community (one row each); retailer: the one reporting, when 1. */
+  communities: Record<string, Series & { b: string; r: string; stations?: number; retailer?: string }>
   regions: Record<string, Series>
   zips: Record<string, { k: 'c' | 'n'; c: string; km?: number } | { k: 'r'; r: string }>
 }
@@ -73,7 +74,7 @@ function toSeries(values: Array<number | null>, dates: string[], base: string, r
     latestDate: latest.date,
     baseline: b.price,
     baselineDate: b.date,
-    change: Number((latest.price - b.price).toFixed(3)),
+    change: displayedChange(latest.price, b.price),
     series: pts,
     regionName,
     ...(unpublished.length ? { unpublished } : {}),
@@ -87,6 +88,9 @@ export interface StaticGasHit {
   /** Community or region name. */
   place: string
   km?: number
+  /** Community figures: how many retailers' prices the survey reports, and the retailer when there is one. */
+  stations?: number
+  retailer?: string
 }
 
 export type StaticGasLookup = { hit: StaticGasHit } | { hit: null; why: 'no-zip' | 'no-series' }
@@ -114,6 +118,8 @@ export function lookupAkGas(zip: string | null | undefined): StaticGasLookup {
   return {
     hit: {
       data, match: nearest ? 'nearest' : 'community', place: m.c, ...(nearest && typeof m.km === 'number' ? { km: m.km } : {}),
+      ...(typeof c.stations === 'number' ? { stations: c.stations } : {}),
+      ...(c.stations === 1 && typeof c.retailer === 'string' && c.retailer ? { retailer: c.retailer } : {}),
       lookup: dcraLookup(m.c, `DCRA survey: ${m.c}`, nearest ? `${m.c} survey price (nearest surveyed community)` : `${m.c} survey price`, 1),
     },
   }

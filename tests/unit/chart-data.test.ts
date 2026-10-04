@@ -1,28 +1,17 @@
-import { eraSpans, normalizeEachSeries, filterByTimeframe, ERA_FILL, onOrAfter } from '@/lib/charts/chart-data'
+import { normalizeEachSeries, filterByTimeframe, REFERENCE_DATES, onOrAfter } from '@/lib/charts/chart-data'
 
-describe('era shading', () => {
-  test('spec opacity 0.07', () => {
-    expect(ERA_FILL.blue).toBe('rgba(59, 130, 246, 0.07)')
-    expect(ERA_FILL.red).toBe('rgba(239, 68, 68, 0.07)')
+describe('reference dates (neutral, no party colors)', () => {
+  test('January 2017, January 2021 and the Jan 20, 2025 baseline; no colors or party keys', () => {
+    expect(REFERENCE_DATES.map(r => r.start)).toEqual(['2017-01-20', '2021-01-20', '2025-01-20'])
+    for (const r of REFERENCE_DATES) {
+      expect(Object.keys(r).sort()).toEqual(['key', 'label', 'start'])
+      expect(r.key).not.toMatch(/trump|biden|obama/i)
+    }
   })
 
-  test('weekly gas: Jan 6–13 2025 stay in the Biden band; Trump II starts at the first week ≥ Jan 20', () => {
-    const dates = ['2024-12-30', '2025-01-06', '2025-01-13', '2025-01-20', '2025-01-27', '2025-02-03']
-    const spans = eraSpans(dates)
-    const biden = spans.find(s => s.key === 'biden')!
-    const trump = spans.find(s => s.key === 'trump2')!
-    expect(biden).toEqual({ key: 'biden', x1: '2024-12-30', x2: '2025-01-20', color: 'blue' })
-    expect(trump).toEqual({ key: 'trump2', x1: '2025-01-20', x2: '2025-02-03', color: 'red' })
-  })
-
-  test('monthly data: the Jan 2025 point (the baseline) opens the Trump II band', () => {
+  test('monthly data: the Jan 2025 point counts as on/after the Jan 20 baseline', () => {
     expect(onOrAfter('2025-01', '2025-01-20')).toBe(true)
-    const spans = eraSpans(['2024-11', '2024-12', '2025-01', '2025-02'])
-    expect(spans.find(s => s.key === 'trump2')!.x1).toBe('2025-01')
-  })
-
-  test('window entirely after the baseline → a single band', () => {
-    expect(eraSpans(['2025-01', '2025-06', '2026-08']).map(s => s.key)).toEqual(['trump2'])
+    expect(onOrAfter('2025-01-13', '2025-01-20')).toBe(false)
   })
 })
 

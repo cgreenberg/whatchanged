@@ -15,6 +15,7 @@ import type { RentData } from '@/types'
 import { computeDollarImpact } from '@/lib/compute/dollar-translations'
 import { toGasPriceData, type GasLookupResult } from './eia'
 import { NATIONAL_CPI_AREA } from './bls-cpi'
+import { isValidRentIndexChange } from './validate'
 import { nationalGasLookupFor, NATIONAL_GAS_LOOKUP, settle } from './cached-sources'
 import { hasElectricitySeries, type ElectricitySeriesData } from './eia-electricity'
 import { isBlsPeriodStale } from '@/lib/staleness'
@@ -28,12 +29,13 @@ import type { Attempt, LadderResult } from '@/lib/resolution/resolve'
 export { BLS_STALE_DAYS, isBlsPeriodStale, ELECTRICITY_STALE_DAYS, isElectricityPeriodStale } from '@/lib/staleness'
 
 /**
- * Attach the U.S. series and the U.S. seasonally adjusted % change over the SAME months as the
- * local figure (Jan 2025 → the local latest month); omitted when the U.S. lacks either month.
+ * Attach the U.S. series and the U.S. % change of the 12-month average price over the SAME windows as
+ * the local figure (12 months ending Jan 2025 → 12 months ending the local latest month); omitted when
+ * the U.S. lacks either window.
  */
 export function withNationalElectricity(local: ElectricitySeriesData, us: ElectricitySeriesData | null): ElectricityData {
   if (!us || local.state === us.state) return { ...local }
-  const at = (d: string) => us.series.find((p) => p.date === d)?.sa
+  const at = (d: string) => us.series.find((p) => p.date === d)?.avg12
   const b = at(local.baselinePeriod)
   const l = at(local.latestPeriod)
   const nationalChange = typeof b === 'number' && typeof l === 'number' && b > 0
@@ -108,7 +110,7 @@ export async function fetchSnapshot(
   const elecState = hasElectricitySeries(location.stateAbbr) ? location.stateAbbr.toUpperCase() : null
 
   // All ladders and the national comparisons in parallel; each series is fetched once (memoized context).
-  const [gasWalk, groceriesWalk, shelterWalk, rentWalk, elecWalk, gasNational, elecNational, oilWalk, propaneWalk] = await Promise.all([
+  const [gasWalk, groceriesWalk, shelterWalk, rentWalk, elecWalk, gasNational, elecNational, oilWalk, propaneWalk, rentBaseWalk] = await Promise.all([
     ctx.ladder('gas') as Promise<LadderResult<GasRungValue>>,
     ctx.ladder('groceries') as Promise<LadderResult<CachedResult<CpiData>>>,
     ctx.ladder('shelter'),
@@ -118,6 +120,8 @@ export async function fetchSnapshot(
     elecState ? settle(ctx.electricity('US'), 'eia-electricity-national') : Promise.resolve(null),
     ctx.ladder('heatingOil') as Promise<LadderResult<HeatingRungValue>>,
     ctx.ladder('propane') as Promise<LadderResult<HeatingRungValue>>,
+    // Rent base of the Shelter (CPI) card's $ figure (bundled Census data; the trace shows which tier)
+    ctx.ladder('rentBase'),
   ])
 
   // CPI (groceries and shelter share one fetch per area): the area the walk ended on. When the local
@@ -205,12 +209,14 @@ export async function fetchSnapshot(
   const localRent = censusData && !censusData.isFallback && !censusData.isRentFallback && !cpiIsNational
     ? censusData.medianRent
     : null
+  // Groceries $ follows the same rule as shelter $: none when the only CPI is the U.S. average (national
+  // fallback, or a territory such as Puerto Rico whose only CPI is national) — a U.S. % is not a local cost.
   const dollarImpact = computeDollarImpact({
-    groceriesChangePct: cpi.data?.groceriesChange,
-    rentIndexChangePct: cpi.data?.rentIndexChange,
+    groceriesChangePct: cpiIsNational ? null : cpi.data?.groceriesChange,
+    rentIndexChangePct: isValidRentIndexChange(cpi.data?.rentIndexChange) ? cpi.data!.rentIndexChange : null,
     gasChange: gas.data?.change,
     medianRent: localRent,
-    electricitySaChangeCents: electricityData ? electricityData.saCurrent - electricityData.saBaseline : null,
+    electricityPriceChangeCents: electricityData ? electricityData.current - electricityData.baseline : null,
     electricityUsageKwh: electricityData?.usageKwh,
   })
 
@@ -248,6 +254,7 @@ export async function fetchSnapshot(
       electricity: elecWalk.steps,
       heatingOil: oilWalk.steps,
       propane: propaneWalk.steps,
+      rentBase: rentBaseWalk.steps,
     },
   }
 }

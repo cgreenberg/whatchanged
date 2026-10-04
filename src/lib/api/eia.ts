@@ -2,6 +2,7 @@ import type { GasPriceData } from '@/types'
 import { STATE_LEVEL_CODES } from '@/lib/mappings/eia-gas'
 import { selectGasLookup } from '@/lib/resolution/ladders'
 import { fetchBlsGasSeries } from './bls-gas'
+import { displayedChange } from '@/lib/baseline'
 
 const EIA_API_BASE = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
 
@@ -187,7 +188,7 @@ export function buildSeriesFromData(data: EiaRawPoint[]): GasSeriesData {
     latestDate: latest.date,
     baseline: baselinePoint.price,
     baselineDate: baselinePoint.date,
-    change: parseFloat((latest.price - baselinePoint.price).toFixed(3)),
+    change: displayedChange(latest.price, baselinePoint.price),
     series,
     regionName,
   }

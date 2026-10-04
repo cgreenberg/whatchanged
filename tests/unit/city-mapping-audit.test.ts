@@ -135,9 +135,9 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === FLORIDA ===
   ['Jacksonville', 'FL', '12031', '0350', 'SFL', 2], // Jacksonville CBSA not primary → South regional, county gas override → FL state
   ['Miami', 'FL', '12086', 'S35B', 'YMIA', 1],
-  ['Tampa', 'FL', '12057', 'S35D', 'BLS:S35D', 1],
+  ['Tampa', 'FL', '12057', 'S35D', 'SFL', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Orlando', 'FL', '12095', '0350', 'SFL', 2],     // Orlando CBSA not primary → South regional, county gas override → FL state
-  ['St. Petersburg', 'FL', '12103', 'S35D', 'BLS:S35D', 1],
+  ['St. Petersburg', 'FL', '12103', 'S35D', 'SFL', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
 
   // === ALABAMA ===
   ['Birmingham', 'AL', '01073', '0360', 'R30', 3],  // No CBSA match → South regional
@@ -217,10 +217,10 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Racine', 'WI', '55101', '0230', 'R20', 3],
 
   // === MINNESOTA ===
-  ['Minneapolis', 'MN', '27053', 'S24A', 'BLS:S24A', 1],
-  ['St. Paul', 'MN', '27123', 'S24A', 'BLS:S24A', 1],
+  ['Minneapolis', 'MN', '27053', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
+  ['St. Paul', 'MN', '27123', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Rochester', 'MN', '27109', '0240', 'SMN', 2],   // No CBSA match → Midwest regional
-  ['Bloomington', 'MN', '27053', 'S24A', 'BLS:S24A', 1],
+  ['Bloomington', 'MN', '27053', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Duluth', 'MN', '27137', '0240', 'SMN', 2],
 
   // === IOWA ===
@@ -268,9 +268,9 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === TEXAS ===
   ['Houston', 'TX', '48201', 'S37B', 'Y44HO', 1],
   ['San Antonio', 'TX', '48029', '0370', 'STX', 2], // San Antonio CBSA not primary → South regional
-  ['Dallas', 'TX', '48113', 'S37A', 'BLS:S37A', 1],
+  ['Dallas', 'TX', '48113', 'S37A', 'STX', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Austin', 'TX', '48453', '0370', 'STX', 2],      // Austin CBSA not primary → South regional
-  ['Fort Worth', 'TX', '48439', 'S37A', 'BLS:S37A', 1],
+  ['Fort Worth', 'TX', '48439', 'S37A', 'STX', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
 
   // === OKLAHOMA ===
   ['Oklahoma City', 'OK', '40109', '0370', 'R20', 3], // No CBSA match → South regional
@@ -302,7 +302,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === CALIFORNIA ===
   ['Los Angeles', 'CA', '06037', 'S49A', 'Y05LA', 1],
-  ['San Diego', 'CA', '06073', 'S49E', 'BLS:S49E', 1],
+  ['San Diego', 'CA', '06073', 'S49E', 'SCA', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['San Jose', 'CA', '06085', '0490', 'SCA', 2],    // San Jose CBSA not primary → West regional
   ['San Francisco', 'CA', '06075', 'S49B', 'Y05SF', 1],
   ['Fresno', 'CA', '06019', '0490', 'SCA', 2],      // No CBSA match → West regional

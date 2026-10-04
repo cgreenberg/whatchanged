@@ -16,9 +16,10 @@ const META: LocalMeta = {
 
 describe('county-data helpers', () => {
   it('formats percentages without "-0.0%"', () => {
-    expect(fmtPct(-0.04)).toBe('0%')
+    // Same formatter as the cards: true minus sign, never "-0.0%"
+    expect(fmtPct(-0.04)).toBe('0.0%')
     expect(fmtPct(3.25)).toBe('+3.3%')
-    expect(fmtPct(-1.2)).toBe('-1.2%')
+    expect(fmtPct(-1.2)).toBe('−1.2%')
   })
   it('clamps colors and handles missing data', () => {
     expect(divergingColor(undefined, 10)).toBe(NO_DATA_COLOR)

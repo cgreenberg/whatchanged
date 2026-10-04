@@ -2,7 +2,6 @@ import censusData from './census-acs.json'
 import poBoxAcs from './po-box-acs.json'
 import { lookupZip } from './zip-lookup'
 import { CITY_ZIP_LOOKUP } from './city-zip-lookup'
-import { NATIONAL_MEDIAN_RENT } from '@/lib/compute/dollar-translations'
 import type { CensusData } from '@/types'
 
 // Census ACS 5-year median gross rent by zip (bundled; scripts/build-census-acs.ts). Its only use on
@@ -10,8 +9,20 @@ import type { CensusData } from '@/types'
 // carries median household income, which nothing reads since the tariff estimate was removed.)
 type ZipCensusEntry = { medianRent: number | null; year: number }
 const ZIP_CENSUS = censusData as unknown as Record<string, ZipCensusEntry | undefined>
-/** USPS-only zip (no ZCTA) → residential donor ZCTA; built by scripts/build-po-box-acs.ts. */
-const PO_BOX_DONOR = poBoxAcs.byZip as Record<string, string | undefined>
+/** Rent bases for zips without their own published ACS rent; built by scripts/build-po-box-acs.ts. */
+interface RentBasisFile {
+  /** USPS-only zip (no ZCTA) → residential donor ZCTA. */
+  byZip: Record<string, string | undefined>
+  /** Zip whose own ACS rent is suppressed/missing → [nearest same-county residential zip with one, miles]. */
+  nearest?: Record<string, [string, number] | undefined>
+  /** ACS 5-year county / state median gross rent (B25064), published values only. */
+  counties?: Record<string, { rent: number; name: string } | undefined>
+  states?: Record<string, { rent: number; name: string } | undefined>
+}
+const BASIS = poBoxAcs as unknown as RentBasisFile
+const PO_BOX_DONOR = BASIS.byZip
+/** Same ACS vintage as census-acs.json (scripts/build-po-box-acs.ts reads the 2023 5-year B25064 file). */
+const ACS_GEO_YEAR = 2023
 
 const acsLabel = (year: number, where: string) => `Census ACS ${year} 5-year, ${where}`
 
@@ -43,9 +54,14 @@ export function cityContainsZip(zip: string, city: string, state: string): boole
 }
 
 /**
- * Local median gross rent for a zip: its own ACS figure, else (USPS-only zips) a donor zip's — the
- * largest residential zip in the same city, else the most populous in the county; labeled. No local
- * figure → the U.S. median flagged `isRentFallback` (never used for a dollar figure).
+ * Local median gross rent for a zip — the base of the Shelter card's "≈ $/yr in rent". Never blank and never a
+ * national constant; each step is labeled (basis + basisNote + sourceLabel):
+ *   1. the zip's own ACS figure ('zip');
+ *   2. USPS-only zips: a residential donor zip in the same city, else county ('po-donor');
+ *   3. suppressed/missing rent: the nearest residential zip in the same county with a published rent ('nearest-zip');
+ *   4. the county's ACS median gross rent ('county');
+ *   5. the state's ACS median gross rent ('state').
+ * Only a zip with none of these (territories ACS doesn't cover, unknown zips) → basis 'none', isRentFallback.
  */
 export function getCensusData(zip: string): CensusData {
   const entry = ZIP_CENSUS[zip]
@@ -56,6 +72,7 @@ export function getCensusData(zip: string): CensusData {
       rent: entry.medianRent,
       year: entry.year,
       source: 'acs',
+      basis: 'zip',
       sourceLabel: acsLabel(entry.year, `zip ${zip}`),
       isFallback: false,
       isRentFallback: false,
@@ -66,31 +83,90 @@ export function getCensusData(zip: string): CensusData {
   const donorEntry = donor ? ZIP_CENSUS[donor] : undefined
   if (!entry && donor && donorEntry && typeof donorEntry.medianRent === 'number' && donorEntry.medianRent > 0) {
     const donorScope = donorScopeOf(zip, donor)
+    const where = `zip ${donor} (largest residential zip in the same ${donorScope === 'city' ? 'city' : 'county'})`
     return {
       zip,
       medianRent: donorEntry.medianRent,
       rent: donorEntry.medianRent,
       year: donorEntry.year,
       source: 'acs',
+      basis: 'po-donor',
+      basisNote: `borrowed from ${where}`,
       donorZip: donor,
       donorScope,
-      sourceLabel: acsLabel(
-        donorEntry.year,
-        `zip ${donor} (largest residential zip in the same ${donorScope === 'city' ? 'city' : 'county'})`
-      ),
+      sourceLabel: acsLabel(donorEntry.year, where),
       isFallback: false,
       isRentFallback: false,
       approxFromZip: donor,
     }
   }
 
+  const near = BASIS.nearest?.[zip]
+  const nearEntry = near ? ZIP_CENSUS[near[0]] : undefined
+  if (near && nearEntry && typeof nearEntry.medianRent === 'number' && nearEntry.medianRent > 0) {
+    const [nz, mi] = near
+    const note = `borrowed from zip ${nz} (nearest with Census rent, ${mi.toFixed(1)} mi)`
+    return {
+      zip,
+      medianRent: nearEntry.medianRent,
+      rent: nearEntry.medianRent,
+      year: nearEntry.year,
+      source: 'acs',
+      basis: 'nearest-zip',
+      basisNote: note,
+      donorZip: nz,
+      donorMiles: mi,
+      sourceLabel: acsLabel(nearEntry.year, `zip ${nz} (nearest with Census rent, ${mi.toFixed(1)} mi)`),
+      isFallback: false,
+      isRentFallback: false,
+      approxFromZip: nz,
+    }
+  }
+
+  const loc = lookupZip(zip)
+  const county = loc ? BASIS.counties?.[loc.countyFips] : undefined
+  if (loc && county && county.rent > 0) {
+    return {
+      zip,
+      medianRent: county.rent,
+      rent: county.rent,
+      year: ACS_GEO_YEAR,
+      source: 'acs',
+      basis: 'county',
+      basisNote: `${county.name} median (no zip figure)`,
+      basisArea: county.name,
+      sourceLabel: acsLabel(ACS_GEO_YEAR, `${county.name} median`),
+      isFallback: false,
+      isRentFallback: false,
+    }
+  }
+
+  const state = loc ? BASIS.states?.[loc.stateAbbr] : undefined
+  if (loc && state && state.rent > 0) {
+    return {
+      zip,
+      medianRent: state.rent,
+      rent: state.rent,
+      year: ACS_GEO_YEAR,
+      source: 'acs',
+      basis: 'state',
+      basisNote: `${state.name} median (no zip or county figure)`,
+      basisArea: state.name,
+      sourceLabel: acsLabel(ACS_GEO_YEAR, `${state.name} median`),
+      isFallback: false,
+      isRentFallback: false,
+    }
+  }
+
+  // No published ACS rent for this place at any level (e.g. Guam, the U.S. Virgin Islands): no $ figure
   return {
     zip,
-    medianRent: NATIONAL_MEDIAN_RENT,
-    rent: NATIONAL_MEDIAN_RENT,
+    medianRent: 0,
+    rent: 0,
     year: (entry ?? donorEntry)?.year ?? 0,
-    source: 'national',
-    sourceLabel: 'no local Census rent figure',
+    source: 'none',
+    basis: 'none',
+    sourceLabel: 'no Census rent figure for this place',
     isFallback: true,
     isRentFallback: true,
   }

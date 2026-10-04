@@ -40,7 +40,7 @@ export interface TraceStep {
 }
 
 /** Metrics resolved on the server and returned as `trace` in /api/data. */
-export type TraceMetric = 'gas' | 'rent' | 'groceries' | 'shelter' | 'electricity' | 'heatingOil' | 'propane'
+export type TraceMetric = 'gas' | 'rent' | 'groceries' | 'shelter' | 'electricity' | 'heatingOil' | 'propane' | 'rentBase'
 
 export type SnapshotTrace = Partial<Record<TraceMetric, TraceStep[]>>
 

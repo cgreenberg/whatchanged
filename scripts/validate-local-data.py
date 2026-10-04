@@ -19,6 +19,8 @@ np.seterr(all="ignore")
 import warnings; warnings.filterwarnings("ignore")
 
 RESULTS = []
+# Published rent % sanity range (the site's runtime range; the build must emit exactly this as meta.pctRange)
+RENT_PCT_RANGE = [-20, 50]
 def record(section, name, status, detail, metrics=None):
     """status: PASS | WARN | FAIL | INFO"""
     RESULTS.append({"section": section, "check": name, "status": status, "detail": detail, "metrics": metrics or {}})
@@ -164,7 +166,7 @@ def main():
         record(S, name, "FAIL" if bad else "PASS", f"{len(bad)} violations: {fmt(bad)}" if bad else "none")
     inv("No county name equals its FIPS or is empty", [f for f, c in counties.items() if not c.get("n") or c["n"] == f])
     inv("No CT planning-region (091x0) or statewide rows", [f for f in counties if re.fullmatch(r"091[1-9]0", f) or f.endswith("000")])
-    ranges = {"hv": (-50, 50), "rent": (-50, 80)}
+    ranges = {"hv": (-50, 50), "rent": tuple(RENT_PCT_RANGE)}
     inv("County metrics within sanity ranges", [(f, k, c[k]) for f, c in counties.items() for k, (lo, hi) in ranges.items()
                                                if k in c and not lo <= c[k] <= hi])
     inv("No percentile-rank fields shipped", [(f, k) for f, c in counties.items() for k in c if re.fullmatch(r"[a-z]+R", k)])
@@ -189,9 +191,35 @@ def main():
     cr_path = os.path.join(a.repo, "src/lib/data/county-rent.json")
     if os.path.exists(cr_path):
         crj = json.load(open(cr_path))
-        inv("county-rent.json: pct in [-30, 60], levels positive, matches counties.json",
-            [f for f, v in crj["counties"].items() if not (-30 <= v["pct"] <= 60 and v["curRent"] > 0 and v["baseRent"] > 0
+        lo_, hi_ = RENT_PCT_RANGE
+        inv(f"county-rent.json: meta.pctRange = {RENT_PCT_RANGE} (the runtime range)",
+            [] if [float(x) for x in crj["meta"].get("pctRange", [])] == [float(x) for x in RENT_PCT_RANGE] else [crj["meta"].get("pctRange")])
+        inv(f"county-rent.json: pct in {RENT_PCT_RANGE}, levels positive, matches counties.json",
+            [f for f, v in crj["counties"].items() if not (lo_ <= v["pct"] <= hi_ and v["curRent"] > 0 and v["baseRent"] > 0
                                                          and counties.get(f, {}).get("rent") == v["pct"])])
+        # Every county Zillow publishes a current ZORI row for (and the map knows) is classified exactly once:
+        # published / tooNew / noBaseline / outOfRange — so the trace can always give the true reason.
+        lists_ = {"counties": set(crj["counties"]), "tooNew": set(crj.get("tooNew", [])),
+                  "noBaseline": set(crj.get("noBaseline", [])), "outOfRange": set(crj.get("outOfRange", []))}
+        cur_col = zr.columns[-1]
+        zori_current = {f for f in zr.index if f in counties and np.isfinite(zr.loc[f].iloc[-1] if zr.loc[f].ndim == 1 else np.nan)}
+        cls_bad = [(f, [k for k, v in lists_.items() if f in v]) for f in sorted(zori_current)
+                   if sum(f in v for v in lists_.values()) != 1]
+        inv(f"Every county with a current ({cur_col}) Zillow ZORI row is in exactly one of counties/tooNew/noBaseline/outOfRange",
+            cls_bad, lambda b: str(b[:8]))
+        inv("county-rent.json lists only counties with a current Zillow row (no stale classification)",
+            sorted(f for v in lists_.values() for f in v if f not in zori_current))
+        # Out-of-range counties: not shown anywhere (no map %, no graph series), and the raw (unadjusted) change agrees
+        # they are far out (independent re-read; SA moves a change by a few points at most)
+        oor = sorted(lists_["outOfRange"])
+        tl = json.load(open(os.path.join(a.data, "counties-timeline.json")))
+        inv("outOfRange counties show no rent % anywhere (counties.json rent, timeline, shard rentS/rentMS)",
+            [f for f in oor if "rent" in counties.get(f, {}) or f in tl.get("rent", {})])
+        raw_oor = {f: round(float((zr.loc[f].dropna().iloc[-1] / zr.loc[f, "2025-01"] - 1) * 100), 1) for f in oor if f in zr.index}
+        inv("outOfRange counties: raw ZORI change is beyond the range (within 5 pts of an edge at most)",
+            [(f, v) for f, v in raw_oor.items() if lo_ + 5 < v < hi_ - 5])
+        record(S, "Counties withheld for an implausible rent change (outside the range)", "INFO",
+               f"{len(oor)}: " + ", ".join(f"{counties.get(f, {}).get('n', f)} {v:+.1f} raw" for f, v in raw_oor.items()))
         # Housing graph series (county shards): the Rent tab's latest % must equal the Rent card's %,
         # and the Home prices tab's latest % must equal the map's home-value %.
         shards = {}
@@ -231,8 +259,16 @@ def main():
         else:
             mrj = json.load(open(mr_path))
             metros, mcounties = mrj["metros"], mrj["counties"]
-            inv("metro-rent.json: pct in [-30, 60], levels positive, as-of = Zillow metro file's latest month",
-                [cb for cb, v in metros.items() if not (-30 <= v["pct"] <= 60 and v["curRent"] > 0 and v["baseRent"] > 0)])
+            inv(f"metro-rent.json: meta.pctRange = {RENT_PCT_RANGE} (the runtime range)",
+                [] if [float(x) for x in mrj["meta"].get("pctRange", [])] == [float(x) for x in RENT_PCT_RANGE] else [mrj["meta"].get("pctRange")])
+            inv(f"metro-rent.json: pct in {RENT_PCT_RANGE}, levels positive",
+                [cb for cb, v in metros.items() if not (lo_ <= v["pct"] <= hi_ and v["curRent"] > 0 and v["baseRent"] > 0)])
+            m_oor, m_oor_c = set(mrj.get("outOfRange", [])), mrj.get("outOfRangeCounties", {})
+            inv("metro-rent.json: an outOfRange metro is never used, and outOfRangeCounties point only at outOfRange metros",
+                sorted(m_oor & set(metros)) + sorted(f for f, cb in m_oor_c.items() if cb not in m_oor))
+            inv("metro-rent.json: each county is classified once (own county row / outOfRange county / metro / metro outOfRange)",
+                sorted((set(m_oor_c) & (set(mcounties) | lists_["counties"] | lists_["outOfRange"]))
+                       | (set(mcounties) & lists_["outOfRange"])))
             inv("metro-rent.json: no county with its own county rent row is mapped to a metro", sorted(set(mcounties) & set(crj["counties"])))
             inv("metro-rent.json: every mapped metro has a row", sorted({cb for cb in mcounties.values() if cb not in metros}))
             inv("No metro-mapped county has its own county rent series in the shards (rentS)",
@@ -335,7 +371,15 @@ def main():
                 if mth > 12:
                     y, mth = y + 1, 1
             inv("pr-gas.json matches the raw DACO workbook (regular, cents -> $/gal) month by month", bad)
-        inv("pr-gas.json: Jan 2025 and latest present, $1-$10/gal",
+        y0, m0 = int(pr["meta"]["start"][:4]), int(pr["meta"]["start"][5:])
+        bi_pr = (2025 - y0) * 12 + (1 - m0)
+        base_pr = pr["v"][bi_pr] if 0 <= bi_pr < len(pr["v"]) else None
+        inv("pr-gas.json: Jan 2025 baseline present and $1-$10/gal (meta.baseMonth = 2025-01)",
+            [] if base_pr is not None and 1 <= base_pr <= 10 and pr["meta"].get("baseMonth") == "2025-01" else [("2025-01", base_pr)])
+        if os.path.exists(R("daco_gas.xlsx")):
+            inv("pr-gas.json: Jan 2025 baseline equals the raw DACO workbook's January 2025 regular price",
+                [] if base_pr is not None and "2025-01" in rawpr and abs(base_pr - rawpr["2025-01"]) <= 0.0001 else [(base_pr, rawpr.get("2025-01"))])
+        inv("pr-gas.json: latest present, every value $1-$10/gal",
             [] if pr["v"][-1] is not None and all(x is None or 1 <= x <= 10 for x in pr["v"]) else ["range"])
     else:
         record(S, "pr-gas.json present", "FAIL", "missing")

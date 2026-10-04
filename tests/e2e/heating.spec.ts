@@ -26,9 +26,16 @@ const heatingFor = (product: 'oil' | 'propane') => {
   }
 }
 
-test('Home heating graph: tabs where data exists, off-season labeled, season gap drawn', async ({ page }) => {
+/** The recorded Vancouver WA snapshot, re-pointed at Maine (50% of homes heat with oil, 16% propane: ACS B25040). */
+const asMaine = (snap: Record<string, unknown>) => {
+  const loc = snap.location as Record<string, unknown>
+  snap.location = { ...loc, stateAbbr: 'ME', stateName: 'Maine' }
+  return snap
+}
+
+test('Home heating graph: tabs where data exists and the fuel matters, off-season labeled as last season, gap drawn', async ({ page }) => {
   await page.route('**/api/data/*', async (route) => {
-    const snap = loadFixture('98683') as Record<string, unknown>
+    const snap = asMaine(loadFixture('98683') as Record<string, unknown>)
     snap.heating = { oil: heatingFor('oil'), propane: heatingFor('propane') }
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snap) })
   })
@@ -38,12 +45,26 @@ test('Home heating graph: tabs where data exists, off-season labeled, season gap
   await expect(heating).toHaveAttribute('data-tab', 'oil')
   await expect(heating.getByTestId('heating-tab-propane')).toBeVisible()
   await expect(heating.getByTestId('chart-note')).toHaveText(OFF)
-  await expect(heating.getByTestId('heating-headline')).toContainText('since Jan 2025')
+  // Off-season: the headline names both dates and says it is last season's figure
+  await expect(heating.getByTestId('heating-headline-window')).toHaveText(/^Jan 20, 2025 → Mar \d+, 2026 \(last heating season\)$/)
+  await heating.getByTestId('chart-info-toggle').click()
+  await expect(heating.getByTestId('chart-info')).toContainText('In Maine, 50.3% of homes heat with fuel oil or kerosene')
   await expect(heating.getByTestId('stale-badge')).toHaveCount(0)
   await heating.getByTestId('timeframe-3Y').click()
   await expect(heating.getByTestId('chart-gap-note')).toContainText('No EIA data')
   await heating.getByTestId('heating-tab-propane').click()
   await expect(heating).toHaveAttribute('data-tab', 'propane')
+})
+
+test('fuel data exists but few homes use it (Washington: under 5% oil and propane): no Home heating graph', async ({ page }) => {
+  await page.route('**/api/data/*', async (route) => {
+    const snap = loadFixture('98683') as Record<string, unknown>
+    snap.heating = { oil: heatingFor('oil'), propane: heatingFor('propane') }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snap) })
+  })
+  await enterZip(page, '98683')
+  await expect(page.getByTestId('charts-section')).toBeVisible({ timeout: 15000 })
+  await expect(page.getByTestId('heating-chart')).toHaveCount(0)
 })
 
 test('no heating source for the place: no Home heating graph', async ({ page }) => {

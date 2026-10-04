@@ -5,8 +5,9 @@
  */
 import { server } from '../mocks/server'
 import { clearMemCache, writeEnvelope, getCached, budgetKey, lastGoodKey, setCached, CACHE_SCHEMA_VERSION } from '@/lib/cache/kv'
-import { buildMapMetrics } from '@/lib/api/map-metrics'
+import { buildMapMetrics, resetMapMetricsMemo } from '@/lib/api/map-metrics'
 import { GET } from '@/app/api/map-metrics/route'
+import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { electricityCacheKey } from '@/lib/api/eia-electricity'
 import { cpiCacheKey } from '@/lib/api/bls-cpi'
@@ -32,8 +33,8 @@ test('empty cache: every area is "no data", nothing is fetched and no budget is 
   expect(calls).toEqual({ bls: 0, eia: 0 })
   expect(await getCached(budgetKey('bls'))).toBeNull()
   expect(await getCached(budgetKey('eia'))).toBeNull()
-  // every cached gas area is "no data" (the bundled Alaska DCRA survey areas never depend on the cache)
-  expect(m.gas.filter((g) => g.source !== 'dcra').every((g) => g.change === null)).toBe(true)
+  // every cached gas area is "no data" (the bundled Alaska DCRA / Puerto Rico DACO areas never depend on the cache)
+  expect(m.gas.filter((g) => g.source !== 'dcra' && g.source !== 'daco').every((g) => g.change === null)).toBe(true)
   expect(m.groceries.every((c) => c.pct === null)).toBe(true)
   expect(m.electricity).toEqual({})
   expect(m.missing).toBeGreaterThan(100)
@@ -130,8 +131,11 @@ test('a last-good copy is used when the primary key expired; invalid data is ign
   expect(m.electricity.ME).toBeUndefined()
 })
 
+const req = (url = 'https://www.whatchanged.us/api/map-metrics') => new NextRequest(url)
+
 test('route: CDN-cached for an hour when complete, 5 minutes when any area is missing', async () => {
-  let res = await GET()
+  resetMapMetricsMemo()
+  let res = await GET(req())
   expect(res.status).toBe(200)
   expect(res.headers.get('cache-control')).toBe('public, s-maxage=300, stale-while-revalidate=300')
   // Write every key the map reads → complete → long cache
@@ -145,15 +149,44 @@ test('route: CDN-cached for an hour when complete, 5 minutes when any area is mi
   const gas = (await fetchSnapshot('04101'))!.gas.data!
   const { describeDuoarea } = await import('@/lib/api/eia')
   const { describeBlsGasArea } = await import('@/lib/api/bls-gas')
-  for (const g of m0.gas.filter((a) => a.source !== 'dcra')) {
+  for (const g of m0.gas.filter((a) => a.source !== 'dcra' && a.source !== 'daco')) {
     const [src, code] = g.id.replace('*', '').split(':')
     const key = src === 'b' ? describeBlsGasArea(code).cacheKey : describeDuoarea(code).cacheKey
     writes.push(writeEnvelope(key, { ...gas, latestDate: gas.latestDate, baselineDate: gas.baselineDate, regionName: 'x' }, 60))
   }
   await Promise.all(writes)
   expect((await buildMapMetrics()).missing).toBe(0)
-  res = await GET()
+  // Memoized for 60 s: the route still serves the first (incomplete) build
+  res = await GET(req())
+  expect(res.headers.get('cache-control')).toBe('public, s-maxage=300, stale-while-revalidate=300')
+  resetMapMetricsMemo()
+  res = await GET(req())
   expect(res.headers.get('cache-control')).toBe('public, s-maxage=3600, stale-while-revalidate=86400')
+})
+
+test('route: a query string is redirected to the canonical path (never a CDN-bypassing rebuild)', async () => {
+  resetMapMetricsMemo()
+  const res = await GET(req('https://www.whatchanged.us/api/map-metrics?x=123'))
+  expect(res.status).toBe(308)
+  expect(res.headers.get('location')).toBe('https://www.whatchanged.us/api/map-metrics')
+})
+
+test('a last-good copy is marked stale, counted, and gets the short CDN lifetime', async () => {
+  await fetchSnapshot('04101')
+  const key = electricityCacheKey('ME')
+  const env = (await getCached<{ data: { change: number } }>(key))!
+  await setCached(key, null, 60)
+  await setCached(lastGoodKey(key), env, 60)
+  const m = await buildMapMetrics()
+  expect(m.electricity.ME.stale).toBe(true)
+  expect(m.stale).toBeGreaterThan(0)
+})
+
+test('Puerto Rico counties take the DACO island-wide series (the card\'s rung), not the U.S. average', async () => {
+  const m = await buildMapMetrics()
+  const g = m.gas[m.counties['72127'][0]]
+  expect(g).toMatchObject({ id: 'p:PR', source: 'daco', frequency: 'monthly' })
+  expect(g.change).not.toBeNull()
 })
 
 describe('client metric definitions', () => {
@@ -171,7 +204,7 @@ describe('client metric definitions', () => {
   })
 
   test('footers carry source · geography · window · as-of · adjustment', () => {
-    expect(liveFooter('elec', null)).toBe('EIA average residential electricity price · statewide · since Jan 2025 · not loaded · seasonally adjusted by whatchanged')
+    expect(liveFooter('elec', null)).toBe('EIA average residential electricity price · statewide · 12-month average price vs the 12 months ending Jan 2025 · not loaded · no seasonal adjustment needed')
     expect(liveFooter('gas', null)).toMatch(/not seasonally adjusted$/)
   })
 })

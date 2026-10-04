@@ -126,7 +126,7 @@ describe('census rent provenance on the shelter card', () => {
   test('98687 (PO box) labels the actual donor zip and how it was chosen', () => {
     const census = getCensusData('98687')
     const m = buildShelterCard(shelterOnly(census))
-    expect(m.detail).toMatch(new RegExp(`borrowed from zip ${census.donorZip} \\(largest residential zip in the (city|county)\\)`))
+    expect(m.detail).toMatch(new RegExp(`borrowed from zip ${census.donorZip} \\(largest residential zip in the (same )?(city|county)\\)`))
   })
 
   test('legacy approxFromZip without a scope never claims "nearest"', () => {
@@ -136,8 +136,8 @@ describe('census rent provenance on the shelter card', () => {
     expect(shelter.detail ?? '').not.toContain('nearest')
   })
 
-  test('no local rent figure (10020) → no dollar estimate, said plainly', () => {
-    const m = buildShelterCard(shelterOnly(getCensusData('10020')))
+  test('no Census rent at any level (Guam 96910) → no dollar estimate, said plainly', () => {
+    const m = buildShelterCard(shelterOnly(getCensusData('96910')))
     expect(m.inline).toBeUndefined()
     expect(m.detail).toBe('No local rent figure for a dollar estimate.')
   })

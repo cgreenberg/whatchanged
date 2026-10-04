@@ -35,7 +35,7 @@ import {
   type EiaElectricityRow,
 } from './eia-electricity'
 import {
-  buildHeatingByArea, fetchHeatingRows, hasHeatingSeries, heatingCacheKey, isValidHeating, NATIONAL_HEATING,
+  buildHeatingByArea, fetchHeatingRows, hasHeatingSeries, heatingCacheKey, isValidHeating, isHeatingMissing, NATIONAL_HEATING,
   type EiaHeatingRow, type HeatingProduct,
 } from './eia-heating'
 import { fetchNyserdaHeatingOil, isValidNyserda, NYSERDA_CACHE_KEY, type NyserdaHeatingOil } from './nyserda'
@@ -361,7 +361,8 @@ export async function runRefresh(
       for (const t of heatTargets) {
         const key = heatingCacheKey(t.product, t.area)
         const d = parsed.get(key)
-        if (!d || d instanceof Error) record(key, /No heating/.test(d?.message ?? 'No heating') ? 'missing' : 'invalid', msg(d ?? 'no rows'))
+        if (!d) record(key, 'missing', 'no rows')
+        else if (d instanceof Error) record(key, isHeatingMissing(d) ? 'missing' : 'invalid', msg(d))
         else if (!isValidHeating(d)) record(key, 'invalid', 'failed sanity validation')
         else pending.push({ key, ttl: HEATING_TTL, data: d })
       }

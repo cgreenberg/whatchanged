@@ -45,7 +45,8 @@ interface ZipEntry {
 }
 
 interface CensusEntry {
-  medianRent: number
+  /** null = Census suppressed the estimate (never a synthetic fallback value). */
+  medianRent: number | null
 }
 
 interface CountyGeo {
@@ -67,7 +68,7 @@ describe('exhaustive zip mappings', () => {
   jest.setTimeout(120_000)
 
   it('every zip resolves through the full mapping chain', () => {
-    const census = censusAcs as Record<string, CensusEntry>
+    const census = censusAcs as unknown as Record<string, CensusEntry>
     const failures: string[] = []
 
     for (const [zip, entry] of Object.entries(zips)) {
@@ -131,7 +132,7 @@ describe('exhaustive zip mappings', () => {
 
       // Census rent (the shelter card's $ base) is optional (USPS-only zips have none), but must be sane when present
       const c = census[zip]
-      if (c && !(c.medianRent > 0)) {
+      if (c && c.medianRent !== null && !(c.medianRent > 0)) {
         failures.push(`${zip}: census rent not > 0`)
       }
     }

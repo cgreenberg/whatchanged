@@ -11,7 +11,7 @@ import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
 import {
-  DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL,
+  DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL, dcraStationsText,
 } from '@/lib/static-gas-meta'
 import {
   BASELINE_MONTH,
@@ -48,6 +48,8 @@ export interface HeroCardModel {
   status: 'ok' | 'unavailable'
   /** Big number on the card. */
   value?: string
+  /** Small qualifier after the big number ("avg, last 12 mo"). */
+  valueNote?: string
   /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent", "≈ +$33/mo". */
   inline?: string
   /** Gas only: its signed $ change since the baseline, shown under the big number ("+$0.87 since Jan 2025"). */
@@ -346,6 +348,9 @@ export function censusDonorZip(c: CensusData | null | undefined): string | undef
 
 /** "borrowed from zip 10025 (largest residential zip in the city)". */
 export function donorPhrase(c: CensusData | null | undefined): string | null {
+  // Borrowed bases name their source: "borrowed from zip 35464 (nearest with Census rent, 5.3 mi)",
+  // "Cameron Parish, LA median (no zip figure)", "Louisiana median (no zip or county figure)"
+  if (c?.basisNote && c.basis && c.basis !== 'zip') return c.basisNote
   const donor = censusDonorZip(c)
   if (!donor) return null
   const where = c?.donorScope === 'city' ? 'the city' : c?.donorScope === 'county' ? 'the county' : 'the area'
@@ -492,7 +497,10 @@ function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel
   const caveat = gasCaveatFor(s)
   const dollarNote = `${fmtSignedDollars(g.change)}/gal since ${when(baseline)}`
   const detail = dcra
-    ? `Twice-yearly community survey: ${when(baseline)} vs ${when(latest)}`
+    ? `Twice-yearly community survey: ${when(baseline)} vs ${when(latest)}` +
+      (baseline && latest && baseline.slice(5, 7) !== latest.slice(5, 7)
+        ? ' (a January and a July survey: different seasons; past surveys show no consistent January–July price gap)'
+        : '')
     : `Island-wide monthly average: ${fmtMonthYear(baseline)} vs ${fmtMonthYear(latest)}`
   const noUs = dcra
     ? 'No U.S. comparison: the survey covers Alaska communities only.'
@@ -508,7 +516,13 @@ function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel
     secondary: dcra ? 'twice-yearly survey' : 'island-wide, monthly',
     detail,
     dollarNote,
-    info: compact([`${dollarNote}.`, detail, caveat, noUs, dcra ? DCRA_ATTRIBUTION : undefined]),
+    info: compact([
+      `${dollarNote}.`, detail, caveat,
+      dcra && g.staticSource && g.staticSource.match !== 'region'
+        ? dcraStationsText(g.staticSource.place, g.staticSource.stations, g.staticSource.retailer)
+        : undefined,
+      noUs, dcra ? DCRA_ATTRIBUTION : undefined,
+    ]),
     asOfPeriod: latest,
   }
 }
@@ -728,7 +742,12 @@ export function buildGroceryCard(s: EconomicSnapshot): HeroCardModel {
     ? `≈ ${fmtSignedDollars(dollars, 0)}/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries (typical household food-at-home spending)`
     : undefined
   const nationalValue = natOk ? `National: ${fmtSignedPct(nat!.pct)} (U.S. city avg, BLS CPI food at home)` : undefined
-  const detail = hasDollars ? undefined : 'Dollar estimate unavailable'
+  const national = c.tier === 4 || c.fallback === 'national'
+  const detail = hasDollars
+    ? undefined
+    : national
+      ? 'No dollar estimate: only the U.S. average CPI applies here, and a U.S. change isn’t a local cost (same rule as the shelter card).'
+      : 'Dollar estimate unavailable'
   return {
     ...base,
     status: 'ok',
@@ -749,12 +768,25 @@ export function buildGroceryCard(s: EconomicSnapshot): HeroCardModel {
 
 export const ELECTRICITY_SOURCE = 'EIA average residential electricity price'
 export const ELECTRICITY_SOURCE_URL = 'https://www.eia.gov/electricity/data/browser/'
-export const ELECTRICITY_ADJUSTMENT = 'seasonally adjusted by whatchanged'
-/** Why the % compares seasonally adjusted prices (ⓘ on the card and the graph). */
-export const ELECTRICITY_SEASONAL_NOTE =
-  'Residential electricity prices are seasonal (in many states the summer price per kWh runs well above winter\'s), ' +
-  'so the % change compares seasonally adjusted prices: each state\'s typical month-to-month pattern over 2014–2024 is removed. ' +
-  'The price shown is the published monthly average.'
+export const ELECTRICITY_ADJUSTMENT = '12-month average prices (no seasonal adjustment needed)'
+/** Card label beside the big number (the 12-month average price). */
+export const ELECTRICITY_VALUE_NOTE = 'avg, last 12 mo'
+/** Why the card compares 12-month averages (ⓘ on the card and the graph). */
+export const ELECTRICITY_METHOD_NOTE =
+  'Why 12-month averages: residential electricity prices swing with the seasons (in many states summer\'s price per kWh ' +
+  'runs well above winter\'s), so comparing one month with another mostly measures the calendar. Averaging a full year on ' +
+  'both sides counts every season once: the latest 12 months vs the 12 months ending January 2025.'
+/** "Feb 2025": the month after `ym` (the 12-month baseline window ends the month before it). */
+export function monthAfter(ym: string): string {
+  const [y, m] = ym.split('-').map(Number)
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
+}
+/** "+7.4% vs 12 mo to Jan 2025" (the card face; the ⓘ spells out both 12-month windows). */
+export function electricityChangePhrase(e: Pick<ElectricityData, 'change' | 'baselinePeriod'>): string {
+  return `${fmtSignedPct(e.change)} vs 12 mo to ${fmtMonthYear(e.baselinePeriod)}`
+}
+/** "Aug 2025–Jul 2026". */
+export const fmtWindow = (from: string | undefined, to: string) => (from ? `${fmtMonthYear(from)}–${fmtMonthYear(to)}` : fmtMonthYear(to))
 /** Territories: EIA publishes no residential retail price. */
 export const ELECTRICITY_TERRITORY_NOTE = (place: string) => `EIA publishes no residential electricity price for ${place}.`
 
@@ -776,9 +808,11 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     source: ELECTRICITY_SOURCE,
     sourceUrl: ELECTRICITY_SOURCE_URL,
     geography: e ? `${place} (statewide average)` : place,
-    window: `since ${e ? fmtMonthYear(e.baselinePeriod) : BASELINE_MONTH_LABEL}`,
+    window: e
+      ? `12 months ending ${fmtMonthYear(e.latestPeriod)} vs 12 months ending ${fmtMonthYear(e.baselinePeriod)}`
+      : `since ${BASELINE_MONTH_LABEL}`,
     asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
-    adjustment: `% change ${ELECTRICITY_ADJUSTMENT}`,
+    adjustment: ELECTRICITY_ADJUSTMENT,
   }
   const base = {
     id: 'electricity' as const,
@@ -793,37 +827,39 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     return { ...base, status: 'unavailable', info: compact([territory ? ELECTRICITY_TERRITORY_NOTE(territory) : undefined]) }
   }
   if (!inRange(e.current, SANITY.electricityPrice) || !inRange(e.change, SANITY.electricityChange)) {
-    return { ...base, status: 'unavailable', info: [ELECTRICITY_SEASONAL_NOTE] }
+    return { ...base, status: 'unavailable', info: [ELECTRICITY_METHOD_NOTE] }
   }
   const dollars = s.dollarImpact?.electricity
   const hasDollars = typeof dollars === 'number' && Number.isFinite(dollars) && typeof e.usageKwh === 'number'
   const usage = hasDollars
     ? `${Math.round(e.usageKwh!).toLocaleString('en-US')} kWh` +
-      (e.usageFrom && e.usageTo ? `, 12-mo avg ${fmtMonthYear(e.usageFrom)}–${fmtMonthYear(e.usageTo)}` : ', 12-mo avg')
+      (e.usageFrom && e.usageTo ? `, 12-mo avg ${fmtWindow(e.usageFrom, e.usageTo)}` : ', 12-mo avg')
     : null
-  const priceChange = e.saCurrent - e.saBaseline
+  const priceChange = e.current - e.baseline
   const dollarNote = hasDollars
-    ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo: price change (${priceChange >= 0 ? '+' : '−'}${Math.abs(priceChange).toFixed(2)}¢/kWh, seasonally adjusted) × an average ${place} home's monthly use (${usage})`
+    ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo: change in the 12-month average price (${priceChange >= 0 ? '+' : '−'}${Math.abs(priceChange).toFixed(2)}¢/kWh) × an average ${place} home's monthly use (${usage})`
     : undefined
-  const detail = `Published price: ${fmtCents(e.current)} in ${fmtMonthYear(e.latestPeriod)} vs ${fmtCents(e.baseline)} in ${fmtMonthYear(e.baselinePeriod)} ` +
-    `(${fmtSignedPct(e.rawChange)} unadjusted; ${fmtSignedPct(e.change)} after removing the usual seasonal pattern).`
+  const detail = `12-month average price: ${fmtCents(e.current)} (${fmtWindow(e.currentFrom, e.latestPeriod)}) vs ` +
+    `${fmtCents(e.baseline)} (${fmtWindow(e.baselineFrom, e.baselinePeriod)}). ` +
+    `Latest month as published: ${fmtCents(e.latestMonthPrice)} in ${fmtMonthYear(e.latestPeriod)}.`
   const natOk = typeof e.nationalChange === 'number' && Number.isFinite(e.nationalChange)
-  const nationalValue = natOk ? `National: ${fmtSignedPct(e.nationalChange!)} (U.S. average, EIA, same method and months)` : undefined
+  const nationalValue = natOk ? `National: ${fmtSignedPct(e.nationalChange!)} (U.S. average, EIA, same 12-month windows)` : undefined
   return {
     ...base,
     status: 'ok',
     geoTag: electricityPlace(e, 'short'),
     value: fmtCents(e.current),
+    valueNote: ELECTRICITY_VALUE_NOTE,
     inline: hasDollars ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo` : undefined,
     direction: directionOf(e.change),
-    secondary: sourceLineOf(`${fmtSignedPct(e.change)} since ${fmtMonthYear(e.baselinePeriod)}`, natOk ? `U.S. ${fmtSignedPct(e.nationalChange!)}` : undefined),
+    secondary: sourceLineOf(electricityChangePhrase(e), natOk ? `U.S. ${fmtSignedPct(e.nationalChange!)}` : undefined),
     dollarNote,
     detail,
     nationalValue,
     info: compact([
       dollarNote ? `${dollarNote}.` : 'Dollar estimate unavailable (no recent usage figure for this state).',
       detail,
-      ELECTRICITY_SEASONAL_NOTE,
+      ELECTRICITY_METHOD_NOTE,
       nationalValue,
       `Statewide average across utilities: your own rate and bill can differ.`,
     ]),
@@ -914,7 +950,7 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
     if (c.id === 'shelter') parts.push(`Shelter CPI ${c.value}${tag(c)}`)
     if (c.id === 'groceries') parts.push(`Groceries ${c.value}${tag(c)}`)
     if (c.id === 'electricity' && snapshot.electricity?.data) {
-      parts.push(`Electricity ${fmtSignedPct(snapshot.electricity.data.change)}${tag(c)}`)
+      parts.push(`Electricity ${fmtSignedPct(snapshot.electricity.data.change)} (12-mo avg${c.geoTag ? `, ${c.geoTag}` : ''})`)
     }
   }
   const head = parts.length ? `Since ${BASELINE_MONTH_LABEL}: ` : ''

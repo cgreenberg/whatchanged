@@ -69,7 +69,7 @@ describe('computeDollarImpact', () => {
       rentIndexChangePct: 3.5,
       gasChange: -0.52,
       medianRent: 1400,
-      electricitySaChangeCents: 6.13,
+      electricityPriceChangeCents: 6.13,
       electricityUsageKwh: 532,
     })
     expect(r).toEqual({ groceries: -156, shelter: 588, gas: -0.52, electricity: 33 })

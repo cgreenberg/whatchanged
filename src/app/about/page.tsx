@@ -3,12 +3,15 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { fmtDay } from '@/lib/format'
 import { HowWePick } from '@/components/HowWePick'
+import { LADDERS, LADDER_ORDER } from '@/lib/resolution/ladders'
+import { sourceRows } from '@/lib/resolution/doc'
+import { DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE_URL } from '@/lib/static-gas-meta'
 
 /**
  * Revision date of THIS PAGE'S CONTENT (YYYY-MM-DD). Change it whenever the text below changes.
  * It is not a data date: each number's own data date is shown on its card.
  */
-const ABOUT_LAST_UPDATED = '2026-10-03'
+const ABOUT_LAST_UPDATED = '2026-10-04'
 
 export const metadata: Metadata = {
   title: 'About the Data | What Changed',
@@ -29,19 +32,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function Row({ metric, source, geo, freq, children, last }: {
-  metric: string; source: string; geo: ReactNode; freq: string; children: ReactNode; last?: boolean
-}) {
-  return (
-    <tr className={last ? '' : 'border-b border-line'}>
-      <td className="py-3 pr-4 font-semibold text-ink whitespace-nowrap align-top">{metric}</td>
-      <td className="py-3 pr-4 text-ink align-top">{source}</td>
-      <td className="py-3 pr-4 align-top">{geo}</td>
-      <td className="py-3 pr-4 whitespace-nowrap align-top">{freq}</td>
-      <td className="py-3 align-top">{children}</td>
-    </tr>
-  )
-}
+const linkClass = 'text-ink underline decoration-ink-3 underline-offset-2 hover:decoration-ink'
 
 export default function AboutPage() {
   return (
@@ -72,25 +63,25 @@ export default function AboutPage() {
         <p>
           Enter a zip code to see how local prices changed since January 20, 2025. Four summary cards
           come first: <strong>Gas</strong> (regular gasoline, $/gal),{' '}
-          <strong>Rent</strong> (asking rents on new leases, Zillow; where Zillow
-          has no county rent, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
+          <strong>Rent</strong> (asking rents on new leases, Zillow: your county&apos;s series, else your
+          metro area&apos;s; where Zillow has neither, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
           <strong>Groceries</strong> (CPI food at home) and{' '}
-          <strong>Electricity</strong> (your state&apos;s average residential price
-          per kWh). Each card shows the number, a short dollar translation where one applies, the
-          comparison window and the U.S. figure where one exists, and a short source line (area · source ·
-          month). Tap the ⓘ on a card for everything else: the full source line with a link, the
-          geography, the baseline, whether the series is seasonally adjusted, how the dollar figure is
-          computed and any caveat.
+          <strong>Electricity</strong> (your state&apos;s average residential price per kWh over the last 12
+          months). Each card shows the number, a short dollar translation where one applies, the comparison
+          window and the U.S. figure where one exists, and a short source line (area · source · month). Tap
+          the ⓘ on a card for everything else: the full source line with a link, the geography, the
+          baseline, the adjustment, how the dollar figure is computed and any caveat.
         </p>
         <p>
-          Below the cards are four graphs: Gas prices, Grocery prices, Housing (with Rent, Home prices
-          and Shelter (CPI) tabs) and Electricity prices, each with timeframe buttons, an optional U.S.
-          comparison line and an ⓘ with the details. A county map colors every county by the change since
-          January 2025 in gas prices, rent, home prices, grocery prices or electricity prices; tap a
-          county to see all five with the area each number covers. Rent and home prices are county
-          figures, with month-by-month playback and the biggest increases and decreases. Gas, groceries
-          and electricity are published for metro areas, regions or states, not counties, so neighboring
-          counties share a color and there is no playback or ranking for them.
+          Below the cards are four graphs (Gas prices, Grocery prices, Housing with Rent, Home prices and
+          Shelter (CPI) tabs, and Electricity prices) and, in states where at least 5% of homes heat with
+          fuel oil or propane, a fifth: Home heating, with a tab for each fuel that matters there. Each
+          graph has timeframe buttons, an optional U.S. comparison line and an ⓘ with the details. A county
+          map colors every county by the change since January 2025 in gas prices, rent, home prices, grocery
+          prices or electricity prices; tap a county to see all five with the area each number covers. Rent
+          and home prices are county figures, with month-by-month playback and the biggest increases and
+          decreases. Gas, groceries and electricity are published for metro areas, regions or states, not
+          counties, so neighboring counties share a color and there is no playback or ranking for them.
         </p>
       </Section>
 
@@ -98,111 +89,50 @@ export default function AboutPage() {
         <HowWePick />
       </Section>
 
-      {/* Data Sources */}
-      <section className={sectionClass}>
+      {/* Generated from the ladder config (src/lib/resolution/doc.ts sourceRows), so it can't contradict the code */}
+      <section className={sectionClass} data-testid="about-sources">
         <h2 className={h2Class}>Data sources</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-ink-2 leading-relaxed">
             <thead>
               <tr>
-                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Metric</th>
                 <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Source</th>
-                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Geography</th>
-                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Update Frequency</th>
-                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 whitespace-nowrap">Notes</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 pr-4 whitespace-nowrap">Used for (geography · frequency)</th>
+                <th className="kicker !text-[10.5px] text-ink-3 font-normal pb-3 whitespace-nowrap">License / attribution</th>
               </tr>
             </thead>
             <tbody>
-              <Row
-                metric="Gas (regular)"
-                source="EIA Weekly Retail Gasoline Prices, regular grade"
-                geo="EIA city where EIA publishes one; otherwise EIA state (9 states) or PADD region (PADD 1 split into New England, Central Atlantic and Lower Atlantic)"
-                freq="Weekly"
-              >
-                Baseline: last weekly reading on or before Jan 20, 2025. Not seasonally adjusted. The U.S.
-                comparison is EIA&apos;s U.S. average. Puerto Rico and other territories have no EIA series
-                and show the U.S. average, labeled.
-              </Row>
-              <Row
-                metric="Gas (regular), BLS areas"
-                source="BLS CPI Average Price Data, gasoline (unleaded regular), per gallon"
-                geo="CPI metro areas without an EIA city series (e.g. Philadelphia, Washington DC, Atlanta, Phoenix), plus Honolulu and Anchorage. Elsewhere in Hawaii and Alaska, where neither BLS nor EIA publishes a gas price, the Honolulu or Anchorage price stands in, marked with * (e.g. “Honolulu-area*”)"
-                freq="Monthly"
-              >
-                Baseline: January 2025. Not seasonally adjusted. Monthly figures run several weeks behind
-                the weekly EIA ones; the card&apos;s source line names the month. The U.S. comparison is the
-                BLS U.S. city average for the same months, never EIA (BLS average prices run slightly above
-                EIA&apos;s). BLS titles the two series &ldquo;Urban Hawaii&rdquo; and &ldquo;Urban
-                Alaska&rdquo;, but they cover only the Honolulu and Anchorage metros; prices on the other
-                islands and elsewhere in Alaska are typically higher and may have changed differently. If a
-                BLS series is temporarily unavailable, the zip&apos;s EIA weekly regional price is shown
-                instead, labeled &ldquo;metro n/a&rdquo; (for Hawaii and Alaska, which have no EIA regional
-                series, the EIA U.S. average, labeled &ldquo;U.S. avg (local n/a)&rdquo;).
-              </Row>
-              <Row
-                metric="Rent (new leases)"
-                source="Zillow Observed Rent Index (ZORI)"
-                geo="County"
-                freq="Monthly"
-              >
-                Asking rents on new leases: the Rent card, the Housing graph&apos;s Rent tab and the county
-                map. The % change since January 2025 is seasonally adjusted by whatchanged. The $/mo figure is
-                that adjusted % expressed in dollars at today&apos;s typical rent (current rent − current rent
-                ÷ (1 + %)), so it removes the usual seasonal rise and is not the raw difference between two
-                months&apos; listed rents. Counties whose figure is far outside the U.S. range are tagged
-                &ldquo;⚠ unusual&rdquo;.
-              </Row>
-              <Row
-                metric="Home prices"
-                source="Zillow Home Value Index (ZHVI)"
-                geo="County"
-                freq="Monthly"
-              >
-                Zillow&apos;s smoothed, seasonally adjusted estimate of the typical (middle-tier) home value.
-                Shown in the Housing graph&apos;s Home prices tab and on the county map.
-              </Row>
-              <Row
-                metric="Shelter (CPI)"
-                source="BLS Consumer Price Index: shelter; for its dollar figure, rent of primary residence"
-                geo="Metro area, Census division, or region"
-                freq="Monthly"
-              >
-                CPI shelter covers rents plus owners&apos; equivalent rent for homeowners, including existing
-                leases, so it lags new-lease asking rents by about a year. It is the Housing graph&apos;s
-                Shelter (CPI) tab, and the housing card where Zillow has no county rent. That card&apos;s
-                headline % is CPI shelter; its &ldquo;≈ $/yr in rent&rdquo; figure is the same area&apos;s BLS
-                CPI rent of primary residence % change applied to the local Census median rent × 12 (not the
-                shelter %, which is mostly owners&apos; equivalent rent). No dollar figure is shown where the
-                rent index or a local rent figure is unavailable, or where only national CPI exists (e.g.
-                Puerto Rico). Not seasonally adjusted.
-              </Row>
-              <Row
-                metric="Groceries"
-                source="BLS Consumer Price Index (food at home)"
-                geo="Metro area, Census division, or region"
-                freq="Monthly"
-              >
-                $ estimate: $6,000/yr typical household grocery spend × % change. Not seasonally adjusted.
-              </Row>
-              <Row
-                metric="Electricity"
-                source="EIA average residential electricity price (Form EIA-861M, via the EIA API's electricity retail-sales data)"
-                geo="State (statewide average across utilities). EIA publishes no price for Puerto Rico or other territories, which show “Data unavailable”"
-                freq="Monthly (about two months behind)"
-                last
-              >
-                The card shows the latest published price in ¢/kWh with its month. The % change since January
-                2025 compares seasonally adjusted prices: residential prices are seasonal (in many states the
-                summer price per kWh runs well above winter&apos;s), so a raw January-to-latest comparison
-                would mostly measure the season. whatchanged removes each state&apos;s typical month-to-month
-                pattern, estimated from 2014–2024 (the same classical method used for Zillow rents); the ⓘ
-                also shows the unadjusted change. The ≈ $/mo figure is the change in the adjusted price
-                × the state&apos;s average home use (residential sales ÷ customers, averaged over the latest 12
-                months). It is a statewide average: your utility&apos;s rate and your own use can differ. The
-                U.S. comparison is EIA&apos;s U.S. average with the same method over the same months.
-              </Row>
+              {sourceRows().map((r, i, all) => (
+                <tr key={r.name} className={i === all.length - 1 ? '' : 'border-b border-line'} data-testid="about-source-row">
+                  <td className="py-3 pr-4 text-ink align-top">
+                    <a href={r.homepage} target="_blank" rel="noopener noreferrer" className={linkClass}>{r.name}</a>
+                  </td>
+                  <td className="py-3 pr-4 align-top">
+                    <ul className="space-y-0.5">{r.usedFor.map(u => <li key={u}>{u}</li>)}</ul>
+                  </td>
+                  <td className="py-3 align-top">{r.license}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* Generated from each ladder's method / comparison text */}
+      <section className={sectionClass} data-testid="about-methods">
+        <h2 className={h2Class}>Methods by measure</h2>
+        <div className="text-ink-2 text-sm leading-relaxed space-y-4">
+          {LADDER_ORDER.map(metric => {
+            const l = LADDERS[metric] as { title: string; method?: string; comparison?: string; noData?: string }
+            return (
+              <div key={metric} data-testid={`about-method-${metric}`}>
+                <h3 className="font-display font-semibold text-[17px] leading-tight tracking-tight text-ink mb-1">{l.title}</h3>
+                {l.method && <p>{l.method}</p>}
+                {l.comparison && <p className="text-ink-3 text-xs mt-1">U.S. comparison: {l.comparison}</p>}
+                {l.noData && <p className="text-ink-3 text-xs mt-0.5">No data at any step: {l.noData}</p>}
+              </div>
+            )
+          })}
         </div>
       </section>
 
@@ -210,16 +140,18 @@ export default function AboutPage() {
         <p>
           Changes compare the most recent available data with a baseline tied to January 20, 2025, the
           date of the presidential inauguration. Each source uses the closest baseline it publishes: for
-          gas (EIA, weekly), the last weekly reading on or before January 20, 2025; for gas from BLS
-          average prices (monthly), January 2025; for BLS consumer prices, the January 2025 index, or the
-          nearest earlier month for areas BLS doesn&apos;t publish every month (for example December 2024);
-          for county rent and home values (Zillow) and state electricity prices (EIA), January 2025.
+          weekly sources (EIA gas, EIA and NYSERDA heating fuel), the last weekly reading on or before
+          January 20, 2025; for monthly sources (BLS gas average prices, Puerto Rico DACO gas, Zillow rent
+          and home values), January 2025; for BLS consumer prices, the January 2025 index, or the nearest
+          earlier month for areas BLS doesn&apos;t publish every month (for example December 2024); for the
+          Alaska community fuel survey, the January 2025 survey; and for state electricity prices, the
+          average of the 12 months ending January 2025, compared with the latest 12 months.
         </p>
         <p>
           Each card shows its area, source and the month (or, for weekly gas, the week) of its latest data;
-          its ⓘ details add the full geography, baseline and whether the figures are seasonally adjusted.
-          U.S. comparisons use the same BLS and EIA series at the national level over the same months as
-          the local figure. A &ldquo;Stale&rdquo; badge marks a source that has not updated on schedule.
+          its ⓘ details add the full geography, baseline and adjustment. U.S. comparisons use the same
+          source at the national level over the same period as the local figure. A &ldquo;Stale&rdquo;
+          badge marks a source that has not updated on schedule.
         </p>
       </Section>
 
@@ -242,19 +174,18 @@ export default function AboutPage() {
       <Section title="About this project">
         <p>
           Source code is available on{' '}
-          <a
-            href="https://github.com/cgreenberg/whatchanged"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-ink underline decoration-ink-3 underline-offset-2 hover:decoration-ink"
-          >
+          <a href="https://github.com/cgreenberg/whatchanged" target="_blank" rel="noopener noreferrer" className={linkClass}>
             GitHub
           </a>
           .
         </p>
-        <p>
-          All BLS, EIA, and Census data used on this site is public domain and freely available from the
-          respective government agencies. Rent and home value data come from Zillow Research.
+        <p data-testid="about-attribution">
+          BLS, EIA and Census data are public domain. Rent and home value data: Zillow Research. Alaska gas
+          prices: {DCRA_SOURCE}, {DCRA_PUBLISHER} (
+          <a href={DCRA_LICENSE_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>CC BY 4.0</a>
+          ; whatchanged matches each zip to a surveyed community or region, prices as published). Puerto Rico gas prices: Departamento de Asuntos del Consumidor (DACO). New York heating oil:
+          NYSERDA (Open NY). Postal places for PO-box zips: GeoNames (CC BY 4.0). Every source, with its
+          license, is listed in the Data sources table above.
         </p>
       </Section>
     </main>

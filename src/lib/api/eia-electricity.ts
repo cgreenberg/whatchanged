@@ -4,29 +4,28 @@
 // EIA publishes nothing for Puerto Rico or the other territories.
 //
 // Seasonality: residential prices swing with the seasons (many utilities charge more per kWh in
-// summer; Georgia's July price runs ~17% above its January price in a typical year), so a raw
-// "Jan 2025 → latest month" comparison mostly measures the calendar. The headline change compares
-// SEASONALLY ADJUSTED prices: classical decomposition (centered 2×12 moving average, per-month
-// median ratio over 2014–2024, normalized to average 1), the same method whatchanged uses for
-// Zillow rents. The factors are fit on data through Dec 2024 only, so they never move once a new
-// month is published and the Jan 2025 baseline stays fixed. The observed (published) price is
-// still what the card shows as the level, with its month.
+// summer; Georgia's July price runs ~17% above its January price in a typical year), so comparing
+// one month with another mostly measures the calendar. The headline therefore compares 12-MONTH
+// AVERAGE prices: the average of the latest 12 published monthly prices vs the average of the 12
+// months ending January 2025 (Feb 2024 – Jan 2025). Every season is in both windows, so no
+// seasonal model is needed and nothing is revised when a new month is published (the baseline
+// window is fixed). The big number is the latest 12-month average price.
 //
-// Dollars: (adjusted price now − adjusted Jan 2025 price) × the state's average residential use
-// per customer per month over the latest 12 complete months (sales ÷ customers) — a stable,
-// non-seasonal usage figure.
+// Dollars: (12-mo average price now − 12-mo average price in the baseline window) × the state's
+// average residential use per customer per month over the latest 12 complete months
+// (sales ÷ customers) — a stable, non-seasonal usage figure.
 
 import { BASELINE_MONTH } from '@/lib/baseline'
 
 export const EIA_ELECTRICITY_API = 'https://api.eia.gov/v2/electricity/retail-sales/data/'
-/** First month fetched: gives 2014-07…2024-12 seasonal ratios (10+ per calendar month) and a 10-year graph. */
-export const ELECTRICITY_SERIES_START = '2014-01'
+/** First month fetched: a 10-year graph whose 12-month average line starts with the graph (2016-01 needs 2015-02). */
+export const ELECTRICITY_SERIES_START = '2015-01'
 /** First month kept in the cached/charted series (the graph's 10Y window needs ~2016-07). */
 export const ELECTRICITY_CHART_START = '2016-01'
-/** Seasonal factors use ratios up to this month only (pre-baseline), so they never revise. */
-export const ELECTRICITY_SA_FIT_END = '2024-12'
-/** Fewer in-sample seasonal ratios than this → not adjusted (series rejected, never shown raw as "adjusted"). */
-export const ELECTRICITY_MIN_SA_HISTORY = 36
+/** Months in each averaging window. */
+export const ELECTRICITY_AVG_MONTHS = 12
+/** Marks payloads computed with the 12-month-average method (older cached SA payloads lack it → refetched). */
+export const ELECTRICITY_METHOD = 'avg12' as const
 export const ELECTRICITY_TIMEOUT_MS = 10_000
 /** EIA API v2 returns at most 5,000 rows per request. */
 export const EIA_MAX_ROWS = 5000
@@ -58,32 +57,33 @@ export interface ElectricityPoint {
   date: string // YYYY-MM
   /** Published average residential price, ¢/kWh (null: month not published). */
   price: number | null
-  /** Seasonally adjusted by whatchanged, ¢/kWh. */
-  sa: number | null
+  /** Average of the 12 published monthly prices ending this month, ¢/kWh (null: a month missing). */
+  avg12: number | null
 }
 
 export interface ElectricitySeriesData {
   state: string // 'ME' … or 'US'
   stateName: string
   seriesId: string
-  /** Published price in the latest month (¢/kWh) and that month. */
+  method: typeof ELECTRICITY_METHOD
+  /** Average price over the latest 12 published months (¢/kWh): `currentFrom`…`latestPeriod`. The big number. */
   current: number
+  currentFrom: string
   latestPeriod: string
-  /** Published price in Jan 2025. */
+  /** Average price over the 12 months ending Jan 2025 (¢/kWh): `baselineFrom`…`baselinePeriod`. */
   baseline: number
+  baselineFrom: string
   baselinePeriod: string
-  /** Seasonally adjusted prices at the latest month and Jan 2025 (¢/kWh). */
-  saCurrent: number
-  saBaseline: number
-  /** % change of the seasonally adjusted price since Jan 2025 (the headline). */
+  /** % change of the 12-month average price (the headline). */
   change: number
-  /** % change of the published prices, Jan 2025 → latest month (shown in the ⓘ for transparency). */
-  rawChange: number
+  /** Published price in the latest month and in Jan 2025 (¢/kWh), shown in the ⓘ. */
+  latestMonthPrice: number
+  baselineMonthPrice: number
   /** Average residential use, kWh per customer per month, over `usageFrom`…`usageTo` (12 complete months). */
   usageKwh: number | null
   usageFrom?: string
   usageTo?: string
-  /** Monthly series since ELECTRICITY_CHART_START (published + adjusted). */
+  /** Monthly series since ELECTRICITY_CHART_START (published price + trailing 12-month average). */
   series: ElectricityPoint[]
 }
 
@@ -116,43 +116,13 @@ export function monthRange(first: string, last: string): string[] {
   return out
 }
 
-const median = (xs: number[]): number => {
-  const s = [...xs].sort((a, b) => a - b)
-  const n = s.length
-  return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2
-}
-
-/**
- * Multiplicative seasonal factors (12, Jan…Dec, mean 1) from a contiguous monthly series:
- * ratio to a centered 2×12 moving average, median per calendar month over months ≤ fitEnd.
- * Returns null with fewer than ELECTRICITY_MIN_SA_HISTORY in-sample ratios or a month with none.
- */
-export function seasonalFactors(
-  months: string[],
-  values: Array<number | null>,
-  fitEnd: string = ELECTRICITY_SA_FIT_END,
-): number[] | null {
-  const w = [0.5, ...Array(11).fill(1), 0.5].map((v) => v / 12)
-  const byMonth: number[][] = Array.from({ length: 12 }, () => [])
-  let n = 0
-  for (let t = 6; t < months.length - 6; t++) {
-    if (months[t] > fitEnd) break
-    let cma = 0
-    let ok = true
-    for (let k = 0; k < 13; k++) {
-      const v = values[t - 6 + k]
-      if (v === null) { ok = false; break }
-      cma += v * w[k]
-    }
-    const x = values[t]
-    if (!ok || x === null || !(cma > 0)) continue
-    byMonth[Number(months[t].slice(5, 7)) - 1].push(x / cma)
-    n++
-  }
-  if (n < ELECTRICITY_MIN_SA_HISTORY || byMonth.some((r) => !r.length)) return null
-  const f = byMonth.map(median)
-  const mean = f.reduce((a, b) => a + b, 0) / 12
-  return f.map((v) => v / mean)
+/** Trailing average of the `n` values ending at each index (null when any of them is missing). */
+export function trailingAverage(values: Array<number | null>, n: number = ELECTRICITY_AVG_MONTHS): Array<number | null> {
+  return values.map((_, i) => {
+    if (i < n - 1) return null
+    const win = values.slice(i - n + 1, i + 1)
+    return win.every((v): v is number => v !== null) ? win.reduce((x, y) => x + y, 0) / n : null
+  })
 }
 
 /** kWh per customer per month over the latest 12 consecutive months with both sales and customers. */
@@ -182,7 +152,7 @@ const round = (v: number, d: number) => {
 
 /**
  * Pure parser (exported for tests): EIA rows for ONE state (any order) → series data.
- * Throws when the state has no Jan 2025 or latest price, or too little history to adjust.
+ * Throws when the state lacks a complete 12-month window ending Jan 2025 or ending at its latest month.
  */
 export function buildElectricitySeries(rows: EiaElectricityRow[], state: string): ElectricitySeriesData {
   const st = state.toUpperCase()
@@ -192,42 +162,44 @@ export function buildElectricitySeries(rows: EiaElectricityRow[], state: string)
   if (!priced.length) throw new Error(`No EIA residential electricity price for ${st}`)
   const months = monthRange(priced[0], priced[priced.length - 1])
   const price = months.map((m) => num(byPeriod.get(m)?.price))
-  const factors = seasonalFactors(months, price)
-  if (!factors) throw new Error(`Too little EIA electricity history to seasonally adjust ${st}`)
-  const sa = price.map((v, i) => (v === null ? null : v / factors[Number(months[i].slice(5, 7)) - 1]))
+  const avg12 = trailingAverage(price)
 
   const bi = months.indexOf(BASELINE_MONTH)
   if (bi < 0 || price[bi] === null) throw new Error(`No Jan 2025 EIA electricity price for ${st}`)
+  if (avg12[bi] === null) throw new Error(`No complete 12 months of EIA electricity prices ending Jan 2025 for ${st}`)
   let li = months.length - 1
   while (li >= 0 && price[li] === null) li--
   if (li <= bi) throw new Error(`No EIA electricity price after Jan 2025 for ${st}`)
+  if (avg12[li] === null) throw new Error(`No complete latest 12 months of EIA electricity prices for ${st}`)
 
   const usage = averageUsage(
     months,
     months.map((m) => num(byPeriod.get(m)?.sales)),
     months.map((m) => num(byPeriod.get(m)?.customers)),
   )
-  const saBaseline = sa[bi]!
-  const saCurrent = sa[li]!
+  const baseline = round(avg12[bi]!, 3)
+  const current = round(avg12[li]!, 3)
   const first = mine.find((r) => typeof r.stateDescription === 'string')
   const start = Math.max(0, months.indexOf(ELECTRICITY_CHART_START))
   return {
     state: st,
     stateName: st === NATIONAL_ELECTRICITY ? 'U.S.' : (first?.stateDescription as string | undefined) ?? st,
     seriesId: electricitySeriesId(st),
-    current: price[li]!,
+    method: ELECTRICITY_METHOD,
+    current,
+    currentFrom: months[li - ELECTRICITY_AVG_MONTHS + 1],
     latestPeriod: months[li],
-    baseline: price[bi]!,
+    baseline,
+    baselineFrom: months[bi - ELECTRICITY_AVG_MONTHS + 1],
     baselinePeriod: months[bi],
-    saCurrent: round(saCurrent, 3),
-    saBaseline: round(saBaseline, 3),
-    change: round(((saCurrent - saBaseline) / saBaseline) * 100, 2),
-    rawChange: round(((price[li]! - price[bi]!) / price[bi]!) * 100, 2),
+    change: round(((current - baseline) / baseline) * 100, 2),
+    latestMonthPrice: price[li]!,
+    baselineMonthPrice: price[bi]!,
     usageKwh: usage ? round(usage.kwh, 1) : null,
     ...(usage ? { usageFrom: usage.from, usageTo: usage.to } : {}),
     series: months.slice(start, li + 1).map((date, k) => {
       const i = start + k
-      return { date, price: price[i], sa: sa[i] === null ? null : round(sa[i]!, 3) }
+      return { date, price: price[i], avg12: avg12[i] === null ? null : round(avg12[i]!, 3) }
     }),
   }
 }

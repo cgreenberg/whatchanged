@@ -150,7 +150,7 @@ describe('fetchSnapshot', () => {
     expect(await getCachedEnvelope('eia:gas:epmr:state:WA')).toBeNull()
   })
 
-  test('local CPI failure → national CPI marked fallback, shelter $ impact null', async () => {
+  test('local CPI failure → national CPI marked fallback, shelter and groceries $ impact null', async () => {
     server.use(
       http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
         const body = (await request.json()) as { seriesid: string[] }
@@ -167,7 +167,8 @@ describe('fetchSnapshot', () => {
     expect(c.fallback).toBe('national')
     expect(c.shelterChange).toEqual(expect.any(Number))
     expect(snapshot!.dollarImpact!.shelter).toBeNull()
-    expect(snapshot!.dollarImpact!.groceries).toEqual(expect.any(Number))
+    // A U.S. CPI % is not a local cost: no groceries $ either (same rule as shelter)
+    expect(snapshot!.dollarImpact!.groceries).toBeNull()
   })
 
   test('local CPI success → no fallback marker', async () => {

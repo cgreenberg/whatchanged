@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthYear, fmtMonthShort, fmtDay, monthsBetween } from '@/lib/format'
 import {
-  BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
+  BASELINE_MONTH, BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
 import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
@@ -27,14 +27,6 @@ const GAS = AMBER
 const GROCERIES = '#F07D62'
 const BLUE = '#5EA8F2'
 const GREEN = '#3EC4A6'
-
-// RGB equivalents for use in rgba() strings
-const ACCENT_RGB: Record<string, string> = {
-  [AMBER]: '242,169,59',
-  [GROCERIES]: '240,125,98',
-  [BLUE]: '94,168,242',
-  [GREEN]: '62,196,166',
-}
 
 // ── Helpers ───────────────────────────────────────────────────────
 /** Share image cache: shorter when any source is missing or stale so it self-heals. */
@@ -121,11 +113,19 @@ export const SHELTER_SUBLABEL = '(CPI: rent + owner-equiv. rent)'
 export const RENT_SUBLABEL = '(new leases, Zillow, county)'
 /** County without a Zillow county series: its metro's series. */
 export const RENT_METRO_SUBLABEL = '(new leases, Zillow, metro)'
-export const ELECTRICITY_SUBLABEL = '(home ¢/kWh, seasonally adj.)'
+export const ELECTRICITY_SUBLABEL = '(home ¢/kWh, 12-month avg)'
 
-/** Electricity geography line: "Maine · 32.4¢/kWh (Jul '26)" (published price and its month; DC short). */
+/**
+ * Electricity geography line: "Maine · 29.3¢/kWh (Jul '26)" — the 12-month average price (the sublabel says so)
+ * and the last month of its window; DC short.
+ */
 export function electricityGeoLine(e: { state: string; stateName: string; current: number; latestPeriod: string }): string {
   return `${electricityPlace(e, 'short')} · ${e.current.toFixed(1)}¢/kWh (${fmtMonthShort(e.latestPeriod)})`
+}
+
+/** "vs yr to Jan '25": the electricity baseline is the 12-month window ending Jan 2025, not a month (short: shares a row with "Natl"). */
+export function electricityVsLabel(baselinePeriod: string | null | undefined): string {
+  return `vs yr to ${fmtMonthShort(baselinePeriod ?? BASELINE_MONTH)}`
 }
 
 /** Basis of the electricity $/mo pill: the state's average residential use. */
@@ -143,8 +143,17 @@ export function shareGasStandInNote(location: Parameters<typeof standInPlace>[0]
 
 /** Basis lines for the $/yr pills (same bases as the website's hero cards). */
 export const groceriesBasisNote = () => `$/yr on ${fmtDollars(ANNUAL_GROCERY_BASE)}/yr of groceries`
-/** Shelter $/yr in rent = local median rent × 12 × BLS CPI rent of primary residence % (not the shelter %). */
-export const shelterBasisNote = (medianRent: number) => `BLS rent index × local rent (${fmtDollars(medianRent)}/mo)`
+/**
+ * Shelter $/yr in rent = median rent × 12 × BLS CPI rent of primary residence % (not the shelter %). The rent names
+ * where it comes from when it isn't the zip's own Census figure (borrowed zip, county or state median).
+ */
+export function shelterBasisNote(medianRent: number, c?: { basis?: string; donorZip?: string } | null): string {
+  const r = `(${fmtDollars(medianRent)}/mo)`
+  if ((c?.basis === 'nearest-zip' || c?.basis === 'po-donor') && c.donorZip) return `BLS rent index × zip ${c.donorZip} rent ${r}`
+  if (c?.basis === 'county') return `BLS rent index × county median ${r}`
+  if (c?.basis === 'state') return `BLS rent index × state median ${r}`
+  return `BLS rent index × local rent ${r}`
+}
 
 // ── Main Export ───────────────────────────────────────────────────
 export async function generateShareCard(zip: string): Promise<Response> {
@@ -220,7 +229,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const medianRent = snapshot.census.data?.medianRent ?? 0
   // Same rule as the page: a $ only when the card shows one (local rent × the area's rent-of-primary-residence %)
   const shelterDollars = shelterOk && card('shelter')?.inline && medianRent > 0 ? snapshot.dollarImpact?.shelter ?? null : null
-  const shelterBasis = shelterDollars != null ? shelterBasisNote(medianRent) : null
+  const shelterBasis = shelterDollars != null ? shelterBasisNote(medianRent, snapshot.census.data) : null
 
   // ── Gas Sparkline Data ───────────────────────────────────────────
   // Start at the baseline week to match the hero number
@@ -352,13 +361,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
-  // ── Electricity Sparkline Data (seasonally adjusted, % since Jan 2025) ──
+  // ── Electricity Sparkline Data (12-month average price, % vs the 12 months ending Jan 2025) ──
   const elecAll = elecData?.series ?? []
   const elecFrom = elecAll.findIndex((p) => p.date === elecData?.baselinePeriod)
   const elecPairs = (elecFrom >= 0 ? elecAll.slice(elecFrom) : [])
-    .filter((p): p is typeof p & { sa: number } => typeof p.sa === 'number')
-  const elecBase = elecPairs[0]?.sa ?? 1
-  const elecValues = elecPairs.map((p) => ((p.sa - elecBase) / elecBase) * 100)
+    .filter((p): p is typeof p & { avg12: number } => typeof p.avg12 === 'number')
+  const elecBase = elecPairs[0]?.avg12 ?? 1
+  const elecValues = elecPairs.map((p) => ((p.avg12 - elecBase) / elecBase) * 100)
   const elecMin = elecValues.length ? Math.min(...elecValues) : 0
   const elecMax = elecValues.length ? Math.max(...elecValues) : 0
   const elecRange = elecValues.length >= 2 ? Math.abs(elecMax - elecMin) : 0
@@ -383,7 +392,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
           height: sparklineBudget({
             sublabel: ELECTRICITY_SUBLABEL,
             extra: elecGeo,
-            metaRows: [[sinceLabel(elecData?.baselinePeriod), elecNat]],
+            metaRows: [[electricityVsLabel(elecData?.baselinePeriod), elecNat]],
             note: elecBasis,
           }),
           bounds: elecPadded,
@@ -435,12 +444,13 @@ export async function generateShareCard(zip: string): Promise<Response> {
     </div>
   )
 
-  const bigNumber = (value: string, accent: string) => (
+  // Signed values in neutral ink (an accent would read as good/bad); accents stay on lines and section keys.
+  const bigNumber = (value: string) => (
     <span
       style={{
         fontFamily: 'Bebas Neue',
         fontSize: FS.big,
-        color: accent,
+        color: TEXT_PRIMARY,
         lineHeight: 1,
         display: 'flex',
       }}
@@ -450,17 +460,17 @@ export async function generateShareCard(zip: string): Promise<Response> {
   )
 
   /** `sub` is a smaller second line inside the pill (e.g. "in rent"), so a long label never crowds the big number. */
-  const changePill = (text: string, accent: string, sub?: string) => {
-    const rgb = ACCENT_RGB[accent] ?? '255,255,255'
+  const changePill = (text: string, _accent: string, sub?: string) => {
+    const rgb = '241,239,234'
     return (
       <div
         style={{
           display: 'flex',
           ...(sub ? { flexDirection: 'column' as const, alignItems: 'center' as const } : {}),
-          backgroundColor: `rgba(${rgb}, 0.22)`,
+          backgroundColor: `rgba(${rgb}, 0.08)`,
           borderWidth: 1.5,
           borderStyle: 'solid',
-          borderColor: `rgba(${rgb}, 0.55)`,
+          borderColor: `rgba(${rgb}, 0.30)`,
           borderRadius: 4,
           // Two-line pill: tighter vertical padding keeps it no taller than the big number (96px row)
           padding: sub ? '4px 18px' : '9px 20px',
@@ -475,7 +485,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
             fontFamily: 'Barlow Condensed',
             fontWeight: 600,
             fontSize: 40,
-            color: accent,
+            color: TEXT_PRIMARY,
             display: 'flex',
             ...(sub ? { lineHeight: 1 } : {}),
           }}
@@ -485,7 +495,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
         {/* No child at all without `sub` (an empty child would change Satori's text layout) */}
         {...(sub
           ? [
-              <span key="sub" style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 24, color: accent, display: 'flex', lineHeight: 1, marginTop: 2 }}>
+              <span key="sub" style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 24, color: TEXT_PRIMARY, display: 'flex', lineHeight: 1, marginTop: 2 }}>
                 {sub}
               </span>,
             ]
@@ -701,7 +711,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
               <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{gasSparkline}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A', GAS)}
+              {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A')}
               {changePill(gasOk ? fmtSignedDollars(gasData!.change) : '—', GAS)}
             </div>
             {metaRow(gasSince, null)}
@@ -734,7 +744,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(groceriesOk ? fmtSignedPct(cpiData!.groceriesChange) : 'N/A', GROCERIES)}
+              {bigNumber(groceriesOk ? fmtSignedPct(cpiData!.groceriesChange) : 'N/A')}
               {changePill(groceriesDollars != null ? `${fmtSignedDollars(groceriesDollars, 0)}/yr` : '—', GROCERIES)}
             </div>
             {metaRow(sinceLabel(cpiData?.groceriesBaselinePeriod), groceriesNat)}
@@ -780,7 +790,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-                  {bigNumber(`${fmtSignedPct(rent.pct)}${rentOutlier ? OUTLIER_MARK : ''}`, BLUE)}
+                  {bigNumber(`${fmtSignedPct(rent.pct)}${rentOutlier ? OUTLIER_MARK : ''}`)}
                   {/* No dollar pill for a flagged (†) value: keep the % with its caveat only. */}
                   {!rentOutlier && changePill(`≈ ${fmtSignedDollars(rent.monthlyChange, 0)}/mo`, BLUE)}
                 </div>
@@ -795,7 +805,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-                  {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A', BLUE)}
+                  {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A')}
                   {shelterDollars != null
                     ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, 'in rent')
                     : changePill('—', BLUE)}
@@ -823,10 +833,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
               <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{elecSparkline}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(elecData ? fmtSignedPct(elecData.change) : 'N/A', GREEN)}
+              {bigNumber(elecData ? fmtSignedPct(elecData.change) : 'N/A')}
               {changePill(elecDollars != null ? `≈ ${fmtSignedDollars(elecDollars, 0)}/mo` : '—', GREEN)}
             </div>
-            {metaRow(sinceLabel(elecData?.baselinePeriod), elecNat)}
+            {metaRow(electricityVsLabel(elecData?.baselinePeriod), elecNat)}
             {elecBasis && basisNote(elecBasis)}
           </div>
         </div>

@@ -17,6 +17,7 @@ import type { HeatingProduct, HeatingSeriesData } from '@/lib/api/eia-heating'
 import type { NyserdaHeatingOil } from '@/lib/api/nyserda'
 import { lookupCountyRent, lookupMetroRent } from '@/lib/rent'
 import { lookupAkGas, lookupPrGas } from '@/lib/static-gas'
+import { getCensusData } from '@/lib/data/census-acs'
 import { resolveLadder, type Ladder, type LadderResult } from './resolve'
 import { LADDERS, type CpiArea, type LadderContext, type LadderLocation, type MetricId } from './ladders'
 
@@ -59,6 +60,7 @@ export function serverLadderContext(loc: LadderLocation, now: Date, opts: FetchO
     metroRent: lookupMetroRent,
     akGas: lookupAkGas,
     prGas: lookupPrGas,
+    censusRent: getCensusData,
     ladder: (metric) =>
       memo(ladders, metric, `ladder:${metric}`, () =>
         resolveLadder(LADDERS[metric] as unknown as Ladder<LadderLocation, unknown, LadderContext>, loc, ctx)),

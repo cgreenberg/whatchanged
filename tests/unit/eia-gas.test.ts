@@ -216,7 +216,8 @@ describe('buildSeriesFromData (real parser, EIA fixture)', () => {
     expect(r.baseline).toBe(3.489)
     expect(r.latestDate).toBe('2025-02-24')
     expect(r.current).toBe(3.752)
-    expect(r.change).toBe(0.263)
+    // Change of the prices as displayed ($3.75 − $3.49)
+    expect(r.change).toBe(0.26)
     expect(r.series[0].date).toBe('2016-06-20')
   })
 

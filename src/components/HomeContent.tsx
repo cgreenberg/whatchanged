@@ -14,6 +14,7 @@ import { LazyMount } from '@/components/LazyMount'
 import { BASELINE_MONTH_LONG, BASELINE_DAY_LABEL } from '@/lib/baseline'
 import { pagePath, parsePlaceQuery, type PlaceQuery } from '@/lib/share-url'
 import type { EconomicSnapshot } from '@/types'
+import { zipPanelOverrides } from '@/lib/county-data'
 
 // d3-geo/topojson are ESM-only; load the map chunk only on the client, and only near the viewport
 const NationalMap = dynamic(
@@ -146,7 +147,7 @@ export default function HomeContent() {
       {/* One map instance for the whole session: stays mounted across zip changes */}
       <ErrorBoundary>
         <LazyMount placeholder={<MapPlaceholder />}>
-          <NationalMap countyFips={loaded ? snapshot.location.countyFips : undefined} onZipSelect={selectFromMap} />
+          <NationalMap countyFips={loaded ? snapshot.location.countyFips : undefined} onZipSelect={selectFromMap} zipOverrides={loaded ? zipPanelOverrides(snapshot) : undefined} />
         </LazyMount>
       </ErrorBoundary>
 

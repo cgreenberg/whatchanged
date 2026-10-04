@@ -133,7 +133,7 @@ async function fetchEia(duoarea: string): Promise<Array<{ period: string; value:
 // ---------------------------------------------------------------------------
 // EIA: monthly residential electricity price for states (one request; ≤ 5,000 rows)
 // ---------------------------------------------------------------------------
-async function fetchEiaElectricity(states: string[], start = '2025-01'): Promise<Map<string, Map<string, number>>> {
+async function fetchEiaElectricity(states: string[], start = '2024-02'): Promise<Map<string, Map<string, number>>> {
   const q = new URLSearchParams({ api_key: EIA_KEY ?? 'DEMO_KEY', frequency: 'monthly', start, length: '5000' })
   q.append('data[0]', 'price')
   q.append('facets[sectorid][]', 'RES')
@@ -155,25 +155,36 @@ function checkElectricity(zip: string, snap: Json, elec: Map<string, Map<string,
   if (!elec) return add(zip, 'electricity', 'SKIP', 'EIA electricity not fetched')
   const src = elec.get(e.state)
   if (!src?.size) return add(zip, 'electricity source', 'FAIL', `EIA returned no residential price for ${e.state}`)
-  add(zip, 'electricity baseline period', e.baselinePeriod === '2025-01' ? 'PASS' : 'FAIL', `${e.baselinePeriod}`)
-  const b = src.get('2025-01')
-  add(zip, 'electricity baseline', isNum(b) && near(e.baseline, b, 0.0051) ? 'PASS' : 'FAIL', `site ${e.baseline} vs EIA ${b} (${e.state}, Jan 2025)`)
-  const l = src.get(e.latestPeriod)
-  const srcLatest = [...src.keys()].sort().pop()
-  if (!isNum(l)) add(zip, 'electricity latest', 'FAIL', `EIA has no ${e.latestPeriod} price for ${e.state}`)
-  else add(zip, 'electricity latest', near(e.current, l, 0.0051) ? 'PASS' : srcLatest === e.latestPeriod ? 'FAIL' : 'WARN', `${e.latestPeriod}: site ${e.current} vs EIA ${l}`)
-  if (srcLatest && srcLatest !== e.latestPeriod) add(zip, 'electricity freshness vs EIA', 'WARN', `site latest ${e.latestPeriod}, EIA latest ${srcLatest} (cache lag)`)
-  if (isNum(e.baseline) && isNum(e.current) && isNum(e.rawChange)) {
-    const exp = ((e.current - e.baseline) / e.baseline) * 100
-    add(zip, 'electricity raw math', near(e.rawChange, exp, 0.011) ? 'PASS' : 'FAIL', `rawChange ${e.rawChange}% vs ${exp.toFixed(2)}%`)
+  add(zip, 'electricity baseline period', e.baselinePeriod === '2025-01' && e.baselineFrom === '2024-02' ? 'PASS' : 'FAIL', `${e.baselineFrom}..${e.baselinePeriod}`)
+  // 12-month averages recomputed from EIA's published monthly prices (independent of the site's code)
+  const months = (end: string) => {
+    const [y, m] = end.split('-').map(Number)
+    return Array.from({ length: 12 }, (_, k) => {
+      const t = y * 12 + (m - 1) - (11 - k)
+      return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`
+    })
   }
-  if (isNum(e.saBaseline) && isNum(e.saCurrent) && isNum(e.change)) {
-    const exp = ((e.saCurrent - e.saBaseline) / e.saBaseline) * 100
-    add(zip, 'electricity SA math', near(e.change, exp, 0.02) ? 'PASS' : 'FAIL', `change ${e.change}% vs ${exp.toFixed(2)}% (SA ${e.saBaseline} -> ${e.saCurrent})`)
+  const avg = (end: string) => {
+    const vs = months(end).map((d) => src.get(d))
+    return vs.every(isNum) ? (vs as number[]).reduce((a, v) => a + v, 0) / 12 : null
+  }
+  const b = avg('2025-01')
+  add(zip, 'electricity baseline (12-mo avg)', isNum(b) && near(e.baseline, b, 0.0051) ? 'PASS' : 'FAIL', `site ${e.baseline} vs EIA ${b?.toFixed(3)} (${e.state}, Feb 2024–Jan 2025)`)
+  const l = avg(e.latestPeriod)
+  const srcLatest = [...src.keys()].sort().pop()
+  if (!isNum(l)) add(zip, 'electricity latest (12-mo avg)', 'FAIL', `EIA lacks 12 months ending ${e.latestPeriod} for ${e.state}`)
+  else add(zip, 'electricity latest (12-mo avg)', near(e.current, l, 0.0051) ? 'PASS' : srcLatest === e.latestPeriod ? 'FAIL' : 'WARN', `12 mo to ${e.latestPeriod}: site ${e.current} vs EIA ${l.toFixed(3)}`)
+  if (isNum(e.latestMonthPrice) && isNum(src.get(e.latestPeriod))) {
+    add(zip, 'electricity latest month', near(e.latestMonthPrice, src.get(e.latestPeriod)!, 0.0051) ? 'PASS' : 'FAIL', `${e.latestPeriod}: site ${e.latestMonthPrice} vs EIA ${src.get(e.latestPeriod)}`)
+  }
+  if (srcLatest && srcLatest !== e.latestPeriod) add(zip, 'electricity freshness vs EIA', 'WARN', `site latest ${e.latestPeriod}, EIA latest ${srcLatest} (cache lag)`)
+  if (isNum(e.baseline) && isNum(e.current) && isNum(e.change)) {
+    const exp = ((e.current - e.baseline) / e.baseline) * 100
+    add(zip, 'electricity % math', near(e.change, exp, 0.02) ? 'PASS' : 'FAIL', `change ${e.change}% vs ${exp.toFixed(2)}% (12-mo avg ${e.baseline} -> ${e.current})`)
     const dollars = get(snap, 'dollarImpact.electricity')
     if (isNum(dollars) && isNum(e.usageKwh)) {
-      const expD = Math.round(((e.saCurrent - e.saBaseline) * e.usageKwh) / 100)
-      add(zip, 'electricity $/mo', Math.abs(dollars - expD) <= 1 ? 'PASS' : 'FAIL', `$${dollars} vs $${expD} ((${e.saCurrent} − ${e.saBaseline})¢ × ${e.usageKwh} kWh)`)
+      const expD = Math.round(((e.current - e.baseline) * e.usageKwh) / 100)
+      add(zip, 'electricity $/mo', Math.abs(dollars - expD) <= 1 ? 'PASS' : 'FAIL', `$${dollars} vs $${expD} ((${e.current} − ${e.baseline})¢ × ${e.usageKwh} kWh)`)
     }
   }
   const age = daysSince(endOfMonth(String(e.latestPeriod)))
@@ -184,8 +195,6 @@ function checkElectricity(zip: string, snap: Json, elec: Map<string, Map<string,
 // Per-zip checks
 // ---------------------------------------------------------------------------
 interface SiteSeriesPoint { date: string; [k: string]: unknown }
-const pointAt = (series: SiteSeriesPoint[] | undefined, date: string) =>
-  Array.isArray(series) ? series.find((p) => String(p.date).slice(0, date.length) === date) : undefined
 const lastPoint = (series: SiteSeriesPoint[] | undefined) =>
   Array.isArray(series) && series.length ? series[series.length - 1] : undefined
 

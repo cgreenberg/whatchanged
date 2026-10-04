@@ -314,8 +314,8 @@ describe('hero-card geography tags and caveats', () => {
     expect(CHART_CONFIGS.find(c => c.id === 'cpi-energy')).toBeUndefined()
     const elec = CHART_CONFIGS.find(c => c.id === 'electricity')!
     expect(elec.description).toMatch(/residential electricity price/)
-    expect(elec.description).toMatch(/seasonally adjusted/)
-    expect(elec.series.map(x => x.dataKey)).toEqual(['sa', 'price'])
+    expect(elec.description).toMatch(/average of the latest 12 monthly prices/)
+    expect(elec.series.map(x => x.dataKey)).toEqual(['avg12', 'price'])
   })
 })
 

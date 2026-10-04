@@ -65,21 +65,22 @@ describe.each([
     expect(info).toContain(`Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`)
   })
 
-  test('electricity: published ¢/kWh; $/mo = (adjusted price change ¢) × state monthly kWh ÷ 100', () => {
+  test('electricity: 12-month average ¢/kWh; $/mo = (change in 12-mo avg price ¢) × state monthly kWh ÷ 100', () => {
     const e = snap.electricity.data!
-    const expected = Math.round(((e.saCurrent - e.saBaseline) * e.usageKwh!) / 100)
+    const expected = Math.round(((e.current - e.baseline) * e.usageKwh!) / 100)
     expect(snap.dollarImpact!.electricity).toBe(expected)
     expect(text(card('electricity'), 'stat-value')).toBe(`${e.current.toFixed(1)}¢/kWh`)
+    expect(text(card('electricity'), 'stat-value-note')).toBe('avg, last 12 mo')
     expect(text(card('electricity'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
     expect(text(card('electricity'), 'stat-secondary')).toBe(
-      `${fmtSignedPct(e.change)} since Jan 2025 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
+      `${fmtSignedPct(e.change)} vs 12 mo to Jan 2025 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
     expect(text(card('electricity'), 'stat-source')).toBe(`${e.stateName} · EIA · ${fmtMonthYear(e.latestPeriod)}`)
-    // ⓘ: the dollar basis, the unadjusted change and why the % is seasonally adjusted
+    // ⓘ: the dollar basis, both 12-month windows, the latest single month and why full years are compared
     const info = text(card('electricity'), 'stat-info')
     expect(info).toContain(`× an average ${e.stateName} home's monthly use (${Math.round(e.usageKwh!).toLocaleString('en-US')} kWh, 12-mo avg`)
-    expect(info).toContain(`${fmtSignedPct(e.rawChange)} unadjusted`)
-    expect(info).toContain('seasonal')
-    expect(info).toContain('seasonally adjusted by whatchanged')
+    expect(info).toContain(`Latest month as published: ${e.latestMonthPrice.toFixed(1)}¢/kWh`)
+    expect(info).toContain('Why 12-month averages')
+    expect(info).not.toContain('seasonally adjusted')
   })
 })
 
@@ -199,7 +200,7 @@ describe('missing or out-of-range sources render "Data unavailable"', () => {
     snap.electricity.data!.change = -3.2
     snap.dollarImpact!.electricity = null
     render(<HeroCards snapshot={snap} />)
-    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% since Jan 2025/)
+    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% vs 12 mo to Jan 2025/)
     expect(card('electricity')).toHaveAttribute('data-direction', 'down')
     expect(within(card('electricity')).queryByTestId('stat-inline')).toBeNull()
   })

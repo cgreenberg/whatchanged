@@ -12,6 +12,8 @@ export interface StatCardProps {
   label: string
   /** Big number, e.g. "+3.1%". Ignored when `unavailable`. */
   value?: string
+  /** Small qualifier right after the big number, e.g. "avg, last 12 mo". */
+  valueNote?: string
   /** Short dollar translation beside the big number, e.g. "≈ +$87/mo". */
   inline?: string
   /** Gas: the $ change since the baseline, under the big number. */
@@ -40,7 +42,7 @@ export interface StatCardProps {
  * ⓘ disclosure: a real button with aria-expanded / aria-controls, keyboard and touch friendly; Escape closes it.
  */
 export function StatCard({
-  testId, label, value, inline, change, direction = 'neutral', secondary, sourceLine, tags, info = [],
+  testId, label, value, valueNote, inline, change, direction = 'neutral', secondary, sourceLine, tags, info = [],
   provenance, moreProvenance = [], accentColor, stale, unavailable, trace,
 }: StatCardProps) {
   const [open, setOpen] = useState(false)
@@ -101,14 +103,18 @@ export function StatCard({
             <p className="tnum font-display font-semibold text-[32px] sm:text-[44px] leading-[0.9] tracking-tight text-ink" data-testid="stat-value">
               {value}
             </p>
+            {valueNote && (
+              <p className="text-[11px] sm:text-xs text-ink-3 leading-none" data-testid="stat-value-note">{valueNote}</p>
+            )}
+            {/* Signed values in neutral ink: color would imply good/bad (accents stay on bars/lines/the top bar) */}
             {inline && (
-              <p className="tnum text-[13px] sm:text-[15px] font-semibold" style={{ color: accent }} data-testid="stat-inline">
+              <p className="tnum text-[13px] sm:text-[15px] font-semibold text-ink" data-testid="stat-inline">
                 {inline}
               </p>
             )}
           </div>
           {change && (
-            <p className="tnum text-[13px] sm:text-[15px] font-semibold" style={{ color: accent }} data-testid="stat-change">
+            <p className="tnum text-[13px] sm:text-[15px] font-semibold text-ink" data-testid="stat-change">
               {change}
             </p>
           )}

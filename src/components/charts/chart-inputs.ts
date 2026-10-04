@@ -5,11 +5,14 @@ import { cpiGeoLabel, type Provenance } from '@/lib/provenance'
 import { fmtDay, fmtMonthYear, DATE_UNAVAILABLE } from '@/lib/format'
 import {
   HOUSING_NOTE, SHELTER_SHORT_NOTE, gasCaveatFor, gasSourceInfo, isMonthDatedGas, cpiItemStale,
-  ELECTRICITY_SOURCE, ELECTRICITY_SOURCE_URL, ELECTRICITY_SEASONAL_NOTE, electricityPlace, fmtCents,
+  ELECTRICITY_SOURCE, ELECTRICITY_SOURCE_URL, ELECTRICITY_METHOD_NOTE, ELECTRICITY_ADJUSTMENT, electricityPlace, fmtCents, fmtWindow,
 } from '@/lib/hero-cards'
 import type { EconomicSnapshot, HeatingFuelData } from '@/types'
 import { HEATING_NOTE, NYSERDA_NOTE } from '@/lib/charts/chart-config'
 import { METRIC_COLORS } from '@/lib/theme'
+import { heatingShareNote } from '@/lib/heating-relevance'
+
+const compact = (xs: Array<string | null | undefined>): string[] => xs.filter((x): x is string => !!x)
 
 export const NOT_SA = 'not seasonally adjusted'
 
@@ -28,8 +31,8 @@ export interface ChartInput {
   note?: string
   /** Lines shown in the graph's ⓘ disclosure, after the graph description. */
   info?: string[]
-  /** Headline above the graph: the same % as the card, with a short detail. */
-  headline?: { pct: number; detail?: string }
+  /** Headline above the graph: the same % as the card, what it compares (default "since Jan 2025"), a short detail. */
+  headline?: { pct: number; detail?: string; window?: string; dim?: boolean }
 }
 
 /** Insert an empty row for each listed date not already present (kept sorted by date). */
@@ -120,22 +123,28 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
       const national = Array.isArray(e?.nationalSeries) ? e!.nationalSeries : []
       const place = e ? electricityPlace(e) : snapshot.location?.stateName ?? 'this area'
       return {
-        data: series.map(p => ({ date: p.date, sa: p.sa, price: p.price })),
-        // National comparison: the U.S. seasonally adjusted line only
-        nationalData: national.map(p => ({ date: p.date, sa: p.sa })),
+        data: series.map(p => ({ date: p.date, avg12: p.avg12, price: p.price })),
+        // National comparison: the U.S. 12-month average line only
+        nationalData: national.map(p => ({ date: p.date, avg12: p.avg12 })),
         stale: !!snapshot.electricity?.stale,
         nationalLabel: national.length ? 'U.S. avg, EIA' : undefined,
         note: e ? `Statewide average for ${place}.` : snapshot.electricity?.error ?? undefined,
-        info: [ELECTRICITY_SEASONAL_NOTE],
+        info: [ELECTRICITY_METHOD_NOTE],
         ...(e && Number.isFinite(e.change)
-          ? { headline: { pct: e.change, detail: `seasonally adjusted · ${fmtCents(e.current)} in ${fmtMonthYear(e.latestPeriod)}` } }
+          ? {
+              headline: {
+                pct: e.change,
+                window: `12-month average vs the 12 months to ${fmtMonthYear(e.baselinePeriod)}`,
+                detail: `${fmtCents(e.current)} (${fmtWindow(e.currentFrom, e.latestPeriod)}) vs ${fmtCents(e.baseline)} (${fmtWindow(e.baselineFrom, e.baselinePeriod)})`,
+              },
+            }
           : {}),
         provenance: {
           source: ELECTRICITY_SOURCE,
           sourceUrl: ELECTRICITY_SOURCE_URL,
           geography: e ? `${place} (statewide), monthly` : place,
           asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
-          adjustment: 'bold line seasonally adjusted by whatchanged; thin line as published',
+          adjustment: `bold line: ${ELECTRICITY_ADJUSTMENT}; thin line: monthly price as published`,
         },
       }
     }
@@ -175,9 +184,14 @@ export function getHeatingInput(product: 'oil' | 'propane', snapshot: EconomicSn
     weeklyGasBaseline: true,
     nationalLabel: h?.nationalSeries?.length ? h.nationalLabel : undefined,
     note: h ? h.offSeasonNote ?? (nyserda ? `${h.geography}: NYSERDA survey, year-round.` : `Statewide average for ${h.geography.replace(/ \(statewide\)$/, '')}.`) : r?.error ?? undefined,
-    info: nyserda ? [NYSERDA_NOTE] : [HEATING_NOTE],
+    info: compact([nyserda ? NYSERDA_NOTE : HEATING_NOTE, heatingShareNote(snapshot.location?.stateAbbr, product)]),
     ...(h && Number.isFinite(h.change)
-      ? { headline: { pct: h.change, detail: `$${h.current.toFixed(2)}/gal, week of ${fmtDay(h.latestDate)}` } }
+      ? {
+          // Between seasons the latest reading is last March: say so in the headline, so it never reads as current
+          headline: h.offSeasonNote
+            ? { pct: h.change, window: `${fmtDay(h.baselineDate)} → ${fmtDay(h.latestDate)} (last heating season)`, detail: `$${h.current.toFixed(2)}/gal`, dim: true }
+            : { pct: h.change, detail: `$${h.current.toFixed(2)}/gal, week of ${fmtDay(h.latestDate)}` },
+        }
       : {}),
     provenance: {
       source: nyserda ? 'NYSERDA home heating oil survey (Open NY)' : `EIA weekly residential ${fuel} (SHOPP)`,

@@ -2,7 +2,7 @@
 
 # How whatchanged picks each number (source-resolution ladders)
 
-Each number compares one series with its own January 2025 value — the same source for the baseline and today, never mixed with another source — taken from the most local step below that has data for your area; if a source publishes nothing there (or is down), we move down one step, and a U.S.-average fallback is always labeled.
+Each number compares one series with its own January 2025 value — the same source for the baseline and today, never mixed with another source — taken from the most local step below that has data for your area; if a source publishes nothing there, we move down one step; if a source is down, we move to the next step from a different source, or for EIA and BLS outages straight to the U.S. average — and a U.S.-average fallback is always labeled.
 
 Every metric has one **ladder**: an ordered list of rungs, most local first. For a zip, the first rung that
 applies and returns data is shown; `/api/data/{zip}` returns every rung's outcome as `trace` (✓ used, ✗ unavailable /
@@ -19,7 +19,7 @@ U.S. average (the shared, always-warm key). A static source with nothing for a p
 | # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
 |---|------|-----------|--------|-----------|----------|----------------|----------|
 | 1 | `gas.eia-city` EIA weekly city average | City | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | Counties in the 10 metro areas EIA prices weekly (Seattle, Los Angeles, San Francisco, New York City, Boston, Chicago, Denver, Houston, Miami, Cleveland). |
-| 2 | `gas.bls-metro` BLS monthly metro average | Metro | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Counties in a BLS CPI metro without an EIA city series (e.g. Philadelphia, Washington DC, Atlanta, Phoenix, Honolulu, Anchorage). |
+| 2 | `gas.bls-metro` BLS monthly metro average | Metro | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Counties in a BLS CPI metro without an EIA city series, in states without an EIA weekly state average (e.g. Philadelphia, Washington DC, Atlanta, Detroit, Phoenix, St. Louis, Honolulu, Anchorage). In the states EIA prices weekly, the weekly state average is used instead, so every zip in the state is on the same weekly basis. |
 | 3 | `gas.dcra-community` Alaska community fuel survey | AK community survey | Alaska DCRA Community Fuel Price Survey (Alaska DCCED, Division of Community and Regional Affairs) ([link](https://akenergygateway.alaska.edu/explore/data/public_fuel_prices)) | twice yearly (January and July surveys) | static | next step | Alaska outside the Anchorage metro: the zip’s own surveyed community, else the nearest surveyed community in the same borough or census area (within 100 km), else the DCRA region average — labeled which. |
 | 4 | `gas.bls-hiak-standin` Honolulu / Anchorage price as a stand-in | HI/AK stand-in | BLS CPI average price, regular gasoline ([link](https://www.bls.gov/cpi/factsheets/average-prices.htm)) | monthly | live | next step from another source | Hawaii outside the Honolulu metro (and Alaska zips the community survey doesn’t cover): neither EIA nor BLS publishes a closer gas price, so that metro’s BLS price stands in, marked “*”. |
 | 5 | `gas.eia-state` EIA weekly state average | State | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | straight to the U.S. average | The 9 states EIA prices weekly: CA, CO, FL, MA, MN, NY, OH, TX, WA. |
@@ -27,6 +27,7 @@ U.S. average (the shared, always-warm key). A static source with nothing for a p
 | 7 | `gas.daco-pr` Puerto Rico monthly average (DACO) | Puerto Rico (island) | DACO monthly average price, regular gasoline (Departamento de Asuntos del Consumidor (DACO), Puerto Rico) ([link](https://www.daco.pr.gov/recursos)) | monthly | static | next step | Puerto Rico: DACO’s island-wide monthly average retail price of regular gasoline (EIA and BLS publish none). |
 | 8 | `gas.eia-national` EIA weekly U.S. average | U.S. | EIA weekly retail gasoline (regular) ([link](https://www.eia.gov/petroleum/gasdiesel/)) | weekly | live | — | Territories other than Puerto Rico (no EIA series), and any place whose local series is down — then labeled “U.S. avg (local n/a)”. |
 
+Method: Change in $/gal of the prices as shown (each rounded to the cent). Baseline: EIA weekly, the last reading on or before Jan 20, 2025; BLS and DACO monthly, January 2025; Alaska DCRA, the January 2025 survey (a January vs July survey compares different seasons; past surveys show no consistent gap). DCRA community figures can rest on a single retailer's price (the ⓘ says how many stations). Not seasonally adjusted. Where EIA publishes a weekly state average (9 states), it is preferred over BLS's monthly metro price so all of the state's zips are on the same weekly basis. Elsewhere in Hawaii (and Alaska zips the survey doesn't cover) the Honolulu or Anchorage price stands in, marked “*” (e.g. “Honolulu-area*”).
 U.S. comparison: U.S. average from the same source over the same weeks or months (EIA U.S. weekly, or the BLS U.S. city average); none for the Alaska survey or Puerto Rico DACO, which publish no U.S. figure.
 License / attribution: EIA: Public domain (U.S. government); BLS: Public domain (U.S. government); DCRA: CC BY 4.0 (attribution: Alaska DCCED, Division of Community and Regional Affairs); DACO: Public data of the Government of Puerto Rico (DACO); cited.
 
@@ -34,10 +35,11 @@ License / attribution: EIA: Public domain (U.S. government); BLS: Public domain 
 
 | # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
 |---|------|-----------|--------|-----------|----------|----------------|----------|
-| 1 | `rent.zillow-county` Zillow county rent (new leases) | County | Zillow Observed Rent Index (ZORI) ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses its state’s typical one, and says so). |
+| 1 | `rent.zillow-county` Zillow county rent (new leases) | County | Zillow Observed Rent Index (ZORI) ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses a pooled one — its state’s counties, or U.S. counties where the state has too few — and says so). |
 | 2 | `rent.zillow-metro` Zillow metro rent (new leases) | Metro | Zillow Observed Rent Index (ZORI), metro ([link](https://www.zillow.com/research/data/)) | monthly | static | next step | Counties without a Zillow county series, in a metro Zillow publishes back to January 2025: that metro’s series (OMB 2020 metro areas, the definitions Zillow uses; county-to-metro by FIPS code, never by name). |
 | 3 | `rent.bls-cpi-shelter` BLS shelter (CPI) | CPI shelter (metro → U.S.) | BLS CPI shelter ([link](https://www.bls.gov/cpi/)) | monthly | live | — | Where Zillow has no county or metro rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.). |
 
+Method: % change of Zillow's typical asking rent on new leases since January 2025, seasonally adjusted by whatchanged (classical decomposition; seasonal factors use only months whose full 13-month window ends by December 2024, so nothing after the baseline shapes them). A series too short to estimate its own seasonal pattern uses a pooled one (its state's counties, or U.S. counties where the state has too few) and says so. ≈ $/mo = today's typical rent − today's rent ÷ (1 + %). Changes outside −20% to +50% are not shown; a county's own unusual figure is tagged “⚠ unusual”, and an unusual metro figure never stands in for a county.
 License / attribution: Zillow: Zillow Research data; attribution required; BLS: Public domain (U.S. government).
 
 ## Shelter (CPI) (`shelter`)
@@ -49,8 +51,23 @@ License / attribution: Zillow: Zillow Research data; attribution required; BLS: 
 | 3 | `shelter.bls-cpi-region` BLS CPI Census region | Census region | BLS CPI shelter ([link](https://www.bls.gov/cpi/)) | monthly (bimonthly for some metros) | live | straight to the U.S. average | Defensive only: every state has a division. |
 | 4 | `shelter.bls-cpi-national` BLS CPI U.S. city average | U.S. | BLS CPI shelter ([link](https://www.bls.gov/cpi/)) | monthly (bimonthly for some metros) | live | — | Territories (BLS publishes no local CPI), and any place whose local CPI is down — then labeled “U.S. avg (local n/a)”. |
 
+Method: % change of the CPI shelter index (rents plus owners' equivalent rent, existing leases included, so it lags new-lease rents) since January 2025. Not seasonally adjusted. Its ≈ $/yr in rent = the same area's CPI rent of primary residence % × the local Census ACS median gross rent × 12 (no $ where only the U.S. CPI applies, or the rent index fails its sanity check). Where Census suppresses a zip's rent, the rent base is borrowed and labeled: the nearest zip in the county with a Census rent, else the county median, else the state median.
 U.S. comparison: BLS U.S. city average shelter over the same months.
 License / attribution: BLS: Public domain (U.S. government).
+
+## Rent base for the Shelter (CPI) $ figure (`rentBase`)
+
+| # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |
+|---|------|-----------|--------|-----------|----------|----------------|----------|
+| 1 | `rentBase.zip` Census median rent for the zip | Zip | U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent) ([link](https://data.census.gov/table/ACSDT5Y2023.B25064)) | yearly (5-year estimates) | static | next step | Zips with a published ACS median gross rent. |
+| 2 | `rentBase.po-donor` PO-box zip: residential donor zip | PO-box donor | U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent) ([link](https://data.census.gov/table/ACSDT5Y2023.B25064)) | yearly (5-year estimates) | static | next step | USPS-only zips (PO boxes): the largest residential zip in the same city, else the most populous in the county. |
+| 3 | `rentBase.nearest-zip` Nearest zip in the county with a Census rent | Nearest zip | U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent) ([link](https://data.census.gov/table/ACSDT5Y2023.B25064)) | yearly (5-year estimates) | static | next step | Zips whose rent Census suppresses: the nearest zip in the same county (same city name preferred) with a published rent, within 100 miles. |
+| 4 | `rentBase.county` County median rent | County | U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent) ([link](https://data.census.gov/table/ACSDT5Y2023.B25064)) | yearly (5-year estimates) | static | next step | Counties with no usable zip figure: the county’s ACS median gross rent. |
+| 5 | `rentBase.state` State median rent | State | U.S. Census Bureau, American Community Survey 5-year (table B25064, median gross rent) ([link](https://data.census.gov/table/ACSDT5Y2023.B25064)) | yearly (5-year estimates) | static | — | Last resort: the state’s ACS median gross rent. |
+
+Method: The Shelter (CPI) card's ≈ $/yr in rent applies the CPI rent-of-primary-residence % to a median gross rent × 12. That rent is the zip's own Census figure; where Census suppresses it (small samples) or the zip is a PO box, it is borrowed and labeled: a PO box's residential donor zip, else the nearest zip in the same county with a Census rent (within 100 miles), else the county median, else the state median. Never a national constant.
+No rung has data: No $ figure (Guam, the Virgin Islands and other areas the ACS doesn’t cover).
+License / attribution: Census: Public domain (U.S. government).
 
 ## Home prices (Housing graph) (`homePrices`)
 
@@ -58,6 +75,7 @@ License / attribution: BLS: Public domain (U.S. government).
 |---|------|-----------|--------|-----------|----------|----------------|----------|
 | 1 | `homePrices.zillow-county` Zillow county home values | County | Zillow Home Value Index (ZHVI) ([link](https://www.zillow.com/research/data/)) | monthly | static | — | Counties with a Zillow typical-home-value series reaching back to January 2025. |
 
+Method: % change of Zillow's typical home value (smoothed and seasonally adjusted by Zillow) since January 2025.
 No rung has data: The Housing graph’s Home prices tab is disabled, with a note.
 License / attribution: Zillow: Zillow Research data; attribution required.
 
@@ -70,6 +88,7 @@ License / attribution: Zillow: Zillow Research data; attribution required.
 | 3 | `groceries.bls-cpi-region` BLS CPI Census region | Census region | BLS CPI food at home ([link](https://www.bls.gov/cpi/)) | monthly (bimonthly for some metros) | live | straight to the U.S. average | Defensive only: every state has a division. |
 | 4 | `groceries.bls-cpi-national` BLS CPI U.S. city average | U.S. | BLS CPI food at home ([link](https://www.bls.gov/cpi/)) | monthly (bimonthly for some metros) | live | — | Territories (BLS publishes no local CPI), and any place whose local CPI is down — then labeled “U.S. avg (local n/a)”. |
 
+Method: % change of the CPI food-at-home index since January 2025 (or the nearest earlier month an area publishes). Not seasonally adjusted. ≈ $/yr = $6,000/yr typical household food-at-home spending × that %; no $ where only the U.S. CPI applies (national fallback, Puerto Rico and other territories), because a U.S. change is not a local cost.
 U.S. comparison: BLS U.S. city average food at home over the same months.
 License / attribution: BLS: Public domain (U.S. government).
 
@@ -79,7 +98,8 @@ License / attribution: BLS: Public domain (U.S. government).
 |---|------|-----------|--------|-----------|----------|----------------|----------|
 | 1 | `electricity.eia-state` EIA statewide residential price | State | EIA average residential electricity price ([link](https://www.eia.gov/electricity/data/browser/)) | monthly (about two months behind) | live | — | The 50 states + DC (statewide average across utilities; no county or metro series exists). |
 
-U.S. comparison: EIA U.S. average, same seasonal adjustment and months.
+Method: The big number is the average of the latest 12 published monthly prices (¢/kWh); the % compares it with the average of the 12 months ending January 2025 (Feb 2024–Jan 2025). Residential prices swing with the seasons (summer often well above winter), so single months mostly measure the calendar; full years count every season once, no seasonal model needed. ≈ $/mo = change in the 12-month average price × the state's average home use (residential sales ÷ customers, latest 12 months).
+U.S. comparison: EIA U.S. average, same method and the same 12-month windows.
 No rung has data: Territories: EIA publishes no residential price, so the card says “Data unavailable” with the reason.
 License / attribution: EIA: Public domain (U.S. government).
 
@@ -90,6 +110,7 @@ License / attribution: EIA: Public domain (U.S. government).
 | 1 | `heatingOil.nyserda-region` NYSERDA New York regional average | NY region | NYSERDA Average Home Heating Oil Prices by Region (Open NY) ([link](https://www.nyserda.ny.gov/Researchers-and-Policymakers/Energy-Prices/Home-Heating-Oil/Average-Home-Heating-Oil-Prices)) | weekly September–March, twice a month April–August | live | next step | New York: the county’s NYSERDA survey region (Long Island, New York City, Lower Hudson, Upper Hudson, Capital District, North Country, Central, Western), year-round. |
 | 2 | `heatingOil.eia-shopp-state` EIA weekly heating oil (state) | State | EIA State Heating Oil and Propane Program (SHOPP), residential heating oil ([link](https://www.eia.gov/petroleum/heatingoilpropane/)) | weekly, October–March only (heating-season survey) | live | — | The 21 states EIA surveys for residential heating oil: CT, DE, IA, IN, KY, MA, MD, ME, MI, MN, NC, NE, NH, NJ, NY, OH, PA, RI, VA, VT, WI. Off-season (April to mid-October) the latest reading is the end of March, labeled as such. |
 
+Method: % change of the weekly residential price since the week of January 20, 2025 (EIA surveys October–March only, so between seasons the figure is last season's, labeled so). Not seasonally adjusted. The graph appears only where at least 5% of the state's homes heat with the fuel (Census ACS table B25040).
 U.S. comparison: Same survey, same weeks: the EIA U.S. average (SHOPP), or for a New York region the NYSERDA statewide average.
 No rung has data: No Heating oil tab (and no Home heating graph when propane has no data either).
 License / attribution: NYSERDA: Open NY open data (NYSERDA); attribution; EIA: Public domain (U.S. government).
@@ -100,6 +121,7 @@ License / attribution: NYSERDA: Open NY open data (NYSERDA); attribution; EIA: P
 |---|------|-----------|--------|-----------|----------|----------------|----------|
 | 1 | `propane.eia-shopp-state` EIA weekly propane (state) | State | EIA State Heating Oil and Propane Program (SHOPP), residential propane ([link](https://www.eia.gov/petroleum/heatingoilpropane/)) | weekly, October–March only (heating-season survey) | live | — | The 38 states EIA surveys for residential propane: AL, AR, CO, CT, DE, FL, GA, IA, ID, IL, IN, KS, KY, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NY, OH, OK, PA, RI, SD, TN, TX, UT, VA, VT, WI. Off-season (April to mid-October) the latest reading is the end of March, labeled as such. |
 
+Method: Same as heating oil: weekly residential price since the week of January 20, 2025, October–March survey, shown only where at least 5% of the state's homes heat with propane (Census ACS table B25040).
 U.S. comparison: EIA U.S. average, same survey and weeks.
 No rung has data: No Propane tab (and no Home heating graph when heating oil has no data either).
 License / attribution: EIA: Public domain (U.S. government).

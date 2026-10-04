@@ -44,8 +44,8 @@ test('description uses the same numbers as the cards, with a signed gas change',
   expect(d).not.toContain('$-')
   expect(d).toContain('Rent −2.3% (Travis Co.)')
   expect(d).toContain('Groceries +3.1% (West South Central div.)')
-  // Statewide EIA electricity, seasonally adjusted % (Texas: +7.0% from the recorded fixture)
-  expect(d).toContain('Electricity +7.0% (Texas)')
+  // Statewide EIA electricity, % change of the 12-month average price (Texas: +6.7% from the recorded fixture)
+  expect(d).toContain('Electricity +6.7% (12-mo avg, Texas)')
   expect(d).not.toMatch(/tariff/i)
   expect(d.split(' · ').pop()).toBe('whatchanged.us')
 })
@@ -152,5 +152,5 @@ test('BLS gas tiers: og:description tags the BLS geography and month (Honolulu m
   p.location = { ...p.location, stateAbbr: 'PA' }
   p.gas.data = blsGasData('S12B')
   mockFetch.mockResolvedValue(p)
-  expect((await meta({ zip: '78701' })).openGraph?.description).toContain("Gas +$0.94/gal (Philadelphia metro, thru Aug '26)")
+  expect((await meta({ zip: '78701' })).openGraph?.description).toContain("Gas +$0.95/gal (Philadelphia metro, thru Aug '26)")
 })

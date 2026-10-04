@@ -74,20 +74,24 @@ test.describe('Charts section', () => {
     await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')
   })
 
-  test('Electricity graph: statewide ¢/kWh, headline = the card %, adjusted + published lines, U.S. line', async ({ page }) => {
+  test('Electricity graph: statewide ¢/kWh, headline = the card %, 12-month average + monthly lines, U.S. line', async ({ page }) => {
     const chart = page.getByTestId('chart-electricity')
     const cardSecondary = (await page.getByTestId('stat-card-electricity').getByTestId('stat-secondary').textContent())!
     const pct = (await chart.getByTestId('chart-headline-pct').textContent())!.trim()
-    expect(cardSecondary.startsWith(`${pct} since Jan 2025`)).toBe(true)
+    expect(cardSecondary.startsWith(`${pct} vs 12 mo to Jan 2025`)).toBe(true)
+    await expect(chart.getByTestId('chart-headline-window')).toHaveText('12-month average vs the 12 months to Jan 2025')
+    // both lines carry their latest value at the right edge
+    await expect(chart.getByTestId('end-label-local')).toBeVisible()
+    await expect(chart.getByTestId('end-label-local-1')).toBeVisible()
     await expect(chart.getByTestId('provenance').last()).toContainText('EIA average residential electricity price · Washington (statewide), monthly')
     await expect(chart.getByTestId('chart-note')).toHaveText('Statewide average for Washington.')
     await expect(chart.locator('.recharts-legend-item')).toHaveCount(2)
     await chart.getByLabel('Show national').check()
     await expect(chart.getByTestId('provenance').last()).toContainText('dashed: U.S. avg, EIA')
-    // only the adjusted U.S. line is added
+    // only the U.S. 12-month average line is added
     await expect(chart.locator('.recharts-legend-item')).toHaveCount(3)
     await chart.getByTestId('chart-info-toggle').click()
-    await expect(chart.getByTestId('chart-info')).toContainText('seasonal')
+    await expect(chart.getByTestId('chart-info')).toContainText('Why 12-month averages')
   })
 
   test('Housing graph Rent tab: 10Y view and the U.S. comparison line', async ({ page }) => {

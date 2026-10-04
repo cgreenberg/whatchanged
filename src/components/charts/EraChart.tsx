@@ -15,7 +15,7 @@ import type { ChartConfig, Timeframe } from '@/lib/charts/chart-config'
 import { TimeframeToggle } from './TimeframeToggle'
 import { computeTrendline } from '@/lib/charts/trendline'
 import {
-  ERAS, firstOnOrAfter, onOrAfter, filterByTimeframe, normalizeEachSeries, firstDateOf, lastDateOf,
+  REFERENCE_DATES, firstOnOrAfter, onOrAfter, filterByTimeframe, normalizeEachSeries, firstDateOf, lastDateOf,
   splitPreliminary, PRELIM_SUFFIX, GAP_SUFFIX, findGaps, withGapConnectors, dotDates, type Row,
 } from '@/lib/charts/chart-data'
 import { fmtMonthYear, fmtDay, fmtSignedPct, monthsBetween, DATE_UNAVAILABLE } from '@/lib/format'
@@ -106,20 +106,25 @@ interface EraChartProps {
 }
 
 /** "+3.1% since Jan 2025 · detail" above a graph: the same % as the matching card. */
-export function ChartHeadline({ pct, detail, caveat, testId = 'chart-headline' }: {
-  pct: number; detail?: string; caveat?: string | null; testId?: string
+export function ChartHeadline({ pct, detail, caveat, window, dim, testId = 'chart-headline' }: {
+  pct: number; detail?: string; caveat?: string | null
+  /** What the % compares (default "since Jan 2025"), e.g. "Jan 20, 2025 → Mar 30, 2026 (last heating season)". */
+  window?: string
+  /** A figure that isn't current (last heating season): drawn in a quieter ink. */
+  dim?: boolean
+  testId?: string
 }) {
   return (
     <div className="mb-2" data-testid={testId}>
       <p className="text-[13px] leading-snug text-ink-2">
+        {/* Signed value in neutral ink (an accent would read as good/bad); the line keeps the metric accent */}
         <span
-          className="tnum font-display font-semibold text-[28px] leading-none tracking-tight mr-2 align-[-2px]"
-          style={{ color: 'var(--chart-accent, #F1EFEA)' }}
+          className={`tnum font-display font-semibold text-[28px] leading-none tracking-tight mr-2 align-[-2px] ${dim ? 'text-ink-2' : 'text-ink'}`}
           data-testid={`${testId}-pct`}
         >
           {fmtSignedPct(pct)}
         </span>
-        <span className="text-ink-2">since {BASELINE_MONTH_LABEL}</span>
+        <span className="text-ink-2" data-testid={`${testId}-window`}>{window ?? `since ${BASELINE_MONTH_LABEL}`}</span>
         {detail && <span className="text-ink-3"> · {detail}</span>}
       </p>
       {caveat && <p className="text-[11px] text-caution/90 mt-0.5" data-testid="flag-note">{caveat}</p>}
@@ -295,7 +300,7 @@ function Annotations({ baselineX, baselineText, baselineValue, ends, accent }: {
             <line x1={e.px + 5} y1={e.py} x2={right + 6} y2={e.ly} stroke={e.color} strokeOpacity={0.5} strokeWidth={1} />
           )}
           <text x={right + 8} y={e.ly} dominantBaseline="middle" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            <tspan fontSize={e.strong ? 13 : 11.5} fontWeight={e.strong ? 600 : 500} fill={e.strong ? e.color : DESK.ink2}>{e.text}</tspan>
+            <tspan fontSize={e.strong ? 13 : 11.5} fontWeight={e.strong ? 600 : 500} fill={e.strong ? DESK.ink : DESK.ink2}>{e.text}</tspan>
             {e.sub && <tspan x={right + 8} dy={12} fontSize={9.5} fill={DESK.ink3} style={{ fontFamily: 'var(--nf-mono), monospace' }}>{e.sub}</tspan>}
           </text>
         </g>
@@ -426,8 +431,8 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
   const baselineX = config.eraShading ? firstOnOrAfter(allDates, BASELINE_DATE) : null
   const baselineText = `${baselineX && baselineX.length > 7 ? BASELINE_DAY_LABEL : BASELINE_MONTH_LABEL} baseline`
   const lines = config.eraShading
-    ? ERAS.filter(e => e.label && e.start !== BASELINE_DATE && !onOrAfter(allDates[0], e.start))
-      .map(e => ({ key: e.key, label: e.label!, x: firstOnOrAfter(allDates, e.start) }))
+    ? REFERENCE_DATES.filter(e => e.start !== BASELINE_DATE && !onOrAfter(allDates[0], e.start))
+      .map(e => ({ key: e.key, label: e.label, x: firstOnOrAfter(allDates, e.start) }))
       .filter(l => l.x && l.x !== allDates[0])
     : []
 
@@ -445,6 +450,12 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
   const ends: EndLabel[] = []
   const localEnd = lastWith([prelimKey, mainKey])
   if (localEnd) ends.push({ key: 'local', ...localEnd, color: accent, text: fmt(localEnd.value), sub: fmtTick(localEnd.date), strong: true })
+  // Secondary lines that ask for it (e.g. the monthly electricity price beside its 12-month average)
+  config.series.slice(1).forEach((s, i) => {
+    if (!s.endLabel) return
+    const end = lastWith([s.dataKey])
+    if (end) ends.push({ key: `local-${i + 1}`, ...end, color: s.color, text: fmt(end.value), sub: s.endLabel, strong: false })
+  })
   const natEnd = nationalShown && nationalKeys.has(mainKey) ? lastWith([natKey]) : null
   if (natEnd) ends.push({ key: 'national', ...natEnd, color: DESK.ink2, text: fmt(natEnd.value), sub: 'U.S.', strong: false })
   const baseRow = baselineX ? displayData.find(d => d.date === baselineX) : undefined

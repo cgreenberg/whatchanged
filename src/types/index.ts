@@ -89,7 +89,11 @@ export interface GasPriceData {
    * 'dcra' = Alaska DCRA Community Fuel Price Survey (twice yearly; dates YYYY-01 / YYYY-07),
    * 'daco' = Puerto Rico DACO monthly island-wide average. Neither has a U.S. comparison from the same source.
    */
-  staticSource?: { kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number }
+  staticSource?: {
+    kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number
+    /** DCRA community figure: number of retailers whose price the survey reports (and the retailer when one). */
+    stations?: number; retailer?: string
+  }
   /**
    * 'eia' = EIA weekly retail regular gasoline (dates YYYY-MM-DD, baseline = last week ≤ Jan 20 2025);
    * 'bls' = BLS CPI average price, regular gasoline (monthly, dates YYYY-MM, baseline = Jan 2025).
@@ -117,24 +121,36 @@ export interface GasPriceData {
 
 /** Census ACS median gross rent for the zip (bundled JSON): the base of the shelter card's dollar figure. */
 export interface CensusData {
-  /** Local median gross rent, or the U.S. median when isRentFallback (never used for a dollar figure then). */
+  /** Median gross rent of the `basis` geography ($/mo); 0 when basis is 'none' (never used for a dollar figure then). */
   medianRent: number
   zip: string
   /** ACS 5-year end year of the rent figure. */
   year: number
   /** Same value as medianRent. */
   rent?: number
-  /** 'acs' = Census ACS (zip or donor zip); 'national' = no local rent figure. */
-  source?: 'acs' | 'national'
-  /** USPS-only zip: ACS values borrowed from this residential zip. */
+  /** 'acs' = a published Census ACS figure (any basis); 'none' = no ACS rent for this place at any level. */
+  source?: 'acs' | 'none'
+  /**
+   * Where the rent figure comes from: the zip's own ('zip'); a USPS-only zip's residential donor ('po-donor');
+   * the nearest same-county zip with a published rent ('nearest-zip'); the county or state median; or 'none'.
+   */
+  basis?: 'zip' | 'po-donor' | 'nearest-zip' | 'county' | 'state' | 'none'
+  /** Honest label for a borrowed figure, e.g. "borrowed from zip 35401 (nearest with Census rent, 4.2 mi)",
+   * "Tuscaloosa County, AL median (no zip figure)", "Alabama median (no zip or county figure)". */
+  basisNote?: string
+  /** 'county' / 'state' basis: the area named ("Tuscaloosa County, AL", "Alabama"). */
+  basisArea?: string
+  /** 'po-donor' / 'nearest-zip': the zip whose ACS figure is used. */
   donorZip?: string
-  /** How donorZip was chosen: largest residential zip in the same city ('city') or most populous in the county ('county'). */
+  /** 'po-donor': how donorZip was chosen: largest residential zip in the same city ('city') or most populous in the county ('county'). */
   donorScope?: 'city' | 'county'
-  /** Human-readable provenance, e.g. "Census ACS 2023 5-year, zip 98683". */
+  /** 'nearest-zip': distance to donorZip, miles (Census gazetteer ZCTA points). */
+  donorMiles?: number
+  /** Human-readable provenance naming the source geography, e.g. "Census ACS 2023 5-year, zip 98683". */
   sourceLabel?: string
   isFallback?: boolean
   isRentFallback?: boolean
-  /** Set for USPS-only zips (no ZCTA): ACS values borrowed from this residential zip (an estimate). */
+  /** 'po-donor' / 'nearest-zip': ACS values borrowed from this residential zip (an estimate). */
   approxFromZip?: string
 }
 

@@ -6,7 +6,7 @@ const fx = loadFixture('98683') as {
   gas: { data: { current: number; change: number } }
   cpi: { data: { groceriesChange: number; shelterChange: number; rentIndexChange: number } }
   rent: { pct: number; curRent: number }
-  electricity: { data: { current: number; saCurrent: number; saBaseline: number; usageKwh: number; change: number; stateName: string } }
+  electricity: { data: { current: number; baseline: number; usageKwh: number; change: number; stateName: string } }
   census: { data: { medianRent: number } }
 }
 const usd = (v: number, d = 0) =>
@@ -44,11 +44,12 @@ test.describe('Dollar translation accuracy (98683 fixture)', () => {
     await expect(info.getByTestId('stat-info-line').nth(1)).toHaveText(/^Typical asking rent: \$[\d,]+\/mo \([A-Z][a-z]{2} \d{4}\)$/)
   })
 
-  test('electricity: published ¢/kWh; $/mo = adjusted ¢ change × state kWh/month ÷ 100', async ({ page }) => {
+  test('electricity: 12-month average ¢/kWh; $/mo = change in 12-mo avg ¢ × state kWh/month ÷ 100', async ({ page }) => {
     const e = fx.electricity.data
-    const expected = Math.round(((e.saCurrent - e.saBaseline) * e.usageKwh) / 100)
+    const expected = Math.round(((e.current - e.baseline) * e.usageKwh) / 100)
     const card = page.getByTestId('stat-card-electricity')
     await expect(card.getByTestId('stat-value')).toHaveText(`${e.current.toFixed(1)}¢/kWh`)
+    await expect(card.getByTestId('stat-value-note')).toHaveText('avg, last 12 mo')
     await expect(card.getByTestId('stat-inline')).toHaveText(`≈ ${usd(expected)}/mo`)
     await expect(card.getByTestId('stat-source')).toHaveText(/^Washington · EIA · [A-Z][a-z]{2} \d{4}$/)
     await card.getByTestId('stat-info-toggle').click()

@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { pctChange } from '@/lib/api/bls-common'
 import { computeGroceryImpact, computeShelterImpact, computeElectricityImpact } from '@/lib/compute/dollar-translations'
-import { isValidCpi, isValidGasSeries } from '@/lib/api/validate'
+import { isValidCpi, isValidRentIndexChange, isValidGasSeries } from '@/lib/api/validate'
 import type { CpiData } from '@/types'
 import type { GasSeriesData } from '@/lib/api/eia'
 
@@ -99,8 +99,10 @@ describe('compute properties', () => {
           (v) => {
             expect(isValidCpi(cpi(v))).toBe(false)
             expect(isValidCpi(cpi(1, v))).toBe(false)
-            // rent of primary residence (drives the shelter $) gets the same sanity range
-            expect(isValidCpi(cpi(1, 1, v))).toBe(false)
+            // rent of primary residence (drives only the shelter $) is validated on its own: an implausible value
+            // drops that $ figure, never the area's groceries/shelter numbers
+            expect(isValidCpi(cpi(1, 1, v))).toBe(true)
+            expect(isValidRentIndexChange(v)).toBe(false)
           }
         )
       )

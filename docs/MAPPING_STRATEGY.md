@@ -303,7 +303,7 @@ as `dollarImpact`) and `src/lib/rent.ts`. All values keep their sign: a drop is 
 | Rent (Zillow ZORI, new leases) | `round(curRent − curRent / (1 + pct/100))` $/mo, `pct` SA by whatchanged, `curRent` observed |
 | Shelter fallback (CPI) | `round(localAcsRent × 12 × rentIndexChangePct / 100)` $/yr (BLS rent of primary residence %), or null without local rent |
 | Gas | `current − baseline` $/gal (not annualized) |
-| Electricity | `round((saCurrent − saBaseline) ¢/kWh × stateKwhPerMonth / 100)` $/mo |
+| Electricity | `round((avg12Current − avg12Baseline) ¢/kWh × stateKwhPerMonth / 100)` $/mo (12-month average prices: latest 12 months vs the 12 ending Jan 2025) |
 
 The rent card is shown when the county has a row in `src/lib/data/county-rent.json`; otherwise the
 CPI shelter card is shown, labeled "Shelter prices (CPI, all tenants & homeowners)".

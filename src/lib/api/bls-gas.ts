@@ -4,6 +4,7 @@
 // average (APU000074714) over the same months.
 
 import type { GasLookupResult, GasSeriesData } from './eia'
+import { displayedChange } from '@/lib/baseline'
 import { fetchBlsSeries, parseBlsMonthly, blsUnpublishedMonths, BASELINE_PERIOD_KEY, type BlsRawPoint } from './bls-common'
 import {
   blsGasSeriesId,
@@ -71,7 +72,7 @@ export function parseBlsGasSeries(data: BlsRawPoint[] | undefined | null, areaNa
     latestDate: latest.date,
     baseline: base.value,
     baselineDate: base.date,
-    change: parseFloat((latest.value - base.value).toFixed(3)),
+    change: displayedChange(latest.value, base.value),
     series: points.map((p) => ({ date: p.date, price: p.value })),
     regionName: areaName,
     ...(unpublished.length ? { unpublished } : {}),

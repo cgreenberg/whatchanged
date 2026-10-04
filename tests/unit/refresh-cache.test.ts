@@ -111,8 +111,11 @@ describe('planRefresh', () => {
     const bls = plan.gasLookups.filter((g) => g.source === 'bls')
     expect(eia.map((g) => g.duoarea)).toEqual(expect.arrayContaining(['NUS', 'YCLE', 'SWA', 'R1X', 'R1Y', 'R1Z', 'R20', 'R5XCA']))
     expect(eia.every((g) => g.cacheKey.startsWith('eia:gas:epmr:'))).toBe(true)
-    // BLS monthly tiers: every CPI metro without an EIA city (incl. Honolulu/Anchorage) + U.S.; no divisions
-    const metrosWithoutEiaCity = codes.filter((c) => c.startsWith('S') && !CPI_TO_EIA_CITY[c])
+    // BLS monthly tiers: every CPI metro without an EIA city (incl. Honolulu/Anchorage) + U.S.; no divisions —
+    // except metros lying wholly in a state EIA prices weekly (Tampa FL, Dallas TX, Riverside and San Diego CA),
+    // whose zips take the weekly state average instead (Minneapolis stays: its Wisconsin counties use it)
+    const weeklyStateMetros = ['S35D', 'S37A', 'S49C', 'S49E']
+    const metrosWithoutEiaCity = codes.filter((c) => c.startsWith('S') && !CPI_TO_EIA_CITY[c] && !weeklyStateMetros.includes(c))
     expect(bls.map((g) => g.areaCode).sort()).toEqual(['0000', ...metrosWithoutEiaCity].sort())
     expect(bls.every((g) => g.cacheKey === `bls:gas:${g.areaCode}` && g.seriesId === `APU${g.areaCode}74714`)).toBe(true)
   })

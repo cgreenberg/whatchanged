@@ -10,11 +10,11 @@
   "section": "1. Built JSON matches raw source",
   "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all counties)",
   "status": "PASS",
-  "detail": "median |adj| 1.52 pts, mean -1.48, p95 |adj| 2.96",
+  "detail": "median |adj| 1.47 pts, mean -1.45, p95 |adj| 2.85",
   "metrics": {
    "n": 877,
-   "median_abs": 1.52,
-   "mean": -1.48
+   "median_abs": 1.47,
+   "mean": -1.45
   }
  },
  {
@@ -35,7 +35,7 @@
   "section": "2. Coverage and geography",
   "check": "Site zips whose county has published rent (SA since Jan 2025)",
   "status": "INFO",
-  "detail": "23418/41195 (57%)",
+  "detail": "23427/41195 (57%)",
   "metrics": {}
  },
  {
@@ -84,13 +84,13 @@
   "section": "4. Rent \u2014 independent source (Apartment List)",
   "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
   "status": "PASS",
-  "detail": "{'n': 370, 'pearson': 0.847, 'spearman': 0.767, 'mae': 2.28, 'bias': 0.63, 'sign_agree': 0.822}",
+  "detail": "{'n': 370, 'pearson': 0.846, 'spearman': 0.765, 'mae': 2.29, 'bias': 0.66, 'sign_agree': 0.822}",
   "metrics": {
    "n": 370,
-   "pearson": 0.847,
-   "spearman": 0.767,
-   "mae": 2.28,
-   "bias": 0.63,
+   "pearson": 0.846,
+   "spearman": 0.765,
+   "mae": 2.29,
+   "bias": 0.66,
    "sign_agree": 0.822
   }
  },
@@ -107,13 +107,13 @@
   "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "rent %",
   "status": "WARN",
-  "detail": "4 flagged: Taylor County, TX +47.8, San Francisco County, CA +33.6, Ouachita Parish, LA +25.9, Calcasieu Parish, LA +23.4",
+  "detail": "4 flagged: Taylor County, TX +47.9, San Francisco County, CA +33.6, Ouachita Parish, LA +26.0, Calcasieu Parish, LA +23.8",
   "metrics": {
    "flagged": [
     [
      "48441",
      "Taylor County, TX",
-     47.8
+     47.9
     ],
     [
      "06075",
@@ -123,12 +123,12 @@
     [
      "22073",
      "Ouachita Parish, LA",
-     25.9
+     26.0
     ],
     [
      "22019",
      "Calcasieu Parish, LA",
-     23.4
+     23.8
     ]
    ]
   }
@@ -191,9 +191,51 @@
  },
  {
   "section": "6. Shipped data invariants",
-  "check": "county-rent.json: pct in [-30, 60], levels positive, matches counties.json",
+  "check": "county-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
   "status": "PASS",
   "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "county-rent.json: pct in [-20, 50], levels positive, matches counties.json",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every county with a current (2026-08) Zillow ZORI row is in exactly one of counties/tooNew/noBaseline/outOfRange",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "county-rent.json lists only counties with a current Zillow row (no stale classification)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "outOfRange counties show no rent % anywhere (counties.json rent, timeline, shard rentS/rentMS)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "outOfRange counties: raw ZORI change is beyond the range (within 5 pts of an edge at most)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Counties withheld for an implausible rent change (outside the range)",
+  "status": "INFO",
+  "detail": "0: ",
   "metrics": {}
  },
  {
@@ -228,12 +270,33 @@
   "section": "6. Shipped data invariants",
   "check": "County rent seasonally adjusted with a pooled (state / U.S.) seasonal pattern (series too short for their own)",
   "status": "INFO",
-  "detail": "288 of 877 counties, e.g. ['01001', '01015', '01033', '01043', '01045', '01051']",
+  "detail": "308 of 877 counties, e.g. ['01001', '01015', '01033', '01043', '01045', '01051']",
   "metrics": {}
  },
  {
   "section": "6. Shipped data invariants",
-  "check": "metro-rent.json: pct in [-30, 60], levels positive, as-of = Zillow metro file's latest month",
+  "check": "metro-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: pct in [-20, 50], levels positive",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: an outOfRange metro is never used, and outOfRangeCounties point only at outOfRange metros",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: each county is classified once (own county row / outOfRange county / metro / metro outOfRange)",
   "status": "PASS",
   "detail": "none",
   "metrics": {}
@@ -298,7 +361,7 @@
   "section": "6. Shipped data invariants",
   "check": "Metro rent seasonal adjustment size (built SA - raw NSA)",
   "status": "PASS",
-  "detail": "median |adj| 1.49 pts over 205 metros",
+  "detail": "median |adj| 1.45 pts over 205 metros",
   "metrics": {}
  },
  {
@@ -312,7 +375,7 @@
   "section": "6. Shipped data invariants",
   "check": "Zips that get metro rent (no county series)",
   "status": "INFO",
-  "detail": "3481 zips, 461 counties, 205 metros",
+  "detail": "3477 zips, 461 counties, 205 metros",
   "metrics": {}
  },
  {
@@ -355,9 +418,9 @@
   "check": "AK zips by match (c = own community, n = nearest surveyed community, r = DCRA region average)",
   "status": "INFO",
   "detail": {
-   "n": 91,
-   "r": 40,
-   "c": 101
+   "n": 88,
+   "r": 39,
+   "c": 103
   },
   "metrics": {}
  },
@@ -370,7 +433,21 @@
  },
  {
   "section": "7. Static gas sources",
-  "check": "pr-gas.json: Jan 2025 and latest present, $1-$10/gal",
+  "check": "pr-gas.json: Jan 2025 baseline present and $1-$10/gal (meta.baseMonth = 2025-01)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: Jan 2025 baseline equals the raw DACO workbook's January 2025 regular price",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: latest present, every value $1-$10/gal",
   "status": "PASS",
   "detail": "none",
   "metrics": {}

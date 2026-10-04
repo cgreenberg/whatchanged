@@ -68,8 +68,8 @@ export function computeDollarImpact(opts: {
   gasChange?: number | null
   /** LOCAL median rent only — pass null/undefined when the zip has no Census rent. */
   medianRent?: number | null
-  /** Seasonally adjusted state residential price, latest − Jan 2025, ¢/kWh. */
-  electricitySaChangeCents?: number | null
+  /** State residential 12-month average price, latest 12 months − 12 months ending Jan 2025, ¢/kWh. */
+  electricityPriceChangeCents?: number | null
   /** State average residential use, kWh per customer per month (12-month average). */
   electricityUsageKwh?: number | null
 }): DollarImpact {
@@ -77,6 +77,6 @@ export function computeDollarImpact(opts: {
     groceries: computeGroceryImpact(opts.groceriesChangePct),
     shelter: computeShelterImpact(opts.rentIndexChangePct, opts.medianRent),
     gas: finiteOrNull(opts.gasChange),
-    electricity: computeElectricityImpact(opts.electricitySaChangeCents, opts.electricityUsageKwh),
+    electricity: computeElectricityImpact(opts.electricityPriceChangeCents, opts.electricityUsageKwh),
   }
 }

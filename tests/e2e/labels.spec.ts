@@ -66,13 +66,13 @@ test.describe('Geography and concept labels', () => {
     })
   }
 
-  test('electricity card: "{State} · EIA · {Mon YYYY}" source line; seasonal method in its ⓘ', async ({ page }) => {
+  test('electricity card: "{State} · EIA · {Mon YYYY}" source line; 12-month-average method in its ⓘ', async ({ page }) => {
     await enterZip(page, '06902')
     const card = page.getByTestId('stat-card-electricity')
     await expect(card.getByTestId('stat-source')).toHaveText(/^Connecticut · EIA · [A-Z][a-z]{2} \d{4}$/)
-    await expect(card.getByTestId('stat-secondary')).toHaveText(/^[+−]\d+\.\d% since Jan 2025 · U\.S\. [+−]\d+\.\d%$/)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(/^[+−]\d+\.\d% vs 12 mo to Jan 2025 · U\.S\. [+−]\d+\.\d%$/)
     await card.getByTestId('stat-info-toggle').click()
-    await expect(card.getByTestId('stat-info')).toContainText('seasonally adjusted prices')
+    await expect(card.getByTestId('stat-info')).toContainText('Why 12-month averages')
     await expect(card.getByTestId('provenance')).toContainText('EIA average residential electricity price · Connecticut (statewide average)')
   })
 })

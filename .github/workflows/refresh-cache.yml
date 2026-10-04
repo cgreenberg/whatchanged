@@ -5,6 +5,10 @@ name: Refresh data cache (BLS CPI + gas, EIA gas + electricity + heating fuel, N
 # EIA 10d) are longer than this schedule, so keys never expire between runs.
 #   - weekly, Tuesday 15:00 UTC: EIA publishes weekly retail gas Monday evening
 #   - 16th and 28th: after the BLS CPI release (~10th–15th)
+#   - weekly, Thursday 15:00 UTC: heating fuel only (--only=heating). EIA's
+#     heating-season survey (SHOPP) publishes Wednesday, so Tuesday's run stores
+#     the week before; Thursday's picks up the new week (4 EIA pages + 1 NYSERDA
+#     request; off-season it simply re-stores the last season's series).
 # A full run uses 3 BLS requests, ~33 EIA requests (~27 gas + 2 electricity
 # pages + 4 heating-fuel pages: SHOPP heating oil + propane since 2016) and 1
 # keyless NYSERDA request (worst case with 2 retries per request: 9 BLS / ~99
@@ -18,6 +22,7 @@ on:
   schedule:
     - cron: '0 15 * * 2'
     - cron: '0 15 16,28 * *'
+    - cron: '0 15 * * 4'
   workflow_dispatch:
     inputs:
       force:
@@ -46,10 +51,12 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Refresh cache
-        run: npm run cache:refresh -- ${FORCE_FLAG}
+        run: npm run cache:refresh -- ${FORCE_FLAG} ${ONLY_FLAG}
         env:
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
           KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
           KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
           FORCE_FLAG: ${{ inputs.force && '--force' || '' }}
+          # The Thursday schedule refreshes heating fuel only (not a full run, so the 12h skip doesn't apply)
+          ONLY_FLAG: ${{ github.event.schedule == '0 15 * * 4' && '--only=heating' || '' }}

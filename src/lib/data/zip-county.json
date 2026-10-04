@@ -36929,8 +36929,8 @@
     "cityName": "Baltimore"
   },
   "21240": {
-    "countyFips": "24003",
-    "countyName": "Anne Arundel County",
+    "countyFips": "24510",
+    "countyName": "Baltimore city",
     "stateName": "Maryland",
     "stateAbbr": "MD",
     "cityName": "Baltimore"
@@ -44493,8 +44493,8 @@
     "cityName": "Roanoke"
   },
   "24023": {
-    "countyFips": "51121",
-    "countyName": "Montgomery County",
+    "countyFips": "51770",
+    "countyName": "Roanoke city",
     "stateName": "Virginia",
     "stateAbbr": "VA",
     "cityName": "Roanoke",
@@ -50593,8 +50593,8 @@
     "cityName": "Mullens"
   },
   "25888": {
-    "countyFips": "54019",
-    "countyName": "Fayette County",
+    "countyFips": "54081",
+    "countyName": "Raleigh County",
     "stateName": "West Virginia",
     "stateAbbr": "WV",
     "cityName": "Mount Hope",
@@ -54588,8 +54588,8 @@
     "cityName": "Clayton"
   },
   "27528": {
-    "countyFips": "37077",
-    "countyName": "Granville County",
+    "countyFips": "37101",
+    "countyName": "Johnston County",
     "stateName": "North Carolina",
     "stateAbbr": "NC",
     "cityName": "Clayton",
@@ -56667,8 +56667,8 @@
     "cityName": "Dallas"
   },
   "28035": {
-    "countyFips": "37071",
-    "countyName": "Gaston County",
+    "countyFips": "37119",
+    "countyName": "Mecklenburg County",
     "stateName": "North Carolina",
     "stateAbbr": "NC",
     "cityName": "Davidson",
@@ -57707,8 +57707,8 @@
     "cityName": "Charlotte"
   },
   "28271": {
-    "countyFips": "37155",
-    "countyName": "Robeson County",
+    "countyFips": "37119",
+    "countyName": "Mecklenburg County",
     "stateName": "North Carolina",
     "stateAbbr": "NC",
     "cityName": "Charlotte",
@@ -58486,8 +58486,8 @@
     "cityName": "Wilmington"
   },
   "28404": {
-    "countyFips": "37019",
-    "countyName": "Brunswick County",
+    "countyFips": "37129",
+    "countyName": "New Hanover County",
     "stateName": "North Carolina",
     "stateAbbr": "NC",
     "cityName": "Wilmington",
@@ -66155,8 +66155,8 @@
     "cityName": "Peachtree City"
   },
   "30270": {
-    "countyFips": "13313",
-    "countyName": "Whitfield County",
+    "countyFips": "13113",
+    "countyName": "Fayette County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Peachtree City",
@@ -72697,8 +72697,8 @@
     "cityName": "Tallahassee"
   },
   "32318": {
-    "countyFips": "12037",
-    "countyName": "Franklin County",
+    "countyFips": "12073",
+    "countyName": "Leon County",
     "stateName": "Florida",
     "stateAbbr": "FL",
     "cityName": "Tallahassee",
@@ -74477,8 +74477,8 @@
     "zcta": false
   },
   "32753": {
-    "countyFips": "12065",
-    "countyName": "Jefferson County",
+    "countyFips": "12127",
+    "countyName": "Volusia County",
     "stateName": "Florida",
     "stateAbbr": "FL",
     "cityName": "Debary",
@@ -76127,8 +76127,8 @@
     "zcta": false
   },
   "33112": {
-    "countyFips": "12107",
-    "countyName": "Putnam County",
+    "countyFips": "12086",
+    "countyName": "Miami-Dade County",
     "stateName": "Florida",
     "stateAbbr": "FL",
     "cityName": "Miami",
@@ -112040,8 +112040,8 @@
     "zcta": false
   },
   "45275": {
-    "countyFips": "39015",
-    "countyName": "Brown County",
+    "countyFips": "39061",
+    "countyName": "Hamilton County",
     "stateName": "Ohio",
     "stateAbbr": "OH",
     "cityName": "Cincinnati",
@@ -134613,8 +134613,8 @@
     "zcta": false
   },
   "51593": {
-    "countyFips": "19155",
-    "countyName": "Pottawattamie County",
+    "countyFips": "19165",
+    "countyName": "Shelby County",
     "stateName": "Iowa",
     "stateAbbr": "IA",
     "cityName": "Harlan",
@@ -145456,8 +145456,8 @@
     "zcta": false
   },
   "55473": {
-    "countyFips": "27019",
-    "countyName": "Carver County",
+    "countyFips": "27053",
+    "countyName": "Hennepin County",
     "stateName": "Minnesota",
     "stateAbbr": "MN",
     "cityName": "Minneapolis",
@@ -145616,8 +145616,8 @@
     "zcta": false
   },
   "55572": {
-    "countyFips": "27053",
-    "countyName": "Hennepin County",
+    "countyFips": "27171",
+    "countyName": "Wright County",
     "stateName": "Minnesota",
     "stateAbbr": "MN",
     "cityName": "Rockford",
@@ -145640,8 +145640,8 @@
     "zcta": false
   },
   "55575": {
-    "countyFips": "27053",
-    "countyName": "Hennepin County",
+    "countyFips": "27171",
+    "countyName": "Wright County",
     "stateName": "Minnesota",
     "stateAbbr": "MN",
     "cityName": "Howard Lake",
@@ -149020,8 +149020,8 @@
     "cityName": "Waite Park"
   },
   "56388": {
-    "countyFips": "27097",
-    "countyName": "Morrison County",
+    "countyFips": "27145",
+    "countyName": "Stearns County",
     "stateName": "Minnesota",
     "stateAbbr": "MN",
     "cityName": "Waite Park",
@@ -195698,8 +195698,8 @@
     "zcta": false
   },
   "72260": {
-    "countyFips": "05009",
-    "countyName": "Boone County",
+    "countyFips": "05119",
+    "countyName": "Pulaski County",
     "stateName": "Arkansas",
     "stateAbbr": "AR",
     "cityName": "Little Rock",
@@ -198659,8 +198659,8 @@
     "cityName": "Fort Cobb"
   },
   "73039": {
-    "countyFips": "40109",
-    "countyName": "Oklahoma County",
+    "countyFips": "40099",
+    "countyName": "Murray County",
     "stateName": "Oklahoma",
     "stateAbbr": "OK",
     "cityName": "Davis",
@@ -205308,8 +205308,8 @@
     "zcta": false
   },
   "75261": {
-    "countyFips": "48439",
-    "countyName": "Tarrant County",
+    "countyFips": "48113",
+    "countyName": "Dallas County",
     "stateName": "Texas",
     "stateAbbr": "TX",
     "cityName": "Dallas"
@@ -222294,8 +222294,8 @@
     "zcta": false
   },
   "80038": {
-    "countyFips": "08013",
-    "countyName": "Boulder County",
+    "countyFips": "08014",
+    "countyName": "Broomfield County",
     "stateName": "Colorado",
     "stateAbbr": "CO",
     "cityName": "Broomfield",
@@ -236257,8 +236257,8 @@
     "cityName": "Skull Valley"
   },
   "86339": {
-    "countyFips": "04005",
-    "countyName": "Coconino County",
+    "countyFips": "04025",
+    "countyName": "Yavapai County",
     "stateName": "Arizona",
     "stateAbbr": "AZ",
     "cityName": "Sedona",
@@ -241654,8 +241654,8 @@
     "cityName": "Sparks"
   },
   "89437": {
-    "countyFips": "32029",
-    "countyName": "Storey County",
+    "countyFips": "32031",
+    "countyName": "Washoe County",
     "stateName": "Nevada",
     "stateAbbr": "NV",
     "cityName": "Sparks"
@@ -247625,8 +247625,8 @@
     "zcta": false
   },
   "92248": {
-    "countyFips": "06071",
-    "countyName": "San Bernardino County",
+    "countyFips": "06065",
+    "countyName": "Riverside County",
     "stateName": "California",
     "stateAbbr": "CA",
     "cityName": "La Quinta",
@@ -248040,8 +248040,8 @@
     "zcta": false
   },
   "92331": {
-    "countyFips": "06025",
-    "countyName": "Imperial County",
+    "countyFips": "06071",
+    "countyName": "San Bernardino County",
     "stateName": "California",
     "stateAbbr": "CA",
     "cityName": "Fontana",
@@ -270960,8 +270960,8 @@
     "cityName": "Anchorage"
   },
   "99519": {
-    "countyFips": "02185",
-    "countyName": "North Slope Borough",
+    "countyFips": "02020",
+    "countyName": "Anchorage Municipality",
     "stateName": "Alaska",
     "stateAbbr": "AK",
     "cityName": "Anchorage"
@@ -271944,8 +271944,8 @@
     "cityName": "Houston"
   },
   "99695": {
-    "countyFips": "02164",
-    "countyName": "Lake and Peninsula Borough",
+    "countyFips": "02020",
+    "countyName": "Anchorage Municipality",
     "stateName": "Alaska",
     "stateAbbr": "AK",
     "cityName": "Anchorage"
@@ -271994,8 +271994,8 @@
     "cityName": "North Pole"
   },
   "99706": {
-    "countyFips": "02240",
-    "countyName": "Southeast Fairbanks Census Area",
+    "countyFips": "02090",
+    "countyName": "Fairbanks North Star Borough",
     "stateName": "Alaska",
     "stateAbbr": "AK",
     "cityName": "Fairbanks"
@@ -272676,8 +272676,8 @@
     "cityName": "Tenakee Springs"
   },
   "99850": {
-    "countyFips": "02100",
-    "countyName": "Haines Borough",
+    "countyFips": "02110",
+    "countyName": "Juneau City and Borough",
     "stateName": "Alaska",
     "stateAbbr": "AK",
     "cityName": "Juneau"
@@ -273512,8 +273512,8 @@
     "cityName": "Guayama"
   },
   "00785": {
-    "countyFips": "72059",
-    "countyName": "Guayanilla Municipio",
+    "countyFips": "72057",
+    "countyName": "Guayama Municipio",
     "stateName": "Puerto Rico",
     "stateAbbr": "PR",
     "cityName": "Guayama",
@@ -274138,8 +274138,8 @@
     "cityName": "Carolina"
   },
   "00981": {
-    "countyFips": "72127",
-    "countyName": "San Juan Municipio",
+    "countyFips": "72031",
+    "countyName": "Carolina Municipio",
     "stateName": "Puerto Rico",
     "stateAbbr": "PR",
     "cityName": "Carolina",
@@ -277627,8 +277627,8 @@
     "zcta": false
   },
   "02212": {
-    "countyFips": "25017",
-    "countyName": "Middlesex County",
+    "countyFips": "25025",
+    "countyName": "Suffolk County",
     "stateName": "Massachusetts",
     "stateAbbr": "MA",
     "cityName": "Boston",

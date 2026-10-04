@@ -29,9 +29,16 @@ exports[`trace snapshots (golden zips) 00601 — Adjuntas PR: national gas + CPI
     "not-applicable | propane.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential propane price for Puerto Rico.",
   ],
   "rent": [
-    "not-applicable | rent.zillow-county | Adjuntas Municipio, PR [county] |  |  | Zillow has no usable county rent series for Adjuntas Municipio back to Jan 2025.",
+    "not-applicable | rent.zillow-county | Adjuntas Municipio, PR [county] |  |  | Zillow publishes no rent series for Adjuntas Municipio.",
     "not-applicable | rent.zillow-metro | Adjuntas Municipio, PR’s metro area [metro] |  |  | Adjuntas Municipio isn't in a metro with a Zillow rent series back to Jan 2025.",
     "used | rent.bls-cpi-shelter | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 00601 [zip] |  |  | Median gross rent $414/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 00601 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 00601 [zip]",
+    "not-needed | rentBase.county | Adjuntas Municipio, PR [county]",
+    "not-needed | rentBase.state | Puerto Rico [state]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Adjuntas Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; Adjuntas Municipio isn't in one.",
@@ -71,9 +78,16 @@ exports[`trace snapshots (golden zips) 00901 — San Juan PR: DACO island-wide m
     "not-applicable | propane.eia-shopp-state | Puerto Rico [state] |  |  | EIA's heating-season survey has no residential propane price for Puerto Rico.",
   ],
   "rent": [
-    "not-applicable | rent.zillow-county | San Juan Municipio, PR [county] |  |  | Zillow has no usable county rent series for San Juan Municipio back to Jan 2025.",
+    "not-applicable | rent.zillow-county | San Juan Municipio, PR [county] |  |  | Zillow publishes no rent series for San Juan Municipio.",
     "not-applicable | rent.zillow-metro | San Juan Municipio, PR’s metro area [metro] |  |  | San Juan Municipio isn't in a metro with a Zillow rent series back to Jan 2025.",
     "used | rent.bls-cpi-shelter | United States (U.S. city average) [national] | 2026-08 | CUUR0000SAH1 | BLS publishes no local CPI for Puerto Rico; this is the U.S. city average.",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 00901 [zip] |  |  | Median gross rent $646/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 00901 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 00901 [zip]",
+    "not-needed | rentBase.county | San Juan Municipio, PR [county]",
+    "not-needed | rentBase.state | Puerto Rico [state]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | San Juan Municipio, PR [county] |  |  | BLS publishes its own CPI for 23 metro areas; San Juan Municipio isn't in one.",
@@ -117,6 +131,13 @@ exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Z
     "not-needed | rent.zillow-metro | Cumberland County, ME’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | New England division [division]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 04101 [zip] |  |  | Median gross rent $1,457/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 04101 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 04101 [zip]",
+    "not-needed | rentBase.county | Cumberland County, ME [county]",
+    "not-needed | rentBase.state | Maine [state]",
+  ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Cumberland County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Cumberland County isn't in one.",
     "used | shelter.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAH1",
@@ -159,6 +180,13 @@ exports[`trace snapshots (golden zips) 04240 — Lewiston ME: Androscoggin Count
     "not-needed | rent.zillow-metro | Androscoggin County, ME’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | New England division [division]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 04240 [zip] |  |  | Median gross rent $954/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 04240 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 04240 [zip]",
+    "not-needed | rentBase.county | Androscoggin County, ME [county]",
+    "not-needed | rentBase.state | Maine [state]",
+  ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Androscoggin County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Androscoggin County isn't in one.",
     "used | shelter.bls-cpi-division | New England division [division] | 2026-08 | CUUR0110SAH1",
@@ -198,8 +226,15 @@ exports[`trace snapshots (golden zips) 04530 — Bath ME: Sagadahoc county serie
   ],
   "rent": [
     "not-applicable | rent.zillow-county | Sagadahoc County, ME [county] |  |  | Zillow's series for Sagadahoc County is too new (it needs data from Jan 2024) to measure since Jan 2025.",
-    "used | rent.zillow-metro | Portland-South Portland, ME metro [metro] | 2026-08 |  | No usable Zillow county series for Sagadahoc County; its metro’s series stands in.",
+    "used | rent.zillow-metro | Portland-South Portland, ME metro [metro] | 2026-08 |  | Zillow's series for Sagadahoc County is too new to measure since Jan 2025; its metro’s series stands in.",
     "not-needed | rent.bls-cpi-shelter | New England division [division]",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 04530 [zip] |  |  | Median gross rent $980/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 04530 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 04530 [zip]",
+    "not-needed | rentBase.county | Sagadahoc County, ME [county]",
+    "not-needed | rentBase.state | Maine [state]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Sagadahoc County, ME [county] |  |  | BLS publishes its own CPI for 23 metro areas; Sagadahoc County isn't in one.",
@@ -217,7 +252,7 @@ exports[`trace snapshots (golden zips) 10509 — Brewster NY: Putnam County Zill
   ],
   "gas": [
     "stale | gas.eia-city | New York City area [city] | 2025-02-24 | EMM_EPMR_PTE_Y35NY_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
-    "not-needed | gas.bls-metro | New York-Newark-Jersey City metro [metro]",
+    "not-needed | gas.bls-metro",
     "not-needed | gas.dcra-community",
     "not-needed | gas.bls-hiak-standin",
     "not-needed | gas.eia-state | New York state [state]",
@@ -243,6 +278,13 @@ exports[`trace snapshots (golden zips) 10509 — Brewster NY: Putnam County Zill
     "not-needed | rent.zillow-metro | Putnam County, NY’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 10509 [zip] |  |  | Median gross rent $1,836/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 10509 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 10509 [zip]",
+    "not-needed | rentBase.county | Putnam County, NY [county]",
+    "not-needed | rentBase.state | New York [state]",
+  ],
   "shelter": [
     "used | shelter.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
     "not-needed | shelter.bls-cpi-division | Middle Atlantic division [division]",
@@ -259,7 +301,7 @@ exports[`trace snapshots (golden zips) 10950 — Monroe NY (Orange County): NYSE
   ],
   "gas": [
     "stale | gas.eia-city | New York City area [city] | 2025-02-24 | EMM_EPMR_PTE_Y35NY_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
-    "not-needed | gas.bls-metro | New York-Newark-Jersey City metro [metro]",
+    "not-needed | gas.bls-metro",
     "not-needed | gas.dcra-community",
     "not-needed | gas.bls-hiak-standin",
     "not-needed | gas.eia-state | New York state [state]",
@@ -284,6 +326,13 @@ exports[`trace snapshots (golden zips) 10950 — Monroe NY (Orange County): NYSE
     "used | rent.zillow-county | Orange County, NY [county] | 2026-08",
     "not-needed | rent.zillow-metro | Orange County, NY’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | New York-Newark-Jersey City metro [metro]",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 10950 [zip] |  |  | Median gross rent $1,693/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 10950 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 10950 [zip]",
+    "not-needed | rentBase.county | Orange County, NY [county]",
+    "not-needed | rentBase.state | New York [state]",
   ],
   "shelter": [
     "used | shelter.bls-cpi-metro | New York-Newark-Jersey City metro [metro] | 2026-08 | CUURS12ASAH1",
@@ -327,6 +376,13 @@ exports[`trace snapshots (golden zips) 19103 — Philadelphia: BLS metro gas 1`]
     "not-needed | rent.zillow-metro | Philadelphia County, PA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Philadelphia-Camden-Wilmington metro [metro]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 19103 [zip] |  |  | Median gross rent $1,955/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 19103 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 19103 [zip]",
+    "not-needed | rentBase.county | Philadelphia County, PA [county]",
+    "not-needed | rentBase.state | Pennsylvania [state]",
+  ],
   "shelter": [
     "used | shelter.bls-cpi-metro | Philadelphia-Camden-Wilmington metro [metro] | 2026-08 | CUURS12BSAH1",
     "not-needed | shelter.bls-cpi-division | Middle Atlantic division [division]",
@@ -369,9 +425,65 @@ exports[`trace snapshots (golden zips) 30303 — Atlanta: BLS metro gas, Atlanta
     "not-needed | rent.zillow-metro | Fulton County, GA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Atlanta-Sandy Springs-Roswell metro [metro]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 30303 [zip] |  |  | Median gross rent $1,705/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 30303 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 30303 [zip]",
+    "not-needed | rentBase.county | Fulton County, GA [county]",
+    "not-needed | rentBase.state | Georgia [state]",
+  ],
   "shelter": [
     "used | shelter.bls-cpi-metro | Atlanta-Sandy Springs-Roswell metro [metro] | 2026-08 | CUURS35CSAH1",
     "not-needed | shelter.bls-cpi-division | South Atlantic division [division]",
+    "not-needed | shelter.bls-cpi-region | South region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 35460 — Epes AL: Census suppresses the zip rent → nearest zip in the county with a Census rent (labeled) 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Alabama (statewide) [state] | 2026-07 | ELEC.PRICE.AL-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Sumter County, AL [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Sumter County isn't in one.",
+    "not-applicable | gas.bls-metro | Sumter County, AL [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Sumter County isn't in one.",
+    "not-applicable | gas.dcra-community | Alabama [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
+    "not-applicable | gas.bls-hiak-standin | Alabama [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "not-applicable | gas.eia-state | Alabama [state] |  |  | EIA publishes weekly state averages for 9 states; Alabama isn't one.",
+    "stale | gas.eia-padd | Gulf Coast (PADD 3) [padd] | 2025-02-24 | EMM_EPMR_PTE_R30_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "not-applicable | groceries.bls-cpi-metro | Sumter County, AL [county] |  |  | BLS publishes its own CPI for 23 metro areas; Sumter County isn't in one.",
+    "used | groceries.bls-cpi-division | East South Central division [division] | 2026-08 | CUUR0360SAF11",
+    "not-needed | groceries.bls-cpi-region | South region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Alabama [state] |  |  | NYSERDA surveys New York only.",
+    "not-applicable | heatingOil.eia-shopp-state | Alabama [state] |  |  | EIA's heating-season survey has no residential heating oil price for Alabama.",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Alabama (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SAL_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "rent": [
+    "not-applicable | rent.zillow-county | Sumter County, AL [county] |  |  | Zillow publishes no rent series for Sumter County.",
+    "not-applicable | rent.zillow-metro | Sumter County, AL’s metro area [metro] |  |  | Sumter County isn't in a metro with a Zillow rent series back to Jan 2025.",
+    "used | rent.bls-cpi-shelter | East South Central division [division] | 2026-08 | CUUR0360SAH1",
+  ],
+  "rentBase": [
+    "not-applicable | rentBase.zip | zip 35460 [zip] |  |  | Census publishes no median rent for zip 35460 (suppressed for a small sample, or a PO-box zip with no Census area).",
+    "not-applicable | rentBase.po-donor | zip 35460 [zip] |  |  | Not a PO-box zip with a residential donor.",
+    "used | rentBase.nearest-zip | zip 35464 [zip] |  |  | borrowed from zip 35464 (nearest with Census rent, 5.3 mi): $725/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.county | Sumter County, AL [county]",
+    "not-needed | rentBase.state | Alabama [state]",
+  ],
+  "shelter": [
+    "not-applicable | shelter.bls-cpi-metro | Sumter County, AL [county] |  |  | BLS publishes its own CPI for 23 metro areas; Sumter County isn't in one.",
+    "used | shelter.bls-cpi-division | East South Central division [division] | 2026-08 | CUUR0360SAH1",
     "not-needed | shelter.bls-cpi-region | South region [region]",
     "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
   ],
@@ -385,10 +497,10 @@ exports[`trace snapshots (golden zips) 55334 — Gaylord MN: no Zillow county or
   ],
   "gas": [
     "not-applicable | gas.eia-city | Sibley County, MN [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Sibley County isn't in one.",
-    "used | gas.bls-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | APUS24A74714",
-    "not-needed | gas.dcra-community",
-    "not-needed | gas.bls-hiak-standin",
-    "not-needed | gas.eia-state | Minnesota state [state]",
+    "not-applicable | gas.bls-metro | Sibley County, MN [county] |  |  | EIA publishes a weekly Minnesota average; it is used instead of BLS's monthly metro price so every Minnesota zip is compared on the same weekly basis.",
+    "not-applicable | gas.dcra-community | Minnesota [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
+    "not-applicable | gas.bls-hiak-standin | Minnesota [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "stale | gas.eia-state | Minnesota state [state] | 2025-02-24 | EMM_EPMR_PTE_SMN_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
     "not-needed | gas.eia-padd | Midwest (PADD 2) [padd]",
     "not-needed | gas.daco-pr",
     "not-needed | gas.eia-national | United States [national]",
@@ -407,9 +519,65 @@ exports[`trace snapshots (golden zips) 55334 — Gaylord MN: no Zillow county or
     "stale | propane.eia-shopp-state | Minnesota (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SMN_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
   ],
   "rent": [
-    "not-applicable | rent.zillow-county | Sibley County, MN [county] |  |  | Zillow has no usable county rent series for Sibley County back to Jan 2025.",
+    "not-applicable | rent.zillow-county | Sibley County, MN [county] |  |  | Zillow publishes no rent series for Sibley County.",
     "not-applicable | rent.zillow-metro | Sibley County, MN’s metro area [metro] |  |  | Sibley County isn't in a metro with a Zillow rent series back to Jan 2025.",
     "used | rent.bls-cpi-shelter | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAH1",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 55334 [zip] |  |  | Median gross rent $750/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 55334 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 55334 [zip]",
+    "not-needed | rentBase.county | Sibley County, MN [county]",
+    "not-needed | rentBase.state | Minnesota [state]",
+  ],
+  "shelter": [
+    "used | shelter.bls-cpi-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAH1",
+    "not-needed | shelter.bls-cpi-division | West North Central division [division]",
+    "not-needed | shelter.bls-cpi-region | Midwest region [region]",
+    "not-needed | shelter.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+}
+`;
+
+exports[`trace snapshots (golden zips) 55401 — Minneapolis: EIA weekly Minnesota state gas preferred over the BLS monthly metro 1`] = `
+{
+  "electricity": [
+    "used | electricity.eia-state | Minnesota (statewide) [state] | 2026-07 | ELEC.PRICE.MN-RES.M",
+  ],
+  "gas": [
+    "not-applicable | gas.eia-city | Hennepin County, MN [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Hennepin County isn't in one.",
+    "not-applicable | gas.bls-metro | Hennepin County, MN [county] |  |  | EIA publishes a weekly Minnesota average; it is used instead of BLS's monthly metro price so every Minnesota zip is compared on the same weekly basis.",
+    "not-applicable | gas.dcra-community | Minnesota [state] |  |  | The Alaska DCRA community survey covers Alaska only.",
+    "not-applicable | gas.bls-hiak-standin | Minnesota [state] |  |  | Only used in Hawaii and Alaska outside the Honolulu and Anchorage metros.",
+    "stale | gas.eia-state | Minnesota state [state] | 2025-02-24 | EMM_EPMR_PTE_SMN_DPG | The source hasn't updated on schedule (or the latest refresh failed), so this is the last good data.",
+    "not-needed | gas.eia-padd | Midwest (PADD 2) [padd]",
+    "not-needed | gas.daco-pr",
+    "not-needed | gas.eia-national | United States [national]",
+  ],
+  "groceries": [
+    "used | groceries.bls-cpi-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAF11",
+    "not-needed | groceries.bls-cpi-division | West North Central division [division]",
+    "not-needed | groceries.bls-cpi-region | Midwest region [region]",
+    "not-needed | groceries.bls-cpi-national | United States (U.S. city average) [national]",
+  ],
+  "heatingOil": [
+    "not-applicable | heatingOil.nyserda-region | Minnesota [state] |  |  | NYSERDA surveys New York only.",
+    "stale | heatingOil.eia-shopp-state | Minnesota (statewide) [state] | 2026-03-30 | W_EPD2F_PRS_SMN_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "propane": [
+    "stale | propane.eia-shopp-state | Minnesota (statewide) [state] | 2026-03-30 | W_EPLLPA_PRS_SMN_DPG | Heating-season survey (Oct–Mar) · latest Mar 30, 2026 · next update mid-Oct",
+  ],
+  "rent": [
+    "used | rent.zillow-county | Hennepin County, MN [county] | 2026-08",
+    "not-needed | rent.zillow-metro | Hennepin County, MN’s metro area [metro]",
+    "not-needed | rent.bls-cpi-shelter | Minneapolis-St. Paul-Bloomington metro [metro]",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 55401 [zip] |  |  | Median gross rent $2,010/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 55401 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 55401 [zip]",
+    "not-needed | rentBase.county | Hennepin County, MN [county]",
+    "not-needed | rentBase.state | Minnesota [state]",
   ],
   "shelter": [
     "used | shelter.bls-cpi-metro | Minneapolis-St. Paul-Bloomington metro [metro] | 2026-08 | CUURS24ASAH1",
@@ -453,6 +621,13 @@ exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no
     "not-needed | rent.zillow-metro | Hawaii County, HI’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 96720 [zip] |  |  | Median gross rent $1,346/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 96720 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 96720 [zip]",
+    "not-needed | rentBase.county | Hawaii County, HI [county]",
+    "not-needed | rentBase.state | Hawaii [state]",
+  ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Hawaii County, HI [county] |  |  | BLS publishes its own CPI for 23 metro areas; Hawaii County isn't in one.",
     "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
@@ -495,6 +670,13 @@ exports[`trace snapshots (golden zips) 98683 — Vancouver WA: EIA Washington st
     "not-needed | rent.zillow-metro | Clark County, WA’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
   ],
+  "rentBase": [
+    "used | rentBase.zip | zip 98683 [zip] |  |  | Median gross rent $1,783/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 98683 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 98683 [zip]",
+    "not-needed | rentBase.county | Clark County, WA [county]",
+    "not-needed | rentBase.state | Washington [state]",
+  ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Clark County, WA [county] |  |  | BLS publishes its own CPI for 23 metro areas; Clark County isn't in one.",
     "used | shelter.bls-cpi-division | Pacific division [division] | 2026-08 | CUUR0490SAH1",
@@ -512,7 +694,7 @@ exports[`trace snapshots (golden zips) 99559 — Bethel AK: DCRA community surve
   "gas": [
     "not-applicable | gas.eia-city | Bethel Census Area, AK [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Bethel Census Area isn't in one.",
     "not-applicable | gas.bls-metro | Bethel Census Area, AK [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Bethel Census Area isn't in one.",
-    "used | gas.dcra-community | Bethel [community] | 2026-07 | DCRA survey: Bethel",
+    "used | gas.dcra-community | Bethel [community] | 2026-07 | DCRA survey: Bethel | DCRA's Bethel figure is one retailer's reported price (1 station surveyed: Crowley).",
     "not-needed | gas.bls-hiak-standin | Anchorage metro (stand-in) [metro]",
     "not-needed | gas.eia-state",
     "not-needed | gas.eia-padd",
@@ -533,9 +715,16 @@ exports[`trace snapshots (golden zips) 99559 — Bethel AK: DCRA community surve
     "not-applicable | propane.eia-shopp-state | Alaska [state] |  |  | EIA's heating-season survey has no residential propane price for Alaska.",
   ],
   "rent": [
-    "not-applicable | rent.zillow-county | Bethel Census Area, AK [county] |  |  | Zillow has no usable county rent series for Bethel Census Area back to Jan 2025.",
+    "not-applicable | rent.zillow-county | Bethel Census Area, AK [county] |  |  | Zillow publishes no rent series for Bethel Census Area.",
     "not-applicable | rent.zillow-metro | Bethel Census Area, AK’s metro area [metro] |  |  | Bethel Census Area isn't in a metro with a Zillow rent series back to Jan 2025.",
     "used | rent.bls-cpi-shelter | Pacific division [division] | 2026-08 | CUUR0490SAH1",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 99559 [zip] |  |  | Median gross rent $1,637/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 99559 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 99559 [zip]",
+    "not-needed | rentBase.county | Bethel Census Area, AK [county]",
+    "not-needed | rentBase.state | Alaska [state]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Bethel Census Area, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Bethel Census Area isn't in one.",
@@ -554,7 +743,7 @@ exports[`trace snapshots (golden zips) 99701 — Fairbanks AK: DCRA community su
   "gas": [
     "not-applicable | gas.eia-city | Fairbanks North Star Borough, AK [county] |  |  | EIA publishes weekly city prices for 10 metro areas; Fairbanks North Star Borough isn't in one.",
     "not-applicable | gas.bls-metro | Fairbanks North Star Borough, AK [county] |  |  | BLS publishes monthly gas prices for 23 metro areas; Fairbanks North Star Borough isn't in one.",
-    "used | gas.dcra-community | Fairbanks [community] | 2026-07 | DCRA survey: Fairbanks",
+    "used | gas.dcra-community | Fairbanks [community] | 2026-07 | DCRA survey: Fairbanks | DCRA's Fairbanks figure is one retailer's reported price (1 station surveyed: University Chevron).",
     "not-needed | gas.bls-hiak-standin | Anchorage metro (stand-in) [metro]",
     "not-needed | gas.eia-state",
     "not-needed | gas.eia-padd",
@@ -578,6 +767,13 @@ exports[`trace snapshots (golden zips) 99701 — Fairbanks AK: DCRA community su
     "used | rent.zillow-county | Fairbanks North Star Borough, AK [county] | 2026-08",
     "not-needed | rent.zillow-metro | Fairbanks North Star Borough, AK’s metro area [metro]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",
+  ],
+  "rentBase": [
+    "used | rentBase.zip | zip 99701 [zip] |  |  | Median gross rent $1,233/mo (Census ACS 2023 5-year).",
+    "not-needed | rentBase.po-donor | zip 99701 [zip]",
+    "not-needed | rentBase.nearest-zip | zip 99701 [zip]",
+    "not-needed | rentBase.county | Fairbanks North Star Borough, AK [county]",
+    "not-needed | rentBase.state | Alaska [state]",
   ],
   "shelter": [
     "not-applicable | shelter.bls-cpi-metro | Fairbanks North Star Borough, AK [county] |  |  | BLS publishes its own CPI for 23 metro areas; Fairbanks North Star Borough isn't in one.",

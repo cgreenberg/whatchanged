@@ -207,22 +207,22 @@ describe('chart provenance', () => {
       expect(getChartInput(id, clone(austin)).provenance.adjustment).toBe('not seasonally adjusted')
     }
     expect(getChartInput('electricity', clone(austin)).provenance.adjustment)
-      .toBe('bold line seasonally adjusted by whatchanged; thin line as published')
+      .toBe('bold line: 12-month average prices (no seasonal adjustment needed); thin line: monthly price as published')
   })
 
-  test('electricity graph: ¢/kWh lines, statewide provenance, headline = the card %, U.S. line is the adjusted one only', () => {
+  test('electricity graph: ¢/kWh lines, statewide provenance, headline = the card %, U.S. line is the 12-month average only', () => {
     const snap = clone(austin)
     const config = chartConfigs.find(c => c.id === 'electricity')!
     const input = getChartInput('electricity', snap)
     const e = snap.electricity.data!
     expect(input.headline?.pct).toBe(e.change)
-    expect(input.data[input.data.length - 1]).toEqual({ date: e.latestPeriod, sa: e.series[e.series.length - 1].sa, price: e.current })
-    expect(Object.keys(input.nationalData[0]).sort()).toEqual(['date', 'sa'])
+    expect(input.data[input.data.length - 1]).toEqual({ date: e.latestPeriod, avg12: e.current, price: e.latestMonthPrice })
+    expect(Object.keys(input.nationalData[0]).sort()).toEqual(['avg12', 'date'])
     render(<EraChart config={config} data={input.data} nationalData={input.nationalData} provenance={input.provenance}
       nationalLabel={input.nationalLabel} info={input.info} />)
     expect(screen.getByTestId('provenance')).toHaveTextContent('EIA average residential electricity price · Texas (statewide), monthly')
     expect(screen.getByTestId('provenance')).toHaveTextContent('Jul 2026')
-    expect(screen.getByTestId('chart-info')).toHaveTextContent('seasonal')
+    expect(screen.getByTestId('chart-info')).toHaveTextContent('Why 12-month averages')
   })
 
   test('gas chart mentions the dashed U.S. line only while it is shown', () => {

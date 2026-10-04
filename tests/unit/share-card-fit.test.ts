@@ -27,7 +27,7 @@ jest.mock('next/og', () => ({
 
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import {
-  generateShareCard, shareGasStandInNote, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
+  generateShareCard, shareGasStandInNote, electricityVsLabel, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
   electricityGeoLine, electricityBasisNote,
   GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, ELECTRICITY_SUBLABEL,
 } from '@/lib/share-card/generate'
@@ -156,7 +156,7 @@ describe('share-card text slots stay within their line budgets', () => {
     state: st, stateName: Object.values(STATE_FIPS_MAP).find((v) => v.abbr === st)!.name, current: 59.9, latestPeriod: '2026-12',
   }))
 
-  test('electricity geography line ("Maine · 32.4¢/kWh (Jul \'26)") fits one line for every state', () => {
+  test('electricity geography line ("Maine · 29.3¢/kWh (Jul \'26)") fits one line for every state', () => {
     const lines = elecStates.map((e) => electricityGeoLine(e))
     expect(lines).toContain("DC · 59.9¢/kWh (Dec '26)")
     for (const l of lines) expect([l, monoLines(l, FS.extra)]).toEqual([l, 1])
@@ -226,11 +226,18 @@ describe('share-card text slots stay within their line budgets', () => {
       shelter: sparklineBudget({ sublabel: SHELTER_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: shelterBasisNote(12345) }, 0),
       electricity: sparklineBudget({
         sublabel: ELECTRICITY_SUBLABEL, extra: electricityGeoLine(elecStates.find((e) => e.state === 'MA')!),
-        metaRows: [['since Jan 2025', 'Natl: +10.0%']], note: electricityBasisNote(1999, 'Massachusetts'),
+        metaRows: [[electricityVsLabel('2025-01'), 'Natl: +10.0%']], note: electricityBasisNote(1999, 'Massachusetts'),
       }, 0),
     }
     for (const [k, h] of Object.entries(budgets)) expect([k, h > 60]).toEqual([k, true])
+    expect(monoLines(shelterBasisNote(12345), FS.meta)).toBeGreaterThan(0)
     expect(monoLines(shelterBasisNote(12345), FS.note)).toBe(1)
+    // The electricity meta row ("vs yr to Jan '25" + "Natl: −10.0%") leaves at least a 2-character gap
+    expect(`${electricityVsLabel('2025-01')}  Natl: −10.0%`.length).toBeLessThanOrEqual(monoCharsPerLine(FS.meta))
+    // Borrowed rent bases name their source and still fit one line
+    for (const c of [{ basis: 'nearest-zip', donorZip: '35464' }, { basis: 'po-donor', donorZip: '10025' }, { basis: 'county' }, { basis: 'state' }]) {
+      expect([c.basis, monoLines(shelterBasisNote(12345, c), FS.note)]).toEqual([c.basis, 1])
+    }
     expect(monoLines(groceriesBasisNote(), FS.note)).toBe(1)
     // the short stand-in gas plot drops the mid y-label so max/mid/min never touch; taller plots keep it
     expect(sparklineGeometry([1, 2], { height: budgets.gasStandIn }).showMid).toBe(false)

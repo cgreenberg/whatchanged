@@ -52,7 +52,8 @@ describe('lookup order: EIA city > BLS metro > HI/AK stand-in > EIA state > EIA 
       let want: string
       if (COUNTY_EIA_CITY_OVERRIDES[countyFips]) want = `eia:${COUNTY_EIA_CITY_OVERRIDES[countyFips].duoarea}`
       else if (CPI_TO_EIA_CITY[cpi.areaCode]) want = `eia:${CPI_TO_EIA_CITY[cpi.areaCode].duoarea}`
-      else if (cpi.areaCode.startsWith('S')) want = `bls:${cpi.areaCode}`
+      // BLS monthly metro only where the state has no EIA weekly state average (round 11)
+      else if (cpi.areaCode.startsWith('S') && !STATE_LEVEL_CODES[st]) want = `bls:${cpi.areaCode}`
       else if (st === 'HI') want = 'bls:S49F'
       else if (st === 'AK') want = 'bls:S49G'
       else if (STATE_LEVEL_CODES[st]) want = `eia:${STATE_LEVEL_CODES[st].duoarea}`
@@ -95,7 +96,8 @@ describe('parseBlsGasSeries (real recorded BLS response)', () => {
     expect(s.baseline).toBe(3.133)
     expect(s.latestDate).toBe('2026-08')
     expect(s.current).toBe(4.076)
-    expect(s.change).toBe(0.943)
+    // Change of the prices as displayed ($4.08 − $3.13), so the card's subtraction always checks out
+    expect(s.change).toBe(0.95)
     expect(s.series.every((p) => /^\d{4}-\d{2}$/.test(p.date))).toBe(true)
     expect(isValidGasSeries(s)).toBe(true)
   })
@@ -132,12 +134,12 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     s.gas.data = blsGasData('S12B')
     const c = buildGasCard(s)
     expect(c.value).toBe('$4.08/gal')
-    expect(c.change).toBe('+$0.94 since Jan 2025')
+    expect(c.change).toBe('+$0.95 since Jan 2025')
     // Short card lines: national comparison and "{area} · {source} · {Mon YYYY}"
     expect(c.secondary).toBe('U.S. +$0.99')
     expect(c.sourceLine).toBe('Philadelphia metro · BLS · Aug 2026')
     // The full wording moves into the ⓘ disclosure
-    expect(c.info).toContain('+$0.94/gal since Jan 2025, through Aug 2026 (monthly).')
+    expect(c.info).toContain('+$0.95/gal since Jan 2025, through Aug 2026 (monthly).')
     expect(c.info).toContain('National: $4.20/gal (+$0.99) · U.S. city avg, BLS, Aug 2026')
     expect(provenanceText(c.provenance)).toBe(
       'BLS CPI average price, regular gasoline · Philadelphia-Camden-Wilmington metro avg · monthly · since Jan 2025 · Aug 2026 · not seasonally adjusted'
@@ -148,7 +150,7 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     expect(c.detail).toBe('through Aug 2026 (monthly)')
     expect(c.geoTag).toBe('Philadelphia metro')
     expect(c.asOfPeriod).toBe('2026-08')
-    expect(metadataDescription(s)).toContain("Gas +$0.94/gal (Philadelphia metro, thru Aug '26)")
+    expect(metadataDescription(s)).toContain("Gas +$0.95/gal (Philadelphia metro, thru Aug '26)")
   })
 
   test('national comparison never covers a different month than the local figure', () => {

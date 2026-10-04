@@ -55,14 +55,27 @@ AKS=https://maps.commerce.alaska.gov/server/rest/services
 akq() { dl "$1" "$2/query?where=1%3D1&outFields=$3&returnGeometry=$4&outSR=4326&orderByFields=$5&resultOffset=${6:-0}&resultRecordCount=2000&f=json"; }
 ak_ok=1
 rm -f dcra_gas_*.json
-for off in 0 2000 4000 6000 8000; do
+ak_more=1
+for off in 0 2000 4000 6000 8000 10000 12000 14000 16000 18000; do
   akq "dcra_gas_$off.json" "$AKS/Services/CDO_Utilities/MapServer/6" '*' true OBJECTID $off || { ak_ok=0; break; }
-  grep -q '"exceededTransferLimit":true' "dcra_gas_$off.json" || break
+  grep -q '"exceededTransferLimit": *true' "dcra_gas_$off.json" || { ak_more=0; break; }
 done
+# Paging must end on a page ArcGIS says is the last one: a silently truncated survey would drop communities.
+if [ $ak_ok = 1 ] && [ $ak_more = 1 ]; then
+  echo "ERROR: Alaska DCRA gas layer still reports exceededTransferLimit after 20,000 rows; raise the paging cap" >&2
+  exit 1
+fi
 [ $ak_ok = 1 ] && akq dcra_regional_gas.json "$AKS/Services/CDO_Utilities/MapServer/45" 'Region,AvgGas,Season,ReportingYear,ReportingPeriod' false OBJECTID || ak_ok=0
 [ $ak_ok = 1 ] && akq dcra_communities.json "$AKS/Community_Related/Community_Regions_Overview/MapServer/0" 'CommunityName,BoroughCensusArea,DCRAAlaskaRegion' false OBJECTID || ak_ok=0
 [ $ak_ok = 1 ] && akq dcra_boroughs.json "$AKS/Community_Related/Community_Locations_and_Boundaries/MapServer/3" 'CommunityName,FIPS' false OBJECTID || ak_ok=0
 [ $ak_ok = 1 ] && akq dcra_community_points.json "$AKS/Community_Related/Community_Locations_and_Boundaries/MapServer/0" 'CommunityName,x,y' false OBJECTID || ak_ok=0
+# The single-page layers must fit in one page too
+for f in dcra_regional_gas.json dcra_communities.json dcra_boroughs.json dcra_community_points.json; do
+  if [ $ak_ok = 1 ] && grep -q '"exceededTransferLimit": *true' "$f"; then
+    echo "ERROR: Alaska DCRA layer $f was truncated (exceededTransferLimit); page it" >&2
+    exit 1
+  fi
+done
 [ $ak_ok = 1 ] && dl gaz_zcta.zip https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2023_Gazetteer/2023_Gaz_zcta_national.zip || ak_ok=0
 [ $ak_ok = 1 ] || { echo "WARN: Alaska DCRA fuel survey download failed; the build keeps the committed ak-gas.json" >&2; rm -f dcra_gas_*.json; }
 # Puerto Rico DACO monthly average gasoline prices (xlsx linked from https://www.daco.pr.gov/recursos)

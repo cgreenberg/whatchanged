@@ -31,6 +31,7 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
             testId={`stat-card-${c.id}`}
             label={c.label}
             value={c.value}
+            valueNote={c.valueNote}
             inline={c.inline}
             change={c.change}
             direction={c.direction}
@@ -43,7 +44,10 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
             accentColor={c.accentColor}
             stale={c.stale}
             unavailable={c.status === 'unavailable'}
-            trace={snapshot.trace?.[TRACE_FOR_CARD[c.id]]}
+            trace={c.id === 'shelter' && c.inline
+              // The Shelter card's $ also rests on a rent base: show that step too
+              ? [...(snapshot.trace?.rent ?? []), ...(snapshot.trace?.rentBase ?? [])]
+              : snapshot.trace?.[TRACE_FOR_CARD[c.id]]}
           />
         ))}
       </div>

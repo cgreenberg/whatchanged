@@ -6,7 +6,12 @@
 // spends the runtime upstream budget: a key missing from the cache (and its :lastgood copy) is
 // simply "no data" on the map until the next refresh writes it. Exception: Alaska boroughs outside the
 // Anchorage CBSA take the bundled DCRA community-survey value (src/lib/static-gas.ts akGasForCounty), the
-// same series the gas card's ladder uses there, instead of the Anchorage stand-in.
+// same series the gas card's ladder uses there, instead of the Anchorage stand-in; Puerto Rico takes the bundled
+// DACO island-wide series (src/lib/static-gas.ts lookupPrGas), as the card does, instead of the U.S. average.
+//
+// A value read from a `:lastgood` copy (the fresh key expired) is marked `stale` and counted in `stale`, so the
+// route serves it with a short CDN lifetime. buildMapMetricsMemo keeps one in-process copy for 60 s so repeated
+// requests (CDN misses) cost ~250 Redis reads at most once a minute per instance.
 
 import countyGeoJson from '@/lib/data/county-geo.json'
 import { getCachedEnvelope, lastGoodKey } from '@/lib/cache/kv'
@@ -18,7 +23,7 @@ import { electricityCacheKey, ELECTRICITY_STATES, type ElectricitySeriesData } f
 import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES } from '@/lib/mappings/eia-gas'
 import { cpiShortGeo } from '@/lib/hero-cards'
-import { akGasForCounty } from '@/lib/static-gas'
+import { akGasForCounty, lookupPrGas } from '@/lib/static-gas'
 import countyCentroids from '@/lib/data/county-centroids.json'
 
 interface CountyGeo {
@@ -40,9 +45,11 @@ export interface MapGasArea {
    */
   id: string
   label: string
-  source: 'eia' | 'bls' | 'dcra'
+  source: 'eia' | 'bls' | 'dcra' | 'daco'
   frequency: 'weekly' | 'monthly' | 'semiannual'
   standIn?: true
+  /** Served from the last-good copy (the fresh cache entry expired). */
+  stale?: true
   /** $/gal since the baseline (same figure as the gas card), current $/gal and the latest date; null = not cached. */
   change: number | null
   current: number | null
@@ -55,14 +62,16 @@ export interface MapCpiArea {
   /** CPI food at home % change since its baseline month (same as the groceries card); null = not cached. */
   pct: number | null
   asOf: string | null
+  stale?: true
 }
 
 export interface MapElectricity {
   label: string
-  /** Seasonally adjusted % change since Jan 2025 (same as the electricity card) and the published price. */
+  /** % change of the 12-month average price vs the 12 months ending Jan 2025 (same as the electricity card) and that average price. */
   pct: number
   cents: number
   asOf: string
+  stale?: true
 }
 
 export interface MapMetrics {
@@ -74,6 +83,8 @@ export interface MapMetrics {
   counties: Record<string, [number, number]>
   /** Cache keys with no usable cached copy (the map shows those areas as no data). */
   missing: number
+  /** Cache keys served from their last-good copy (marked `stale` on the area). */
+  stale: number
 }
 
 /** EIA city labels ("Boston area avg") from the mapping tables; states/PADDs are labeled by describeDuoarea. */
@@ -94,17 +105,43 @@ function gasLookupFor(g: CountyGeo): { id: string; lookup: GasLookupResult } {
   return { id: `e:${g.gasDuoarea}`, lookup: describeDuoarea(g.gasDuoarea, eiaCityLabel(g.gasDuoarea)) }
 }
 
-/** The cached copy of a key, else its last-good copy; never fetches. Errors / invalid data → null. */
-export async function readCacheOnly<T>(key: string, validate: (d: T) => boolean): Promise<T | null> {
+/** The cached copy of a key, else its last-good copy (`stale`); never fetches. Errors / invalid data → null. */
+export async function readCacheOnly<T>(key: string, validate: (d: T) => boolean): Promise<{ data: T; stale: boolean } | null> {
   for (const k of [key, lastGoodKey(key)]) {
     try {
       const env = await getCachedEnvelope<T>(k)
-      if (env && validate(env.data)) return env.data
+      if (env && validate(env.data)) return { data: env.data, stale: k !== key }
     } catch {
       // Redis error or cool-down: treat as not cached (the map shows no data; nothing is fetched)
     }
   }
   return null
+}
+
+const MEMO_MS = 60_000
+let memo: { at: number; body: MapMetrics } | null = null
+let inflight: Promise<MapMetrics> | null = null
+
+/** buildMapMetrics, memoized in-process for 60 s (one build at a time). */
+export async function buildMapMetricsMemo(now = Date.now()): Promise<MapMetrics> {
+  if (memo && now - memo.at < MEMO_MS) return memo.body
+  if (!inflight) {
+    inflight = buildMapMetrics()
+      .then((body) => {
+        memo = { at: Date.now(), body }
+        return body
+      })
+      .finally(() => {
+        inflight = null
+      })
+  }
+  return inflight
+}
+
+/** Tests only. */
+export function resetMapMetricsMemo(): void {
+  memo = null
+  inflight = null
 }
 
 export async function buildMapMetrics(): Promise<MapMetrics> {
@@ -118,7 +155,27 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   // (bundled static data, so it is always present), instead of the Anchorage stand-in
   const staticGas = new Map<string, MapGasArea>()
 
+  const pr = lookupPrGas().hit
+
   for (const [fips, g] of Object.entries(COUNTY_GEO)) {
+    // Puerto Rico: DACO's island-wide monthly price (the card's rung), not the U.S. average
+    if (g.state === 'PR' && pr) {
+      const id = 'p:PR'
+      if (!staticGas.has(id)) {
+        staticGas.set(id, {
+          id, label: pr.lookup.geoLevel, source: 'daco', frequency: 'monthly',
+          change: Number(pr.data.change.toFixed(3)), current: pr.data.current, asOf: pr.data.latestDate,
+        })
+        gasIdx.set(id, gasAreas.length)
+        gasAreas.push({ id, lookup: pr.lookup })
+      }
+      if (!cpiIdx.has(g.cpiArea)) {
+        cpiIdx.set(g.cpiArea, cpiAreas.length)
+        cpiAreas.push(g)
+      }
+      counties[fips] = [gasIdx.get(id)!, cpiIdx.get(g.cpiArea)!]
+      continue
+    }
     const ak = g.state === 'AK' && g.gasSource === 'bls' && g.gasTier === 2 ? akGasForCounty(fips, COUNTY_NAMES[fips]?.name) : null
     if (ak) {
       const id = `d:${fips}`
@@ -156,29 +213,36 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   ])
   const gasByKey = new Map(gasKeys.map((k, i) => [k, gasData[i]]))
   let missing = 0
+  let stale = 0
 
   const gas: MapGasArea[] = gasAreas.map(({ id, lookup }) => {
     const fixed = staticGas.get(id)
     if (fixed) return fixed
-    const d = gasByKey.get(lookup.cacheKey) ?? null
+    const hit = gasByKey.get(lookup.cacheKey) ?? null
+    const d = hit?.data ?? null
     return {
       id,
       label: lookup.geoLevel,
-      // Cached areas are live rungs only (EIA or BLS); the static DCRA areas returned above
+      // Cached areas are live rungs only (EIA or BLS); the static DCRA / DACO areas returned above
       source: lookup.source as MapGasArea['source'],
       frequency: lookup.frequency as MapGasArea['frequency'],
       ...(lookup.standIn ? { standIn: true as const } : {}),
+      ...(hit?.stale ? { stale: true as const } : {}),
       change: d ? Number(d.change.toFixed(3)) : null,
       current: d ? d.current : null,
       asOf: d ? d.latestDate : null,
     }
   })
   missing += gasKeys.filter((k) => !gasByKey.get(k)).length
+  stale += gasKeys.filter((k) => gasByKey.get(k)?.stale).length
 
   const groceries: MapCpiArea[] = cpiAreas.map((g, i) => {
-    const d = cpiData[i]
+    const hit = cpiData[i]
+    const d = hit?.data ?? null
     if (!d) missing++
+    if (hit?.stale) stale++
     return {
+      ...(hit?.stale ? { stale: true as const } : {}),
       area: g.cpiArea,
       label: cpiShortGeo({ tier: g.cpiTier, metro: g.cpiName, areaCode: g.cpiArea } as CpiData) ?? g.cpiName,
       pct: d ? Number(d.groceriesChange.toFixed(2)) : null,
@@ -188,13 +252,18 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
 
   const electricity: Record<string, MapElectricity> = {}
   ELECTRICITY_STATES.forEach((st, i) => {
-    const d = elecData[i]
-    if (!d) {
+    const hit = elecData[i]
+    if (!hit) {
       missing++
       return
     }
-    electricity[st] = { label: st === 'DC' ? 'District of Columbia' : d.stateName, pct: d.change, cents: d.current, asOf: d.latestPeriod }
+    const d = hit.data
+    if (hit.stale) stale++
+    electricity[st] = {
+      label: st === 'DC' ? 'District of Columbia' : d.stateName, pct: d.change, cents: d.current, asOf: d.latestPeriod,
+      ...(hit.stale ? { stale: true as const } : {}),
+    }
   })
 
-  return { gas, groceries, electricity, counties, missing }
+  return { gas, groceries, electricity, counties, missing, stale }
 }

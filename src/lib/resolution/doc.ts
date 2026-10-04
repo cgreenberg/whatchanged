@@ -8,7 +8,8 @@ import type { AnyRung } from './resolve'
 export const RESOLUTION_RULES =
   'Each number compares one series with its own January 2025 value — the same source for the baseline and today, ' +
   'never mixed with another source — taken from the most local step below that has data for your area; ' +
-  'if a source publishes nothing there (or is down), we move down one step, and a U.S.-average fallback is always labeled.'
+  'if a source publishes nothing there, we move down one step; if a source is down, we move to the next step from a ' +
+  'different source, or for EIA and BLS outages straight to the U.S. average — and a U.S.-average fallback is always labeled.'
 
 export interface LadderPill {
   rungId: string
@@ -43,6 +44,55 @@ const ON_UNAVAILABLE: Record<string, string> = {
 
 const esc = (s: string) => s.replace(/\|/g, '\\|')
 
+export interface SourceRow {
+  /** Full source name as the rungs cite it. */
+  name: string
+  homepage: string
+  license: string
+  /** "Gas (regular): Alaska community · twice yearly", one per rung that uses it. */
+  usedFor: string[]
+}
+
+/**
+ * Every source the ladders use, one row per distinct source name, in ladder order, plus the sources that feed
+ * numbers outside the ladders (OTHER_SOURCES). The About page's "Data sources" table is this list.
+ */
+export function sourceRows(): SourceRow[] {
+  const rows = new Map<string, SourceRow>()
+  for (const metric of LADDER_ORDER) {
+    const ladder = LADDERS[metric] as { title: string; rungs: AnyRung[] }
+    for (const r of ladder.rungs) {
+      const row = rows.get(r.sourceName) ?? { name: r.sourceName, homepage: r.homepage, license: r.license, usedFor: [] }
+      row.usedFor.push(`${ladder.title}: ${r.pill ?? LEVEL_LABELS[r.level as keyof typeof LEVEL_LABELS]} · ${shortFrequency(r.frequency)}`)
+      rows.set(r.sourceName, row)
+    }
+  }
+  for (const o of OTHER_SOURCES) rows.set(o.name, { ...o, usedFor: [...o.usedFor] })
+  return [...rows.values()]
+}
+
+/** Sources behind numbers that are not a ladder rung's series (dollar bases, graph visibility, geography). */
+export const OTHER_SOURCES: ReadonlyArray<SourceRow> = [
+  {
+    name: 'U.S. Census Bureau, American Community Survey 1-year (table B25040, house heating fuel)',
+    homepage: 'https://data.census.gov/table/ACSDT1Y2024.B25040',
+    license: 'Public domain (U.S. government)',
+    usedFor: ['Home heating graph: shown only where at least 5% of the state’s homes heat with the fuel'],
+  },
+  {
+    name: 'HUD-USPS ZIP crosswalk, Census ZCTA relationship files, OMB metro delineations',
+    homepage: 'https://www.huduser.gov/portal/datasets/usps_crosswalk.html',
+    license: 'Public domain (U.S. government)',
+    usedFor: ['Geography: zip → county → metro area (which series applies to a zip)'],
+  },
+  {
+    name: 'GeoNames postal codes',
+    homepage: 'https://www.geonames.org/',
+    license: 'CC BY 4.0 (attribution: GeoNames, geonames.org)',
+    usedFor: ['Geography: places and counties for USPS-only zips (PO boxes) that have no Census ZCTA'],
+  },
+]
+
 /** docs/DATA_RESOLUTION.md, generated. */
 export function renderLadderDoc(): string {
   const out: string[] = []
@@ -63,7 +113,7 @@ export function renderLadderDoc(): string {
   out.push('U.S. average (the shared, always-warm key). A static source with nothing for a place is "no series here", not an outage.')
   out.push('')
   for (const metric of LADDER_ORDER) {
-    const ladder = LADDERS[metric] as { title: string; comparison?: string; noData?: string; rungs: AnyRung[] }
+    const ladder = LADDERS[metric] as { title: string; comparison?: string; noData?: string; method?: string; rungs: AnyRung[] }
     out.push(`## ${ladder.title} (\`${metric}\`)`)
     out.push('')
     out.push('| # | Rung | Geography | Source | Frequency | Pipeline | If unavailable | Used for |')
@@ -74,6 +124,7 @@ export function renderLadderDoc(): string {
         `${i === ladder.rungs.length - 1 ? '—' : ON_UNAVAILABLE[r.onUnavailable ?? 'next']} | ${esc(r.covers)} |`)
     })
     out.push('')
+    if (ladder.method) out.push(`Method: ${ladder.method}`)
     if (ladder.comparison) out.push(`U.S. comparison: ${ladder.comparison}`)
     if (ladder.noData) out.push(`No rung has data: ${ladder.noData}`)
     const licenses = [...new Set(ladder.rungs.map((r) => `${r.source}: ${r.license}`))]

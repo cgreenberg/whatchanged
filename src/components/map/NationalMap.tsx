@@ -5,7 +5,7 @@ import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, divergingColor, NO_DATA_COLOR,
-  NO_DATA_PATTERN_ID, fmtMonth, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
+  NO_DATA_PATTERN_ID, type ZipPanelOverrides, fmtMonth, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
@@ -32,7 +32,12 @@ async function getJson<T>(url: string): Promise<T> {
   return r.json() as Promise<T>
 }
 
-export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; onZipSelect: (zip: string) => void }) {
+export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
+  countyFips?: string
+  onZipSelect: (zip: string) => void
+  /** The zip's own county: the card's figure where the county-wide map value differs (Alaska survey community, metro rent). */
+  zipOverrides?: ZipPanelOverrides
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -135,14 +140,23 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
   /** Every measure for the selected county, each with its own area (county, metro/region, state). */
   const rows = selected && sel
     ? DEFS.map(d => {
+        const own = selected === countyFips ? zipOverrides : undefined
         if (d.scope === 'county') {
           const text = d.describe(sel)
+          if (!text && d.key === 'rent' && own?.rent) {
+            return { key: d.key, short: d.short, text: own.rent.text, area: own.rent.area, caveat: null }
+          }
           return {
             key: d.key, short: d.short,
-            text: text ?? `No Zillow ${d.short.toLowerCase()} data for this county`,
+            text: text ?? (d.key === 'rent'
+              ? 'No Zillow county rent series (the Rent card uses the county’s metro series where Zillow has one)'
+              : `No Zillow ${d.short.toLowerCase()} data for this county`),
             area: text ? 'county' : null,
             caveat: flagNote(sel, d.key),
           }
+        }
+        if (d.key === 'gas' && own?.gas) {
+          return { key: d.key, short: d.short, text: `${own.gas.text} · ${own.gas.detail}`, area: own.gas.area, caveat: null }
         }
         const v = liveValue(liveData, selected, d.key)
         return {

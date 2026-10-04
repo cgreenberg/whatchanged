@@ -18,7 +18,7 @@ Every number shows its source, geography, time window, as-of date and whether it
 |---|---|---|
 | Gas prices | [EIA](https://www.eia.gov/petroleum/gasdiesel/) weekly retail gasoline; BLS CPI average price (monthly) for CPI metros without an EIA city | EIA city, state, or PADD region; BLS metro |
 | Grocery and shelter prices | [BLS CPI](https://www.bls.gov/cpi/) | CPI metro area, Census division, or national |
-| Electricity prices | [EIA](https://www.eia.gov/electricity/data/browser/) average residential price (¢/kWh), monthly; % change seasonally adjusted by whatchanged | State (statewide average) |
+| Electricity prices | [EIA](https://www.eia.gov/electricity/data/browser/) average residential price (¢/kWh), monthly; card = latest 12-month average price and its % change vs the 12 months ending Jan 2025 | State (statewide average) |
 
 **Bundled (rebuilt by scripts):**
 
@@ -41,7 +41,7 @@ More detail:
 ## Features
 
 - **Hero cards:** gas, rent (or CPI shelter where Zillow has no county rent), groceries and electricity, each with a dollar translation, a short source line and full details behind ⓘ
-- **Graphs:** gas, groceries, housing and electricity, with Jan 2025 / 3Y / 5Y / 10Y ranges, a national overlay and era shading. The housing graph has three tabs: Rent (Zillow ZORI, the same county series as the Rent card), Home prices (Zillow ZHVI) and Shelter (BLS CPI, all tenants and homeowners). The electricity graph shows the state's published monthly price and the seasonally adjusted line behind the card's %
+- **Graphs:** gas, groceries, housing and electricity, with Jan 2025 / 3Y / 5Y / 10Y ranges, a national overlay and a neutral Jan 20, 2025 baseline rule, plus a Home heating graph (heating oil / propane) in states where at least 5% of homes use those fuels. The housing graph has three tabs: Rent (Zillow ZORI, the same county series as the Rent card), Home prices (Zillow ZHVI) and Shelter (BLS CPI, all tenants and homeowners). The electricity graph shows the state's published monthly price and the trailing 12-month average behind the card's number and %
 - **National county map:** gas, rent, home prices, groceries and electricity for every county. Rent and home prices are county figures with biggest movers and a month-by-month time-lapse; gas, groceries and electricity come from metro, regional or statewide series (read from the cache, never fetched by the map), so neighboring counties share a color. Tap a county to see all five and load it
 - **Share images:** auto-generated PNG cards for social media
 

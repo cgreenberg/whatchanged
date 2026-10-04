@@ -161,14 +161,18 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
   } else {
     const metroTab = active === 'rent' && metroRent
     input = zillowTabInput(active, c, us, active === 'rent' ? rentGeo : geoName, undefined, { metro: metroTab })
-    config = active === 'rent' ? housingTabConfigs.rent : housingTabConfigs.homePrices
+    config = active === 'rent'
+      ? metroTab
+        // Metro stand-in: the ⓘ must not say "your county"
+        ? { ...housingTabConfigs.rent, description: `Zillow Observed Rent Index (ZORI): typical asking rent on new leases in the ${rentGeo} (Zillow publishes no usable series for your county), seasonally adjusted by whatchanged. Same series as the Rent card.` }
+        : housingTabConfigs.rent
+      : housingTabConfigs.homePrices
     const series = active === 'rent' ? (metroTab ? c?.rentMS : c?.rentS) : c?.hvS
     const pct = seriesChangeSinceBaseline(series)
     const level = active === 'rent' ? (metroTab ? c?.rentM?.cur : c?.rentCur) : c?.hvCur
     const last = input.data[input.data.length - 1]?.date
-    const caveat = metroTab
-      ? (c?.rentM?.flag ? 'Unusual value: far outside the range most U.S. counties show, so treat it with caution.' : null)
-      : flagNote(c, active === 'rent' ? 'rent' : 'hv')
+    // A flagged metro never stands in (the server's ladder skips it), so only the county's own series can carry a caveat
+    const caveat = metroTab ? null : flagNote(c, active === 'rent' ? 'rent' : 'hv')
     if (pct != null) {
       headline = (
         <ChartHeadline

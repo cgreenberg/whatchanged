@@ -1,23 +1,20 @@
-// Pure helpers for EraChart: timeframe filtering, per-series normalization, era boundaries.
+// Pure helpers for EraChart: timeframe filtering, per-series normalization, reference dates.
 
 import type { Timeframe } from './chart-config'
 import { BASELINE_MONTH, BASELINE_DATE, gasBaselineIndex, monthlyBaselineIndex } from '@/lib/baseline'
 
 export type Row = { date: string; [key: string]: unknown }
 
-/** Inauguration days. Monthly data compare at month precision, weekly/daily at day precision. */
-export const ERAS = [
-  { key: 'obama', start: '2009-01-20', color: 'blue' as const, label: null },
-  { key: 'trump1', start: '2017-01-20', color: 'red' as const, label: 'Jan 2017' },
-  { key: 'biden', start: '2021-01-20', color: 'blue' as const, label: 'Jan 2021' },
-  { key: 'trump2', start: BASELINE_DATE, color: 'red' as const, label: 'Jan 2025' },
-]
-
-/** Spec opacity for era shading. */
-export const ERA_FILL = {
-  blue: 'rgba(59, 130, 246, 0.07)',
-  red: 'rgba(239, 68, 68, 0.07)',
-}
+/**
+ * Neutral time references drawn as faint dotted rules in long views (no party colors, no shading per term):
+ * January 2017 and January 2021, plus the Jan 20, 2025 baseline (drawn separately as the baseline rule).
+ * Monthly data compare at month precision, weekly/daily at day precision.
+ */
+export const REFERENCE_DATES = [
+  { key: 'jan2017', start: '2017-01-20', label: 'Jan 2017' },
+  { key: 'jan2021', start: '2021-01-20', label: 'Jan 2021' },
+  { key: 'baseline', start: BASELINE_DATE, label: 'Jan 2025' },
+] as const
 
 /** Whether a data date falls on/after a boundary day: monthly "2025-01" counts as on/after "2025-01-20". */
 export function onOrAfter(date: string, boundaryDay: string): boolean {
@@ -27,23 +24,6 @@ export function onOrAfter(date: string, boundaryDay: string): boolean {
 
 export function firstOnOrAfter(dates: string[], boundaryDay: string): string | null {
   return dates.find(d => onOrAfter(d, boundaryDay)) ?? null
-}
-
-/** Shaded spans [x1, x2] for each era overlapping the visible dates (x values are actual data dates). */
-export function eraSpans(dates: string[]): Array<{ key: string; x1: string; x2: string; color: 'blue' | 'red' }> {
-  if (!dates.length) return []
-  const spans: Array<{ key: string; x1: string; x2: string; color: 'blue' | 'red' }> = []
-  const last = dates[dates.length - 1]
-  ERAS.forEach((era, i) => {
-    const next = ERAS[i + 1]
-    const x1 = onOrAfter(dates[0], era.start) ? dates[0] : firstOnOrAfter(dates, era.start)
-    if (!x1) return
-    if (next && onOrAfter(dates[0], next.start)) return // era entirely before the window
-    const nextStart = next ? firstOnOrAfter(dates, next.start) : null
-    const x2 = nextStart ?? last
-    if (x1 < x2) spans.push({ key: era.key, x1, x2, color: era.color })
-  })
-  return spans
 }
 
 /**

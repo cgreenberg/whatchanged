@@ -31,11 +31,16 @@ describe('getCensusData — rent provenance', () => {
     expect(r.sourceLabel).toMatch(/same county/)
   })
 
-  test('no local rent figure → U.S. median flagged as a rent fallback (never a dollar base)', () => {
-    for (const zip of ['10020', '96910']) {
-      const r = getCensusData(zip)
-      expect(r).toMatchObject({ source: 'national', isFallback: true, isRentFallback: true })
-      expect(r.medianRent).toBe(NATIONAL_MEDIAN_RENT)
-    }
+  test('zip without its own rent (Rockefeller Center) → nearest same-county zip with one, labeled with the distance', () => {
+    expect(getCensusData('10020')).toMatchObject({
+      basis: 'nearest-zip', donorZip: '10019', source: 'acs', isFallback: false, isRentFallback: false,
+      basisNote: 'borrowed from zip 10019 (nearest with Census rent, 0.5 mi)',
+    })
+  })
+
+  test('no ACS rent at any level (Guam) → no figure at all, flagged as a rent fallback; never the U.S. median', () => {
+    const r = getCensusData('96910')
+    expect(r).toMatchObject({ source: 'none', basis: 'none', isFallback: true, isRentFallback: true })
+    expect(r.medianRent).not.toBe(NATIONAL_MEDIAN_RENT)
   })
 })

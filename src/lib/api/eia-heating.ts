@@ -124,6 +124,15 @@ export function buildHeatingByArea(
   return out
 }
 
+/**
+ * A series EIA simply doesn't have (no rows for the product/area, or no reading in the week before the baseline)
+ * → 'missing' in the refresh report; anything else that fails is 'invalid'.
+ */
+export function isHeatingMissing(e: unknown): boolean {
+  const m = e instanceof Error ? e.message : typeof e === 'string' ? e : ''
+  return /^No heating (oil|propane) data for /.test(m) || /^No (oil|propane) reading for .* within a week before /.test(m)
+}
+
 export function isValidHeating(d: HeatingSeriesData | null | undefined): boolean {
   const ok = (v: unknown, [lo, hi]: readonly [number, number]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi
   return !!d && Array.isArray(d.series) && d.series.length > 0 && ok(d.current, HEATING_PRICE_RANGE) &&
@@ -151,9 +160,16 @@ function lastSeasonMarch(now: Date): string {
 }
 
 /**
+ * In-season staleness threshold. SHOPP publishes Wednesdays (Monday's prices); the weekly refresh runs Tuesday and
+ * a heating-only refresh runs Thursday (.github/workflows/refresh-cache.yml), so the stored week is normally
+ * ≤ 10 days old, and one missed run still leaves it ≤ 16 days: older than that means a real outage.
+ */
+export const HEATING_STALE_DAYS = 16
+
+/**
  * Freshness of a heating-season series: off-season with the season's last weeks → `offSeason` (labeled,
- * not a failure); otherwise `stale` when the latest week is overdue (10 days in season; off-season: the
- * series didn't reach March).
+ * not a failure); otherwise `stale` when the latest week is overdue (HEATING_STALE_DAYS in season; off-season:
+ * the series didn't reach March).
  */
 export function heatingSeasonStatus(latestDate: string, now: Date): { offSeason: boolean; stale: boolean; note?: string } {
   // Early October: once the new season's first week is out, the series is in season again
@@ -167,7 +183,7 @@ export function heatingSeasonStatus(latestDate: string, now: Date): { offSeason:
     }
   }
   const t = Date.parse(`${latestDate}T00:00:00Z`)
-  return { offSeason: false, stale: !Number.isFinite(t) || now.getTime() - t > 10 * DAY }
+  return { offSeason: false, stale: !Number.isFinite(t) || now.getTime() - t > HEATING_STALE_DAYS * DAY }
 }
 
 // ------------------------------------------------------------------ fetching

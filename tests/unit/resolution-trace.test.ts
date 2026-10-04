@@ -56,9 +56,11 @@ const GOLDEN = [
   ['99559', 'Bethel AK: DCRA community survey gas (own community)'],
   ['00901', 'San Juan PR: DACO island-wide monthly gas'],
   ['10950', 'Monroe NY (Orange County): NYSERDA Upper Hudson heating oil, EIA NY propane'],
+  ['55401', 'Minneapolis: EIA weekly Minnesota state gas preferred over the BLS monthly metro'],
+  ['35460', 'Epes AL: Census suppresses the zip rent → nearest zip in the county with a Census rent (labeled)'],
 ] as const
 
-const METRICS = ['gas', 'rent', 'groceries', 'shelter', 'electricity', 'heatingOil', 'propane'] as const
+const METRICS = ['gas', 'rent', 'groceries', 'shelter', 'electricity', 'heatingOil', 'propane', 'rentBase'] as const
 
 describe('trace snapshots (golden zips)', () => {
   test.each(GOLDEN)('%s — %s', async (zip) => {
@@ -108,7 +110,7 @@ describe('trace semantics', () => {
     expect(gaylord.rent).toBeNull()
     const [z, metro, cpi] = gaylord.trace!.rent!
     expect(z).toMatchObject({ status: 'not-applicable', geography: { name: 'Sibley County, MN', level: 'county' } })
-    expect(z.reason).toMatch(/^Zillow has no usable county rent series for Sibley County/)
+    expect(z.reason).toMatch(/^Zillow publishes no rent series for Sibley County/)
     expect(metro).toMatchObject({ rungId: 'rent.zillow-metro', status: 'not-applicable' })
     expect(metro.reason).toMatch(/^Sibley County isn't in a metro with a Zillow rent series/)
     expect(cpi).toMatchObject({ status: 'used', seriesId: 'CUURS24ASAH1', geography: { level: 'metro' } })
@@ -198,11 +200,13 @@ describe('trace semantics', () => {
       'heatingOil.nyserda-region:used', 'heatingOil.eia-shopp-state:not-needed',
     ])
 
-    // Georgia: no SHOPP heating oil, propane only → one tab
+    // Georgia: no SHOPP heating oil; SHOPP propane exists, but only 3.6% of Georgia homes use it (ACS B25040,
+    // under the 5% bar) → no Home heating graph. Maine (50% oil, 16% propane) keeps both tabs.
     const atl = (await fetchSnapshot('30303'))!
     expect(atl.heating!.oil).toBeNull()
     expect(atl.heating!.propane!.data).toMatchObject({ seriesId: 'W_EPLLPA_PRS_SGA_DPG' })
-    expect(heatingTabs(atl)).toEqual(['propane'])
+    expect(heatingTabs(atl)).toEqual([])
+    expect(heatingTabs(portland)).toEqual(['oil', 'propane'])
     // No source at all (Alaska, Puerto Rico): no graph
     expect(heatingTabs((await fetchSnapshot('99701'))!)).toEqual([])
     expect(heatingTabs((await fetchSnapshot('00901'))!)).toEqual([])
@@ -212,7 +216,8 @@ describe('trace semantics', () => {
     const s = (await fetchSnapshot('30303'))!
     const { trace, ...rest } = s
     const added = JSON.stringify(s).length - JSON.stringify(rest).length
-    expect(added).toBeLessThan(6000)
+    // 9 ladders incl. the Shelter $ rent base (5 short rungs)
+    expect(added).toBeLessThan(7500)
     expect(JSON.stringify(trace)).not.toMatch(/"(undefined|null)"/)
   })
 

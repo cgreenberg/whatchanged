@@ -4,6 +4,7 @@ import { EraChart, ChartHeadline } from './EraChart'
 import { getHeatingInput } from './chart-inputs'
 import { heatingTabConfigs } from '@/lib/charts/chart-config'
 import type { EconomicSnapshot } from '@/types'
+import { isHeatingFuelRelevant } from '@/lib/heating-relevance'
 
 export type HeatingTab = 'oil' | 'propane'
 
@@ -12,14 +13,18 @@ const TABS: Array<{ key: HeatingTab; label: string }> = [
   { key: 'propane', label: 'Propane' },
 ]
 
-/** Tabs a place gets: only fuels some source publishes there (a covered fuel whose source failed still shows). */
+/**
+ * Tabs a place gets: fuels some source publishes there (a covered fuel whose source failed still shows) AND that
+ * at least 5% of the state's homes heat with (Census ACS B25040), so the graph only appears where the fuel matters.
+ */
 export function heatingTabs(snapshot: EconomicSnapshot): HeatingTab[] {
-  return TABS.filter(t => !!snapshot.heating?.[t.key]).map(t => t.key)
+  const st = snapshot.location?.stateAbbr
+  return TABS.filter(t => !!snapshot.heating?.[t.key] && isHeatingFuelRelevant(st, t.key)).map(t => t.key)
 }
 
 /**
- * Home heating graph (after Electricity; not a hero card): Heating oil | Propane, tabs only where data exists,
- * and no graph at all where neither fuel has a source.
+ * Home heating graph (after Electricity; not a hero card): Heating oil | Propane, tabs only where data exists and
+ * the fuel matters in the state, and no graph at all otherwise.
  */
 export function HeatingChart({ snapshot }: { snapshot: EconomicSnapshot }) {
   const available = heatingTabs(snapshot)
@@ -60,7 +65,7 @@ export function HeatingChart({ snapshot }: { snapshot: EconomicSnapshot }) {
         stale={input.stale}
         weeklyGasBaseline
         nationalLabel={input.nationalLabel}
-        headline={<>{tabs}{input.headline ? <ChartHeadline testId="heating-headline" pct={input.headline.pct} detail={input.headline.detail} /> : null}</>}
+        headline={<>{tabs}{input.headline ? <ChartHeadline testId="heating-headline" pct={input.headline.pct} detail={input.headline.detail} window={input.headline.window} dim={input.headline.dim} /> : null}</>}
         note={input.note}
         info={input.info}
         trace={snapshot.trace?.[active === 'oil' ? 'heatingOil' : 'propane']}
