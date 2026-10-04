@@ -6,7 +6,9 @@
  *   - the baseline (Jan 2025 / last weekly reading on or before Jan 20 2025) matches
  *   - the latest value shown matches the source value for the same period
  *   - the % change / delta math is internally consistent
- *   - the data is fresh (BLS <= 75 days, EIA <= 14 days)
+ *   - the data is fresh (BLS <= 75 days, EIA gas <= 14 days, EIA electricity <= 100 days)
+ *   - electricity (EIA residential, statewide): Jan 2025 and latest published prices match EIA,
+ *     the seasonally adjusted % and the $/mo are consistent with the fields the site reports
  * Checks whose fields are missing from the API response are reported as SKIP.
  *
  * Usage:
@@ -28,7 +30,8 @@ const DEFAULT_ZIPS = ['98683', '10001', '60601', '78701', '90210', '04101', '061
 const BASE_URL = (process.env.BASE_URL ?? 'https://www.whatchanged.us').replace(/\/$/, '')
 const BLS_URL = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
 const EIA_URL = 'https://api.eia.gov/v2/petroleum/pri/gnd/data/'
-const MAX_AGE_DAYS = { bls: 75, eia: 14 }
+const EIA_ELEC_URL = 'https://api.eia.gov/v2/electricity/retail-sales/data/'
+const MAX_AGE_DAYS = { bls: 75, eia: 14, electricity: 100 }
 const BASELINE_YEAR = '2025'
 const GAS_BASELINE_DATE = '2025-01-20'
 const TIMEOUT_MS = 20_000
@@ -125,6 +128,56 @@ async function fetchEia(duoarea: string): Promise<Array<{ period: string; value:
   return (json?.response?.data ?? [])
     .map((d: Json) => ({ period: String(d.period), value: parseFloat(d.value) }))
     .filter((d: { value: number }) => Number.isFinite(d.value))
+}
+
+// ---------------------------------------------------------------------------
+// EIA: monthly residential electricity price for states (one request; ≤ 5,000 rows)
+// ---------------------------------------------------------------------------
+async function fetchEiaElectricity(states: string[], start = '2025-01'): Promise<Map<string, Map<string, number>>> {
+  const q = new URLSearchParams({ api_key: EIA_KEY ?? 'DEMO_KEY', frequency: 'monthly', start, length: '5000' })
+  q.append('data[0]', 'price')
+  q.append('facets[sectorid][]', 'RES')
+  for (const st of states) q.append('facets[stateid][]', st)
+  const json = await fetchJson(`${EIA_ELEC_URL}?${q}`)
+  const out = new Map<string, Map<string, number>>()
+  for (const d of json?.response?.data ?? []) {
+    const v = parseFloat(d.price)
+    if (!Number.isFinite(v)) continue
+    if (!out.has(d.stateid)) out.set(d.stateid, new Map())
+    out.get(d.stateid)!.set(String(d.period), v)
+  }
+  return out
+}
+
+function checkElectricity(zip: string, snap: Json, elec: Map<string, Map<string, number>> | null) {
+  const e = get(snap, 'electricity.data')
+  if (!e) return add(zip, 'electricity', 'SKIP', get(snap, 'electricity.error') ?? 'no data in response')
+  if (!elec) return add(zip, 'electricity', 'SKIP', 'EIA electricity not fetched')
+  const src = elec.get(e.state)
+  if (!src?.size) return add(zip, 'electricity source', 'FAIL', `EIA returned no residential price for ${e.state}`)
+  add(zip, 'electricity baseline period', e.baselinePeriod === '2025-01' ? 'PASS' : 'FAIL', `${e.baselinePeriod}`)
+  const b = src.get('2025-01')
+  add(zip, 'electricity baseline', isNum(b) && near(e.baseline, b, 0.0051) ? 'PASS' : 'FAIL', `site ${e.baseline} vs EIA ${b} (${e.state}, Jan 2025)`)
+  const l = src.get(e.latestPeriod)
+  const srcLatest = [...src.keys()].sort().pop()
+  if (!isNum(l)) add(zip, 'electricity latest', 'FAIL', `EIA has no ${e.latestPeriod} price for ${e.state}`)
+  else add(zip, 'electricity latest', near(e.current, l, 0.0051) ? 'PASS' : srcLatest === e.latestPeriod ? 'FAIL' : 'WARN', `${e.latestPeriod}: site ${e.current} vs EIA ${l}`)
+  if (srcLatest && srcLatest !== e.latestPeriod) add(zip, 'electricity freshness vs EIA', 'WARN', `site latest ${e.latestPeriod}, EIA latest ${srcLatest} (cache lag)`)
+  if (isNum(e.baseline) && isNum(e.current) && isNum(e.rawChange)) {
+    const exp = ((e.current - e.baseline) / e.baseline) * 100
+    add(zip, 'electricity raw math', near(e.rawChange, exp, 0.011) ? 'PASS' : 'FAIL', `rawChange ${e.rawChange}% vs ${exp.toFixed(2)}%`)
+  }
+  if (isNum(e.saBaseline) && isNum(e.saCurrent) && isNum(e.change)) {
+    const exp = ((e.saCurrent - e.saBaseline) / e.saBaseline) * 100
+    add(zip, 'electricity SA math', near(e.change, exp, 0.02) ? 'PASS' : 'FAIL', `change ${e.change}% vs ${exp.toFixed(2)}% (SA ${e.saBaseline} -> ${e.saCurrent})`)
+    const dollars = get(snap, 'dollarImpact.electricity')
+    if (isNum(dollars) && isNum(e.usageKwh)) {
+      const expD = Math.round(((e.saCurrent - e.saBaseline) * e.usageKwh) / 100)
+      add(zip, 'electricity $/mo', Math.abs(dollars - expD) <= 1 ? 'PASS' : 'FAIL', `$${dollars} vs $${expD} ((${e.saCurrent} − ${e.saBaseline})¢ × ${e.usageKwh} kWh)`)
+    }
+  }
+  const age = daysSince(endOfMonth(String(e.latestPeriod)))
+  add(zip, 'electricity age', age <= MAX_AGE_DAYS.electricity ? 'PASS' : 'FAIL', `${age}d (max ${MAX_AGE_DAYS.electricity})`)
 }
 
 // ---------------------------------------------------------------------------
@@ -323,7 +376,7 @@ async function checkCodes() {
   }
 
   const areas = [...Object.keys(cpiMap.BLS_CPI_AREAS), '0000']
-  const ids = areas.flatMap((a) => [`CUUR${a}SAF11`, `CUUR${a}SAH1`, `CUUR${a}SA0E`, `CUUR${a}SEHA`])
+  const ids = areas.flatMap((a) => [`CUUR${a}SAF11`, `CUUR${a}SAH1`, `CUUR${a}SEHA`])
   try {
     const res = await fetchBls(ids)
     for (const id of ids) {
@@ -347,6 +400,22 @@ async function checkCodes() {
     }
   } catch (e) {
     add('codes', 'BLS gas areas', 'FAIL', (e as Error).message)
+  }
+
+  // EIA residential electricity: every state + DC + US has a Jan 2025 price and a recent month
+  const elecMod = await import('../src/lib/api/eia-electricity')
+  const states = [...elecMod.ELECTRICITY_STATES, 'US']
+  try {
+    const half = Math.ceil(states.length / 2)
+    const res = new Map([...(await fetchEiaElectricity(states.slice(0, half))), ...(await fetchEiaElectricity(states.slice(half)))])
+    for (const st of states) {
+      const m = res.get(st)
+      const latest = m ? [...m.keys()].sort().pop() : undefined
+      const ok = !!m?.has('2025-01') && !!latest && daysSince(endOfMonth(latest)) <= MAX_AGE_DAYS.electricity
+      add('codes', `EIA electricity ${st}`, ok ? 'PASS' : 'FAIL', m?.size ? `Jan 2025 ${m.get('2025-01') ?? 'missing'}, latest ${latest} ${m.get(latest!)}` : 'no data')
+    }
+  } catch (e) {
+    add('codes', 'EIA electricity', 'FAIL', (e as Error).message)
   }
 
   for (const [st, pad] of Object.entries(eiaMap.STATE_TO_PAD) as Array<[string, unknown]>) {
@@ -397,8 +466,20 @@ async function main() {
     add('all', 'BLS series', 'SKIP', 'response exposes no BLS series IDs')
   }
 
-  // 3. Per-zip checks
-  for (const [zip, snap] of snaps) await checkZip(zip, bls, snap)
+  // 3. Per-zip checks (electricity: one EIA request for every state the zips resolve to)
+  const elecStates = [...new Set([...snaps.values()].map((s) => s.electricity?.data?.state).filter((s): s is string => typeof s === 'string'))]
+  let elec: Map<string, Map<string, number>> | null = null
+  if (elecStates.length && EIA_KEY) {
+    try {
+      elec = await fetchEiaElectricity(elecStates)
+    } catch (e) {
+      add('all', 'EIA electricity fetch', 'FAIL', (e as Error).message)
+    }
+  }
+  for (const [zip, snap] of snaps) {
+    await checkZip(zip, bls, snap)
+    checkElectricity(zip, snap, elec)
+  }
 
   if (withCodes) await checkCodes()
 

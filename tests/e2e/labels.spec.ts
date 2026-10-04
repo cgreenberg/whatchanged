@@ -56,12 +56,24 @@ test.describe('Geography and concept labels', () => {
     await expect(toggle).toBeFocused()
   })
 
-  test('card faces stay short (≤ 120 characters outside the ⓘ disclosure)', async ({ page }) => {
-    await enterZip(page, '10001')
-    for (const card of await page.getByTestId('stat-cards').locator('[data-testid^="stat-card-"]').all()) {
-      const visible = (await card.innerText()).replace(/\s+/g, ' ').trim()
-      expect(visible.length, visible).toBeLessThanOrEqual(120)
-    }
+  for (const zip of ['10001', '06902']) {
+    test(`card faces stay short (≤ 120 characters outside the ⓘ disclosure): ${zip}`, async ({ page }) => {
+      await enterZip(page, zip)
+      for (const card of await page.getByTestId('stat-cards').locator('[data-testid^="stat-card-"]').all()) {
+        const visible = (await card.innerText()).replace(/\s+/g, ' ').trim()
+        expect(visible.length, visible).toBeLessThanOrEqual(120)
+      }
+    })
+  }
+
+  test('electricity card: "{State} · EIA · {Mon YYYY}" source line; seasonal method in its ⓘ', async ({ page }) => {
+    await enterZip(page, '06902')
+    const card = page.getByTestId('stat-card-electricity')
+    await expect(card.getByTestId('stat-source')).toHaveText(/^Connecticut · EIA · [A-Z][a-z]{2} \d{4}$/)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(/^[+−]\d+\.\d% since Jan 2025 · U\.S\. [+−]\d+\.\d%$/)
+    await card.getByTestId('stat-info-toggle').click()
+    await expect(card.getByTestId('stat-info')).toContainText('seasonally adjusted prices')
+    await expect(card.getByTestId('provenance')).toContainText('EIA average residential electricity price · Connecticut (statewide average)')
   })
 })
 

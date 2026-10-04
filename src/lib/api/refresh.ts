@@ -6,12 +6,13 @@
 //
 // Upstream use for a full refresh (prices only; county unemployment/LAUS is no
 // longer fetched at runtime):
-//   - BLS: CPI in batches of 11 areas × 4 items (food at home, shelter, energy,
-//     rent of primary residence) + the 3 national overlay items = 47 series (the
-//     batch carrying the national area adds its rent series: 48); the BLS monthly
-//     gas series (APU{area}74714, ~15) fill the spare room in those batches
-//     (≤ 50 series per POST) → 4 BLS calls for a full refresh (37 CPI areas)
-//   - Gas: one EIA GET per EIA duoarea (~22 calls)
+//   - BLS: CPI in batches of 15 areas × 3 items (food at home, shelter, rent of
+//     primary residence) + the 2 national overlay items = 47 series (the batch
+//     carrying the national area adds its rent series: 48); the BLS monthly gas
+//     series (APU{area}74714, 17) fill the spare room in those batches (≤ 50
+//     series per POST) → 3 BLS calls for a full refresh
+//   - Gas: one EIA GET per EIA duoarea (~27 calls)
+//   - Electricity: every state + US in ONE paged EIA query (≈ 7,900 rows → 2 calls)
 
 import zipCountyData from '@/lib/data/zip-county.json'
 import { lookupZip } from '@/lib/data/zip-lookup'
@@ -21,9 +22,18 @@ import { fetchBlsSeries, type BlsRawPoint } from './bls-common'
 import { cpiSeriesIds, cpiCacheKey, parseCpiResponse, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchGasSeries, getGasLookup, type GasLookupResult, type GasSeriesData } from './eia'
 import { parseBlsGasSeries } from './bls-gas'
-import { isValidCpi, isValidGasSeries } from './validate'
+import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
+import {
+  buildElectricityByState,
+  electricityCacheKey,
+  fetchElectricityRows,
+  hasElectricitySeries,
+  NATIONAL_ELECTRICITY,
+  type EiaElectricityRow,
+} from './eia-electricity'
 import {
   CPI_TTL,
+  ELECTRICITY_TTL,
   gasTtlFor,
   NATIONAL_CPI,
   NATIONAL_GAS_LOOKUP,
@@ -33,9 +43,9 @@ import {
 
 /** BLS API v2 with a registration key: max 50 series and 20 years per request. */
 export const BLS_MAX_SERIES_PER_REQUEST = 50
-/** Series per local CPI area: food at home, shelter, energy, rent of primary residence. */
-export const CPI_ITEMS_PER_AREA = 4
-export const CPI_AREAS_PER_REQUEST = 11 // 11 × 4 items + 3 national overlay items (+1 national rent) ≤ 48 series
+/** Series per local CPI area: food at home, shelter, rent of primary residence. */
+export const CPI_ITEMS_PER_AREA = 3
+export const CPI_AREAS_PER_REQUEST = 15 // 15 × 3 items + 2 national overlay items (+1 national rent) ≤ 48 series
 
 // --- Plan --------------------------------------------------------------------
 
@@ -47,6 +57,8 @@ export interface RefreshPlan {
    * national series (overlay + fallback) when any lookup of that source is present.
    */
   gasLookups: GasLookupResult[]
+  /** Every state any zip resolves to that EIA publishes a residential electricity price for, plus 'US'. */
+  electricityStates?: string[]
 }
 
 const ALL_ZIPS = Object.keys(zipCountyData as Record<string, unknown>)
@@ -55,9 +67,11 @@ const ALL_ZIPS = Object.keys(zipCountyData as Record<string, unknown>)
 export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
   const cpi = new Map<string, CpiArea>([[NATIONAL_CPI.areaCode, NATIONAL_CPI]])
   const gas = new Map<string, GasLookupResult>([[NATIONAL_GAS_LOOKUP.cacheKey, NATIONAL_GAS_LOOKUP]])
+  const states = new Set<string>([NATIONAL_ELECTRICITY])
   for (const zip of zips) {
     const location = lookupZip(zip)
     if (!location) continue
+    if (hasElectricitySeries(location.stateAbbr)) states.add(location.stateAbbr.toUpperCase())
     const area = getMetroCpiAreaForCounty(location.countyFips, location.stateAbbr)
     if (!cpi.has(area.areaCode)) cpi.set(area.areaCode, area)
     const lookup = getGasLookup(location.stateAbbr, area.areaCode, location.countyFips)
@@ -72,6 +86,7 @@ export function planRefresh(zips: string[] = ALL_ZIPS): RefreshPlan {
   return {
     cpiAreas: [...cpi.values()].sort((a, b) => a.areaCode.localeCompare(b.areaCode)),
     gasLookups: [...gas.values()].sort((a, b) => a.cacheKey.localeCompare(b.cacheKey)),
+    electricityStates: [...states].sort(),
   }
 }
 
@@ -81,7 +96,7 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return out
 }
 
-/** One BLS POST: CPI areas (their 4 items each, plus the 3 national overlay items) and BLS gas series. */
+/** One BLS POST: CPI areas (their 3 items each, plus the 2 national overlay items) and BLS gas series. */
 export interface BlsRequest {
   ids: string[]
   cpiAreas: CpiArea[]
@@ -95,14 +110,14 @@ export interface BlsRequest {
  */
 export function planBlsRequests(plan: RefreshPlan): BlsRequest[] {
   const nat = cpiSeriesIds(NATIONAL_CPI_AREA)
-  const natIds = [nat.groceries, nat.shelter, nat.energy]
+  const natIds = [nat.groceries, nat.shelter]
   const localCpi = plan.cpiAreas.filter((a) => a.areaCode !== NATIONAL_CPI_AREA)
   const hasNational = plan.cpiAreas.some((a) => a.areaCode === NATIONAL_CPI_AREA)
   const requests: BlsRequest[] = chunk(localCpi, CPI_AREAS_PER_REQUEST).map((batch, i) => ({
     ids: [
       ...batch.flatMap((a) => {
         const s = cpiSeriesIds(a.areaCode)
-        return [s.groceries, s.shelter, s.energy, s.rent]
+        return [s.groceries, s.shelter, s.rent]
       }),
       ...natIds,
       // The national area's own cache entry also carries its rent index
@@ -145,6 +160,8 @@ export interface RefreshReport {
 export interface RefreshDeps {
   fetchBls: (ids: string[]) => Promise<Record<string, BlsRawPoint[]>>
   fetchGas: (duoarea: string) => Promise<GasSeriesData>
+  /** All requested states' electricity rows in one (paged) EIA query (default: the live EIA API). */
+  fetchElectricity?: (states: string[]) => Promise<{ rows: EiaElectricityRow[]; requests: number }>
   write: <T>(key: string, data: T, ttl: number) => Promise<unknown>
   /** Record that upstream has no usable data for `key`, so the runtime does not keep re-fetching it. */
   markMissing?: (key: string) => Promise<unknown>
@@ -155,6 +172,7 @@ export interface RefreshDeps {
 export const defaultRefreshDeps: RefreshDeps = {
   fetchBls: (ids) => fetchBlsSeries(ids, { timeoutMs: 60_000, label: 'BLS refresh' }),
   fetchGas: (duoarea) => fetchGasSeries(duoarea, { timeoutMs: 30_000 }),
+  fetchElectricity: (states) => fetchElectricityRows(states, { timeoutMs: 30_000 }),
   write: (key, data, ttl) => writeEnvelope(key, data, ttl),
   markMissing: (key) => setCached(missingKey(key), true, MISSING_TTL),
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
@@ -275,6 +293,27 @@ export async function runRefresh(
   })
   deps.log(`  EIA: ${eiaLookups.length} series`)
 
+  // EIA electricity — every state + US in one paged query (counted per page).
+  const elecStates = plan.electricityStates ?? []
+  if (elecStates.length) {
+    try {
+      const fetchElectricity = deps.fetchElectricity ?? defaultRefreshDeps.fetchElectricity!
+      const { rows, requests } = await withRetry('eia', () => fetchElectricity(elecStates))
+      report.eiaCalls += Math.max(0, requests - 1)
+      const parsed = buildElectricityByState(rows, elecStates)
+      for (const st of elecStates) {
+        const key = electricityCacheKey(st)
+        const d = parsed[st]
+        if (d instanceof Error) record(key, /No EIA residential electricity price/.test(d.message) ? 'missing' : 'invalid', msg(d))
+        else if (!isValidElectricity(d)) record(key, 'invalid', 'failed sanity validation')
+        else pending.push({ key, ttl: ELECTRICITY_TTL, data: d })
+      }
+    } catch (e) {
+      for (const st of elecStates) record(electricityCacheKey(st), 'error', msg(e))
+    }
+    deps.log(`  EIA electricity: ${elecStates.length} states (incl. US)`)
+  }
+
   // Writes: key + key:lastgood, clears key:failed (same as a runtime fetch).
   await runBounded(pending, writeConcurrency, async (p) => {
     try {
@@ -341,8 +380,8 @@ export function shouldSkipRecentRun(
   return age >= 0 && age < intervalMs
 }
 
-export type RefreshSource = 'cpi' | 'gas'
-const SOURCES: RefreshSource[] = ['cpi', 'gas']
+export type RefreshSource = 'cpi' | 'gas' | 'electricity'
+const SOURCES: RefreshSource[] = ['cpi', 'gas', 'electricity']
 
 export interface RefreshArgs {
   dryRun: boolean
@@ -385,5 +424,5 @@ export function parseRefreshArgs(argv: string[]): RefreshArgs | { error: string 
 
 /** Total number of upstream targets in a plan. */
 export function planSize(plan: RefreshPlan): number {
-  return plan.cpiAreas.length + plan.gasLookups.length
+  return plan.cpiAreas.length + plan.gasLookups.length + (plan.electricityStates?.length ?? 0)
 }

@@ -58,9 +58,9 @@ test('share card renders a PNG with long cache when every source is present', as
     const s = snap()
     expect(t).toContain('RENT')
     expect(t).toContain(`${s.rent!.monthlyChange < 0 ? '−' : '+'}$${Math.abs(s.rent!.monthlyChange)}/mo`)
-    // badge = span of the cards' latest data months (here Aug CPI/rent → Sep weekly gas), never today
+    // badge = span of the cards' latest data months (here Jul electricity, Aug CPI/rent → Sep weekly gas), never today
     expect(t).toContain(`↓ ${dataThroughLabel(buildHeroCards(s))}`)
-    expect(t).toContain('↓ AUG–SEP 2026')
+    expect(t).toContain('↓ JUL–SEP 2026')
     expect(t).not.toContain('$-')
   }
 }, 30000)
@@ -91,7 +91,7 @@ test('OG image is built only from the zip snapshot and ignores free-text params'
   const res = await GET(new NextRequest('http://x/api/og?zip=78701&location=HACKED&groceries=999%25'))
   expect(res.status).toBe(200)
   expect(res.headers.get('cache-control')).toMatch(/s-maxage=\d+/)
-  expect(mockFetch).toHaveBeenCalledWith('78701', undefined, undefined)
+  expect(mockFetch).toHaveBeenCalledWith('78701')
   if (!process.env.REAL_OG) {
     const t = textOf(mockRendered[mockRendered.length - 1])
     expect(t).not.toContain('HACKED')
@@ -163,7 +163,11 @@ test('OG zip card shows gas geography and the rent adjustment', async () => {
   // every number carries a short geography line
   expect(t).toContain('Travis Co.')
   expect(t).toContain('West South Central div.')
-  expect(t).toContain('zip income')
+  // electricity: the seasonally adjusted % with its statewide geography
+  expect(t).toContain('ELECTRICITY')
+  expect(t).toContain(`${s.electricity.data!.change > 0 ? '+' : ''}${s.electricity.data!.change.toFixed(1)}%`)
+  expect(t).toContain('Texas (statewide)')
+  expect(t).not.toMatch(/tariff|income/i)
   expect(t).not.toContain('†')
 }, 30000)
 
@@ -232,22 +236,20 @@ test('share card: EIA national is tagged EIA', async () => {
   expect(textOf(mockRendered[mockRendered.length - 1])).toMatch(/Natl \(EIA [A-Z][a-z]{2} \d{1,2}\): [+−-]\$\d\.\d{2}/)
 }, 30000)
 
-test('share card tariff names where the income comes from; national CPI fallback is labeled', async () => {
+test('share card: national CPI fallback is labeled and never applied to local rent', async () => {
   if (process.env.REAL_OG) return
   const s = snap()
-  s.census.data = { ...s.census.data!, incomeGeo: 'county', source: 'acs' }
   s.rent = null
   s.cpi.data = { ...s.cpi.data!, fallback: 'national', tier: 4, metro: 'National' }
   mockFetch.mockResolvedValue(s)
   await generateShareCard('78701')
   const t = textOf(mockRendered[mockRendered.length - 1])
-  expect(t).toMatch(/based on median income of\s+\$\d+k\s*\(county\)/)
   expect(t).toContain('CPI: national (local data unavailable)')
   // national CPI is never applied to local rent
   expect(t).not.toMatch(/\+\$754\/yr/)
 }, 30000)
 
-test('share routes cap city/state length before using them', async () => {
+test('share routes ignore free-text city/state: the image comes from the zip alone', async () => {
   jest.resetModules()
   const gen = jest.fn(async () => new Response('ok'))
   jest.doMock('@/lib/share-card/generate', () => ({ generateShareCard: gen }))
@@ -256,9 +258,6 @@ test('share routes cap city/state length before using them', async () => {
   await share.GET(new Request(`http://x/api/share/78701?city=${long}&state=TXXX`), { params: Promise.resolve({ zip: '78701' }) })
   const card = await import('@/app/api/card-image/route')
   await card.GET(new Request(`http://x/api/card-image?zip=78701&city=${long}&state=TXXX`))
-  for (const call of gen.mock.calls as unknown as Array<[string, string, string]>) {
-    expect(call[1].length).toBe(100)
-    expect(call[2]).toBe('TX')
-  }
+  expect(gen.mock.calls).toEqual([['78701'], ['78701']])
   expect(gen).toHaveBeenCalledTimes(2)
 })

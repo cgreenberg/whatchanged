@@ -1,4 +1,5 @@
 import type { DollarImpact } from '@/lib/compute/dollar-translations'
+import type { ElectricitySeriesData, ElectricityPoint } from '@/lib/api/eia-electricity'
 
 export interface ZipInfo {
   zip: string
@@ -23,7 +24,6 @@ export interface CpiPoint {
   /** null for a month where this area's groceries series has no value (another item does). */
   groceries: number | null
   shelter: number | null
-  energy: number | null
   /** true when any item value at this date is a BLS preliminary estimate. */
   preliminary?: true
 }
@@ -55,7 +55,7 @@ export interface CpiData {
   tier: 1 | 2 | 3 | 4
   areaCode?: string
   /** `rent` (CUUR{area}SEHA) is absent on payloads cached before the rent index was fetched. */
-  seriesIds?: { groceries: string; shelter: string; energy: string; rent?: string }
+  seriesIds?: { groceries: string; shelter: string; rent?: string }
   nationalSeries?: CpiPoint[]
   /** 'national' when the local CPI area failed and national CPI is shown instead (shelter $ impact is then null). */
   fallback?: 'national'
@@ -63,7 +63,7 @@ export interface CpiData {
    * Items whose own latest month is stale (or all items when a last-good copy is served).
    * Set per snapshot, not cached; absent on older payloads (then `cpi.stale` applies to every item).
    */
-  staleItems?: Array<'groceries' | 'shelter' | 'energy'>
+  staleItems?: Array<'groceries' | 'shelter'>
 }
 
 export interface GasPriceData {
@@ -108,43 +108,39 @@ export interface GasPriceData {
   unpublished?: string[]
 }
 
+/** Census ACS median gross rent for the zip (bundled JSON): the base of the shelter card's dollar figure. */
 export interface CensusData {
-  medianIncome: number
+  /** Local median gross rent, or the U.S. median when isRentFallback (never used for a dollar figure then). */
   medianRent: number
   zip: string
-  /** Data year of `income`: ACS 5-year end year (e.g. 2023), or 2022 for the national CPS fallback. */
+  /** ACS 5-year end year of the rent figure. */
   year: number
-  /** Median household income used for this zip (same value as medianIncome). */
-  income?: number
-  /** Median gross rent shown for this zip (same value as medianRent; national when isRentFallback). */
+  /** Same value as medianRent. */
   rent?: number
-  /** 'acs' = Census ACS (zip, city, donor zip or county); 'national' = U.S. median (Census CPS ASEC 2022). */
+  /** 'acs' = Census ACS (zip or donor zip); 'national' = no local rent figure. */
   source?: 'acs' | 'national'
-  /** Geography of `income`. 'zip' with donorZip set = borrowed from another zip. */
-  incomeGeo?: 'city' | 'zip' | 'county' | 'national'
-  /** County/planning-region FIPS whose ACS median is used when incomeGeo === 'county'. */
-  incomeCountyFips?: string
   /** USPS-only zip: ACS values borrowed from this residential zip. */
   donorZip?: string
   /** How donorZip was chosen: largest residential zip in the same city ('city') or most populous in the county ('county'). */
   donorScope?: 'city' | 'county'
-  /** Human-readable provenance, e.g. "Census ACS 2023 5-year, county median (Clark County, WA)". */
+  /** Human-readable provenance, e.g. "Census ACS 2023 5-year, zip 98683". */
   sourceLabel?: string
   isFallback?: boolean
   isRentFallback?: boolean
-  isCityLevel?: boolean
-  cityName?: string
   /** Set for USPS-only zips (no ZCTA): ACS values borrowed from this residential zip (an estimate). */
   approxFromZip?: string
 }
 
-export interface TariffData {
-  medianIncome: number
-  tariffRate: number
-  estimatedCost: number
-  source: string
-  incomeSource: string
-  isFallback: boolean
+/**
+ * EIA average residential electricity price for the zip's state (statewide), with the U.S. average
+ * over the same months. `change` is the seasonally adjusted % change since Jan 2025.
+ */
+export interface ElectricityData extends ElectricitySeriesData {
+  /** U.S. average series (same method) for the graph's "Show national". */
+  nationalSeries?: ElectricityPoint[]
+  /** U.S. seasonally adjusted % change over the same months as the local figure. */
+  nationalChange?: number
+  nationalLatestPeriod?: string
 }
 
 /** County asking rent on new leases (Zillow ZORI), from src/lib/data/county-rent.json. */
@@ -173,6 +169,7 @@ export interface RentData {
 export interface CacheStatus {
   cpi: 'hit' | 'miss' | 'stale' | 'error'
   gas: 'hit' | 'miss' | 'stale' | 'error'
+  electricity?: 'hit' | 'miss' | 'stale' | 'error'
   census: 'hit' | 'miss'
 }
 
@@ -182,7 +179,8 @@ export interface EconomicSnapshot {
   cpi: DataResult<CpiData>
   gas: DataResult<GasPriceData>
   census: DataResult<CensusData>
-  tariff: DataResult<TariffData>
+  /** Statewide EIA residential electricity price (data null for territories: EIA publishes none). */
+  electricity: DataResult<ElectricityData>
   /** County Zillow rent (null when the zip's county has no seasonally adjusted rent series). */
   rent?: RentData | null
   dollarImpact?: DollarImpact

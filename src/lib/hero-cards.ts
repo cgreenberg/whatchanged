@@ -1,7 +1,7 @@
 // Pure view-model builder for the four hero cards. Everything displayed comes from the
 // API snapshot (no frontend dollar fallbacks, no national stand-ins shown as local).
 
-import type { EconomicSnapshot, CensusData, CpiData, GasPriceData } from '@/types'
+import type { EconomicSnapshot, CensusData, CpiData, GasPriceData, ElectricityData } from '@/types'
 import type { Provenance } from '@/lib/provenance'
 import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
@@ -28,7 +28,7 @@ import {
   DATE_UNAVAILABLE,
 } from '@/lib/format'
 
-export type HeroCardId = 'gas' | 'rent' | 'shelter' | 'groceries' | 'tariff'
+export type HeroCardId = 'gas' | 'rent' | 'shelter' | 'groceries' | 'electricity'
 
 export interface HeroCardModel {
   id: HeroCardId
@@ -37,7 +37,7 @@ export interface HeroCardModel {
   status: 'ok' | 'unavailable'
   /** Big number on the card. */
   value?: string
-  /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent". */
+  /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent", "≈ +$33/mo". */
   inline?: string
   /** Gas only: its signed $ change since the baseline, shown under the big number ("+$0.87 since Jan 2025"). */
   change?: string
@@ -203,7 +203,7 @@ export function gasShortGeo(g: GasPriceData | null | undefined, stateAbbr?: stri
 }
 
 /** Stale badge for one CPI item: its own flag when the payload has per-item staleness, else the CPI-wide flag. */
-export function cpiItemStale(s: Pick<EconomicSnapshot, 'cpi'>, item: 'groceries' | 'shelter' | 'energy'): boolean {
+export function cpiItemStale(s: Pick<EconomicSnapshot, 'cpi'>, item: 'groceries' | 'shelter'): boolean {
   const items = s.cpi?.data?.staleItems
   return Array.isArray(items) ? items.includes(item) : !!s.cpi?.stale
 }
@@ -227,6 +227,9 @@ export interface HeroCountyContext {
 export const SANITY = {
   gasPrice: [1, 10] as const,
   pctChange: [-20, 50] as const,
+  /** EIA residential electricity, ¢/kWh and % change (mirrors validate.ts). */
+  electricityPrice: [5, 60] as const,
+  electricityChange: [-50, 100] as const,
 }
 
 const inRange = (v: unknown, [lo, hi]: readonly [number, number]): v is number =>
@@ -242,6 +245,8 @@ export const HOUSING_NOTE =
   'Rent and Home prices are Zillow market measures for your county: asking rents on new leases and the typical home value. ' +
   'Shelter (CPI) is the BLS index of rent, plus owners\' equivalent rent for homeowners — not mortgage payments or home prices — ' +
   'and includes existing leases, so it trails new-lease rents by about a year.'
+/** One short line under the Housing graph's Shelter (CPI) tab; the full HOUSING_NOTE is in its ⓘ. */
+export const SHELTER_SHORT_NOTE = 'All tenants plus homeowners (owners\' equivalent rent); trails new-lease rents by about a year.'
 /** EIA tiers: weekly retail regular gasoline. */
 export const GAS_SOURCE = 'EIA weekly retail regular gasoline'
 /** BLS tiers: CPI average price data, gasoline (unleaded regular), monthly. */
@@ -303,15 +308,6 @@ export function nationalChangeMatching<T extends { date: string }>(
   return monthlyChangeSinceBaseline(capped, value)
 }
 
-/** Where the zip's income figure comes from: its own/city ACS, the county ACS median, or the U.S. median. */
-export function censusSourceOf(c: CensusData | null | undefined): 'acs' | 'county' | 'national' | null {
-  if (!c) return null
-  if (c.source === 'national' || c.incomeGeo === 'national') return 'national'
-  if (c.incomeGeo === 'county') return 'county'
-  if (c.source === 'acs') return 'acs'
-  return c.isFallback ? 'national' : 'acs'
-}
-
 export function censusDonorZip(c: CensusData | null | undefined): string | undefined {
   if (!c) return undefined
   return c.donorZip ?? c.approxFromZip
@@ -325,12 +321,8 @@ export function donorPhrase(c: CensusData | null | undefined): string | null {
   return `borrowed from zip ${donor} (largest residential zip in ${where})`
 }
 
-/** "Census ACS 2023"; for the national fallback, its real source (e.g. "Census CPS ASEC 2022"). */
+/** "Census ACS 2023" (the rent base is only used when it is a local ACS figure). */
 function censusLabel(c: CensusData): string {
-  if (censusSourceOf(c) === 'national') {
-    const m = /(Census\b.*?\d{4})/.exec(c.sourceLabel ?? '')
-    return m ? m[1] : `Census ${c.year}`
-  }
   return `Census ACS ${c.year}`
 }
 
@@ -343,7 +335,7 @@ export const ACCENTS = {
   rent: '#3B82F6',
   shelter: '#3B82F6',
   groceries: '#EF4444',
-  tariff: '#A855F7',
+  electricity: '#10B981',
 } as const
 
 // ---------------------------------------------------------------- Gas
@@ -639,86 +631,101 @@ export function buildGroceryCard(s: EconomicSnapshot): HeroCardModel {
   }
 }
 
-// ---------------------------------------------------------------- Tariff
+// ---------------------------------------------------------------- Electricity
 
-/** "local income", "city income", "county income", "nearby-zip income", "U.S. median income". */
-function tariffIncomePhrase(s: EconomicSnapshot): string {
-  const tag = tariffIncomeTag(s)
-  if (tag === 'U.S.') return 'U.S. median income'
-  if (tag === 'city' || tag === 'county') return `${tag} income`
-  if (tag === 'nearby zip') return 'nearby-zip income'
-  return 'local income'
+export const ELECTRICITY_SOURCE = 'EIA average residential electricity price'
+export const ELECTRICITY_SOURCE_URL = 'https://www.eia.gov/electricity/data/browser/'
+export const ELECTRICITY_ADJUSTMENT = 'seasonally adjusted by whatchanged'
+/** Why the % compares seasonally adjusted prices (ⓘ on the card and the graph). */
+export const ELECTRICITY_SEASONAL_NOTE =
+  'Residential electricity prices are seasonal (in many states the summer price per kWh runs well above winter\'s), ' +
+  'so the % change compares seasonally adjusted prices: each state\'s typical month-to-month pattern over 2014–2024 is removed. ' +
+  'The price shown is the published monthly average.'
+/** Territories: EIA publishes no residential retail price. */
+export const ELECTRICITY_TERRITORY_NOTE = (place: string) => `EIA publishes no residential electricity price for ${place}.`
+
+/** "Maine", "District of Columbia" → "DC" on space-limited surfaces. */
+export function electricityPlace(e: Pick<ElectricityData, 'state' | 'stateName'> | null | undefined, style: 'full' | 'short' = 'full'): string {
+  if (!e) return 'state'
+  if (e.state === 'DC') return style === 'short' ? 'DC' : 'District of Columbia'
+  return e.stateName || e.state
 }
 
-export function buildTariffCard(s: EconomicSnapshot): HeroCardModel {
-  const t = s.tariff.data
-  const census = s.census.data
-  const src = t?.isFallback ? 'national' : censusSourceOf(census)
-  const donor = src === 'acs' ? donorPhrase(census) : null
-  // County fallback: the lookup's own label names the area it used (CT: the planning region)
-  const countyName = /county median \(([^)]+)\)/.exec(census?.sourceLabel ?? '')?.[1] ?? s.location?.countyName
-  const geography = !t
-    ? 'income unavailable'
-    : src === 'national'
-      ? 'national'
-      : census?.isCityLevel && census.cityName
-        ? `${census.cityName} city median income`
-        : src === 'county'
-          ? `${countyName ?? 'county'} median income (no zip figure)`
-          : donor
-            ? `zip ${s.zip} area median income (estimate)`
-            : `zip ${s.zip} median income`
-  const incomeAsOf = typeof census?.year !== 'number'
-    ? DATE_UNAVAILABLE
-    : src === 'national'
-      ? `U.S. median income (${censusLabel(census)}) — no local data`
-      : `income: ${censusLabel(census)}${src === 'county' ? ' county median' : ''}${donor ? `, ${donor}` : ''}`
+/** "32.4¢/kWh". */
+export const fmtCents = (v: number) => `${v.toFixed(1)}¢/kWh`
+
+export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
+  const e = s.electricity?.data ?? null
+  const st = s.location?.stateAbbr
+  const place = e ? electricityPlace(e) : (st && TERRITORY_NAMES[st]) || s.location?.stateName || 'this area'
   const provenance: Provenance = {
-    source: 'Yale Budget Lab',
-    sourceUrl: 'https://budgetlab.yale.edu/research/where-we-stand-fiscal-economic-and-distributional-effects-all-us-tariffs',
-    geography,
-    window: 'annual cost estimate',
-    asOf: incomeAsOf,
-    adjustment: 'estimate, not a measured change',
+    source: ELECTRICITY_SOURCE,
+    sourceUrl: ELECTRICITY_SOURCE_URL,
+    geography: e ? `${place} (statewide average)` : place,
+    window: `since ${e ? fmtMonthYear(e.baselinePeriod) : BASELINE_MONTH_LABEL}`,
+    asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
+    adjustment: `% change ${ELECTRICITY_ADJUSTMENT}`,
   }
-  const base = { id: 'tariff' as const, label: 'Tariff (est.)', accentColor: ACCENTS.tariff, provenance, sourceLine: 'Yale Budget Lab' }
-  const ESTIMATE = "Estimate: median household income × 2.05%, Yale Budget Lab's estimate of the average household cost of tariffs as a share of income. Not a measured change."
-  if (!t || !(t.medianIncome > 0) || !(t.estimatedCost > 0)) return { ...base, status: 'unavailable', info: [ESTIMATE] }
-  const rate = `${(t.tariffRate * 100).toFixed(2)}%`
-  const dollarNote = `${rate} of ${fmtDollars(t.medianIncome)} median household income`
+  const base = {
+    id: 'electricity' as const,
+    label: 'Electricity',
+    accentColor: ACCENTS.electricity,
+    provenance,
+    stale: !!s.electricity?.stale,
+    sourceLine: sourceLineOf(e ? electricityPlace(e, 'short') : place, 'EIA', e ? fmtMonthYear(e.latestPeriod) : undefined),
+  }
+  if (!e) {
+    const territory = st && TERRITORY_NAMES[st]
+    return { ...base, status: 'unavailable', info: compact([territory ? ELECTRICITY_TERRITORY_NOTE(territory) : undefined]) }
+  }
+  if (!inRange(e.current, SANITY.electricityPrice) || !inRange(e.change, SANITY.electricityChange)) {
+    return { ...base, status: 'unavailable', info: [ELECTRICITY_SEASONAL_NOTE] }
+  }
+  const dollars = s.dollarImpact?.electricity
+  const hasDollars = typeof dollars === 'number' && Number.isFinite(dollars) && typeof e.usageKwh === 'number'
+  const usage = hasDollars
+    ? `${Math.round(e.usageKwh!).toLocaleString('en-US')} kWh` +
+      (e.usageFrom && e.usageTo ? `, 12-mo avg ${fmtMonthYear(e.usageFrom)}–${fmtMonthYear(e.usageTo)}` : ', 12-mo avg')
+    : null
+  const priceChange = e.saCurrent - e.saBaseline
+  const dollarNote = hasDollars
+    ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo: price change (${priceChange >= 0 ? '+' : '−'}${Math.abs(priceChange).toFixed(2)}¢/kWh, seasonally adjusted) × an average ${place} home's monthly use (${usage})`
+    : undefined
+  const detail = `Published price: ${fmtCents(e.current)} in ${fmtMonthYear(e.latestPeriod)} vs ${fmtCents(e.baseline)} in ${fmtMonthYear(e.baselinePeriod)} ` +
+    `(${fmtSignedPct(e.rawChange)} unadjusted; ${fmtSignedPct(e.change)} after removing the usual seasonal pattern).`
+  const natOk = typeof e.nationalChange === 'number' && Number.isFinite(e.nationalChange)
+  const nationalValue = natOk ? `National: ${fmtSignedPct(e.nationalChange!)} (U.S. average, EIA, same method and months)` : undefined
   return {
     ...base,
     status: 'ok',
-    geoTag: tariffIncomeTag(s),
-    value: `~${fmtDollars(t.estimatedCost)}/yr`,
-    direction: 'neutral',
-    secondary: `${rate} of ${tariffIncomePhrase(s)}`,
+    geoTag: electricityPlace(e, 'short'),
+    value: fmtCents(e.current),
+    inline: hasDollars ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo` : undefined,
+    direction: directionOf(e.change),
+    secondary: sourceLineOf(`${fmtSignedPct(e.change)} since ${fmtMonthYear(e.baselinePeriod)}`, natOk ? `U.S. ${fmtSignedPct(e.nationalChange!)}` : undefined),
     dollarNote,
-    info: [`${dollarNote}.`, ESTIMATE],
+    detail,
+    nationalValue,
+    info: compact([
+      dollarNote ? `${dollarNote}.` : 'Dollar estimate unavailable (no recent usage figure for this state).',
+      detail,
+      ELECTRICITY_SEASONAL_NOTE,
+      nationalValue,
+      `Statewide average across utilities: your own rate and bill can differ.`,
+    ]),
+    asOfPeriod: e.latestPeriod,
   }
-}
-
-/** Where the tariff estimate's income comes from, in one or two words: "county", "nearby zip", "U.S.". */
-export function tariffIncomeTag(s: EconomicSnapshot): string | undefined {
-  const t = s.tariff.data
-  if (!t) return undefined
-  const census = s.census.data
-  const src = t.isFallback ? 'national' : censusSourceOf(census)
-  if (src === 'national') return 'U.S.'
-  if (census?.isCityLevel) return 'city'
-  if (src === 'county') return 'county'
-  return censusDonorZip(census) ? 'nearby zip' : 'zip'
 }
 
 // ---------------------------------------------------------------- All
 
-/** Gas, Rent (or CPI shelter fallback), Groceries, Tariff — always four cards. */
+/** Gas, Rent (or CPI shelter fallback), Groceries, Electricity — always four cards. */
 export function buildHeroCards(s: EconomicSnapshot, county?: HeroCountyContext | null): HeroCardModel[] {
   return [
     buildGasCard(s),
     buildRentCard(s, county) ?? buildShelterCard(s),
     buildGroceryCard(s),
-    buildTariffCard(s),
+    buildElectricityCard(s),
   ]
 }
 
@@ -777,7 +784,9 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
     if (c.id === 'rent') parts.push(`Rent ${c.value}${mark(c)}${tag(c)}`)
     if (c.id === 'shelter') parts.push(`Shelter CPI ${c.value}${tag(c)}`)
     if (c.id === 'groceries') parts.push(`Groceries ${c.value}${tag(c)}`)
-    if (c.id === 'tariff') parts.push(`Tariffs ${c.value} est.${c.geoTag ? ` (${c.geoTag} income)` : ''}`)
+    if (c.id === 'electricity' && snapshot.electricity?.data) {
+      parts.push(`Electricity ${fmtSignedPct(snapshot.electricity.data.change)}${tag(c)}`)
+    }
   }
   const head = parts.length ? `Since ${BASELINE_MONTH_LABEL}: ` : ''
   const gasStandIn = cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)

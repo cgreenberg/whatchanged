@@ -5,12 +5,11 @@ import type {
   EconomicSnapshot,
   DataResult,
   CensusData,
-  TariffData,
   CacheStatus,
   CpiData,
   GasPriceData,
+  ElectricityData,
 } from '@/types'
-import { estimateTariffCost } from '@/lib/tariff'
 import { getCountyRent } from '@/lib/rent'
 import { computeDollarImpact } from '@/lib/compute/dollar-translations'
 import { getGasLookup, isGasStale, toGasPriceData } from './eia'
@@ -20,11 +19,14 @@ import { monthOlderThan } from '@/lib/hero-cards'
 import {
   getCpiCached,
   getGasSeriesCached,
+  getElectricityCached,
+  getNationalElectricityCached,
   nationalGasLookupFor,
   NATIONAL_CPI,
   NATIONAL_GAS_LOOKUP,
   settle,
 } from './cached-sources'
+import { hasElectricitySeries, type ElectricitySeriesData } from './eia-electricity'
 
 /**
  * BLS data whose latest month ended more than this many days ago is shown with the stale badge.
@@ -36,6 +38,35 @@ export const BLS_STALE_DAYS = 75
 /** true when a YYYY-MM BLS period ended more than BLS_STALE_DAYS before `now`. Unknown period → false. */
 export function isBlsPeriodStale(period: string | null | undefined, now: Date = new Date()): boolean {
   return monthOlderThan(period?.slice(0, 7), BLS_STALE_DAYS, now)
+}
+
+/**
+ * EIA monthly electricity is published ~2 months after the month ends (Jul data in late Sep), so a
+ * latest month older than this means a release was missed.
+ */
+export const ELECTRICITY_STALE_DAYS = 100
+
+export function isElectricityPeriodStale(period: string | null | undefined, now: Date = new Date()): boolean {
+  return monthOlderThan(period?.slice(0, 7), ELECTRICITY_STALE_DAYS, now)
+}
+
+/**
+ * Attach the U.S. series and the U.S. seasonally adjusted % change over the SAME months as the
+ * local figure (Jan 2025 → the local latest month); omitted when the U.S. lacks either month.
+ */
+export function withNationalElectricity(local: ElectricitySeriesData, us: ElectricitySeriesData | null): ElectricityData {
+  if (!us || local.state === us.state) return { ...local }
+  const at = (d: string) => us.series.find((p) => p.date === d)?.sa
+  const b = at(local.baselinePeriod)
+  const l = at(local.latestPeriod)
+  const nationalChange = typeof b === 'number' && typeof l === 'number' && b > 0
+    ? Number((((l - b) / b) * 100).toFixed(2))
+    : undefined
+  return {
+    ...local,
+    nationalSeries: us.series,
+    ...(nationalChange !== undefined ? { nationalChange, nationalLatestPeriod: local.latestPeriod } : {}),
+  }
 }
 
 export interface SnapshotOptions {
@@ -67,8 +98,6 @@ function wrap<T>(
 
 export async function fetchSnapshot(
   zip: string,
-  city?: string,
-  state?: string,
   options: SnapshotOptions = {}
 ): Promise<EconomicSnapshot | null> {
   const location = lookupZip(zip)
@@ -87,10 +116,14 @@ export async function fetchSnapshot(
 
   // Fetch all external sources in parallel, each through its own cache key.
   // National gas is a single shared key per source (used for the overlay and as fallback).
-  const [cpiPrimary, gasPrimary, gasNational] = await Promise.all([
+  // Electricity: the zip's state (statewide average) + the shared U.S. key. Territories: EIA publishes none.
+  const elecState = hasElectricitySeries(location.stateAbbr) ? location.stateAbbr.toUpperCase() : null
+  const [cpiPrimary, gasPrimary, gasNational, elecLocal, elecNational] = await Promise.all([
     settle(getCpiCached(cpiArea, opts), 'bls-cpi'),
     settle(getGasSeriesCached(gasLookup, opts), gasLabel),
     gasIsNational ? Promise.resolve(null) : settle(getGasSeriesCached(gasNationalLookup, opts), `${gasLabel}-national`),
+    elecState ? settle(getElectricityCached(elecState, opts), 'eia-electricity') : Promise.resolve(null),
+    elecState ? settle(getNationalElectricityCached(opts), 'eia-electricity-national') : Promise.resolve(null),
   ])
 
   // CPI: if the local area failed, fall back to the shared national CPI key
@@ -146,13 +179,9 @@ export async function fetchSnapshot(
   // Per-item staleness: each item from its OWN latest month (a lagging series, e.g. Phoenix food at
   // home, gets the badge even when shelter is current). A last-good copy marks every item stale.
   const cpiStaleItems = cpiBase
-    ? (['groceries', 'shelter', 'energy'] as const).filter((item) => {
+    ? (['groceries', 'shelter'] as const).filter((item) => {
         if (cpiResult?.stale) return true
-        const latest = item === 'groceries'
-          ? cpiBase.groceriesLatestPeriod
-          : item === 'shelter'
-            ? cpiBase.shelterLatestPeriod
-            : [...(cpiBase.series ?? [])].reverse().find((p) => typeof p.energy === 'number')?.date
+        const latest = item === 'groceries' ? cpiBase.groceriesLatestPeriod : cpiBase.shelterLatestPeriod
         return isBlsPeriodStale(latest, nowDate)
       })
     : []
@@ -160,10 +189,8 @@ export async function fetchSnapshot(
   const cpi: DataResult<CpiData> = wrap(cpiData, 'bls-cpi', cpiResult?.fetchedAt, now, cpiStaleItems.length > 0)
   const gas: DataResult<GasPriceData> = wrap(gasData, gasData?.source === 'bls' ? 'bls-gas' : 'eia-gas', gasMeta?.fetchedAt, now, gasStale)
 
-  // Census is synchronous (bundled static data)
-  const censusData = getCensusData(zip, city, state)
-  const censusIsFallback = censusData.isFallback === true
-  const censusIsCounty = censusData.incomeGeo === 'county'
+  // Census is synchronous (bundled static data): local median rent for the shelter card's $
+  const censusData = getCensusData(zip)
   const census: DataResult<CensusData> = {
     data: censusData,
     error: censusData ? null : 'Census data unavailable for this zip',
@@ -171,29 +198,14 @@ export async function fetchSnapshot(
     sourceId: 'census-acs',
   }
 
-  // Tariff estimate (derived from Census income + Yale Budget Lab rate)
-  const yearSuffix = typeof censusData?.year === 'number' ? `-${censusData.year}` : ''
-  const tariffData: TariffData | null = censusData ? {
-    medianIncome: censusData.medianIncome,
-    tariffRate: 0.0205,
-    estimatedCost: estimateTariffCost(censusData.medianIncome),
-    source: 'Yale Budget Lab',
-    incomeSource: censusIsFallback
-      ? `national-census-cps${yearSuffix}`
-      : censusData.isCityLevel
-        ? `city-proper-census-acs${yearSuffix}`
-        : censusIsCounty
-          ? `county-census-acs${yearSuffix}`
-          : `census-acs${yearSuffix}`,
-    isFallback: censusIsFallback,
-  } : null
-
-  const tariff: DataResult<TariffData> = {
-    data: tariffData,
-    error: tariffData ? null : 'Tariff estimate unavailable',
-    fetchedAt: now,
-    sourceId: 'yale-budget-lab',
-  }
+  // Electricity: statewide EIA price, with the U.S. average over the same months
+  const electricityData: ElectricityData | null = elecLocal
+    ? withNationalElectricity(elecLocal.data, elecNational?.data ?? null)
+    : null
+  const electricityStale = !!electricityData && (!!elecLocal?.stale || isElectricityPeriodStale(electricityData.latestPeriod, nowDate))
+  const electricity: DataResult<ElectricityData> = elecState
+    ? wrap(electricityData, 'eia-electricity', elecLocal?.fetchedAt, now, electricityStale)
+    : { data: null, error: 'EIA publishes no residential electricity price for this area', fetchedAt: now, sourceId: 'eia-electricity' }
 
   // Dollar impact (centralized computation for hero cards).
   // Shelter $ = LOCAL median rent × 12 × the LOCAL CPI area's "rent of primary residence" (SEHA) % —
@@ -208,8 +220,9 @@ export async function fetchSnapshot(
     groceriesChangePct: cpi.data?.groceriesChange,
     rentIndexChangePct: cpi.data?.rentIndexChange,
     gasChange: gas.data?.change,
-    tariffEstimatedCost: tariffData?.estimatedCost,
     medianRent: localRent,
+    electricitySaChangeCents: electricityData ? electricityData.saCurrent - electricityData.saBaseline : null,
+    electricityUsageKwh: electricityData?.usageKwh,
   })
 
   // County rent on new leases (bundled Zillow data, keyed by the zip's county)
@@ -218,6 +231,7 @@ export async function fetchSnapshot(
   const cacheStatus: CacheStatus = {
     cpi: cacheStatusOf(cpiResult),
     gas: cacheStatusOf(gasMeta),
+    ...(elecState ? { electricity: cacheStatusOf(elecLocal) } : {}),
     census: 'hit',
   }
 
@@ -227,7 +241,7 @@ export async function fetchSnapshot(
     cpi,
     gas,
     census,
-    tariff,
+    electricity,
     rent,
     dollarImpact,
     fetchedAt: now,

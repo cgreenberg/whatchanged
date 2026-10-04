@@ -1,14 +1,12 @@
 // National headline numbers (used by the OG image). Reuses the main fetchers
-// and their shared Redis keys (eia:gas:national, bls:cpi:0000:all) — no
+// and their shared Redis keys (eia:gas:epmr:national, bls:cpi:0000:all, eia:electricity:US) — no
 // duplicated fetch code and no hard-coded fallback numbers: on failure the
 // metric is null and callers must show "Data unavailable".
 
-import { estimateTariffCost } from '@/lib/tariff'
-import { NATIONAL_MEDIAN_INCOME } from '@/lib/compute/dollar-translations'
 import type { CpiData } from '@/types'
-import { getCpiCached, getNationalGasCached, NATIONAL_CPI, settle } from './cached-sources'
+import { getCpiCached, getNationalGasCached, getNationalElectricityCached, NATIONAL_CPI, settle } from './cached-sources'
 import { isGasStale } from './eia'
-import { isBlsPeriodStale } from './snapshot'
+import { isBlsPeriodStale, isElectricityPeriodStale } from './snapshot'
 
 // --- Types ---
 
@@ -32,7 +30,8 @@ export interface NationalData {
   gas: NationalMetric | null
   groceries: NationalMetric | null
   shelter: NationalMetric | null
-  tariff: { annualCost: number; monthlyCost: number }
+  /** EIA U.S. average residential electricity: price ¢/kWh, seasonally adjusted % change since Jan 2025. */
+  electricity: { current: number; change: number; latestPeriod: string; stale: boolean } | null
 }
 
 /** CPI series expressed as % change from the series' own baseline. */
@@ -58,9 +57,10 @@ function cpiMetric(cpi: CpiData, item: 'groceries' | 'shelter', fetchStale = fal
 }
 
 export async function fetchNationalData(): Promise<NationalData> {
-  const [gasResult, cpiResult] = await Promise.all([
+  const [gasResult, cpiResult, elecResult] = await Promise.all([
     settle(getNationalGasCached(), 'national-gas'),
     settle(getCpiCached(NATIONAL_CPI), 'national-cpi'),
+    settle(getNationalElectricityCached(), 'national-electricity'),
   ])
 
   const gas: NationalMetric | null = gasResult
@@ -75,12 +75,14 @@ export async function fetchNationalData(): Promise<NationalData> {
       }
     : null
 
-  const annualCost = estimateTariffCost(NATIONAL_MEDIAN_INCOME)
+  const e = elecResult?.data
   return {
     gas,
     groceries: cpiResult ? cpiMetric(cpiResult.data, 'groceries', !!cpiResult.stale) : null,
     shelter: cpiResult ? cpiMetric(cpiResult.data, 'shelter', !!cpiResult.stale) : null,
-    tariff: { annualCost, monthlyCost: Math.round(annualCost / 12) },
+    electricity: e
+      ? { current: e.current, change: e.change, latestPeriod: e.latestPeriod, stale: !!elecResult!.stale || isElectricityPeriodStale(e.latestPeriod) }
+      : null,
   }
 }
 

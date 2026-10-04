@@ -70,18 +70,23 @@ export default function AboutPage() {
           come first: <strong className="text-white">Gas</strong> (regular gasoline, $/gal),{' '}
           <strong className="text-white">Rent</strong> (asking rents on new leases, Zillow; where Zillow
           has no county rent, the card shows <strong className="text-white">Shelter (CPI)</strong> instead),{' '}
-          <strong className="text-white">Groceries</strong> (CPI food at home) and a{' '}
-          <strong className="text-white">Tariff</strong> cost estimate. Each card shows the number, a short
-          dollar translation where one applies, the comparison window and the U.S. figure where one exists,
-          and a short source line (area · source · month). Tap the ⓘ on a card for everything else: the
-          full source line with a link, the geography, the baseline, whether the series is seasonally
-          adjusted, how the dollar figure is computed and any caveat.
+          <strong className="text-white">Groceries</strong> (CPI food at home) and{' '}
+          <strong className="text-white">Electricity</strong> (your state&apos;s average residential price
+          per kWh). Each card shows the number, a short dollar translation where one applies, the
+          comparison window and the U.S. figure where one exists, and a short source line (area · source ·
+          month). Tap the ⓘ on a card for everything else: the full source line with a link, the
+          geography, the baseline, whether the series is seasonally adjusted, how the dollar figure is
+          computed and any caveat.
         </p>
         <p>
           Below the cards are four graphs: Gas prices, Grocery prices, Housing (with Rent, Home prices
-          and Shelter (CPI) tabs) and Energy costs, each with timeframe buttons and an optional U.S.
-          comparison line. A county map shows the change in Zillow home values or rents for every county
-          since January 2025, with month-by-month playback and the biggest increases and decreases.
+          and Shelter (CPI) tabs) and Electricity prices, each with timeframe buttons, an optional U.S.
+          comparison line and an ⓘ with the details. A county map colors every county by the change since
+          January 2025 in gas prices, rent, home prices, grocery prices or electricity prices; tap a
+          county to see all five with the area each number covers. Rent and home prices are county
+          figures, with month-by-month playback and the biggest increases and decreases. Gas, groceries
+          and electricity are published for metro areas, regions or states, not counties, so neighboring
+          counties share a color and there is no playback or ranking for them.
         </p>
       </Section>
 
@@ -172,26 +177,21 @@ export default function AboutPage() {
                 $ estimate: $6,000/yr typical household grocery spend × % change. Not seasonally adjusted.
               </Row>
               <Row
-                metric="Energy costs"
-                source="BLS Consumer Price Index (energy)"
-                geo="Metro area, Census division, or region"
-                freq="Monthly"
-              >
-                Graph only. BLS &ldquo;Energy&rdquo; combines household energy (electricity and utility natural
-                gas, plus fuel oil) with motor fuel (gasoline), which is roughly half its weight, so it moves
-                with gas prices as well as utility bills. Not seasonally adjusted.
-              </Row>
-              <Row
-                metric="Tariff (est.)"
-                source="Yale Budget Lab estimate"
-                geo="Zip, city, or county (Census ACS median household income)"
-                freq="Static"
+                metric="Electricity"
+                source="EIA average residential electricity price (Form EIA-861M, via the EIA API's electricity retail-sales data)"
+                geo="State (statewide average across utilities). EIA publishes no price for Puerto Rico or other territories, which show “Data unavailable”"
+                freq="Monthly (about two months behind)"
                 last
               >
-                Estimate: median household income × 2.05%. Not a measured change. PO-box zips without Census
-                data borrow the income of the largest residential zip in the same city or county (labeled);
-                zips with no usable zip-level figure use their county&apos;s ACS median (labeled county); where
-                no local figure exists, the U.S. median is used and labeled national.
+                The card shows the latest published price in ¢/kWh with its month. The % change since January
+                2025 compares seasonally adjusted prices: residential prices are seasonal (in many states the
+                summer price per kWh runs well above winter&apos;s), so a raw January-to-latest comparison
+                would mostly measure the season. whatchanged removes each state&apos;s typical month-to-month
+                pattern, estimated from 2014–2024 (the same classical method used for Zillow rents); the ⓘ
+                also shows the unadjusted change. The ≈ $/mo figure is the change in the adjusted price
+                × the state&apos;s average home use (residential sales ÷ customers, averaged over the latest 12
+                months). It is a statewide average: your utility&apos;s rate and your own use can differ. The
+                U.S. comparison is EIA&apos;s U.S. average with the same method over the same months.
               </Row>
             </tbody>
           </table>
@@ -205,7 +205,7 @@ export default function AboutPage() {
           gas (EIA, weekly), the last weekly reading on or before January 20, 2025; for gas from BLS
           average prices (monthly), January 2025; for BLS consumer prices, the January 2025 index, or the
           nearest earlier month for areas BLS doesn&apos;t publish every month (for example December 2024);
-          for county rent and home values (Zillow), January 2025.
+          for county rent and home values (Zillow) and state electricity prices (EIA), January 2025.
         </p>
         <p>
           Each card shows its area, source and the month (or, for weekly gas, the week) of its latest data;
@@ -224,7 +224,8 @@ export default function AboutPage() {
 
       <Section title="Data Checks">
         <p>
-          Data on this site is checked by automated tests against the government source APIs (BLS and EIA).
+          Data on this site is checked by automated tests against the government source APIs (BLS and EIA),
+          including the electricity prices and their January 2025 baselines for several states.
         </p>
       </Section>
 

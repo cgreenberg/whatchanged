@@ -26,7 +26,7 @@ jest.mock('recharts', () => {
 const RECORDED: Record<string, BlsRawPoint[]> = Object.fromEntries(
   (recorded.Results.series as Array<{ seriesID: string; data: BlsRawPoint[] }>).map(s => [s.seriesID, s.data])
 )
-const ids = ['CUURS48ASAF11', 'CUURS48ASAH1', 'CUURS48ASA0E']
+const ids = ['CUURS48ASAF11', 'CUURS48ASAH1']
 const phoenix = parseCpiResponse(Object.fromEntries(ids.map(id => [id, RECORDED[id]])), { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
 
 function renderItem(item: 'groceries' | 'shelter') {
@@ -65,7 +65,7 @@ describe('CPI chart with a data gap (recorded Phoenix food at home)', () => {
 
   test('a month BLS never lists (bimonthly off-month) is not a gap', () => {
     const raw = RECORDED['CUURS48ASAH1'].filter(d => !(d.year === '2025' && (d.period === 'M10' || d.period === 'M06')))
-    const s = parseCpiResponse({ ...Object.fromEntries(ids.map(id => [id, RECORDED[id]])), CUURS48ASAH1: raw, CUURS48ASAF11: raw.map(d => ({ ...d })), CUURS48ASA0E: raw.map(d => ({ ...d })) }, { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
+    const s = parseCpiResponse({ ...Object.fromEntries(ids.map(id => [id, RECORDED[id]])), CUURS48ASAH1: raw, CUURS48ASAF11: raw.map(d => ({ ...d })) }, { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
     expect(s.series.some(p => p.date === '2025-06')).toBe(false)
     expect(findGaps(s.series.map(p => ({ date: p.date, shelter: p.shelter })), 'shelter')).toEqual([])
   })

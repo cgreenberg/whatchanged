@@ -8,7 +8,7 @@
  *
  *   npm run cache:refresh                      # full refresh → Upstash (needs KV_* env)
  *   npm run cache:refresh -- --dry-run         # fetch + validate, write to in-memory only
- *   npm run cache:refresh -- --only=gas        # just one source: cpi | gas
+ *   npm run cache:refresh -- --only=gas        # just one source: cpi | gas | electricity
  *   npm run cache:refresh -- --zips=98683,10001  # only the areas behind these zips
  *   npm run cache:refresh -- --force           # run even if a full refresh succeeded < 12h ago
  *
@@ -22,7 +22,7 @@
  *
  * Env: BLS_API_KEY (required: 50 series/request needs a key), EIA_API_KEY,
  *      KV_REST_API_URL (https), KV_REST_API_TOKEN.
- * Never prints secrets. Exit 1 on any fetch or write error or any CPI/gas gap.
+ * Never prints secrets. Exit 1 on any fetch or write error or any CPI/gas/electricity gap.
  * (County unemployment/LAUS is not refreshed: the site no longer fetches it.)
  */
 import {
@@ -74,8 +74,8 @@ async function main() {
   const isFullRun = !only && !zips
 
   // Gas includes the BLS monthly average-price tiers, so every source needs the BLS key.
-  if (!process.env.BLS_API_KEY) fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
-  if (!process.env.EIA_API_KEY && (!only || only === 'gas')) fail('EIA_API_KEY is required')
+  if (!process.env.BLS_API_KEY && only !== 'electricity') fail('BLS_API_KEY is required (batches of 50 series need a registered key)')
+  if (!process.env.EIA_API_KEY && only !== 'cpi') fail('EIA_API_KEY is required')
 
   if (dryRun) {
     __setKvClientForTests(null) // in-memory only: never touch Redis
@@ -105,12 +105,14 @@ async function main() {
   const plan: RefreshPlan = {
     cpiAreas: !only || only === 'cpi' ? full.cpiAreas : [],
     gasLookups: !only || only === 'gas' ? full.gasLookups : [],
+    electricityStates: !only || only === 'electricity' ? full.electricityStates : [],
   }
   if (planSize(plan) === 0) fail('Refresh plan is empty (check --zips / --only)')
   console.log(
     `refresh-cache${dryRun ? ' (dry run, in-memory)' : ''}: ` +
       `${plan.cpiAreas.length} CPI areas, ${plan.gasLookups.filter((l) => l.source !== 'bls').length} EIA gas series, ` +
-      `${plan.gasLookups.filter((l) => l.source === 'bls').length} BLS gas series in ${planBlsRequests(plan).length} BLS requests`
+      `${plan.gasLookups.filter((l) => l.source === 'bls').length} BLS gas series in ${planBlsRequests(plan).length} BLS requests, ` +
+      `${plan.electricityStates?.length ?? 0} electricity series (states + US) in one paged EIA query`
   )
 
   const started = Date.now()
@@ -126,7 +128,7 @@ async function main() {
       `(${Math.round((Date.now() - started) / 1000)}s)`
   )
 
-  // Any fetch/write error or CPI/gas gap fails the run.
+  // Any fetch/write error or CPI/gas/electricity gap fails the run.
   if (s.errors || s.missing || s.invalid) process.exit(1)
   if (!dryRun && isFullRun) {
     await setCached(REFRESH_LAST_SUCCESS_KEY, new Date().toISOString(), REFRESH_LAST_SUCCESS_TTL)

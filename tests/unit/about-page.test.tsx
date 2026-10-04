@@ -15,7 +15,9 @@ describe('About page', () => {
 
   test('describes the current site: four cards, four graphs, county map', () => {
     const t = document.body.textContent ?? ''
-    for (const s of ['Gas', 'Rent', 'Groceries', 'Tariff', 'Shelter (CPI)', 'Home prices', 'Energy', 'county map']) expect(t).toContain(s)
+    for (const s of ['Gas', 'Rent', 'Groceries', 'Electricity', 'Shelter (CPI)', 'Home prices', 'county map']) expect(t).toContain(s)
+    expect(t).toContain('seasonally adjusted')
+    expect(t).toContain('statewide')
     expect(t).toContain('rent of primary residence')
     expect(t).toContain('Honolulu-area*')
     expect(t).toContain('ⓘ')
@@ -23,6 +25,6 @@ describe('About page', () => {
 
   test('nothing stale: no unemployment, federal cuts, local pulse, or a build-time date', () => {
     const t = (document.body.textContent ?? '').toLowerCase()
-    for (const s of ['unemployment', 'federal cuts', 'usaspending', 'local pulse', 'laus']) expect(t).not.toContain(s)
+    for (const s of ['unemployment', 'federal cuts', 'usaspending', 'local pulse', 'laus', 'tariff', 'yale budget lab', 'energy costs']) expect(t).not.toContain(s)
   })
 })

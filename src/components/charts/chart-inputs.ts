@@ -3,7 +3,10 @@ import type { ChartConfig } from '@/lib/charts/chart-config'
 import type { Row } from '@/lib/charts/chart-data'
 import { cpiGeoLabel, type Provenance } from '@/lib/provenance'
 import { fmtDay, fmtMonthYear, DATE_UNAVAILABLE } from '@/lib/format'
-import { HOUSING_NOTE, gasCaveatFor, gasSourceInfo, isMonthlyGas, cpiItemStale } from '@/lib/hero-cards'
+import {
+  HOUSING_NOTE, SHELTER_SHORT_NOTE, gasCaveatFor, gasSourceInfo, isMonthlyGas, cpiItemStale,
+  ELECTRICITY_SOURCE, ELECTRICITY_SOURCE_URL, ELECTRICITY_SEASONAL_NOTE, electricityPlace, fmtCents,
+} from '@/lib/hero-cards'
 import type { EconomicSnapshot } from '@/types'
 
 export const NOT_SA = 'not seasonally adjusted'
@@ -19,8 +22,12 @@ export interface ChartInput {
   weeklyGasBaseline?: boolean
   /** National overlay label, shown in provenance only while the overlay is on. */
   nationalLabel?: string
-  /** One-line explanation shown under the chart. */
+  /** One short line shown under the chart (longer explanations go in `info`). */
   note?: string
+  /** Lines shown in the graph's ⓘ disclosure, after the graph description. */
+  info?: string[]
+  /** Headline above the graph: the same % as the card, with a short detail. */
+  headline?: { pct: number; detail?: string }
 }
 
 /** Insert an empty row for each listed date not already present (kept sorted by date). */
@@ -35,10 +42,9 @@ export function withEmptyRows(rows: Row[], dates: readonly string[] | undefined)
 export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInput {
   switch (id) {
     case 'cpi-groceries':
-    case 'cpi-shelter':
-    case 'cpi-energy': {
+    case 'cpi-shelter': {
       const c = snapshot.cpi.data
-      const item = id === 'cpi-groceries' ? 'groceries' : id === 'cpi-shelter' ? 'shelter' : 'energy'
+      const item = id === 'cpi-groceries' ? 'groceries' : 'shelter'
       const itemName = item === 'groceries' ? 'food at home' : item
       const seriesId = c?.seriesIds?.[item]
       const series = Array.isArray(c?.series) ? c!.series : []
@@ -47,7 +53,7 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
         data: series.map(p => ({ date: p.date, [item]: p[item] })),
         nationalData: national.map(p => ({ date: p.date, [item]: p[item] })),
         stale: cpiItemStale(snapshot, item),
-        note: item === 'shelter' ? HOUSING_NOTE : undefined,
+        ...(item === 'shelter' ? { note: SHELTER_SHORT_NOTE, info: [HOUSING_NOTE] } : {}),
         provenance: {
           source: `BLS CPI ${itemName}`,
           sourceUrl: seriesId ? `https://data.bls.gov/timeseries/${seriesId}` : 'https://data.bls.gov/cgi-bin/surveymost?cu',
@@ -90,6 +96,31 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
           geography: monthly ? `${geography} · monthly` : geography,
           asOf: latest ? (monthly ? fmtMonthYear(latest.slice(0, 7)) : `week of ${fmtDay(latest)}`) : DATE_UNAVAILABLE,
           adjustment: NOT_SA,
+        },
+      }
+    }
+    case 'electricity': {
+      const e = snapshot.electricity?.data ?? null
+      const series = Array.isArray(e?.series) ? e!.series : []
+      const national = Array.isArray(e?.nationalSeries) ? e!.nationalSeries : []
+      const place = e ? electricityPlace(e) : snapshot.location?.stateName ?? 'this area'
+      return {
+        data: series.map(p => ({ date: p.date, sa: p.sa, price: p.price })),
+        // National comparison: the U.S. seasonally adjusted line only
+        nationalData: national.map(p => ({ date: p.date, sa: p.sa })),
+        stale: !!snapshot.electricity?.stale,
+        nationalLabel: national.length ? 'U.S. avg, EIA' : undefined,
+        note: e ? `Statewide average for ${place}.` : snapshot.electricity?.error ?? undefined,
+        info: [ELECTRICITY_SEASONAL_NOTE],
+        ...(e && Number.isFinite(e.change)
+          ? { headline: { pct: e.change, detail: `seasonally adjusted · ${fmtCents(e.current)} in ${fmtMonthYear(e.latestPeriod)}` } }
+          : {}),
+        provenance: {
+          source: ELECTRICITY_SOURCE,
+          sourceUrl: ELECTRICITY_SOURCE_URL,
+          geography: e ? `${place} (statewide), monthly` : place,
+          asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
+          adjustment: 'bold line seasonally adjusted by whatchanged; thin line as published',
         },
       }
     }

@@ -3,8 +3,8 @@ import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
 import { buildHeroCards, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, imageCountyName, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
-import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
-import { BASELINE_DAY_LABEL, gasBaselineIndex } from '@/lib/baseline'
+import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
+import { BASELINE_DAY_LABEL, BASELINE_MONTH_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
@@ -20,7 +20,7 @@ const TEXT_SECONDARY = '#A89F93'
 const TEXT_TERTIARY = '#6B6560'
 const AMBER = '#F0A500'
 const BLUE = '#3D9EFF'
-const PURPLE = '#A87EFF'
+const GREEN = '#2BD99F'
 const RED = '#F04040'
 
 
@@ -93,7 +93,8 @@ function ogSublines(c: HeroCardModel): [string, string] {
     // Monthly BLS gas also names its month: weekly EIA figures elsewhere run weeks newer
     case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : since]
     case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, seas. adj.`]
-    case 'tariff': return [c.geoTag ? `${c.geoTag} income` : 'income', 'estimate']
+    // Statewide EIA price, % change of the seasonally adjusted price
+    case 'electricity': return [c.geoTag ? `${c.geoTag} (statewide)` : c.provenance.geography, `${since}, seas. adj.`]
     default: return [c.geoTag ?? c.provenance.geography, since]
   }
 }
@@ -107,17 +108,15 @@ const OG_LABELS: Record<HeroCardModel['id'], string> = {
   rent: 'RENT (NEW LEASES)',
   shelter: 'SHELTER (CPI)',
   groceries: 'GROCERIES',
-  tariff: 'TARIFF IMPACT (EST.)',
+  electricity: 'ELECTRICITY',
 }
 const OG_COLORS: Record<HeroCardModel['id'], string> = {
-  gas: RED, rent: BLUE, shelter: BLUE, groceries: AMBER, tariff: PURPLE,
+  gas: RED, rent: BLUE, shelter: BLUE, groceries: AMBER, electricity: GREEN,
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const zip = searchParams.get('zip') ?? ''
-  const city = searchParams.get('city')?.slice(0, 100) || undefined
-  const state = searchParams.get('state')?.slice(0, 2) || undefined
 
   // Everything drawn comes from the zip's own snapshot — no free-text query params.
   let location = ''
@@ -126,21 +125,24 @@ export async function GET(req: NextRequest) {
   let latestPeriod: string | undefined
   let throughLabel: string | null = null
   let degraded = false
-  let sources = 'BLS · EIA · Census · Yale Budget Lab'
+  let sources = 'BLS · EIA · Census'
 
   if (/^\d{5}$/.test(zip)) {
     try {
-      const snapshot = await fetchSnapshot(zip, city, state)
+      const snapshot = await fetchSnapshot(zip)
       if (snapshot) {
         const cards = buildHeroCards(snapshot)
         location = `${snapshot.location.cityName || snapshot.location.countyName}, ${snapshot.location.stateAbbr}`
-        sources = cards.some(c => c.id === 'rent' && c.status === 'ok')
-          ? 'BLS · EIA · Zillow · Census · Yale Budget Lab'
-          : 'BLS · EIA · Census · Yale Budget Lab'
+        // Census (local median rent) is used only by the Shelter (CPI) card's dollar figure
+        sources = cards.some(c => c.id === 'rent' && c.status === 'ok') ? 'BLS · EIA · Zillow' : 'BLS · EIA · Census'
         stats = cards.map(c => {
           const [sub, sub2] = c.status === 'ok' ? ogSublines(c) : [undefined, undefined]
           const isGas = c.status === 'ok' && c.id === 'gas' && !!snapshot.gas.data
-          const value = c.status === 'ok' ? (isGas ? fmtSignedDollars(snapshot.gas.data!.change) : c.value ?? '') : ''
+          const elec = c.status === 'ok' && c.id === 'electricity' ? snapshot.electricity?.data ?? null : null
+          // Changes, not levels: gas $/gal change; electricity the seasonally adjusted % (the card's level is in its ⓘ)
+          const value = c.status === 'ok'
+            ? isGas ? fmtSignedDollars(snapshot.gas.data!.change) : elec ? fmtSignedPct(elec.change) : c.value ?? ''
+            : ''
           return {
             label: OG_LABELS[c.id],
             value: value && c.outlier ? `${value}${OUTLIER_MARK}` : value,
@@ -172,7 +174,7 @@ export async function GET(req: NextRequest) {
     if (!fetched.gas || !fetched.groceries || !fetched.shelter) {
       return new Response('National data unavailable', { status: 503, headers: { 'Cache-Control': 'no-store' } })
     }
-    const nationalStale = [fetched.gas, fetched.groceries, fetched.shelter].some(m => m.stale)
+    const nationalStale = [fetched.gas, fetched.groceries, fetched.shelter].some(m => m.stale) || !fetched.electricity || fetched.electricity.stale
     // Header/axis dates come from the data, never today's date
     const nationalLatest = [fetched.gas.latestPeriod, fetched.groceries.latestPeriod, fetched.shelter.latestPeriod]
       .filter(Boolean).sort().pop()
@@ -189,7 +191,7 @@ export async function GET(req: NextRequest) {
     const gasChange = fmtSignedDollars(national.gas.change)
     const grocChange = fmtSignedPct(national.groceries.change)
     const sheltChange = fmtSignedPct(national.shelter.change)
-    const tariffAnnual = `~${fmtDollars(national.tariff.annualCost)}/yr`
+    const elec = national.electricity
 
     // Sparkline dimensions per panel (leave 45px for y-axis labels)
     const yAxisW = 55
@@ -473,7 +475,7 @@ export async function GET(req: NextRequest) {
             ))}
           </div>
 
-          {/* TARIFF BOTTOM BAND */}
+          {/* ELECTRICITY BOTTOM BAND (U.S. average residential price; no number when unavailable) */}
           <div
             style={{
               display: 'flex',
@@ -495,7 +497,7 @@ export async function GET(req: NextRequest) {
                   marginBottom: 4,
                 }}
               >
-                TARIFF COST TO AVERAGE HOUSEHOLD:
+                ELECTRICITY, U.S. AVERAGE HOME PRICE:
               </span>
               <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
                 <span
@@ -503,11 +505,11 @@ export async function GET(req: NextRequest) {
                     fontFamily: 'Inter, sans-serif',
                     fontWeight: 800,
                     fontSize: 49,
-                    color: PURPLE,
+                    color: elec ? GREEN : TEXT_TERTIARY,
                     display: 'flex',
                   }}
                 >
-                  {tariffAnnual}
+                  {elec ? `${elec.current.toFixed(1)}¢/kWh` : 'N/A'}
                 </span>
                 <span
                   style={{
@@ -517,7 +519,9 @@ export async function GET(req: NextRequest) {
                     display: 'flex',
                   }}
                 >
-                  · based on national median income · Yale Budget Lab
+                  {elec
+                    ? `· ${fmtSignedPct(elec.change)} since ${BASELINE_MONTH_LABEL} (seas. adj.) · EIA, ${fmtMonthYear(elec.latestPeriod)}`
+                    : '· EIA residential price unavailable right now'}
                 </span>
               </div>
             </div>
@@ -547,7 +551,7 @@ export async function GET(req: NextRequest) {
             }}
           >
             <span style={{ fontFamily: 'DM Mono', fontSize: 14, color: '#444', display: 'flex' }}>
-              BLS · EIA · Census · Yale Budget Lab
+              BLS · EIA
             </span>
           </div>
         </div>

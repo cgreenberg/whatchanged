@@ -5,7 +5,7 @@ Read fully before touching code. Also read `.claude/rules/orchestration.md` (del
 
 ## Purpose
 
-Enter a zip code and see how local **prices** (gas, rent, home prices, groceries, energy, tariff cost) changed since
+Enter a zip code and see how local **prices** (gas, rent, home prices, groceries, electricity) changed since
 **Jan 20, 2025**, with every number sourced and dated, plus a shareable image. The site is prices-only (no jobs or
 unemployment data on the page). Live: https://www.whatchanged.us · repo: github.com/cgreenberg/whatchanged.
 **No partisan framing:** show the data, its source, geography and window, and let the numbers speak. Never imply more
@@ -22,16 +22,15 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 | `npm test` | Jest (unit + integration, MSW mocks, no network) |
 | `npx playwright test` (`npm run test:e2e`) | E2E; `/api/data` is mocked from `tests/fixtures/snapshots/`. `PW_PORT=3107` uses another port (parallel worktrees) |
 | `npm run verify:live [-- --codes] [zips]` | Deployed site vs BLS/EIA for 12 fixed zips (incl. BLS gas tiers 19103, 53202, 96813, 99501); `--codes` also checks every mapped EIA/CPI/BLS-gas code (~100 calls, uses BLS quota) |
-| `npm run audit:mappings` | Offline audit of every zip's county/CPI/gas mapping (no API calls; also checks the CT planning-region lookup used for county income) |
+| `npm run audit:mappings` | Offline audit of every zip's county/CPI/gas mapping (no API calls; also checks the CT planning-region lookup) |
 | `npm run build:zip-county` | Rebuild `zip-county.json` + `ct-planning-regions.json` (`NODE_OPTIONS=--max-old-space-size=6144`; caches downloads in `$GEO_CACHE_DIR`) |
 | `npm run build:cbsa-crosswalk` | Rebuild `cbsa-cpi-crosswalk.json` (OMB 2013 delineation) |
 | `npm run build:county-geo` | Rebuild `county-geo.json` from the TS lookup functions; run after either build above |
-| `npm run build:census-acs` | Rebuild `census-acs.json`. City incomes: `npx tsx scripts/build-census-places.ts` (`CENSUS_API_KEY`) |
+| `npm run build:census-acs` | Rebuild `census-acs.json` (zip median rent; `CENSUS_API_KEY`) |
 | `npm run data:local` | Fetch → build → validate the static local-data pipeline (`RAW=/path` for the download dir) |
-| `npm run cache:refresh [-- --dry-run] [--only=cpi\|gas] [--zips=a,b] [--force]` | Fetch every CPI/gas series and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
+| `npm run cache:refresh [-- --dry-run] [--only=cpi\|gas\|electricity] [--zips=a,b] [--force]` | Fetch every CPI/gas/electricity series and write it to Upstash (what the refresh-cache Action runs; `cache:preload` is an alias). `--dry-run` writes in-memory only. A full run within 12 h of the last successful one is skipped unless `--force`; bad `--only`/`--zips` exit non-zero |
 | `npm run cache:flush -- '<glob>' [--yes] [--include-lastgood]` | List (dry run) or delete matching Redis keys; `:lastgood` copies kept unless flagged |
 | `npm run cache:warm -- <zip...>` | Hit `/api/data/{zip}` sequentially (`BASE_URL` https, or http://localhost) |
-| `npx tsx scripts/build-county-income.ts` | Rebuild `county-income.json` (ACS 5-yr B19013 county median income, bulk file, no key) |
 | `npx tsx scripts/audit-gas-assignments.ts [--apply]` | Distance check of county → EIA gas series |
 
 ## Two data paths
@@ -39,13 +38,15 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 **1. Live API snapshot** (hero cards, charts, share/OG images)
 
 ```
-/api/data/[zip] → src/lib/api/snapshot.ts fetchSnapshot()
+/api/data/[zip] → src/lib/api/snapshot.ts fetchSnapshot(zip)   (?city=/&state= are ignored: numbers come from the zip)
   zip → lookupZip (zip-county.json) → county FIPS
   ├─ BLS CPI   bls-cpi.ts  ┐ through cached-sources.ts → kv.ts getCachedOrFetch (validate, last-good, dedupe)
   │                        │ local CPI failed → shared national CPI key (labeled national)
   ├─ gas  eia.ts (EIA weekly) / bls-gas.ts (BLS monthly) ┘ + shared national gas key of the SAME source
   │                        (EIA → NUS, BLS → APU000074714; overlay, or labeled fallback)
-  ├─ Census ACS  src/lib/data/census-acs.ts (bundled JSON, no runtime API)
+  ├─ electricity  eia-electricity.ts: the zip's STATE (statewide EIA residential price) + shared eia:electricity:US
+  │                        (territories: none → "Data unavailable", no fetch)
+  ├─ Census ACS  src/lib/data/census-acs.ts (bundled JSON, no runtime API): zip median rent only
   ├─ Rent      src/lib/rent.ts ← src/lib/data/county-rent.json (built by path 2)
   └─ dollarImpact  src/lib/compute/dollar-translations.ts
 → src/lib/hero-cards.ts builds card view-models (page, share card and OG image all use it)
@@ -53,6 +54,12 @@ topojson-client (county map), `next/og`/Satori (share + OG images), Upstash Redi
 
 `?audit=true` adds `_audit` (series IDs, baseline/latest observations, formulas); `verify:live` uses it.
 `src/lib/api/national.ts` (OG image) reuses the same cached accessors and keys.
+
+**Map layers (Gas / Groceries / Electricity):** `/api/map-metrics` (`src/lib/api/map-metrics.ts`) READS THE CACHE
+ONLY (each key, else its `:lastgood` copy; never BLS/EIA, never the runtime budget) and returns one value per gas
+series / CPI area / state plus `counties: {fips: [gasIdx, cpiIdx]}` from `county-geo.json` (state = FIPS prefix).
+Same numbers as the cards (gas $ change, CPI food-at-home %, electricity adjusted %). CDN `s-maxage=3600` when
+every area is cached, `300` when any is missing. A key not in the cache is "no data" on the map until the next refresh.
 
 **2. Static monthly pipeline** (Rent card data, Housing graph Zillow tabs, county map)
 
@@ -86,9 +93,11 @@ through `src/lib/county-data.ts` (no keys, no Redis). The pipeline still compute
   or regex-parse TS.
 - **CPI (4 tiers)** `getMetroCpiAreaForCounty()` in `src/lib/mappings/county-metro-cpi.ts`: 1 metro (county in
   `cbsa-cpi-crosswalk.json`, the OMB **2013** CBSAs BLS samples) → 2 Census division → 3 region (defensive only) →
-  4 national `0000` (territories). Series `CUUR{area}SAF11` / `SAH1` / `SA0E`, plus `SEHA` (rent of primary residence,
+  4 national `0000` (territories). Series `CUUR{area}SAF11` / `SAH1`, plus `SEHA` (rent of primary residence,
 used only for the shelter card's dollar figure; verified monthly with a Jan 2025 value for all 37 areas, recorded in
-`tests/fixtures/bls-cpi-rent-seha.json`). Only add CBSAs that BLS actually samples.
+`tests/fixtures/bls-cpi-rent-seha.json`). CPI energy `SA0E` is no longer fetched. Only add CBSAs that BLS actually samples.
+- **Electricity** = the zip's state (`hasElectricitySeries`: 50 states + DC). No county or metro series exists;
+  territories (PR, GU, VI, AS, MP) have none and show "Data unavailable" with the reason.
 - **Gas** `getGasLookup()` in `src/lib/api/eia.ts`, tables in `src/lib/mappings/eia-gas.ts` (EIA) and
   `src/lib/mappings/bls-gas.ts` (BLS). Most local first:
   1. EIA weekly city: county override (Cleveland only) or CPI metro → EIA city (`CPI_TO_EIA_CITY`)
@@ -122,7 +131,7 @@ used only for the shelter card's dollar figure; verified monthly with a Jan 2025
   Sep 28" (`gasNationalSourceTag`); share card "Philadelphia metro · thru Aug '26" and "Natl (BLS): …"; OG "since Jan
   2025, thru Aug '26"; the gas chart's dashed overlay is labeled by source (`nationalLabel`).
 - **CT planning regions** `src/lib/mappings/laus-area.ts`: Connecticut zip / legacy county → 2022 planning region
-  (09110–09190), data in `ct-planning-regions.json`. Used for CT county income (tariff card) and by the static pipeline.
+  (09110–09190), data in `ct-planning-regions.json`. Used by the static pipeline (`county-geo.json` `lausFips`).
 - **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas.
 - Labels: `cpiGeoLabel()` in `src/lib/provenance.ts` (`metro: …` / `division: …` / `region: …` / `national`) infers
   the tier from the area code for old cache entries. Gas labels always name the PADD.
@@ -136,7 +145,7 @@ short source line `{short area} · {source} · {Mon YYYY}` (`sourceLine`: "Atlan
 County · Zillow · Aug 2026", "Honolulu-area* · BLS …", "U.S. avg (local n/a) · EIA …"). Caveats on the face are
 short tags only ("⚠ unusual", "*", "(local n/a)" / "(metro n/a)", Stale badge). Everything else — the full
 provenance line(s), adjustments, "through … (monthly)", national source tags, HI/AK stand-in and outlier
-explanations, fallback notes, income details, dollar bases, the Zillow-vs-CPI note — goes in `info` /
+explanations, fallback notes, the seasonal-adjustment note, dollar bases, the Zillow-vs-CPI note — goes in `info` /
 `moreProvenance` and is shown in the card's ⓘ disclosure (button with `aria-expanded`/`aria-controls`, Escape
 closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx`, `tests/e2e/labels.spec.ts`).
 
@@ -146,10 +155,16 @@ closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx
 | Rent (new leases) | Zillow ZORI county % since Jan 2025, SA by whatchanged | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
 | ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without local ACS rent or without SEHA (e.g. older cached CPI) (`computeShelterImpact`) |
 | Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`) |
-| Tariff (est.) | Yale Budget Lab | `round(localMedianIncome × 0.0205)` $/yr (`src/lib/tariff.ts`). Income (`census-acs.ts`, provenance in `source`/`incomeGeo`/`year`/`donorZip`/`donorScope`/`sourceLabel`): city ACS (only if the city contains the zip) → zip ACS → donor zip (USPS-only zips) → ACS county median (`county-income.json`) → national $74,580 (Census **CPS ASEC 2022**, not ACS), flagged |
+| Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = latest **published** monthly price (with its month); "+x% since Jan 2025" = **seasonally adjusted** price change (see below); card "U.S. +y%" = EIA U.S. average, same method, same months | `round((saCurrent − saBaseline) × usageKwh / 100)` $/mo, `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
 
-CPI "Energy" (`SA0E`, energy chart) = household energy (electricity, utility gas, fuel oil) **plus motor fuel**
-(gasoline, ~half its weight); label it that way, never as utilities only.
+**Electricity seasonality** (`src/lib/api/eia-electricity.ts`): residential prices are seasonal (Georgia's July price
+runs ~17% above January in a typical year), so Jan 2025 → latest raw would mostly measure the season. The % uses
+classical decomposition (centered 2×12 moving average, per-calendar-month median ratio over 2014-07…2024-12,
+normalized to mean 1), the same method as Zillow rents; factors use pre-baseline data only, so the baseline never
+revises. Rejected alternatives: 12-month averages (Feb 2024–Jan 2025 vs the latest 12 months) mix in pre-inauguration
+months and lag ~6 months; same-month-last-year isn't "since Jan 2025". The ⓘ shows the published prices and the
+unadjusted %. Sanity: price 5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo. Point-to-point SA is noisier
+where states reset rates administratively (e.g. CT's Jan/Jul standard-service changes).
 
 Shelter dollars are **null** whenever the CPI used is national (outage fallback, or territories like PR whose only CPI
 is national): national CPI % is never applied to local rent; the card says why.
@@ -161,6 +176,12 @@ Share card, OG image and `og:description` tag every number with a short geograph
 title cut at a hyphen) with "since Jan 2025" and "thru {Mon 'YY}"; HI/AK stand-ins get "Honolulu-area price*" and the
 `GAS_STANDIN_FOOTNOTE`. The gas chart for BLS tiers is monthly; unpublished BLS months (e.g. Oct 2025) stay as empty
 rows (`blsUnpublishedMonths`) so charts mark the gap.
+Electricity on those surfaces: share card 4th quadrant = "ELECTRICITY (home ¢/kWh, seasonally adj.)", geography line
+"{State} · {price}¢/kWh ({Mon 'YY})" (DC short), sparkline of the adjusted % since Jan 2025, big number = adjusted %,
+pill "≈ +$Y/mo", basis "$/mo at N kWh/mo (avg {State} home)" (fit tests in `tests/unit/share-card-fit.test.ts` cover
+every state). OG stat = adjusted % with "{State} (statewide)" / "since Jan 2025, seas. adj."; the national OG's bottom
+band is the U.S. average price and %; `og:description` "Electricity +x% ({State})". Footers: "BLS · EIA · Zillow" or
+"BLS · EIA · Census" (Census rent is used only by the CPI shelter card).
 
 Dollar amounts are computed server-side in `snapshot.ts` → `dollarImpact`. The frontend never recomputes them or
 substitutes national stand-ins. Sanity ranges (`src/lib/api/validate.ts`, mirrored in `hero-cards.ts`): price %
@@ -169,20 +190,31 @@ change −20 to +50, gas $1–$10. Anything outside shows "Data unavailable".
 ## Page layout (`src/components/HomeContent.tsx`)
 
 1. Zip input + location banner. 2. The four hero cards. 3. Graphs (`ChartsSection.tsx`, configs in
-`src/lib/charts/chart-config.ts`): Gas, Groceries, **Housing**, Energy — each with Jan 2025 | 3Y | 5Y | 10Y, era
-shading and "Show national". 4. National county map (`src/components/map/NationalMap.tsx`).
+`src/lib/charts/chart-config.ts`): Gas, Groceries, **Housing**, **Electricity** — each with Jan 2025 | 3Y | 5Y | 10Y,
+era shading, "Show national" and an ⓘ disclosure (button with `aria-expanded`/`aria-controls`, Escape closes; panel
+`chart-info`) holding the description and long notes, leaving at most one short line (`chart-note`) under the graph.
+4. National county map (`src/components/map/NationalMap.tsx`).
+
+**Electricity graph** (`electricity` config): ¢/kWh, bold line = seasonally adjusted (`sa`, the card's %), thin
+line = published monthly price; headline "+x% since Jan 2025 · seasonally adjusted · {price} in {Mon YYYY}";
+"Show national" adds only the U.S. adjusted line.
 
 **Housing graph** (`src/components/charts/HousingChart.tsx`) has three tabs:
 - **Rent**: Zillow ZORI county `rentS` (same county/series as the Rent card; its headline % equals the card's %).
 - **Home prices**: Zillow ZHVI county `hvS` ("Zillow's smoothed, seasonally adjusted typical home value").
 - **Shelter (CPI)**: BLS CPI shelter `SAH1` from the snapshot (all tenants and homeowners).
 
-Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Energy (all configs `size: 'medium'`); one
+Graphs are a 2 × 2 grid from 768px (`md`): Gas | Groceries, Housing | Electricity (all configs `size: 'medium'`); one
 column below.
 Default = Rent when the county shard has `rentS`, else Shelter (CPI). Tabs without data are disabled with "No Zillow
-… data for {county}". Zillow tabs compare against `us-housing.json`. `HOUSING_NOTE` (CPI vs Zillow) sits with the graph.
+… data for {county}". Zillow tabs compare against `us-housing.json`. `HOUSING_NOTE` (CPI vs Zillow) is in the graph's
+ⓘ; the visible line is a short note per tab (`ZORI_SHORT_NOTE`, `ZHVI_SHORT_NOTE`, `SHELTER_SHORT_NOTE`).
 
-**County map:** price metrics only (Home prices, Rent), movers, time-lapse (`counties-timeline.json`). Controls
+**County map:** chips Gas | Rent | Home prices | Groceries | Electricity (`MAP_METRIC_ORDER`, default Home prices).
+Rent and Home prices are county metrics (static pipeline): movers and time-lapse (`counties-timeline.json`). Gas ($
+change, scale ±$0.50), Groceries and Electricity (%) come from `/api/map-metrics` (metro / region / state series):
+a note says why blocks of counties share a color, and there are no movers or Play for them (`NO_MOVERS_NOTE`).
+Tapping a county lists all five values, each with the area it covers (`map-value-{key}`). Controls
 (metric chips, Play) sit above the map, never over it: an absolutely positioned Play button used to cover the
 top-right counties (Maine/New England, much of the upper Midwest on phones) and swallowed those taps. Decorations
 (state mesh, highlight ring, month label) are `pointer-events: none`. Every county record has a zip `z` (most
@@ -219,10 +251,12 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
 releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches
-every CPI area (33; 4 items each incl. `SEHA`, 11 areas per POST, the 3 national overlay series ride along in each),
-every BLS gas series (17 `APU…74714`, packed into the spare room of the CPI POSTs by `planBlsRequests`, ≤ 50 series
-each) and every EIA gas series (27), then writes them with the runtime's own parsers, validators, keys and
-`writeEnvelope`. A full run is **4 BLS requests** (of 500/day; was 3 before `SEHA` was added) and ~27 EIA requests (`--only=gas` also needs `BLS_API_KEY`); BLS batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
+every CPI area (33; 3 items each: `SAF11`, `SAH1`, `SEHA`; 15 areas per POST, the 2 national overlay series ride along
+in each), every BLS gas series (17 `APU…74714`, packed into the spare room of the CPI POSTs by `planBlsRequests`, ≤ 50
+series each), every EIA gas series (27) and EIA residential electricity for every state + DC + US in ONE paged query
+(~7,900 rows → **2 EIA requests**), then writes them with the runtime's own parsers, validators, keys and
+`writeEnvelope`. A full run is **3 BLS requests** (of 500/day; CPI energy `SA0E` is no longer fetched) and ~29 EIA
+requests (`--only=gas` also needs `BLS_API_KEY`; `--only=electricity` needs only `EIA_API_KEY`); batches retry at most 2 times. County unemployment (LAUS) is no longer fetched at runtime. A successful full run writes `refresh:last-success` (ISO time);
 a full run that starts < 12 h after it is skipped (two schedules can land on the same day) unless `--force`
 (workflow_dispatch input `force`). Each full run also writes `refresh:last-attempt` at start; another unforced full
 run within 2 h is skipped, so a failed run plus a coinciding cron can't spend the quota twice. Unknown CLI args
@@ -237,6 +271,7 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
 | `bls:cpi:{areaCode}:all` (`0000` = national, shared) | 21 days |
 | `bls:gas:{areaCode}` (BLS monthly gas tiers; `bls:gas:0000` = BLS national, shared) | 21 days |
 | `eia:gas:epmr:city:{duoarea}` · `eia:gas:epmr:state:{ST}` · `eia:gas:epmr:pad:{1A,1B,1C,2,3,4,5XCA}` · `eia:gas:epmr:national` | 10 days |
+| `eia:electricity:{ST}` (50 states + DC) · `eia:electricity:US` (shared national comparison) | 10 days |
 | `budget:{bls\|eia}:{YYYY-MM-DD}` (runtime upstream counter) | 2 days |
 
 - TTLs are longer than the refresh interval, so keys never expire between runs; a user request is normally a hit.
@@ -262,13 +297,14 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
   are refused (error logged once); EIA still uses the in-memory counter. Local dev/tests use the in-memory fallback.
 - `validate` callbacks reject out-of-range data on read and before write. Concurrent requests for a key share one
   fetch (in-process dedupe). Census/ACS and rent are bundled JSON, not cached.
-- CDN: `s-maxage=86400, stale-while-revalidate=86400` when CPI and gas are both present and not stale;
+- CDN: `s-maxage=86400, stale-while-revalidate=86400` when CPI, gas and (where EIA publishes one) electricity are present and not stale;
   otherwise `s-maxage=300, stale-while-revalidate=300`. A national stand-in for a failed local series
   (`gas.data.fallback` / `cpi.data.fallback === 'national'`, `usesNationalFallback`) counts as degraded too
   (data route, share image, OG image).
 - **BLS data-age staleness** (`isBlsPeriodStale`, `snapshot.ts`): CPI whose latest month ended more than
   75 days ago (`BLS_STALE_DAYS`) is marked `stale` and shown with the stale badge, even if the cache entry is fresh
   (the refresh rewrites `fetchedAt` even when BLS hasn't published a new month). Gas: >10 days (`isGasStale`).
+  Electricity: latest month ended >100 days ago (`ELECTRICITY_STALE_DAYS`; EIA publishes ~2 months after the month).
 - Live `/api/health` checks require `Authorization: Bearer $CRON_SECRET` (`no-store`). Public `/api/health` is cache-only, CDN-cached 60 s (`Vary: Authorization`).
 - **Don't flush; re-run `cache:refresh`** (it overwrites in place). If you must flush, flush only the glob you changed
   (`cache:flush`, dry run first); `:lastgood` copies are kept unless `--include-lastgood`. Flushed keys refill from the
@@ -280,7 +316,10 @@ non-zero on any fetch/write error, any CPI/gas gap, or an empty plan. Secrets: `
 - **Golden zips** (`golden-zips.test.ts`): hand-checked county/CPI/gas expectations taken from the sources, not the code.
 - **Recorded fixtures:** `tests/fixtures/bls-recorded-*.json` and `bls-gas-ap-2024-2026.json` (real BLS responses,
   incl. the 17 `APU…74714` gas series) drive parser and baseline tests (`bls-gas.test.ts` for the BLS gas tiers).
-  `tests/fixtures/snapshots/{zip}.json` drive render tests and Playwright.
+  `eia-electricity-res.json` (real EIA retail-sales rows since 2014 for 11 states + US, trimmed, no key) drives
+  `eia-electricity.test.ts`; MSW serves it (other states reuse WA's rows) with real paging.
+  `tests/fixtures/snapshots/{zip}.json` drive render tests and Playwright; `map-metrics.json` is what
+  `/api/map-metrics` returns for that recorded data (`mockMapMetrics()` in `tests/e2e/helpers.ts`).
 - **Render-level:** `hero-cards.test.tsx` asserts the displayed $ equals the API % × stated base, null/out-of-range →
   "Data unavailable", and signs/arrows. `provenance.test.tsx` requires complete provenance. `no-hardcoded-dates.test.ts`.
 - **Mapping:** `exhaustive-zip-mappings.test.ts` (every zip; valid code sets come from source modules),
@@ -317,9 +356,11 @@ the refresh-cache workflow once (Actions → workflow_dispatch) **before or righ
 - HI and AK gas: BLS publishes only Honolulu (S49F) and Anchorage (S49G), monthly; EIA nothing. Elsewhere in HI/AK
   (Hilo, Maui, Kauai, Fairbanks, Juneau…) the Honolulu / Anchorage price is a labeled stand-in; local prices are
   typically higher, and every surface (card, chart, share, OG, og:description) says so.
-- PO-box/unique zips (`zcta: false`) have no ACS data of their own; they borrow a donor zip's ACS values: the largest
+- PO-box/unique zips (`zcta: false`) have no ACS data of their own; they borrow a donor zip's ACS rent: the largest
   residential zip in the same city (`donorScope: 'city'`), else the most populous in the county (`'county'`) — not
   necessarily the nearest zip.
+- Electricity is a statewide average across utilities: a household's own utility rate (and its change) can differ a
+  lot from it; the card's ⓘ says so. EIA publishes nothing for territories.
 - Zillow county rent covers only ~41% of residential zips (~590 counties). The rest get the CPI shelter card.
 - Using the real HUD USPS crosswalk would need a HUD USER API token.
 - Kalawao HI and AS/GU/MP/VI have no county record (no Zillow tabs, not on the map).

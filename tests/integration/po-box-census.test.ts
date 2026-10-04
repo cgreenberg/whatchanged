@@ -4,14 +4,14 @@
  */
 import { getCensusData } from '@/lib/data/census-acs'
 import { fetchSnapshot } from '@/lib/api/snapshot'
-import { buildTariffCard, buildShelterCard } from '@/lib/hero-cards'
+import { buildShelterCard } from '@/lib/hero-cards'
 import { clearMemCache } from '@/lib/cache/kv'
 import zipCounty from '@/lib/data/zip-county.json'
 import censusAcs from '@/lib/data/census-acs.json'
 import poBoxAcs from '@/lib/data/po-box-acs.json'
 
 const ZIPS = zipCounty as Record<string, { countyFips: string; cityName: string; zcta?: false }>
-const ACS = censusAcs as Record<string, { medianIncome: number; medianRent: number | null; year: number }>
+const ACS = censusAcs as Record<string, { medianRent: number | null; year: number }>
 const DONORS = poBoxAcs.byZip as Record<string, string>
 
 describe('PO-box zip ACS fallback', () => {
@@ -29,7 +29,7 @@ describe('PO-box zip ACS fallback', () => {
     const donor = d.approxFromZip!
     expect(ZIPS[donor].zcta).toBeUndefined()
     expect(ZIPS[donor].countyFips).toBe(ZIPS[zip].countyFips)
-    expect(d.medianIncome).toBe(ACS[donor].medianIncome)
+    expect(d.medianRent).toBe(ACS[donor].medianRent)
     expect(d.zip).toBe(zip)
   })
 
@@ -42,25 +42,21 @@ describe('PO-box zip ACS fallback', () => {
     expect(DONORS['98683']).toBeUndefined()
   })
 
-  test('every donor is a ZCTA with ACS income in the same county', () => {
+  test('every donor is a ZCTA with ACS data in the same county', () => {
     for (const [po, donor] of Object.entries(DONORS)) {
       expect(ZIPS[po].zcta).toBe(false)
-      expect(ACS[donor].medianIncome).toBeGreaterThan(0)
+      expect(ACS[donor]).toBeDefined()
       expect(ZIPS[donor].countyFips).toBe(ZIPS[po].countyFips)
     }
   })
 
-  test('tariff + shelter cards label the borrowed zip', async () => {
+  test('the shelter card labels the borrowed zip', async () => {
     const s = await fetchSnapshot('98687')
     expect(s).not.toBeNull()
     const c = s!.census.data! as NonNullable<typeof s>["census"]["data"] & { donorZip?: string }
     const donor = (c.donorZip ?? c!.approxFromZip)!
-    const tariff = buildTariffCard(s!)
-    expect(tariff.status).toBe('ok')
+    expect(donor).toMatch(/^\d{5}$/)
     // "nearest" was false for many donors; the label says how the donor was chosen
-    expect(tariff.provenance.asOf).toMatch(
-      new RegExp(`^income: Census ACS \\d{4}, borrowed from zip ${donor} \\(largest residential zip in the (city|county|area)\\)$`))
-    expect(tariff.provenance.geography).toContain('estimate')
     const shelter = buildShelterCard(s!)
     if (shelter.status === 'ok' && shelter.detail?.startsWith('Base:')) {
       expect(shelter.detail).toContain(`borrowed from zip ${donor} (largest residential zip in the`)

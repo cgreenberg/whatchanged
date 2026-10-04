@@ -1,4 +1,4 @@
-name: Refresh data cache (BLS CPI, EIA gas → Upstash)
+name: Refresh data cache (BLS CPI + gas, EIA gas + electricity → Upstash)
 
 # Preloads every series the site can request, so user requests are cache hits
 # and runtime never has to spend the BLS 500/day quota. Runtime TTLs (BLS 21d,

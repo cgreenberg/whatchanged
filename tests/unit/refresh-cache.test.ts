@@ -1,5 +1,6 @@
 import { server } from '../mocks/server'
-import { blsFixtureFor } from '../mocks/handlers'
+import { blsFixtureFor, electricityRowsFor } from '../mocks/handlers'
+import { hasElectricitySeries, electricityCacheKey, type EiaElectricityRow } from '@/lib/api/eia-electricity'
 import {
   clearMemCache,
   getCachedEnvelope,
@@ -41,7 +42,8 @@ function runtimeKeysFor(zip: string): string[] {
   const loc = lookupZip(zip)!
   const area = getMetroCpiAreaForCounty(loc.countyFips, loc.stateAbbr)
   const gas = getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips)
-  return [...new Set([cpiCacheKey(area.areaCode), gas.cacheKey, nationalGasLookupFor(gas).cacheKey])]
+  const elec = hasElectricitySeries(loc.stateAbbr) ? [electricityCacheKey(loc.stateAbbr), electricityCacheKey('US')] : []
+  return [...new Set([cpiCacheKey(area.areaCode), gas.cacheKey, nationalGasLookupFor(gas).cacheKey, ...elec])]
 }
 
 const fastOpts = { blsPauseMs: 0, backoffMs: 0 }
@@ -67,7 +69,13 @@ describe('planRefresh', () => {
 
   test('plans prices only: no county unemployment (LAUS) targets', () => {
     expect(plan).not.toHaveProperty('lausAreas')
-    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'gasLookups'])
+    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'electricityStates', 'gasLookups'])
+  })
+
+  test('electricity: every state + DC that any zip resolves to, plus US; no territories', () => {
+    expect(plan.electricityStates).toHaveLength(52)
+    expect(plan.electricityStates).toEqual(expect.arrayContaining(['US', 'DC', 'AK', 'HI', 'ME']))
+    for (const t of ['PR', 'GU', 'VI']) expect(plan.electricityStates).not.toContain(t)
   })
 
   test('covers every CPI area (23 metros + 9 divisions + national) and every gas series', () => {
@@ -96,10 +104,12 @@ describe('planRefresh', () => {
     expect(getGasLookup('HI', '0490', '15001', { eiaOnly: true }).duoarea).toBe('NUS')
   })
 
-  test('BLS gas series ride along in the CPI batches: 4 BLS requests, each ≤ 50 series', () => {
+  test('BLS gas series ride along in the CPI batches: 3 BLS requests, each ≤ 50 series', () => {
     const reqs = planBlsRequests(plan)
-    // 32 local CPI areas × 4 items (incl. rent of primary residence SEHA) + national + 17 BLS gas series
-    expect(reqs.length).toBe(4)
+    // 32 local CPI areas × 3 items (food at home, shelter, rent of primary residence SEHA) + national + 17 BLS gas series
+    expect(reqs.length).toBe(3)
+    // CPI energy (SA0E) is no longer fetched (the Energy graph became the Electricity graph)
+    expect(reqs.flatMap((r) => r.ids).some((id) => id.endsWith('SA0E'))).toBe(false)
     // Every local CPI area's SEHA series is requested in the same batch as its other items
     for (const r of reqs) for (const a of r.cpiAreas) expect(r.ids).toContain(`CUUR${a.areaCode}SEHA`)
     expect(reqs.every((r) => r.ids.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
@@ -112,6 +122,7 @@ describe('planRefresh', () => {
     const planned = new Set([
       ...plan.cpiAreas.map((a) => cpiCacheKey(a.areaCode)),
       ...plan.gasLookups.map((g) => g.cacheKey),
+      ...plan.electricityStates!.map((st) => electricityCacheKey(st)),
     ])
     for (const zip of SAMPLE_ZIPS) for (const key of runtimeKeysFor(zip)) expect(planned).toContain(key)
   })
@@ -127,23 +138,31 @@ describe('runRefresh — full plan with mocked upstreams', () => {
         return Object.fromEntries(ids.map((id) => [id, blsFixtureFor(id)]))
       },
       fetchGas: async () => buildSeriesFromData(eiaFixture.response.data as EiaRawPoint[]),
+      fetchElectricity: async (states) => {
+        elecRequests.push(states)
+        return { rows: electricityRowsFor(states) as EiaElectricityRow[], requests: 2 }
+      },
       write: async () => undefined,
       sleep: async () => undefined,
       log: () => undefined,
     }
+    const elecRequests: string[][] = []
     const report = await runRefresh(plan, deps, fastOpts)
     const s = summarize(report)
     expect(blsBatches.every((b) => b.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
+    // Electricity: ONE query for every state + US (paged: 2 EIA requests)
+    expect(elecRequests).toEqual([plan.electricityStates])
     expect(blsBatches.every((b) => new Set(b).size === b.length)).toBe(true)
     // CPI batches of CPI_AREAS_PER_REQUEST areas; BLS gas series fill their spare room, overflowing into one more
     expect(Math.ceil((plan.cpiAreas.length - 1) / CPI_AREAS_PER_REQUEST)).toBe(3)
     expect(s.blsCalls).toBe(planBlsRequests(plan).length)
-    // 32 local CPI areas × 4 items (+ national) + 17 BLS gas series → 4 BLS requests per full refresh
-    expect(s.blsCalls).toBe(4)
+    // 32 local CPI areas × 3 items (+ national) + 17 BLS gas series → 3 BLS requests per full refresh
+    expect(s.blsCalls).toBe(3)
     expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
-    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length)
+    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length + 2)
     expect(s.errors).toBe(0)
-    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length)
+    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length + plan.electricityStates!.length)
+    expect(report.results.filter((r) => r.key.startsWith('eia:electricity:')).every((r) => r.status === 'written')).toBe(true)
   })
 
   test('a failing BLS batch is retried with backoff, then reported as errors (no writes)', async () => {

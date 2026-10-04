@@ -1,7 +1,6 @@
 import fc from 'fast-check'
-import { estimateTariffCost } from '@/lib/tariff'
 import { pctChange } from '@/lib/api/bls-common'
-import { computeGroceryImpact, computeShelterImpact } from '@/lib/compute/dollar-translations'
+import { computeGroceryImpact, computeShelterImpact, computeElectricityImpact } from '@/lib/compute/dollar-translations'
 import { isValidCpi, isValidGasSeries } from '@/lib/api/validate'
 import type { CpiData } from '@/types'
 import type { GasSeriesData } from '@/lib/api/eia'
@@ -35,57 +34,25 @@ describe('compute properties', () => {
     })
   })
 
-  // 2.2b: Tariff estimate
-  // Source: src/lib/tariff.ts
-  // Formula: Math.round(income * 0.0205) — returns 0 for income <= 0
-  describe('tariff estimate', () => {
-    it('equals Math.round(income * 0.0205) for positive income', () => {
+  // Electricity $/mo = price change (¢/kWh) × monthly use (kWh) ÷ 100: whole dollars, sign kept
+  describe('electricity impact', () => {
+    it('has the sign of the price change and grows with use', () => {
       fc.assert(
-        fc.property(
-          fc.double({ min: 10000, max: 500000, noNaN: true }),
-          (income) => {
-            const result = estimateTariffCost(income)
-            expect(result).toBe(Math.round(income * 0.0205))
-          }
-        )
+        fc.property(fc.double({ min: -20, max: 20, noNaN: true }), fc.double({ min: 100, max: 2000, noNaN: true }), (cents, kwh) => {
+          const v = computeElectricityImpact(cents, kwh)!
+          expect(Number.isInteger(v)).toBe(true)
+          if (cents * kwh >= 100) expect(v).toBeGreaterThan(0)
+          if (cents * kwh <= -100) expect(v).toBeLessThan(0)
+          expect(Math.abs(computeElectricityImpact(cents, kwh * 2)!)).toBeGreaterThanOrEqual(Math.abs(v))
+        })
       )
     })
 
-    it('is never NaN for positive income', () => {
+    it('is null (never 0) without a usage figure', () => {
       fc.assert(
-        fc.property(
-          fc.double({ min: 10000, max: 500000, noNaN: true }),
-          (income) => {
-            const result = estimateTariffCost(income)
-            expect(isNaN(result)).toBe(false)
-          }
-        )
-      )
-    })
-
-    it('is always >= 0 for positive income', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 10000, max: 500000, noNaN: true }),
-          (income) => {
-            const result = estimateTariffCost(income)
-            expect(result).toBeGreaterThanOrEqual(0)
-          }
-        )
-      )
-    })
-
-    it('is approximately proportional (double income ≈ double tariff within rounding)', () => {
-      fc.assert(
-        fc.property(
-          fc.double({ min: 10000, max: 250000, noNaN: true }),
-          (income) => {
-            const single = estimateTariffCost(income)
-            const double_ = estimateTariffCost(income * 2)
-            // Allow ±1 for rounding
-            expect(Math.abs(double_ - single * 2)).toBeLessThanOrEqual(1)
-          }
-        )
+        fc.property(fc.double({ min: -20, max: 20, noNaN: true }), fc.constantFrom(null, undefined, 0, -5, NaN), (cents, kwh) => {
+          expect(computeElectricityImpact(cents, kwh as number | null | undefined)).toBeNull()
+        })
       )
     })
   })

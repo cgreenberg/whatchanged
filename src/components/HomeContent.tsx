@@ -46,13 +46,8 @@ export default function HomeContent() {
     setState('loading')
     setErrorMsg('')
     try {
-      const params = new URLSearchParams()
-      if (q.city && q.state) {
-        params.set('city', q.city)
-        params.set('state', q.state)
-      }
-      const qs = params.toString()
-      const res = await fetch(`/api/data/${zip}${qs ? `?${qs}` : ''}`, { signal: ctrl.signal })
+      // The city/state only name the place in the page URL; the data comes from the zip alone
+      const res = await fetch(`/api/data/${zip}`, { signal: ctrl.signal })
       if (res.status === 404) throw new Error('Zip code not found')
       if (!res.ok) throw new Error('Failed to load data')
       const data: EconomicSnapshot = await res.json()

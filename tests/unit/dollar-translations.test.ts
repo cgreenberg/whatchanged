@@ -2,8 +2,8 @@ import {
   computeGroceryImpact,
   computeShelterImpact,
   computeDollarImpact,
+  computeElectricityImpact,
   ANNUAL_GROCERY_BASE,
-  NATIONAL_MEDIAN_INCOME,
 } from '@/lib/compute/dollar-translations'
 
 describe('computeGroceryImpact = $6,000/yr × % change (signed)', () => {
@@ -59,12 +59,8 @@ describe('computeDollarImpact', () => {
     expect(computeDollarImpact({ gasChange: 1.04 }).gas).toBe(1.04)
   })
 
-  test('tariff reuses pre-computed value', () => {
-    expect(computeDollarImpact({ tariffEstimatedCost: 1278 }).tariff).toBe(1278)
-  })
-
   test('all impacts are null (not 0) when no data provided', () => {
-    expect(computeDollarImpact({})).toEqual({ groceries: null, shelter: null, gas: null, tariff: null })
+    expect(computeDollarImpact({})).toEqual({ groceries: null, shelter: null, gas: null, electricity: null })
   })
 
   test('combines the individual functions', () => {
@@ -72,13 +68,28 @@ describe('computeDollarImpact', () => {
       groceriesChangePct: -2.6,
       rentIndexChangePct: 3.5,
       gasChange: -0.52,
-      tariffEstimatedCost: 1278,
       medianRent: 1400,
+      electricitySaChangeCents: 6.13,
+      electricityUsageKwh: 532,
     })
-    expect(r).toEqual({ groceries: -156, shelter: 588, gas: -0.52, tariff: 1278 })
+    expect(r).toEqual({ groceries: -156, shelter: 588, gas: -0.52, electricity: 33 })
   })
 })
 
-test('single national median income constant', () => {
-  expect(NATIONAL_MEDIAN_INCOME).toBe(74580)
+describe('computeElectricityImpact = price change (¢/kWh) × monthly use (kWh) ÷ 100, $/mo (signed)', () => {
+  test('+6.13¢/kWh × 532 kWh → +$33/mo; −6.13¢ → −$33', () => {
+    expect(computeElectricityImpact(6.13, 532)).toBe(33)
+    expect(computeElectricityImpact(-6.13, 532)).toBe(-33)
+  })
+
+  test('a tiny change rounds to $0, never −$0', () => {
+    expect(Object.is(computeElectricityImpact(-0.01, 500), 0)).toBe(true)
+  })
+
+  test('missing price change or usage → null', () => {
+    expect(computeElectricityImpact(null, 500)).toBeNull()
+    expect(computeElectricityImpact(1, null)).toBeNull()
+    expect(computeElectricityImpact(1, 0)).toBeNull()
+    expect(computeElectricityImpact(NaN, 500)).toBeNull()
+  })
 })

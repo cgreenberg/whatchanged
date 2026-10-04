@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, type ReactNode } from 'react'
+import { useId, useRef, useState, useMemo, type ReactNode } from 'react'
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -16,7 +16,8 @@ import {
   ERAS, ERA_FILL, eraSpans, firstOnOrAfter, onOrAfter, filterByTimeframe, normalizeEachSeries, firstDateOf, lastDateOf,
   splitPreliminary, PRELIM_SUFFIX, GAP_SUFFIX, findGaps, withGapConnectors, dotDates, type Row,
 } from '@/lib/charts/chart-data'
-import { fmtMonthYear, fmtDay, monthsBetween, DATE_UNAVAILABLE } from '@/lib/format'
+import { fmtMonthYear, fmtDay, fmtSignedPct, monthsBetween, DATE_UNAVAILABLE } from '@/lib/format'
+import { BASELINE_MONTH_LABEL } from '@/lib/baseline'
 import type { Provenance } from '@/lib/provenance'
 import { ProvenanceLine } from '@/components/ProvenanceLine'
 
@@ -77,12 +78,36 @@ interface EraChartProps {
   weeklyGasBaseline?: boolean
   /** Appended to the provenance geography as "(dashed: …)" only while the national line is shown. */
   nationalLabel?: string
-  /** One-line explanation shown above the provenance footer. */
+  /** One short line shown above the provenance footer (longer explanations go in `info`). */
   note?: string
+  /** Lines shown in the graph's ⓘ disclosure after the description (e.g. the Housing graph's CPI-vs-Zillow note). */
+  info?: string[]
 }
 
+/** "+3.1% since Jan 2025 · detail" above a graph: the same % as the matching card. */
+export function ChartHeadline({ pct, detail, caveat, testId = 'chart-headline' }: {
+  pct: number; detail?: string; caveat?: string | null; testId?: string
+}) {
+  return (
+    <div className="mb-2" data-testid={testId}>
+      <p className="text-sm text-zinc-200">
+        <span className="text-2xl text-white mr-2" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }} data-testid={`${testId}-pct`}>
+          {fmtSignedPct(pct)}
+        </span>
+        <span className="text-zinc-400">since {BASELINE_MONTH_LABEL}</span>
+        {detail && <span className="text-zinc-500"> · {detail}</span>}
+      </p>
+      {caveat && <p className="text-[11px] text-amber-300/80" data-testid="flag-note">{caveat}</p>}
+    </div>
+  )
+}
+
+/**
+ * Graph title row. The ⓘ is a disclosure like the hero cards' (button with aria-expanded /
+ * aria-controls; Escape closes): it opens a panel under the header with the description and `info`.
+ */
 function ChartHeader({
-  config, timeframe, setTimeframe, showNationalToggle, showNational, setShowNational, stale,
+  config, timeframe, setTimeframe, showNationalToggle, showNational, setShowNational, stale, info,
 }: {
   config: ChartConfig
   timeframe: Timeframe
@@ -91,28 +116,38 @@ function ChartHeader({
   showNational: boolean
   setShowNational: (v: boolean) => void
   stale?: boolean
+  info?: string[]
 }) {
-  const [showTooltip, setShowTooltip] = useState(false)
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const lines = [config.description, ...(info ?? [])].filter((l): l is string => !!l && l.trim().length > 0)
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-      <h3 className="text-sm font-inter font-medium text-zinc-300 relative">
+    <div
+      className="mb-2"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          setOpen(false)
+          buttonRef.current?.focus()
+        }
+      }}
+    >
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h3 className="text-sm font-inter font-medium text-zinc-300 relative flex items-center">
         {config.title}
-        {config.description && (
-          <span className="relative inline-block ml-1">
-            <button
-              type="button"
-              className="text-zinc-500 hover:text-zinc-300 cursor-help"
-              onClick={() => setShowTooltip(prev => !prev)}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              aria-label="More info"
-            >&#9432;</button>
-            {showTooltip && (
-              <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-56 px-3 py-2 text-xs font-normal text-zinc-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg">
-                {config.description}
-              </span>
-            )}
-          </span>
+        {lines.length > 0 && (
+          <button
+            ref={buttonRef}
+            type="button"
+            className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full text-sm leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${open ? 'text-white bg-zinc-800' : 'text-zinc-500 hover:text-zinc-200'}`}
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={`${open ? 'Hide' : 'Show'} details for ${config.title}`}
+            onClick={() => setOpen(o => !o)}
+            data-testid="chart-info-toggle"
+          >
+            <span aria-hidden="true">ⓘ</span>
+          </button>
         )}
         {stale && (
           <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-300 border border-amber-300/40 rounded px-1.5 py-0.5" data-testid="stale-badge">
@@ -135,10 +170,21 @@ function ChartHeader({
         <TimeframeToggle selected={timeframe} onChange={setTimeframe} />
       </div>
     </div>
+      {lines.length > 0 && (
+        <div
+          id={panelId}
+          hidden={!open}
+          className="mt-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 space-y-1.5 text-[11px] leading-snug text-zinc-400"
+          data-testid="chart-info"
+        >
+          {lines.map((l, i) => <p key={i} data-testid="chart-info-line">{l}</p>)}
+        </div>
+      )}
+    </div>
   )
 }
 
-export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note }: EraChartProps) {
+export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note, info }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
   const mainKey = config.series[0]?.dataKey ?? ''
@@ -202,6 +248,8 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
 
   const hasLocal = displayData.some(d => typeof d[mainKey] === 'number' || typeof d[`${mainKey}${PRELIM_SUFFIX}`] === 'number')
   const hasNationalData = (nationalData?.length ?? 0) > 0
+  // Only series the national data actually carries get a U.S. line (and a legend entry)
+  const nationalKeys = new Set((nationalData ?? []).flatMap(d => Object.keys(d)).filter(k => k !== 'date' && k !== 'preliminary'))
   // 'large' spans the whole charts grid; 'medium' (all four price charts) takes one cell of the 2 × 2 grid
   const sizeClass = config.size === 'large' ? 'col-span-full min-w-0' : 'min-w-0'
 
@@ -227,6 +275,7 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
       showNational={showNational}
       setShowNational={setShowNational}
       stale={stale}
+      info={info}
     />
   )
 
@@ -313,7 +362,8 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
                 <Bar key={s.dataKey} dataKey={s.dataKey} fill={s.color} name={s.label} />
               ) : (
                 <Line key={`${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={s.dataKey} stroke={s.color}
-                  strokeWidth={2} name={s.label} dot={dot} animationDuration={600} animationEasing="ease-out" />
+                  strokeWidth={s.strokeWidth ?? 2} strokeOpacity={s.strokeOpacity} strokeDasharray={s.strokeDasharray}
+                  name={s.label} dot={dot} animationDuration={600} animationEasing="ease-out" />
               )
             })}
             {gaps.map((g, i) => (
@@ -342,7 +392,7 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
                   strokeWidth={2} name={`${s.label} (preliminary)`} dot={dot} isAnimationActive={false} connectNulls />
               )
             })()}
-            {showNational && config.series.map(s => (
+            {showNational && config.series.filter(s => nationalKeys.has(s.dataKey)).map(s => (
               <Line key={`national_${s.dataKey}-${timeframe}`} type={s.type ?? 'monotone'} dataKey={`national_${s.dataKey}`}
                 stroke={s.color} strokeWidth={1} strokeDasharray="6 3" strokeOpacity={0.5} name={`${s.label} (${nationalLabel ?? 'U.S.'})`}
                 dot={false} animationDuration={600} animationEasing="ease-out" />

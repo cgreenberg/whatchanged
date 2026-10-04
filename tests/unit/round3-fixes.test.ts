@@ -230,7 +230,7 @@ test('a full refresh started < 2h ago blocks another unforced run', () => {
 
 // ---------------------------------------------------------------- LOW4 CPI union of months
 
-test('CPI points are the union of months: a groceries gap keeps shelter/energy months', () => {
+test('CPI points are the union of months: a groceries gap keeps the shelter months', () => {
   const ids = cpiSeriesIds('S48A')
   const pt = (y: number, m: number, v: number) => ({ year: String(y), period: `M${String(m).padStart(2, '0')}`, value: String(v) })
   const months = (from: number, to: number, base: number) => Array.from({ length: to - from + 1 }, (_, i) => pt(2026, from + i, base + i))
@@ -239,12 +239,11 @@ test('CPI points are the union of months: a groceries gap keeps shelter/energy m
     {
       [ids.groceries]: [jan25(300), pt(2026, 1, 310), pt(2026, 8, 312)], // gap Feb–Jul 2026
       [ids.shelter]: [jan25(400), ...months(1, 8, 410)],
-      [ids.energy]: [jan25(250), ...months(1, 8, 260)],
     },
     { areaCode: 'S48A', areaName: 'Phoenix-Mesa-Scottsdale', tier: 1 }
   )
   const byDate = Object.fromEntries(d.series.map((p) => [p.date, p]))
-  expect(byDate['2026-04']).toEqual({ date: '2026-04', groceries: null, shelter: 413, energy: 263 })
+  expect(byDate['2026-04']).toEqual({ date: '2026-04', groceries: null, shelter: 413 })
   expect(byDate['2026-08'].groceries).toBe(312)
   expect(d.series.filter((p) => p.shelter !== null).length).toBe(9)
   expect(d.series.map((p) => p.date)).toEqual([...d.series.map((p) => p.date)].sort())

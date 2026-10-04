@@ -1,6 +1,11 @@
 // County-level price data, built offline by scripts/build-local-data.py and served as static JSON
 // from /public/data. No API keys, no runtime upstream calls. Used by the national county map and the
 // Housing graph's Zillow tabs. Every date/window shown comes from meta.json or the series themselves.
+// The map's Gas / Groceries / Electricity layers come from /api/map-metrics (cache reads only).
+
+import type { MapMetrics } from '@/lib/api/map-metrics'
+import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
+import { fmtSignedDollars, fmtMonthYear, fmtDay } from '@/lib/format'
 
 /** Site-wide baseline month (Jan 20 2025 → monthly Zillow data use the January 2025 value). */
 export const BASELINE_MONTH = '2025-01'
@@ -175,10 +180,14 @@ export function provenance(
 
 // ---------- Map metrics (prices only) ----------
 
-export type MetricKey = 'rent' | 'hv'
+/** County-level map metrics (static Zillow pipeline): movers lists and the time-lapse apply. */
+export type CountyMetricKey = 'rent' | 'hv'
+/** Metro / regional / statewide series from the live cache: one value per area, no movers or time-lapse. */
+export type LiveMetricKey = 'gas' | 'groceries' | 'elec'
+export type MetricKey = CountyMetricKey | LiveMetricKey
 
 export interface MetricDef {
-  key: MetricKey
+  key: CountyMetricKey
   label: string
   short: string
   clamp: number // symmetric color domain, %
@@ -201,6 +210,107 @@ export const METRICS: MetricDef[] = [
   },
 ]
 
+export interface LiveMetricDef {
+  key: LiveMetricKey
+  label: string
+  short: string
+  /** Symmetric color domain: $/gal for gas, % for the others. */
+  clamp: number
+  unit: 'usd' | 'pct'
+  /** Why blocks of counties share one color. */
+  scopeNote: string
+}
+
+export const LIVE_METRICS: LiveMetricDef[] = [
+  {
+    key: 'gas', label: 'Gas prices ($/gal change)', short: 'Gas', clamp: 0.5, unit: 'usd',
+    scopeNote: 'Gas prices are reported by metro area, state or region, not by county, so neighboring counties share one color.',
+  },
+  {
+    key: 'groceries', label: 'Grocery prices (CPI)', short: 'Groceries', clamp: 5, unit: 'pct',
+    scopeNote: 'Grocery prices (BLS CPI) are reported by metro area or Census division, not by county, so whole regions share one color.',
+  },
+  {
+    key: 'elec', label: 'Electricity prices', short: 'Electricity', clamp: 20, unit: 'pct',
+    scopeNote: 'Electricity prices are statewide averages (EIA), so each state is one color.',
+  },
+]
+
+/** Chip order on the map: Gas | Rent | Home prices | Groceries | Electricity. */
+export const MAP_METRIC_ORDER: MetricKey[] = ['gas', 'rent', 'hv', 'groceries', 'elec']
+
+export const isCountyMetric = (k: MetricKey): k is CountyMetricKey => k === 'rent' || k === 'hv'
+
+/** Shown instead of the movers lists for metro / regional / statewide metrics. */
+export const NO_MOVERS_NOTE = "No biggest-mover lists for this measure: it isn't published county by county."
+
+export function fetchMapMetrics(): Promise<MapMetrics> {
+  return getJson<MapMetrics>('/api/map-metrics')
+}
+
+export interface LiveCountyValue {
+  /** Gas: $/gal change; groceries / electricity: % change. */
+  value: number
+  /** "+$0.12/gal since Jan 2025", "+2.1% since Jan 2025". */
+  text: string
+  /** The series' area: "New England (PADD 1A) avg", "Atlanta metro", "Maine statewide". */
+  area: string
+  /** Extra detail: level, source, adjustment, as-of. */
+  detail: string
+  asOf: string | null
+}
+
+/** One county's value for a live metric (null when the county's series is not cached / not published). */
+export function liveValue(m: MapMetrics | null | undefined, fips: string, key: LiveMetricKey): LiveCountyValue | null {
+  if (!m) return null
+  if (key === 'elec') {
+    const st = STATE_FIPS_MAP[fips.slice(0, 2)]?.abbr
+    const e = st ? m.electricity?.[st] : undefined
+    if (!e) return null
+    return {
+      value: e.pct, text: `${fmtPct(e.pct)} ${sinceBaseline(null)}`, area: `${e.label} statewide`,
+      detail: `${e.cents.toFixed(1)}¢/kWh in ${fmtMonthYear(e.asOf)} · EIA, seasonally adjusted %`, asOf: e.asOf,
+    }
+  }
+  const row = m.counties?.[fips]
+  if (!row) return null
+  if (key === 'gas') {
+    const g = m.gas?.[row[0]]
+    if (!g || g.change == null || g.current == null) return null
+    const when = g.asOf ? (g.frequency === 'weekly' ? `week of ${fmtDay(g.asOf)}` : fmtMonthYear(g.asOf)) : ''
+    return {
+      value: g.change, text: `${fmtSignedDollars(g.change)}/gal ${sinceBaseline(null)}`,
+      area: g.standIn ? `${g.label} (no series for this county)` : g.label,
+      detail: `$${g.current.toFixed(2)}/gal · ${g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'}${when ? `, ${when}` : ''}`,
+      asOf: g.asOf,
+    }
+  }
+  const c = m.groceries?.[row[1]]
+  if (!c || c.pct == null) return null
+  return {
+    value: c.pct, text: `${fmtPct(c.pct)} ${sinceBaseline(null)}`, area: c.label,
+    detail: `BLS CPI food at home${c.asOf ? `, ${fmtMonthYear(c.asOf)}` : ''}`, asOf: c.asOf,
+  }
+}
+
+/** Latest as-of among a live metric's areas ("YYYY-MM[-DD]"), for the footer. */
+export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): string | null {
+  if (!m) return null
+  const dates = key === 'elec'
+    ? Object.values(m.electricity ?? {}).map(e => e.asOf)
+    : key === 'gas' ? (m.gas ?? []).map(g => g.asOf) : (m.groceries ?? []).map(c => c.asOf)
+  return dates.filter((d): d is string => !!d).sort().pop() ?? null
+}
+
+/** Footer for a live metric: source · geography · window · as-of · adjustment. */
+export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined): string {
+  const asOf = liveAsOf(m, key)
+  const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
+  if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline · metro, state or region · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
+  if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
+  return `EIA average residential electricity price · statewide · ${sinceBaseline(null)} · ${latest} · seasonally adjusted by whatchanged`
+}
+
 export function metricFooter(def: MetricDef, meta: LocalMeta | null, geography = 'county'): string {
   return provenance(meta, def.sourceKey, geography, def.window(meta) || undefined)
 }
@@ -210,7 +320,7 @@ export const MOVERS_MIN_JOBS = 75000
 /** Biggest movers among large counties (jobs count above the cut), excluding counties whose jobs count is
  * approximated (`approx` includes 'emp': Connecticut), counties with an approximated figure for this metric,
  * and flagged outliers. Top and bottom lists never overlap. */
-export function moversFor(data: CountyMap, metric: MetricKey, n = 5) {
+export function moversFor(data: CountyMap, metric: CountyMetricKey, n = 5) {
   const rows = Object.entries(data)
     .filter(([, c]) =>
       typeof c[metric] === 'number' && Number.isFinite(c[metric]) &&

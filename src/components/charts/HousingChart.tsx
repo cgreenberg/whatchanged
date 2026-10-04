@@ -1,16 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { EraChart } from './EraChart'
+import { EraChart, ChartHeadline } from './EraChart'
 import { getChartInput, type ChartInput } from './chart-inputs'
 import { housingTabConfigs, type ChartConfig } from '@/lib/charts/chart-config'
 import {
   fetchCounty, fetchUsHousing, seriesRows, seriesChangeSinceBaseline, flagNote, fmtMoney,
   type CountyRecord, type UsHousing,
 } from '@/lib/county-data'
-import { fmtSignedPct, fmtMonthYear } from '@/lib/format'
-import { BASELINE_MONTH_LABEL } from '@/lib/baseline'
+import { fmtMonthYear } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
-import { monthOlderThan, RENT_STALE_DAYS } from '@/lib/hero-cards'
+import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE } from '@/lib/hero-cards'
 
 export type HousingTab = 'rent' | 'homePrices' | 'shelter'
 
@@ -23,10 +22,9 @@ const TABS: Array<{ key: HousingTab; label: string }> = [
 const ZILLOW_URL = 'https://www.zillow.com/research/data/'
 const ZILLOW_RENT_ADJ = 'seasonally adjusted by whatchanged'
 const ZILLOW_HV_ADJ = 'smoothed and seasonally adjusted by Zillow'
-export const ZHVI_NOTE =
-  "Zillow Home Value Index (ZHVI): Zillow's smoothed, seasonally adjusted estimate of the typical home value (middle third of homes)."
-export const ZORI_NOTE =
-  'Zillow Observed Rent Index (ZORI): typical asking rent on new leases, the same county series as the Rent card.'
+/** The one short line under each Zillow tab; the full description and the CPI-vs-Zillow note are in the graph's ⓘ. */
+export const ZORI_SHORT_NOTE = 'Asking rents on new leases (Zillow), same series as the Rent card.'
+export const ZHVI_SHORT_NOTE = 'Typical home value (Zillow), smoothed and seasonally adjusted.'
 
 type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | null } | { status: 'error' }
 
@@ -128,7 +126,7 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
     config = shelterConfig
     const pct = snapshot.cpi.data?.shelterChange
     if (typeof pct === 'number' && Number.isFinite(pct)) {
-      headline = <Headline pct={pct} detail="CPI shelter (all renters and homeowners)" />
+      headline = <ChartHeadline testId="housing-headline" pct={pct} detail="CPI shelter (all renters and homeowners)" />
     }
   } else {
     input = zillowTabInput(active, c, us, geoName)
@@ -140,7 +138,8 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
     const caveat = flagNote(c, active === 'rent' ? 'rent' : 'hv')
     if (pct != null) {
       headline = (
-        <Headline
+        <ChartHeadline
+          testId="housing-headline"
           pct={pct}
           detail={level
             ? active === 'rent'
@@ -151,7 +150,11 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
         />
       )
     }
-    input = { ...input, note: `${active === 'rent' ? ZORI_NOTE : ZHVI_NOTE} ${shelterNote(snapshot)}` }
+    input = {
+      ...input,
+      note: active === 'rent' ? ZORI_SHORT_NOTE : ZHVI_SHORT_NOTE,
+      info: [HOUSING_NOTE],
+    }
   }
 
   return (
@@ -166,26 +169,8 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
         nationalLabel={input.nationalLabel}
         headline={<>{tabs}{headline}</>}
         note={input.note}
+        info={input.info}
       />
-    </div>
-  )
-}
-
-function shelterNote(snapshot: EconomicSnapshot): string {
-  return getChartInput('cpi-shelter', snapshot).note ?? ''
-}
-
-function Headline({ pct, detail, caveat }: { pct: number; detail?: string; caveat?: string | null }) {
-  return (
-    <div className="mb-2" data-testid="housing-headline">
-      <p className="text-sm text-zinc-200">
-        <span className="text-2xl text-white mr-2" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }} data-testid="housing-headline-pct">
-          {fmtSignedPct(pct)}
-        </span>
-        <span className="text-zinc-400">since {BASELINE_MONTH_LABEL}</span>
-        {detail && <span className="text-zinc-500"> · {detail}</span>}
-      </p>
-      {caveat && <p className="text-[11px] text-amber-300/80" data-testid="flag-note">{caveat}</p>}
     </div>
   )
 }

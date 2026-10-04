@@ -3,6 +3,12 @@
 
 import type { CpiData } from '@/types'
 import type { GasSeriesData } from './eia'
+import {
+  ELECTRICITY_PRICE_RANGE,
+  ELECTRICITY_CHANGE_RANGE,
+  ELECTRICITY_USAGE_RANGE,
+  type ElectricitySeriesData,
+} from './eia-electricity'
 
 export const CPI_CHANGE_RANGE = [-20, 50] as const
 export const GAS_PRICE_RANGE = [1, 10] as const
@@ -24,5 +30,17 @@ export function isValidGasSeries(d: GasSeriesData | null | undefined): boolean {
   if (!inRange(d.current, GAS_PRICE_RANGE)) return false
   if (!inRange(d.baseline, GAS_PRICE_RANGE)) return false
   if (typeof d.baselineDate !== 'string' || typeof d.latestDate !== 'string') return false
+  return true
+}
+
+/** EIA residential electricity: price 5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo (or none). */
+export function isValidElectricity(d: ElectricitySeriesData | null | undefined): boolean {
+  if (!d || !Array.isArray(d.series) || !d.series.length) return false
+  for (const v of [d.current, d.baseline, d.saCurrent, d.saBaseline]) {
+    if (!inRange(v, ELECTRICITY_PRICE_RANGE)) return false
+  }
+  if (!inRange(d.change, ELECTRICITY_CHANGE_RANGE)) return false
+  if (d.usageKwh !== null && !inRange(d.usageKwh, ELECTRICITY_USAGE_RANGE)) return false
+  if (typeof d.latestPeriod !== 'string' || typeof d.baselinePeriod !== 'string') return false
   return true
 }

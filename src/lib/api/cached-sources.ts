@@ -10,7 +10,13 @@ import type { CpiData } from '@/types'
 import { fetchCpiArea, cpiCacheKey, NATIONAL_CPI_AREA } from './bls-cpi'
 import { fetchLookupSeries, describeDuoarea, type GasLookupResult, type GasSeriesData } from './eia'
 import { BLS_NATIONAL_GAS_LOOKUP } from './bls-gas'
-import { isValidCpi, isValidGasSeries } from './validate'
+import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
+import {
+  electricityCacheKey,
+  fetchElectricitySeries,
+  NATIONAL_ELECTRICITY,
+  type ElectricitySeriesData,
+} from './eia-electricity'
 
 /** Runtime TTLs (longer than the refresh interval; see kv.ts). */
 export const CPI_TTL = TTL_BLS
@@ -58,6 +64,23 @@ export function nationalGasLookupFor(lookup: Pick<GasLookupResult, 'source'>): G
 
 export function getNationalGasCached(opts: FetchOpts = {}): Promise<CachedResult<GasSeriesData>> {
   return getGasSeriesCached(NATIONAL_GAS_LOOKUP, opts)
+}
+
+/** EIA residential electricity (monthly) uses the EIA TTL. */
+export const ELECTRICITY_TTL = TTL_EIA
+
+/** One state's (or 'US') residential electricity series: eia:electricity:{ST}. */
+export function getElectricityCached(state: string, opts: FetchOpts = {}): Promise<CachedResult<ElectricitySeriesData>> {
+  return getCachedOrFetch(electricityCacheKey(state), ELECTRICITY_TTL, () => fetchElectricitySeries(state), {
+    validate: isValidElectricity,
+    forceRefresh: opts.forceRefresh,
+    budget: 'eia',
+  })
+}
+
+/** Shared U.S. average key (eia:electricity:US): national comparison for every state. */
+export function getNationalElectricityCached(opts: FetchOpts = {}): Promise<CachedResult<ElectricitySeriesData>> {
+  return getElectricityCached(NATIONAL_ELECTRICITY, opts)
 }
 
 /** Resolve a promise to its value, or null on rejection (logging the error). */

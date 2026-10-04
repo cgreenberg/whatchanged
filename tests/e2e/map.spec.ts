@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockDataApi, enterZip, loadFixture } from './helpers'
+import { mockDataApi, mockMapMetrics, enterZip, loadFixture } from './helpers'
 
 /** Wait for the county map to render (it lazy-loads near the viewport). */
 async function mapReady(page: Page) {
@@ -25,12 +25,63 @@ test.describe('National county map', () => {
     await page.goto('/')
     const map = await mapReady(page)
     await expect(map.getByRole('button', { name: 'Home prices', exact: true })).toBeVisible()
+    // Gas | Rent | Home prices | Groceries | Electricity
+    const chips = await map.locator('button[aria-pressed]').allInnerTexts()
+    expect(chips.map(c => c.trim())).toEqual(['Gas', 'Rent', 'Home prices', 'Groceries', 'Electricity'])
     for (const gone of ['Unemployment', 'Paycheck vs prices', 'New construction']) {
       await expect(map.getByRole('button', { name: gone })).toHaveCount(0)
     }
     await map.getByRole('button', { name: 'Rent', exact: true }).click()
     await expect(page.getByTestId('map-source')).toContainText('Zillow ZORI')
     await expect(page.getByTestId('map-source')).toContainText('seasonally adjusted by whatchanged')
+  })
+
+  test('regional metrics (gas, groceries, electricity): block note, no time-lapse, no movers; county metrics keep both', async ({ page }) => {
+    await mockMapMetrics(page)
+    await page.goto('/')
+    const map = await mapReady(page)
+    await expect(map.getByTestId('map-play')).toBeVisible()
+    await expect(map.getByTestId('map-mover').first()).toBeVisible()
+    for (const [name, note, source] of [
+      ['Electricity', 'statewide averages', 'EIA average residential electricity price · statewide'],
+      ['Gas', 'not by county', 'EIA weekly / BLS monthly regular gasoline'],
+      ['Groceries', 'not by county', 'BLS CPI food at home'],
+    ] as const) {
+      await map.getByRole('button', { name, exact: true }).click()
+      await expect(map.getByTestId('map-scope-note')).toContainText(note)
+      await expect(map.getByTestId('map-source')).toContainText(source)
+      await expect(map.getByTestId('map-play')).toHaveCount(0)
+      await expect(map.getByTestId('map-mover')).toHaveCount(0)
+      await expect(map.getByTestId('map-no-movers')).toContainText("isn't published county by county")
+    }
+    // Electricity: a whole recorded state is colored; a state not in the fixture is hatched (no data)
+    await map.getByRole('button', { name: 'Electricity', exact: true }).click()
+    const fill = (fips: string) => map.locator(`svg path[data-fips="${fips}"]`).getAttribute('fill')
+    expect(await fill('23003')).toMatch(/^rgb\(/) // Aroostook ME
+    expect(await fill('23005')).toBe(await fill('23003')) // same state, same color
+    expect(await fill('39035')).toMatch(/^url\(#/) // Cuyahoga OH: not in the fixture
+    await map.getByRole('button', { name: 'Rent', exact: true }).click()
+    await expect(map.getByTestId('map-play')).toBeVisible()
+    await expect(map.getByTestId('map-scope-note')).toHaveCount(0)
+  })
+
+  test('a selected county lists all five measures, each with the area its number covers', async ({ page }) => {
+    await mockMapMetrics(page)
+    await mockDataApi(page)
+    await enterZip(page, '98683')
+    const map = await mapReady(page)
+    const sel = map.getByTestId('map-selection')
+    await expect(sel).toHaveAttribute('data-fips', '53011')
+    await expect(sel.getByTestId('map-value-hv')).toContainText('typical home')
+    await expect(sel.getByTestId('map-value-rent')).toContainText('typical asking rent')
+    await expect(sel.getByTestId('map-value-gas')).toContainText('/gal since Jan 2025')
+    await expect(sel.getByTestId('map-value-gas')).toContainText('Washington state avg')
+    await expect(sel.getByTestId('map-value-groceries')).toContainText('Pacific div.')
+    await expect(sel.getByTestId('map-value-elec')).toContainText('Washington statewide')
+    await expect(sel.getByTestId('map-value-elec')).toContainText('¢/kWh')
+    // a county whose regional series isn't cached says so instead of showing a number
+    await clickCounty(page, '39035')
+    await expect(sel.getByTestId('map-value-elec')).toContainText('no data')
   })
 
   test('shows an error state instead of hanging when map data fails', async ({ page }) => {

@@ -29,7 +29,7 @@ function seriesMap(ids: string[], mutate?: (id: string, data: BlsRawPoint[]) => 
 }
 
 const PACIFIC = { areaCode: '0490', areaName: 'Pacific', tier: 2 as const }
-const PACIFIC_IDS = ['CUUR0490SAF11', 'CUUR0490SAH1', 'CUUR0490SA0E', 'CUUR0490SEHA', 'CUUR0000SAF11', 'CUUR0000SAH1', 'CUUR0000SA0E']
+const PACIFIC_IDS = ['CUUR0490SAF11', 'CUUR0490SAH1', 'CUUR0490SEHA', 'CUUR0000SAF11', 'CUUR0000SAH1']
 
 describe('parseBlsMonthly (real parser, recorded data)', () => {
   test('drops "-" values (Oct 2025 shutdown gap) and sorts oldest first', () => {
@@ -98,7 +98,7 @@ describe('parseCpiResponse (recorded CPI)', () => {
     // (139.596 - 132.606) / 132.606 * 100 = 5.27
     expect(d.shelterChange).toBe(5.3)
     expect(d.shelterBaselinePeriod).toBe('2025-01')
-    expect(d.seriesIds).toEqual({ groceries: 'CUUR0490SAF11', shelter: 'CUUR0490SAH1', energy: 'CUUR0490SA0E', rent: 'CUUR0490SEHA' })
+    expect(d.seriesIds).toEqual({ groceries: 'CUUR0490SAF11', shelter: 'CUUR0490SAH1', rent: 'CUUR0490SEHA' })
     // Rent of primary residence (recorded SEHA): (139.819 - 133.636) / 133.636 * 100 = 4.63
     expect(d.rentIndexChange).toBe(4.6)
     expect(d.rentIndexBaseline).toBe(133.636)
@@ -106,7 +106,7 @@ describe('parseCpiResponse (recorded CPI)', () => {
     expect(d.rentIndexLatestPeriod).toBe('2026-08')
     expect(d.nationalSeries?.length).toBeGreaterThan(0)
     // Oct 2025 (shutdown, "-") is kept as an empty row so charts mark the gap
-    expect(d.series.find((p) => p.date === '2025-10')).toEqual({ date: '2025-10', groceries: null, shelter: null, energy: null })
+    expect(d.series.find((p) => p.date === '2025-10')).toEqual({ date: '2025-10', groceries: null, shelter: null })
   })
 
   test('each series uses its own latest month (no -100% when shelter lags groceries)', () => {
@@ -120,7 +120,7 @@ describe('parseCpiResponse (recorded CPI)', () => {
   })
 
   test('Phoenix food (recorded gap 2026-M02..M07) still uses its latest valid month', () => {
-    const ids = ['CUURS48ASAF11', 'CUURS48ASAH1', 'CUURS48ASA0E']
+    const ids = ['CUURS48ASAF11', 'CUURS48ASAH1']
     const d = parseCpiResponse(seriesMap(ids), { areaCode: 'S48A', areaName: 'Phoenix', tier: 1 })
     expect(d.groceriesLatestPeriod).toBe('2026-08')
     expect(d.groceriesCurrent).toBe(191.162)
@@ -229,7 +229,6 @@ describe('BLS preliminary footnotes', () => {
       {
         CUUR0490SAF11: [p('2025-01', '100'), p('2026-08', '104')],
         CUUR0490SAH1: [p('2025-01', '100'), p('2026-08', '105', true)],
-        CUUR0490SA0E: [p('2025-01', '100'), p('2026-08', '99')],
       },
       { areaCode: '0490', areaName: 'Pacific', tier: 2 }
     )

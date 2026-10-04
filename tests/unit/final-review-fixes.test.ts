@@ -28,7 +28,6 @@ import {
   imageCountyName,
   cpiShortGeo,
   gasShortGeo,
-  tariffIncomeTag,
   HI_AK_STANDIN_GAS_NOTE,
 } from '@/lib/hero-cards'
 import { cpiGeoLabel } from '@/lib/provenance'
@@ -248,15 +247,11 @@ describe('hero-card geography tags and caveats', () => {
     expect(cpiGeoLabel(c)).toBe('national (local data unavailable)')
   })
 
-  test('tariff income source tag', () => {
+  test('electricity geography tag is the state (DC short)', () => {
     const s = snap()
-    expect(tariffIncomeTag(s)).toBe('zip')
-    s.census.data = { ...s.census.data!, incomeGeo: 'county' }
-    expect(tariffIncomeTag(s)).toBe('county')
-    s.census.data = { ...s.census.data!, incomeGeo: 'zip', donorZip: '78702' }
-    expect(tariffIncomeTag(s)).toBe('nearby zip')
-    s.tariff.data = { ...s.tariff.data!, isFallback: true }
-    expect(tariffIncomeTag(s)).toBe('U.S.')
+    expect(buildHeroCards(s).find(c => c.id === 'electricity')!.geoTag).toBe('Texas')
+    s.electricity.data = { ...s.electricity.data!, state: 'DC', stateName: 'District of Columbia' }
+    expect(buildHeroCards(s).find(c => c.id === 'electricity')!.geoTag).toBe('DC')
   })
 
   test('Hawaii/Alaska gas: Honolulu/Anchorage metro label in the CBSA, an honest stand-in note outside; other states get none', () => {
@@ -315,10 +310,12 @@ describe('hero-card geography tags and caveats', () => {
     expect(s!.dollarImpact).toBeDefined()
   })
 
-  test('energy chart description includes motor fuel', () => {
-    const energy = CHART_CONFIGS.find(c => c.id === 'cpi-energy')!
-    expect(energy.description).toMatch(/motor fuel|gasoline/)
-    expect(energy.description).toMatch(/electricity/)
+  test('the Energy (CPI) graph is gone; the Electricity graph says what its two lines are', () => {
+    expect(CHART_CONFIGS.find(c => c.id === 'cpi-energy')).toBeUndefined()
+    const elec = CHART_CONFIGS.find(c => c.id === 'electricity')!
+    expect(elec.description).toMatch(/residential electricity price/)
+    expect(elec.description).toMatch(/seasonally adjusted/)
+    expect(elec.series.map(x => x.dataKey)).toEqual(['sa', 'price'])
   })
 })
 

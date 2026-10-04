@@ -11,7 +11,8 @@ User zip code
   → CPI area code (CBSA crosswalk → Census Division → Regional → National)
   → EIA gas duoarea (county override → CPI-chained city → state → PAD district/sub-district)
   → LAUS unemployment area (county FIPS; Connecticut → 2022 planning region)
-  → Census ACS zip-level income and rent (static JSON)
+  → state → EIA residential electricity price (50 states + DC; none for territories)
+  → Census ACS zip-level rent (static JSON; base of the CPI shelter card's dollar figure)
 ```
 
 Each step has fallback tiers. Bugs in this chain are the most common source of wrong displayed
@@ -64,9 +65,10 @@ national.
 **Series IDs** (`src/lib/api/bls-cpi.ts`):
 - Groceries (food at home): `CUUR{areaCode}SAF11`
 - Shelter: `CUUR{areaCode}SAH1`
-- Energy: `CUUR{areaCode}SA0E`
+- Rent of primary residence (shelter card's dollar figure only): `CUUR{areaCode}SEHA`
 
 All three are fetched in one batched BLS POST and cached together under `bls:cpi:{areaCode}:all`.
+(CPI energy `SA0E` is no longer fetched: the Energy graph became the Electricity graph.)
 
 At the last build, about 20% of zips were Tier 1, 80% Tier 2 and 0.5% Tier 4 (approximate).
 
@@ -260,32 +262,33 @@ seasonally adjusted by whatchanged, with the latest preliminary month excluded. 
 
 ## Census ACS (Static Data)
 
-**Source:** Census ACS 5-year estimates. **Files:** `src/lib/data/census-acs.json` (ZCTA) and
-`src/lib/data/census-places.json` (city), read by `src/lib/data/census-acs.ts`.
-**Build scripts:** `npm run build:census-acs`, `npx tsx scripts/build-census-places.ts`
-(`CENSUS_API_KEY`; build time only, never at runtime).
+**Source:** Census ACS 5-year estimates. **File:** `src/lib/data/census-acs.json` (ZCTA), read by
+`src/lib/data/census-acs.ts`. **Build script:** `npm run build:census-acs` (`CENSUS_API_KEY`; build
+time only, never at runtime).
 
-Fields: median household income (B19013_001E), median gross rent (B25064_001E).
+Only median gross rent (B25064_001E) is used: the base of the CPI shelter card's dollar estimate.
+(The file still carries median household income, which nothing reads since the tariff estimate was
+removed; city and county income files were deleted.)
 
-Lookup order for income:
-1. City-level income, only when the `city`/`state` query params provably contain the zip (same state,
-   and the zip's own city or a curated city→zip entry), so a URL can't borrow another city's income
-2. Zip-level (ZCTA) income
-3. For PO-box/unique zips (`zcta: false`) that have no ACS row: the nearest residential zip's values
-4. National median income $74,580, flagged `isFallback` and labeled "national median income (no local figure)"
-
-Rent: zip-level ACS rent is used only as the base for the CPI shelter dollar estimate. If the zip has
-no local rent, the shelter dollar figure is null; no national rent is substituted.
+Lookup order for rent:
+1. Zip-level (ZCTA) rent
+2. For PO-box/unique zips (`zcta: false`) that have no ACS row: a donor zip's rent (largest residential
+   zip in the same city, else the most populous in the county; `po-box-acs.json`), labeled
+3. Otherwise no local figure (`isRentFallback`): the shelter dollar figure is null; no national rent is
+   substituted
 
 ---
 
-## Tariff Estimate
+## Electricity (EIA, statewide)
 
-**Source:** Yale Budget Lab. **Formula:** `round(medianIncome × 0.0205)` per year.
-**Implementation:** `src/lib/tariff.ts` (`TARIFF_COST_RATE`, the only place the rate is defined).
+**Source:** EIA API v2 `electricity/retail-sales`, sector `RES`, monthly price (¢/kWh), sales and
+customers, by state (50 + DC) and `US`. **Implementation:** `src/lib/api/eia-electricity.ts`.
+**Mapping:** the zip's state (`location.stateAbbr`); territories have no series ("Data unavailable").
+**Cache:** `eia:electricity:{ST}`, `eia:electricity:US` (shared national comparison).
 
-The estimate scales with local median income (a 2.05% share of it). It is always labeled as an
-estimate, not a measured change.
+The % change compares seasonally adjusted prices (classical decomposition; factors fit on 2014–2024,
+so the Jan 2025 baseline never revises). Dollars: (adjusted price now − adjusted Jan 2025) × the
+state's average residential kWh per customer per month over the latest 12 complete months.
 
 ---
 
@@ -298,9 +301,9 @@ as `dollarImpact`) and `src/lib/rent.ts`. All values keep their sign: a drop is 
 |---|---|
 | Groceries | `round(6000 × groceriesChangePct / 100)` $/yr |
 | Rent (Zillow ZORI, new leases) | `round(curRent − curRent / (1 + pct/100))` $/mo, `pct` SA by whatchanged, `curRent` observed |
-| Shelter fallback (CPI) | `round(localAcsRent × 12 × shelterChangePct / 100)` $/yr, or null without local rent |
+| Shelter fallback (CPI) | `round(localAcsRent × 12 × rentIndexChangePct / 100)` $/yr (BLS rent of primary residence %), or null without local rent |
 | Gas | `current − baseline` $/gal (not annualized) |
-| Tariff | `round(medianIncome × 0.0205)` $/yr |
+| Electricity | `round((saCurrent − saBaseline) ¢/kWh × stateKwhPerMonth / 100)` $/mo |
 
 The rent card is shown when the county has a row in `src/lib/data/county-rent.json`; otherwise the
 CPI shelter card is shown, labeled "Shelter prices (CPI, all tenants & homeowners)".
@@ -374,12 +377,8 @@ never cached as a success and are shown as "Data unavailable".
 
 ### Census ACS data
 1. Wait for new ACS 5-year estimates (usually December) and update the year in the build scripts
-2. `npm run build:census-acs` (and `build-census-places.ts`)
+2. `npm run build:census-acs`
 3. Commit the JSON. No cache flush is needed, because it is served statically
-
-### Yale Budget Lab tariff rate
-1. Update `TARIFF_COST_RATE` in `src/lib/tariff.ts`
-2. Update expected values in `tests/unit/tariff.test.ts` and the render tests, then run `npm test`
 
 ---
 

@@ -45,7 +45,6 @@ interface ZipEntry {
 }
 
 interface CensusEntry {
-  medianIncome: number
   medianRent: number
 }
 
@@ -130,10 +129,10 @@ describe('exhaustive zip mappings', () => {
         failures.push(`${zip}: county-geo.json ${JSON.stringify(g)} != live ${cpi.areaCode}/${gas.source}:${gas.areaCode}`)
       }
 
-      // Census data is optional (USPS-only zips have none), but must be sane when present
+      // Census rent (the shelter card's $ base) is optional (USPS-only zips have none), but must be sane when present
       const c = census[zip]
-      if (c && !(c.medianIncome > 0 && c.medianRent > 0)) {
-        failures.push(`${zip}: census income/rent not > 0`)
+      if (c && !(c.medianRent > 0)) {
+        failures.push(`${zip}: census rent not > 0`)
       }
     }
 

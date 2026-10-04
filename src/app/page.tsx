@@ -36,7 +36,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   const requested: PlaceQuery = city && state ? { zip, city: city.slice(0, 100), state: state.slice(0, 2) } : { zip }
-  const snapshot = await fetchSnapshot(zip, requested.city ?? undefined, requested.state ?? undefined)
+  const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
     return { title: GENERIC_TITLE, description: GENERIC_DESCRIPTION }
   }

@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import type { ChartConfig } from '@/lib/charts/chart-config'
-import { EraChart } from './EraChart'
+import { EraChart, ChartHeadline } from './EraChart'
 import { HousingChart } from './HousingChart'
 import { getChartInput } from './chart-inputs'
 import type { EconomicSnapshot } from '@/types'
@@ -26,6 +26,8 @@ function PlainChart({ config, snapshot }: { config: ChartConfig; snapshot: Econo
       weeklyGasBaseline={input.weeklyGasBaseline}
       nationalLabel={input.nationalLabel}
       note={input.note}
+      info={input.info}
+      headline={input.headline ? <ChartHeadline pct={input.headline.pct} detail={input.headline.detail} /> : undefined}
     />
   )
 }
@@ -42,7 +44,7 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
       data-testid="charts-section"
     >
       <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
-      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Energy, by config order); one column under 768px */}
+      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Electricity, by config order); one column under 768px */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="charts-grid">
         {sortedCharts.map(config =>
           config.id === 'cpi-shelter'

@@ -14,13 +14,12 @@ import { HousingChart } from '@/components/charts/HousingChart'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import { filterByTimeframe, splitPreliminary } from '@/lib/charts/chart-data'
 import {
-  buildRentCard, buildTariffCard, buildShelterCard, nationalChangeMatching, monthOlderThan,
-  SHELTER_VS_RENT_NOTE, HOUSING_NOTE, GAS_SOURCE, buildGasCard,
+  buildRentCard, buildShelterCard, nationalChangeMatching, monthOlderThan,
+  SHELTER_VS_RENT_NOTE, HOUSING_NOTE, SHELTER_SHORT_NOTE, GAS_SOURCE, buildGasCard,
 } from '@/lib/hero-cards'
 import { computeDotX, computeDotY } from '@/lib/share-card/og-geometry'
 import { cpiShareLabel, sinceLabel } from '@/lib/share-card/generate'
 import { getCensusData } from '@/lib/data/census-acs'
-import { estimateTariffCost, TARIFF_COST_RATE } from '@/lib/tariff'
 import { fmtDollars, fmtMonthYear, fmtSignedPct } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
 import type { CountyRecord, UsHousing } from '@/lib/county-data'
@@ -115,72 +114,56 @@ describe('preliminary points', () => {
 
 })
 
-// ---------------------------------------------------------------- census provenance
-describe('tariff income provenance', () => {
-  test('PO-box donor: "borrowed from zip X (largest residential zip in the city)"', () => {
+// ---------------------------------------------------------------- census rent provenance (shelter $ base)
+describe('census rent provenance on the shelter card', () => {
+  const shelterOnly = (census: ReturnType<typeof getCensusData>) => {
     const s = clone()
-    s.census.data = { ...s.census.data!, source: 'acs', donorZip: '10025', donorScope: 'city' } as never
-    const m = buildTariffCard(s)
-    expect(m.provenance.asOf).toContain('borrowed from zip 10025 (largest residential zip in the city)')
-    expect(m.provenance.asOf).not.toContain('nearest')
-    expect(m.provenance.geography).toContain('(estimate)')
+    s.rent = null
+    s.census.data = census
+    return s
+  }
+
+  test('98687 (PO box) labels the actual donor zip and how it was chosen', () => {
+    const census = getCensusData('98687')
+    const m = buildShelterCard(shelterOnly(census))
+    expect(m.detail).toMatch(new RegExp(`borrowed from zip ${census.donorZip} \\(largest residential zip in the (city|county)\\)`))
   })
 
   test('legacy approxFromZip without a scope never claims "nearest"', () => {
     const s = clone()
     s.census.data = { ...s.census.data!, approxFromZip: '98682' }
-    expect(buildTariffCard(s).provenance.asOf).toContain('borrowed from zip 98682 (largest residential zip in the area)')
     const shelter = buildShelterCard(s)
     expect(shelter.detail ?? '').not.toContain('nearest')
   })
 
-  const withCensus = (census: ReturnType<typeof getCensusData>) => {
-    const s = clone()
-    s.census.data = census
-    const income = census.medianIncome
-    s.tariff.data = {
-      medianIncome: income, tariffRate: TARIFF_COST_RATE, estimatedCost: estimateTariffCost(income),
-      source: 'Yale', incomeSource: 'x', isFallback: census.isFallback === true,
-    }
-    return s
-  }
-
-  test('98687 (PO box) labels the actual donor zip and how it was chosen', () => {
-    const m = buildTariffCard(withCensus(getCensusData('98687')))
-    expect(m.provenance.asOf).toMatch(/^income: Census ACS \d{4}, borrowed from zip \d{5} \(largest residential zip in the (city|county)\)$/)
-  })
-
-  test('10020 (no zip income) is labeled with whatever source the lookup used — never as zip ACS', () => {
-    const census = getCensusData('10020')
-    const m = buildTariffCard(withCensus(census))
-    if (census.incomeGeo === 'county') {
-      expect(m.provenance.geography).toBe('New York County, NY median income (no zip figure)')
-      expect(m.provenance.asOf).toBe(`income: Census ACS ${census.year} county median`)
-    } else {
-      expect(m.provenance.geography).toBe('national')
-    }
-    expect(m.provenance.geography).not.toContain('zip 10020 median')
-  })
-
-  test('national fallback → geography "national", labeled U.S. median (real source) with no local data', () => {
-    const census = {
-      ...getCensusData('10020'), source: 'national' as const, incomeGeo: 'national' as const, isFallback: true,
-      year: 2022, sourceLabel: 'U.S. median household income, Census CPS ASEC 2022', medianIncome: 74580,
-    }
-    const m = buildTariffCard(withCensus(census))
-    expect(m.provenance.geography).toBe('national')
-    expect(m.provenance.asOf).toBe('U.S. median income (Census CPS ASEC 2022) — no local data')
+  test('no local rent figure (10020) → no dollar estimate, said plainly', () => {
+    const m = buildShelterCard(shelterOnly(getCensusData('10020')))
+    expect(m.inline).toBeUndefined()
+    expect(m.detail).toBe('No local rent figure for a dollar estimate.')
   })
 })
 
 // ---------------------------------------------------------------- shelter vs rent explanation
 describe('CPI shelter vs Zillow rent explanation', () => {
-  test('shelter tab carries the CPI-vs-Zillow note and renders it', () => {
+  test('shelter tab: one short line under the graph, the full CPI-vs-Zillow note in its ⓘ disclosure', () => {
     const s = clone()
     const input = getChartInput('cpi-shelter', s)
-    expect(input.note).toBe(HOUSING_NOTE)
-    render(<EraChart config={shelterConfig} data={input.data} nationalData={input.nationalData} provenance={input.provenance} note={input.note} />)
+    expect(input.note).toBe(SHELTER_SHORT_NOTE)
+    expect(input.info).toEqual([HOUSING_NOTE])
+    render(<EraChart config={shelterConfig} data={input.data} nationalData={input.nationalData} provenance={input.provenance} note={input.note} info={input.info} />)
     expect(screen.getByTestId('chart-note')).toHaveTextContent('trails new-lease rents by about a year')
+    expect(screen.getByTestId('chart-note').textContent!.length).toBeLessThanOrEqual(100)
+    const btn = screen.getByTestId('chart-info-toggle')
+    const panel = screen.getByTestId('chart-info')
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+    expect(btn.getAttribute('aria-controls')).toBe(panel.id)
+    expect(panel).toHaveAttribute('hidden')
+    expect(panel).toHaveTextContent('not mortgage payments or home prices')
+    fireEvent.click(btn)
+    expect(panel).not.toHaveAttribute('hidden')
+    fireEvent.keyDown(panel, { key: 'Escape' })
+    expect(panel).toHaveAttribute('hidden')
+    expect(btn).toHaveFocus()
   })
 
   test('the Rent card carries the CPI-vs-Zillow note in its ⓘ disclosure', () => {
@@ -205,9 +188,9 @@ describe('chart windows match the hero baseline', () => {
     const s = clone()
     const c = s.cpi.data!
     c.series = [
-      { date: '2024-12', groceries: 200, shelter: 300, energy: 100 },
-      { date: '2025-02', groceries: 202, shelter: 303, energy: 100 },
-      { date: '2025-04', groceries: 206, shelter: 306, energy: 100 },
+      { date: '2024-12', groceries: 200, shelter: 300 },
+      { date: '2025-02', groceries: 202, shelter: 303 },
+      { date: '2025-04', groceries: 206, shelter: 306 },
     ]
     const shown = filterByTimeframe(getChartInput('cpi-groceries', s).data, 'Jan 2025', false, 'groceries')
     const first = shown[0].groceries as number
@@ -272,7 +255,10 @@ describe('Housing graph', () => {
     expect(buildRentCard(s)!.value).toBe(pct.textContent)
     expect(screen.getByTestId('provenance')).toHaveTextContent('Zillow ZORI · Travis County, TX, monthly')
     expect(screen.getByTestId('provenance')).toHaveTextContent('seasonally adjusted by whatchanged')
-    expect(screen.getByTestId('chart-note')).toHaveTextContent('same county series as the Rent card')
+    expect(screen.getByTestId('chart-note')).toHaveTextContent('same series as the Rent card')
+    // the long CPI-vs-Zillow explanation is in the ⓘ, not under the graph
+    expect(screen.getByTestId('chart-info')).toHaveTextContent(HOUSING_NOTE)
+    expect(screen.getByTestId('chart-note')).not.toHaveTextContent('owners')
   })
 
   test('Home prices tab: ZHVI series, labeled smoothed and seasonally adjusted by Zillow', async () => {
@@ -284,7 +270,8 @@ describe('Housing graph', () => {
     expect(screen.getByTestId('housing-headline-pct')).toHaveTextContent(fmtSignedPct(tx['48453'].hv!))
     expect(screen.getByTestId('provenance')).toHaveTextContent('Zillow Home Value Index (ZHVI)')
     expect(screen.getByTestId('provenance')).toHaveTextContent('smoothed and seasonally adjusted by Zillow')
-    expect(screen.getByTestId('chart-note')).toHaveTextContent("Zillow's smoothed, seasonally adjusted")
+    expect(screen.getByTestId('chart-info')).toHaveTextContent("Zillow's smoothed, seasonally adjusted")
+    expect(screen.getByTestId('chart-note')).toHaveTextContent('smoothed and seasonally adjusted')
   })
 
   test('Shelter (CPI) tab shows the BLS CPI shelter series', async () => {

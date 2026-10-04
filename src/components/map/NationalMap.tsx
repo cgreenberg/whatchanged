@@ -4,10 +4,18 @@ import { geoPath } from 'd3-geo'
 import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
-  fetchCounties, fetchLocalMeta, METRICS, divergingColor, NO_DATA_COLOR, NO_DATA_PATTERN_ID, fmtMonth, metricFooter, moversFor, flagNote,
-  MOVERS_MIN_JOBS, timelineMonths,
-  type CountyMap, type MetricKey, type LocalMeta,
+  fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, divergingColor, NO_DATA_COLOR,
+  NO_DATA_PATTERN_ID, fmtMonth, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
+  type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
+import type { MapMetrics } from '@/lib/api/map-metrics'
+
+type AnyDef = (MetricDef & { scope: 'county' }) | (LiveMetricDef & { scope: 'live' })
+const DEFS: AnyDef[] = MAP_METRIC_ORDER.map(k => {
+  const c = METRICS.find(m => m.key === k)
+  if (c) return { ...c, scope: 'county' as const }
+  return { ...LIVE_METRICS.find(m => m.key === k)!, scope: 'live' as const }
+})
 
 interface Shape { id: string; d: string; c: [number, number] }
 interface Timeline {
@@ -34,6 +42,9 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [metric, setMetric] = useState<MetricKey>('hv')
+  // Gas / Groceries / Electricity: cache-backed values per metro / region / state (never upstream)
+  const [liveData, setLiveData] = useState<MapMetrics | null>(null)
+  const [liveError, setLiveError] = useState(false)
   // User's tap selection is scoped to the current county; a new zip resets it.
   const [picked, setPicked] = useState<{ base?: string; id?: string; reveal?: number }>({})
   const selected = picked.base === countyFips && picked.id ? picked.id : countyFips
@@ -70,12 +81,15 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
       })
       .catch(() => { if (live) setError('Map unavailable right now.') })
     fetchLocalMeta().then(m => { if (live) setMeta(m) }).catch(() => {})
+    fetchMapMetrics()
+      .then(m => { if (live) { setLiveData(m); setLiveError(false) } })
+      .catch(() => { if (live) setLiveError(true) })
     return () => { live = false }
   }, [visible, attempt])
 
-  // Time-lapse playback
+  // Time-lapse playback (county metrics only)
   useEffect(() => {
-    if (frame == null || !timeline) return
+    if (frame == null || !timeline || !isCountyMetric(metric)) return
     if (frame >= timelineMonths(timeline, metric).length - 1) { const t = setTimeout(() => setFrame(null), 1500); return () => clearTimeout(t) }
     const t = setTimeout(() => setFrame(frame + 1), 380)
     return () => clearTimeout(t)
@@ -99,20 +113,43 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
     }
   }
 
-  const def = METRICS.find(m => m.key === metric)!
+  const def = DEFS.find(m => m.key === metric)!
+  const countyKey: CountyMetricKey | null = isCountyMetric(metric) ? metric : null
   const value = (fips: string): number | undefined => {
-    if (frame != null && timeline) return timeline[metric][fips]?.[frame]
-    return data[fips]?.[metric]
+    if (!countyKey) return liveValue(liveData, fips, metric as Exclude<MetricKey, CountyMetricKey>)?.value
+    if (frame != null && timeline) return timeline[countyKey][fips]?.[frame]
+    return data[fips]?.[countyKey]
   }
 
-  const movers = useMemo(() => moversFor(data, metric), [data, metric])
-  const window_ = def.window(meta)
+  const movers = useMemo(() => (countyKey ? moversFor(data, countyKey) : { top: [], bottom: [] }), [data, countyKey])
+  const window_ = def.scope === 'county' ? def.window(meta) : sinceBaseline(meta)
+  const footer = def.scope === 'county' ? metricFooter(def, meta) : liveFooter(def.key, liveData)
+  const scale = def.scope === 'live' && def.unit === 'usd' ? `±$${def.clamp.toFixed(2)}/gal` : `±${def.clamp}%`
 
   const sel = selected ? data[selected] : undefined
   const selShape = shapes?.counties.find(s => s.id === selected)
-  const selCaveat = sel ? flagNote(sel, metric) : null
-  const other = METRICS.find(m => m.key !== metric)!
-  const otherText = sel ? other.describe(sel) : null
+  const selCaveat = sel && countyKey ? flagNote(sel, countyKey) : null
+  /** Every measure for the selected county, each with its own area (county, metro/region, state). */
+  const rows = selected && sel
+    ? DEFS.map(d => {
+        if (d.scope === 'county') {
+          const text = d.describe(sel)
+          return {
+            key: d.key, short: d.short,
+            text: text ?? `No Zillow ${d.short.toLowerCase()} data for this county`,
+            area: text ? 'county' : null,
+            caveat: flagNote(sel, d.key),
+          }
+        }
+        const v = liveValue(liveData, selected, d.key)
+        return {
+          key: d.key, short: d.short,
+          text: v ? `${v.text} · ${v.detail}` : liveError ? 'unavailable right now' : liveData ? 'no data' : 'loading…',
+          area: v?.area ?? null,
+          caveat: null,
+        }
+      })
+    : []
 
   return (
     <section ref={ref} className="mt-12" data-testid="national-map">
@@ -120,12 +157,12 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
         How every county changed
       </h2>
       <p className="text-sm text-zinc-400 mb-3">
-        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}. Tap one to explore it.
+        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}. Tap one to see all five measures.
       </p>
 
       {/* Controls sit above the map, never on top of it, so every county stays tappable */}
       <div className="flex flex-wrap items-center gap-2 pb-2">
-        {METRICS.map(m => (
+        {DEFS.map(m => (
           <button
             key={m.key}
             onClick={() => { setFrame(null); setMetric(m.key) }}
@@ -135,7 +172,8 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
             {m.short}
           </button>
         ))}
-        {shapes && !error && (
+        {/* Time-lapse only where there is a county-by-county monthly history (Zillow rent and home prices) */}
+        {shapes && !error && countyKey && (
           <button
             onClick={play}
             data-testid="map-play"
@@ -190,9 +228,9 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
             )}
           </svg>
         )}
-        {frame != null && timeline && (
+        {frame != null && timeline && countyKey && (
           <div className="pointer-events-none absolute top-2 left-3 text-white text-2xl" style={{ fontFamily: 'var(--font-bebas, sans-serif)' }} data-testid="map-frame">
-            {fmtMonth(timelineMonths(timeline, metric)[frame])}
+            {fmtMonth(timelineMonths(timeline, countyKey)[frame])}
           </div>
         )}
       </div>
@@ -212,22 +250,31 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
         <span>no data</span>
       </div>
       <p className="text-[11px] text-zinc-500 mt-1" data-testid="map-source">
-        Scale ±{def.clamp}% · {metricFooter(def, meta)} · gray hatching = no data
+        Scale {scale} · {footer} · gray hatching = no data
       </p>
+      {def.scope === 'live' && (
+        <p className="text-[11px] text-zinc-400 mt-1" data-testid="map-scope-note">
+          {def.scopeNote}{liveError ? ' Live prices are unavailable right now.' : ''}
+        </p>
+      )}
 
-      {/* Selected county panel */}
+      {/* Selected county panel: all five measures, each with the area its number covers */}
       {sel && (
         <div ref={panelRef} className="mt-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4" data-testid="map-selection" data-fips={selected}>
           <p className="text-white font-semibold">{sel.n}</p>
-          <p className="text-sm text-zinc-300 mt-0.5">{def.describe(sel) ?? `No Zillow ${def.short.toLowerCase()} data for this county`}</p>
-          {window_ && def.describe(sel) && <p className="text-[11px] text-zinc-500">{window_}</p>}
+          <dl className="mt-2 space-y-1.5 text-sm">
+            {rows.map(r => (
+              <div key={r.key} className={r.key === metric ? 'text-zinc-100' : 'text-zinc-400'} data-testid={`map-value-${r.key}`}>
+                <dt className={`inline ${r.key === metric ? 'font-semibold text-white' : 'text-zinc-500'}`}>{r.short}: </dt>
+                <dd className="inline">
+                  {r.text}
+                  {r.area && <span className="text-zinc-500"> · {r.area}</span>}
+                  {r.caveat && r.key !== metric && <span className="text-amber-300/80" title={r.caveat}> (unusual value)</span>}
+                </dd>
+              </div>
+            ))}
+          </dl>
           {selCaveat && <p className="text-[11px] text-amber-300/80 mt-1" data-testid="map-flag-note">{selCaveat}</p>}
-          {otherText && (
-            <p className="mt-2 text-xs text-zinc-400">
-              <span className="text-zinc-500">{other.short}:</span> {otherText.split(' · ')[0]}
-              {flagNote(sel, other.key) && <span className="text-amber-300/80" title={flagNote(sel, other.key) ?? undefined}> (unusual value)</span>}
-            </p>
-          )}
           {sel.z && selected !== countyFips && (
             <button onClick={() => onZipSelect(sel.z!)} className="mt-3 text-sm font-semibold text-amber-400" data-testid="map-see-place">
               See everything that changed here →
@@ -237,7 +284,10 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
       )}
 
       {/* Movers */}
-      {movers.top.length > 0 && (
+      {!countyKey && (
+        <p className="mt-3 text-[11px] text-zinc-500" data-testid="map-no-movers">{NO_MOVERS_NOTE}</p>
+      )}
+      {countyKey && movers.top.length > 0 && (
         <div className="grid grid-cols-2 gap-3 mt-3">
           {([['Biggest increases', movers.top], ['Biggest decreases', movers.bottom]] as const).map(([title, rows]) => (
             <div key={title} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
@@ -246,7 +296,7 @@ export function NationalMap({ countyFips, onZipSelect }: { countyFips?: string; 
                 <button key={f} onClick={() => setSelected(f, true)} className="flex justify-between w-full text-left text-xs py-0.5 gap-2" data-testid="map-mover">
                   <span className="text-zinc-300 truncate">{c.n}</span>
                   <span className="text-zinc-400 tabular-nums shrink-0">
-                    {(c[metric] as number) > 0 ? '+' : ''}{(c[metric] as number).toFixed(1)}%
+                    {(c[countyKey] as number) > 0 ? '+' : ''}{(c[countyKey] as number).toFixed(1)}%
                   </span>
                 </button>
               ))}

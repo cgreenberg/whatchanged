@@ -65,11 +65,21 @@ describe.each([
     expect(info).toContain(`Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`)
   })
 
-  test('tariff: median income × 0.0205', () => {
-    const income = snap.tariff.data!.medianIncome
-    expect(text(card('tariff'), 'stat-value')).toBe(`~${fmtDollars(Math.round(income * 0.0205))}/yr`)
-    expect(text(card('tariff'), 'stat-secondary')).toMatch(/^2\.05% of .*income$/)
-    expect(text(card('tariff'), 'stat-info')).toContain(`2.05% of ${fmtDollars(income)} median household income`)
+  test('electricity: published ¢/kWh; $/mo = (adjusted price change ¢) × state monthly kWh ÷ 100', () => {
+    const e = snap.electricity.data!
+    const expected = Math.round(((e.saCurrent - e.saBaseline) * e.usageKwh!) / 100)
+    expect(snap.dollarImpact!.electricity).toBe(expected)
+    expect(text(card('electricity'), 'stat-value')).toBe(`${e.current.toFixed(1)}¢/kWh`)
+    expect(text(card('electricity'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
+    expect(text(card('electricity'), 'stat-secondary')).toBe(
+      `${fmtSignedPct(e.change)} since Jan 2025 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
+    expect(text(card('electricity'), 'stat-source')).toBe(`${e.stateName} · EIA · ${fmtMonthYear(e.latestPeriod)}`)
+    // ⓘ: the dollar basis, the unadjusted change and why the % is seasonally adjusted
+    const info = text(card('electricity'), 'stat-info')
+    expect(info).toContain(`× an average ${e.stateName} home's monthly use (${Math.round(e.usageKwh!).toLocaleString('en-US')} kWh, 12-mo avg`)
+    expect(info).toContain(`${fmtSignedPct(e.rawChange)} unadjusted`)
+    expect(info).toContain('seasonal')
+    expect(info).toContain('seasonally adjusted by whatchanged')
   })
 })
 
@@ -167,11 +177,31 @@ describe('missing or out-of-range sources render "Data unavailable"', () => {
     expect(text(card('shelter'), 'stat-value')).toBe('Data unavailable')
   })
 
-  test('null tariff → unavailable', () => {
+  test('null electricity → unavailable', () => {
     const snap = clone(austin)
-    snap.tariff = { ...snap.tariff, data: null }
+    snap.electricity = { ...snap.electricity, data: null }
     render(<HeroCards snapshot={snap} />)
-    expect(text(card('tariff'), 'stat-value')).toBe('Data unavailable')
+    expect(text(card('electricity'), 'stat-value')).toBe('Data unavailable')
+  })
+
+  test('electricity outside the sanity range (price or % change) → unavailable', () => {
+    for (const patch of [{ current: 80 }, { change: 140 }]) {
+      const snap = clone(austin)
+      Object.assign(snap.electricity.data!, patch)
+      const { unmount } = render(<HeroCards snapshot={snap} />)
+      expect(text(card('electricity'), 'stat-value')).toBe('Data unavailable')
+      unmount()
+    }
+  })
+
+  test('falling electricity price → "−" and direction down; no usage → no $ figure', () => {
+    const snap = clone(vancouver)
+    snap.electricity.data!.change = -3.2
+    snap.dollarImpact!.electricity = null
+    render(<HeroCards snapshot={snap} />)
+    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% since Jan 2025/)
+    expect(card('electricity')).toHaveAttribute('data-direction', 'down')
+    expect(within(card('electricity')).queryByTestId('stat-inline')).toBeNull()
   })
 })
 

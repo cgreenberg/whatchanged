@@ -6,7 +6,7 @@ import {
   BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
-import { buildHeroCards, nationalChangeMatching, tariffIncomeTag, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK } from '@/lib/hero-cards'
+import { buildHeroCards, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthlyGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
@@ -23,14 +23,14 @@ const TEXT_SECONDARY = '#A89F93'
 const TEXT_TERTIARY = '#6B6560'
 const AMBER = '#F0A500'
 const BLUE = '#3D9EFF'
-const PURPLE = '#A87EFF'
+const GREEN = '#2BD99F'
 const RED = '#F04040'
 
 // RGB equivalents for use in rgba() strings
 const ACCENT_RGB: Record<string, string> = {
   [AMBER]: '240,165,0',
   [BLUE]: '61,158,255',
-  [PURPLE]: '168,126,255',
+  [GREEN]: '43,217,159',
   [RED]: '240,64,64',
 }
 
@@ -117,7 +117,16 @@ export const GROCERIES_SUBLABEL = '(CPI: food at home)'
 /** BLS shelter is mainly rents + owners' equivalent rent (plus lodging away from home, insurance). */
 export const SHELTER_SUBLABEL = '(CPI: rent + owner-equiv. rent)'
 export const RENT_SUBLABEL = '(new leases, Zillow, county)'
-export const TARIFF_SUBLABEL = '(est. annual cost to household)'
+export const ELECTRICITY_SUBLABEL = '(home ¢/kWh, seasonally adj.)'
+
+/** Electricity geography line: "Maine · 32.4¢/kWh (Jul '26)" (published price and its month; DC short). */
+export function electricityGeoLine(e: { state: string; stateName: string; current: number; latestPeriod: string }): string {
+  return `${electricityPlace(e, 'short')} · ${e.current.toFixed(1)}¢/kWh (${fmtMonthShort(e.latestPeriod)})`
+}
+
+/** Basis of the electricity $/mo pill: the state's average residential use. */
+export const electricityBasisNote = (usageKwh: number, place: string) =>
+  `$/mo at ${Math.round(usageKwh).toLocaleString('en-US')} kWh/mo (avg ${place} home)`
 
 /**
  * Share-card footnote for a HI/AK gas stand-in ("*" on "Honolulu-area price*"); two lines at most
@@ -134,8 +143,8 @@ export const groceriesBasisNote = () => `$/yr on ${fmtDollars(ANNUAL_GROCERY_BAS
 export const shelterBasisNote = (medianRent: number) => `BLS rent index × local rent (${fmtDollars(medianRent)}/mo)`
 
 // ── Main Export ───────────────────────────────────────────────────
-export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
-  const snapshot = await fetchSnapshot(zip, city, state)
+export async function generateShareCard(zip: string): Promise<Response> {
+  const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
     return new Response('Zip code not found', { status: 404 })
   }
@@ -155,14 +164,13 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   const groceriesOk = card('groceries')?.status === 'ok'
   const rent = card('rent')?.status === 'ok' ? snapshot.rent ?? null : null
   const shelterOk = !rent && card('shelter')?.status === 'ok'
-  const tariffOk = card('tariff')?.status === 'ok'
+  const elecOk = card('electricity')?.status === 'ok'
+  const elecData = elecOk ? snapshot.electricity?.data ?? null : null
   const degraded = cards.some((c) => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)
 
   // Header badge: span of the cards' latest data months (never today's date)
   const monthYear = dataThroughLabel(cards) ?? fmtMonthYear(undefined).toUpperCase()
 
-  // ── Tariff Estimate ──────────────────────────────────────────────
-  const tariffCost = tariffOk ? snapshot.tariff.data!.estimatedCost : 0
 
   // ── National Comparison (same baseline rules as local) ───────────
   // National over the same months as the local figure (never a later month)
@@ -194,7 +202,6 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
     : ''
   const natGasText = natGas ? `Natl (${natGasTag}): ${fmtSignedDollars(natGas.change)}` : null
   const rentOutlier = !!rent && card('rent')?.outlier === true
-  const incomeTag = tariffOk ? tariffIncomeTag(snapshot) : undefined
   const gasSince = gasMonthly
     ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}${gasThru && !thruOnGeo ? `, ${gasThru}` : ''}`
     : gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
@@ -341,7 +348,46 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
         })
       : null
 
-  const medianIncome = snapshot.tariff.data?.medianIncome ?? 0
+  // ── Electricity Sparkline Data (seasonally adjusted, % since Jan 2025) ──
+  const elecAll = elecData?.series ?? []
+  const elecFrom = elecAll.findIndex((p) => p.date === elecData?.baselinePeriod)
+  const elecPairs = (elecFrom >= 0 ? elecAll.slice(elecFrom) : [])
+    .filter((p): p is typeof p & { sa: number } => typeof p.sa === 'number')
+  const elecBase = elecPairs[0]?.sa ?? 1
+  const elecValues = elecPairs.map((p) => ((p.sa - elecBase) / elecBase) * 100)
+  const elecMin = elecValues.length ? Math.min(...elecValues) : 0
+  const elecMax = elecValues.length ? Math.max(...elecValues) : 0
+  const elecRange = elecValues.length >= 2 ? Math.abs(elecMax - elecMin) : 0
+  const elecPadded = elecValues.length >= 2
+    ? { min: Math.min(0, elecMin), max: Math.max(0, elecMax) + elecRange * 0.05 }
+    : undefined
+  const elecAxis = monthlyAxis(elecPairs)
+  const elecDollars = elecData ? snapshot.dollarImpact?.electricity ?? null : null
+  const elecPlace = elecData ? electricityPlace(elecData, 'short') : ''
+  const elecBasis = elecDollars != null && typeof elecData?.usageKwh === 'number' ? electricityBasisNote(elecData.usageKwh, elecPlace) : null
+  const elecNat = elecData && typeof elecData.nationalChange === 'number' ? `Natl: ${fmtSignedPct(elecData.nationalChange)}` : null
+  const elecGeo = elecData ? electricityGeoLine(elecData) : null
+  const elecSparkline =
+    elecOk && elecValues.length >= 2
+      ? buildLineSparklineV3(elecValues, GREEN, 'grad-electricity', {
+          yMin: `${(elecPadded?.min ?? elecMin).toFixed(1)}%`,
+          yMid: `${(((elecPadded?.min ?? elecMin) + (elecPadded?.max ?? elecMax)) / 2).toFixed(1)}%`,
+          yMax: `${(elecPadded?.max ?? elecMax).toFixed(1)}%`,
+          xLeft: getMonthLabel(elecPairs, 0),
+          xMid: elecAxis.xMid,
+          xRight: getMonthLabel(elecPairs, elecPairs.length - 1),
+          height: sparklineBudget({
+            sublabel: ELECTRICITY_SUBLABEL,
+            extra: elecGeo,
+            metaRows: [[sinceLabel(elecData?.baselinePeriod), elecNat]],
+            note: elecBasis,
+          }),
+          bounds: elecPadded,
+          xFractions: elecAxis.xFractions,
+          gapAfter: elecAxis.gapAfter,
+          gapLabels: elecAxis.gapLabels,
+        })
+      : null
 
   // ── Inline cell helpers (avoid named components in Satori render tree) ──
   const accentStrip = (accent: string) => (
@@ -756,7 +802,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             )}
           </div>
 
-          {/* Cell: Tariffs */}
+          {/* Cell: Electricity (statewide EIA residential price) */}
           <div
             style={{
               display: 'flex',
@@ -767,63 +813,17 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
               overflow: 'hidden',
             }}
           >
-            {accentStrip(PURPLE)}
-            {sectionLabel('TARIFFS', TARIFF_SUBLABEL)}
-            {/* Centered number block — fills the chart zone */}
-            <div
-              style={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {bigNumber(tariffCost > 0 ? `~${fmtDollars(tariffCost)}/yr` : 'N/A', PURPLE)}
-              {tariffCost > 0 && (
-                <span
-                  style={{
-                    fontFamily: 'Bebas Neue',
-                    fontSize: 64,
-                    color: PURPLE,
-                    lineHeight: 1,
-                    display: 'flex',
-                    marginTop: 4,
-                  }}
-                >
-                  ~{fmtDollars(Math.round(tariffCost / 12))}/mo
-                </span>
-              )}
-              {tariffOk && (
-                <span
-                  style={{
-                    fontFamily: 'DM Mono',
-                    fontSize: 20,
-                    color: TEXT_TERTIARY,
-                    display: 'flex',
-                    marginTop: 16,
-                    textAlign: 'center',
-                  }}
-                >
-                  based on median income of{' '}
-                  {medianIncome >= 1000
-                    ? `$${(medianIncome / 1000).toFixed(0)}k`
-                    : `$${Math.round(medianIncome)}`}
-                  {incomeTag ? ` (${incomeTag})` : ''}
-                </span>
-              )}
-              <span
-                style={{
-                  fontFamily: 'DM Mono',
-                  fontSize: 20,
-                  color: TEXT_TERTIARY,
-                  display: 'flex',
-                  marginTop: 4,
-                }}
-              >
-                Yale Budget Lab
-              </span>
+            {accentStrip(GREEN)}
+            {sectionLabel('ELECTRICITY', ELECTRICITY_SUBLABEL, elecGeo)}
+            {elecSparkline && (
+              <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{elecSparkline}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+              {bigNumber(elecData ? fmtSignedPct(elecData.change) : 'N/A', GREEN)}
+              {changePill(elecDollars != null ? `≈ ${fmtSignedDollars(elecDollars, 0)}/mo` : '—', GREEN)}
             </div>
+            {metaRow(sinceLabel(elecData?.baselinePeriod), elecNat)}
+            {elecBasis && basisNote(elecBasis)}
           </div>
         </div>
       </div>
@@ -848,7 +848,7 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
             color: TEXT_TERTIARY,
           }}
         >
-          {rent ? 'BLS · EIA · Zillow · Census · Yale Budget Lab' : 'BLS · EIA · Census · Yale Budget Lab'}
+          {rent ? 'BLS · EIA · Zillow' : 'BLS · EIA · Census'}
         </span>
         <span
           style={{

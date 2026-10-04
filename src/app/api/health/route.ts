@@ -5,12 +5,13 @@
 // Live upstream checks run only with `Authorization: Bearer ${CRON_SECRET}`.
 
 import { NextResponse } from 'next/server'
-import { blsCpiSource, eiaSource } from '@/lib/api/source-registry'
+import { blsCpiSource, eiaSource, eiaElectricitySource } from '@/lib/api/source-registry'
 import { getCached, getCachedEnvelope, lastGoodKey, failedKey } from '@/lib/cache/kv'
 import { isCronAuthorized } from '@/lib/api/cron-auth'
 import { cpiCacheKey, fetchCpiArea, NATIONAL_CPI_AREA } from '@/lib/api/bls-cpi'
 import { getGasLookup, NATIONAL_GAS_CACHE_KEY, fetchGasSeries } from '@/lib/api/eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+import { electricityCacheKey, fetchElectricitySeries, NATIONAL_ELECTRICITY } from '@/lib/api/eia-electricity'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,6 +72,8 @@ export async function GET(req: Request) {
     cpiCacheKey(NATIONAL_CPI_AREA),
     gasLookup.cacheKey,
     NATIONAL_GAS_CACHE_KEY,
+    electricityCacheKey(SAMPLE_STATE),
+    electricityCacheKey(NATIONAL_ELECTRICITY),
   ]
 
   let cacheKeys: KeyStatus[] = []
@@ -88,6 +91,7 @@ export async function GET(req: Request) {
     const checks = [
       { source: blsCpiSource, run: () => fetchCpiArea({ areaCode: NATIONAL_CPI_AREA, areaName: 'National', tier: 4 }) },
       { source: eiaSource, run: () => fetchGasSeries('NUS') },
+      { source: eiaElectricitySource, run: () => fetchElectricitySeries(NATIONAL_ELECTRICITY) },
     ]
     await Promise.all(
       checks.map(async ({ source, run }) => {
@@ -123,7 +127,7 @@ export async function GET(req: Request) {
     },
     {
       status: ok ? 200 : 207,
-      // Public (unauthenticated) checks do ~13 Redis reads: let the CDN absorb
+      // Public (unauthenticated) checks do ~19 Redis reads: let the CDN absorb
       // repeated hits for a minute. Authenticated live checks are never cached.
       headers: live
         ? { 'Cache-Control': 'no-cache, no-store' }

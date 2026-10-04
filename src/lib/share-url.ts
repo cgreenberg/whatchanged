@@ -1,6 +1,6 @@
 // URL builders shared by the page, share button, page metadata and OG image.
-// City/state are kept so a reload or shared link shows the same (city-level) income
-// and tariff figure; the server validates them against the zip.
+// City/state (from a city search) only name the place in the URL; every number comes from the zip.
+// The page metadata echoes them only when they match the zip (cityContainsZip).
 
 export const SITE_ORIGIN = 'https://whatchanged.us'
 

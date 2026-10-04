@@ -6,8 +6,6 @@
  * amount (money saved), never a positive one.
  */
 
-/** US median household income (Census CPS, 2022). Single source for national income fallbacks. */
-export const NATIONAL_MEDIAN_INCOME = 74580
 /** US median gross rent (Census ACS). Used only for display fallbacks, never for local dollar translations. */
 export const NATIONAL_MEDIAN_RENT = 1271
 /** Typical household annual food-at-home spend (~$6,000/yr). */
@@ -24,8 +22,12 @@ export interface DollarImpact {
   shelter: number | null
   /** $/gallon change since the Jan 20 2025 baseline (signed). Per gallon, NOT annual. */
   gas: number | null
-  /** $/yr tariff estimate (median_income × 0.0205). */
-  tariff: number | null
+  /**
+   * $/mo on electricity (signed, whole dollars): change in the state's seasonally adjusted residential
+   * price since Jan 2025 (¢/kWh) × the state's average residential use (kWh per customer per month,
+   * latest 12 months) ÷ 100. null when either is unavailable.
+   */
+  electricity: number | null
 }
 
 export function computeGroceryImpact(groceriesChangePct: number | null | undefined): number | null {
@@ -48,19 +50,33 @@ export function computeShelterImpact(
 const finiteOrNull = (v: number | null | undefined): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null
 
+/** $/mo: price change (¢/kWh) × monthly use (kWh) ÷ 100, rounded to whole dollars (signed). */
+export function computeElectricityImpact(
+  priceChangeCents: number | null | undefined,
+  usageKwh: number | null | undefined
+): number | null {
+  if (typeof priceChangeCents !== 'number' || !Number.isFinite(priceChangeCents)) return null
+  if (typeof usageKwh !== 'number' || !Number.isFinite(usageKwh) || usageKwh <= 0) return null
+  const v = Math.round((priceChangeCents * usageKwh) / 100)
+  return Object.is(v, -0) ? 0 : v
+}
+
 export function computeDollarImpact(opts: {
   groceriesChangePct?: number | null
   /** BLS CPI rent of primary residence (SEHA) % change for the zip's CPI area. */
   rentIndexChangePct?: number | null
   gasChange?: number | null
-  tariffEstimatedCost?: number | null
   /** LOCAL median rent only — pass null/undefined when the zip has no Census rent. */
   medianRent?: number | null
+  /** Seasonally adjusted state residential price, latest − Jan 2025, ¢/kWh. */
+  electricitySaChangeCents?: number | null
+  /** State average residential use, kWh per customer per month (12-month average). */
+  electricityUsageKwh?: number | null
 }): DollarImpact {
   return {
     groceries: computeGroceryImpact(opts.groceriesChangePct),
     shelter: computeShelterImpact(opts.rentIndexChangePct, opts.medianRent),
     gas: finiteOrNull(opts.gasChange),
-    tariff: finiteOrNull(opts.tariffEstimatedCost),
+    electricity: computeElectricityImpact(opts.electricitySaChangeCents, opts.electricityUsageKwh),
   }
 }

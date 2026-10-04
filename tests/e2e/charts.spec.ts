@@ -8,8 +8,8 @@ test.describe('Charts section', () => {
     await expect(page.getByTestId('charts-section')).toBeVisible({ timeout: 10000 })
   })
 
-  test('four price charts (gas, groceries, housing, energy), each with a provenance line; no unemployment', async ({ page }) => {
-    for (const id of ['gas', 'cpi-groceries', 'housing-rent', 'cpi-energy']) {
+  test('four price charts (gas, groceries, housing, electricity), each with a provenance line; no unemployment or CPI energy', async ({ page }) => {
+    for (const id of ['gas', 'cpi-groceries', 'housing-rent', 'electricity']) {
       const chart = page.getByTestId(`chart-${id}`)
       await expect(chart).toBeVisible()
       const line = chart.getByTestId('provenance').last()
@@ -17,20 +17,21 @@ test.describe('Charts section', () => {
       expect(((await line.textContent()) ?? '').split(' · ').length).toBeGreaterThanOrEqual(5)
     }
     await expect(page.getByTestId('chart-unemployment')).toHaveCount(0)
+    await expect(page.getByTestId('chart-cpi-energy')).toHaveCount(0)
     await expect(page.getByText(/unemployment/i)).toHaveCount(0)
   })
 
-  test('2 × 2 grid on desktop (Gas | Groceries, Housing | Energy); one column at phone width', async ({ page }) => {
+  test('2 × 2 grid on desktop (Gas | Groceries, Housing | Electricity); one column at phone width', async ({ page }) => {
     const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
     await page.setViewportSize({ width: 1280, height: 900 })
-    let [gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-cpi-energy'].map(box))
+    let [gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-electricity'].map(box))
     expect(Math.abs(gas.y - groc.y)).toBeLessThan(2)
     expect(groc.x).toBeGreaterThan(gas.x + gas.width - 1)
     expect(Math.abs(housing.y - energy.y)).toBeLessThan(2)
     expect(housing.y).toBeGreaterThan(gas.y + gas.height - 1)
     expect(energy.x).toBeGreaterThan(housing.x + housing.width - 1)
     await page.setViewportSize({ width: 390, height: 844 })
-    ;[gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-cpi-energy'].map(box))
+    ;[gas, groc, housing, energy] = await Promise.all(['chart-gas', 'chart-cpi-groceries', 'housing-chart', 'chart-electricity'].map(box))
     expect(groc.y).toBeGreaterThan(gas.y + gas.height - 1)
     expect(housing.y).toBeGreaterThan(groc.y + groc.height - 1)
     expect(energy.y).toBeGreaterThan(housing.y + housing.height - 1)
@@ -60,12 +61,33 @@ test.describe('Charts section', () => {
     await housing.getByTestId('housing-tab-homePrices').click()
     await expect(housing).toHaveAttribute('data-tab', 'homePrices')
     await expect(housing.getByTestId('provenance').last()).toContainText('Zillow Home Value Index (ZHVI)')
-    await expect(housing.getByTestId('chart-note')).toContainText("Zillow's smoothed, seasonally adjusted")
+    await expect(housing.getByTestId('chart-note')).toContainText('smoothed and seasonally adjusted')
+    // the long explanation sits in the graph's ⓘ disclosure
+    await expect(housing.getByTestId('chart-info')).toBeHidden()
+    await housing.getByTestId('chart-info-toggle').click()
+    await expect(housing.getByTestId('chart-info')).toContainText("Zillow's smoothed, seasonally adjusted")
+    await expect(housing.getByTestId('chart-info')).toContainText('trails new-lease rents by about a year')
 
     await housing.getByTestId('housing-tab-shelter').click()
     await expect(housing).toHaveAttribute('data-tab', 'shelter')
     await expect(housing.getByTestId('provenance').last()).toContainText('BLS CPI shelter')
     await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')
+  })
+
+  test('Electricity graph: statewide ¢/kWh, headline = the card %, adjusted + published lines, U.S. line', async ({ page }) => {
+    const chart = page.getByTestId('chart-electricity')
+    const cardSecondary = (await page.getByTestId('stat-card-electricity').getByTestId('stat-secondary').textContent())!
+    const pct = (await chart.getByTestId('chart-headline-pct').textContent())!.trim()
+    expect(cardSecondary.startsWith(`${pct} since Jan 2025`)).toBe(true)
+    await expect(chart.getByTestId('provenance').last()).toContainText('EIA average residential electricity price · Washington (statewide), monthly')
+    await expect(chart.getByTestId('chart-note')).toHaveText('Statewide average for Washington.')
+    await expect(chart.locator('.recharts-legend-item')).toHaveCount(2)
+    await chart.getByLabel('Show national').check()
+    await expect(chart.getByTestId('provenance').last()).toContainText('dashed: U.S. avg, EIA')
+    // only the adjusted U.S. line is added
+    await expect(chart.locator('.recharts-legend-item')).toHaveCount(3)
+    await chart.getByTestId('chart-info-toggle').click()
+    await expect(chart.getByTestId('chart-info')).toContainText('seasonal')
   })
 
   test('Housing graph Rent tab: 10Y view and the U.S. comparison line', async ({ page }) => {

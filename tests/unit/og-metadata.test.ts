@@ -44,7 +44,9 @@ test('description uses the same numbers as the cards, with a signed gas change',
   expect(d).not.toContain('$-')
   expect(d).toContain('Rent −2.3% (Travis Co.)')
   expect(d).toContain('Groceries +3.1% (West South Central div.)')
-  expect(d).toContain('Tariffs ~$3,175/yr est. (zip income)')
+  // Statewide EIA electricity, seasonally adjusted % (Texas: +7.0% from the recorded fixture)
+  expect(d).toContain('Electricity +7.0% (Texas)')
+  expect(d).not.toMatch(/tariff/i)
   expect(d.split(' · ').pop()).toBe('whatchanged.us')
 })
 
@@ -80,7 +82,8 @@ test('repeated query params (?city=a&city=b) use the first value instead of thro
   const m = await generateMetadata({
     searchParams: Promise.resolve({ zip: ['78701', '10001'], city: ['austin', 'x'], state: ['tx', 'ny'] }),
   })
-  expect(mockFetch).toHaveBeenCalledWith('78701', 'austin', 'tx')
+  // The numbers come from the zip alone; city/state only name the place in the URL
+  expect(mockFetch).toHaveBeenCalledWith('78701')
   expect(m.title).toBe('What Changed in Austin, TX (78701)?')
 })
 
@@ -105,7 +108,7 @@ test('missing sources are omitted, never shown as 0', async () => {
 test('city/state are kept in og:url and the OG image URL', async () => {
   mockFetch.mockResolvedValue(snap())
   const m = await meta({ zip: '78701', city: 'austin', state: 'tx' })
-  expect(mockFetch).toHaveBeenCalledWith('78701', 'austin', 'tx')
+  expect(mockFetch).toHaveBeenCalledWith('78701')
   expect(m.openGraph?.url).toBe('https://whatchanged.us/?zip=78701&city=austin&state=tx')
   const img = (m.openGraph?.images as Array<{ url: string }>)[0].url
   expect(img).toMatch(/^\/api\/og\?zip=78701&city=austin&state=tx&v=\d{4}-\d{2}$/)

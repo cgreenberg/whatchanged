@@ -38,3 +38,12 @@ export async function enterZip(page: Page, zip: string) {
   await page.getByRole('button', { name: /See What Changed/i }).click()
   await expect(page.getByTestId('stat-cards')).toBeVisible({ timeout: 15000 })
 }
+
+/**
+ * Serve /api/map-metrics from tests/fixtures/map-metrics.json (built from recorded data: electricity for
+ * 11 states, gas and groceries for the snapshot-fixture areas; everything else "no data").
+ */
+export async function mockMapMetrics(page: Page) {
+  const body = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'map-metrics.json'), 'utf8')
+  await page.route('**/api/map-metrics', route => route.fulfill({ status: 200, contentType: 'application/json', body }))
+}

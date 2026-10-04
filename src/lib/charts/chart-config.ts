@@ -9,6 +9,10 @@ export interface SeriesConfig {
   label: string          // legend label
   color: string          // stroke/fill color
   type?: 'monotone' | 'linear' | 'step'
+  /** Secondary line styling (e.g. the published electricity price under the adjusted line). */
+  strokeWidth?: number
+  strokeOpacity?: number
+  strokeDasharray?: string
 }
 
 export interface ChartConfig {
@@ -35,7 +39,7 @@ export interface ChartConfig {
 // ORDER KEY (ChartsSection renders the Housing graph in the shelter slot, with three tabs):
 // 2 × 2 grid from 768px (md), all 'medium':
 // Row 1: gas (1) | groceries (2)
-// Row 2: Housing (3): Rent | Home prices | Shelter (CPI) tabs | energy (4)
+// Row 2: Housing (3): Rent | Home prices | Shelter (CPI) tabs | electricity (4)
 // Under 768px: one column, same order
 
 export const chartConfigs: ChartConfig[] = [
@@ -98,22 +102,23 @@ export const chartConfigs: ChartConfig[] = [
     showNationalToggle: true,
   },
   {
-    id: 'cpi-energy',
-    title: 'Energy Costs',
-    description: 'BLS CPI energy index: household energy (electricity, utility natural gas, fuel oil) plus motor fuel (gasoline), which is roughly half its weight.',
+    id: 'electricity',
+    title: 'Electricity prices',
+    description: "EIA average residential electricity price for your state, in cents per kWh, monthly. The bold line is seasonally adjusted by whatchanged (the basis of the card's % change); the thin line is the published monthly price.",
     chartType: 'line',
     series: [
-      { dataKey: 'energy', label: 'Energy', color: '#10B981', type: 'monotone' },
+      { dataKey: 'sa', label: 'Seasonally adjusted', color: '#10B981', type: 'monotone' },
+      { dataKey: 'price', label: 'Published', color: '#10B981', type: 'monotone', strokeWidth: 1, strokeOpacity: 0.45 },
     ],
     size: 'medium',
     order: 4,
     defaultTimeframe: 'Jan 2025',
     eraShading: true,
-    yAxisLabel: '% change',
-    normalizeToBaseline: true,
-    formatValue: (v) => fmtSignedPct(v),
-    sourceLabel: 'BLS Consumer Price Index',
-    geoLevel: 'Metro area (when available)',
+    yAxisLabel: '¢/kWh',
+    formatValue: (v) => `${v.toFixed(1)}¢`,
+    sourceLabel: 'EIA Electricity Data Browser',
+    sourceUrl: 'https://www.eia.gov/electricity/data/browser/',
+    geoLevel: 'State',
     showNationalToggle: true,
   },
 ]

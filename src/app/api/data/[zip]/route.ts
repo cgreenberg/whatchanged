@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { eiaGasSeriesId, EIA_GAS_PRODUCT } from '@/lib/api/eia'
+import { hasElectricitySeries } from '@/lib/api/eia-electricity'
 import type { EconomicSnapshot } from '@/types'
 import { usesNationalFallback, cpiItemStale } from '@/lib/hero-cards'
 
@@ -13,14 +14,9 @@ function computeAge(fetchedAt: string | undefined): number | null {
 function buildAudit(snapshot: EconomicSnapshot) {
   const c = snapshot.cpi?.data
   const g = snapshot.gas?.data
+  const e = snapshot.electricity?.data
   return {
     cacheStatus: snapshot.cacheStatus,
-    tariffComputation: {
-      input: snapshot.tariff?.data?.medianIncome,
-      rate: snapshot.tariff?.data?.tariffRate,
-      output: snapshot.tariff?.data?.estimatedCost,
-      isFallback: snapshot.tariff?.data?.isFallback,
-    },
     gasSeries: {
       source: g?.source ?? (g ? 'eia' : undefined),
       frequency: g?.frequency ?? (g ? 'weekly' : undefined),
@@ -34,11 +30,13 @@ function buildAudit(snapshot: EconomicSnapshot) {
     dataAge: {
       gas: computeAge(snapshot.gas.fetchedAt),
       cpi: computeAge(snapshot.cpi.fetchedAt),
+      electricity: snapshot.electricity?.data ? computeAge(snapshot.electricity.fetchedAt) : null,
     },
     censusFallback: snapshot.census?.data?.isFallback ?? null,
-    censusIncome: snapshot.census?.data ? {
+    censusRent: snapshot.census?.data ? {
       source: snapshot.census.data.source ?? null,
-      geo: snapshot.census.data.incomeGeo ?? null,
+      medianRent: snapshot.census.data.medianRent,
+      isRentFallback: snapshot.census.data.isRentFallback ?? null,
       year: snapshot.census.data.year,
       donorZip: snapshot.census.data.donorZip ?? null,
       donorScope: snapshot.census.data.donorScope ?? null,
@@ -47,7 +45,6 @@ function buildAudit(snapshot: EconomicSnapshot) {
     blsSeriesIds: {
       cpiGroceries: c?.seriesIds?.groceries ?? null,
       cpiShelter: c?.seriesIds?.shelter ?? null,
-      cpiEnergy: c?.seriesIds?.energy ?? null,
       cpiRent: c?.seriesIds?.rent ?? null,
     },
     // Per-source series + the exact observations used for each displayed change
@@ -82,6 +79,18 @@ function buildAudit(snapshot: EconomicSnapshot) {
         latest: { period: g.latestDate ?? null, value: g.current },
         stale: snapshot.gas.stale ?? false,
       } : null,
+      electricity: e ? {
+        source: 'eia',
+        route: 'electricity/retail-sales',
+        seriesId: e.seriesId,
+        state: e.state,
+        sector: 'RES',
+        adjustment: 'seasonally adjusted by whatchanged (factors fit through 2024-12)',
+        baseline: { period: e.baselinePeriod, value: e.baseline, sa: e.saBaseline },
+        latest: { period: e.latestPeriod, value: e.current, sa: e.saCurrent },
+        usage: { kwhPerMonth: e.usageKwh, from: e.usageFrom ?? null, to: e.usageTo ?? null },
+        stale: snapshot.electricity.stale ?? false,
+      } : null,
     },
     computations: {
       gasChange: g ? {
@@ -114,11 +123,17 @@ function buildAudit(snapshot: EconomicSnapshot) {
         rentIndexChange: c?.rentIndexChange ?? null,
         result: snapshot.dollarImpact.shelter,
       } : null,
-      tariffEstimate: snapshot.tariff?.data ? {
-        formula: 'Math.round(medianIncome * tariffRate)',
-        medianIncome: snapshot.tariff.data.medianIncome,
-        tariffRate: snapshot.tariff.data.tariffRate,
-        result: snapshot.tariff.data.estimatedCost,
+      electricityChange: e ? {
+        formula: '(saCurrent - saBaseline) / saBaseline * 100',
+        current: e.saCurrent,
+        baseline: e.saBaseline,
+        result: e.change,
+      } : null,
+      electricityDollars: snapshot.dollarImpact ? {
+        formula: 'Math.round((saCurrent - saBaseline) * usageKwh / 100)',
+        priceChangeCents: e ? e.saCurrent - e.saBaseline : null,
+        usageKwh: e?.usageKwh ?? null,
+        result: snapshot.dollarImpact.electricity,
       } : null,
     },
     apiVersion: '2.0',
@@ -135,10 +150,8 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid zip code format' }, { status: 400 })
   }
 
-  const city = req.nextUrl.searchParams.get('city')?.slice(0, 100) || undefined
-  const state = req.nextUrl.searchParams.get('state')?.slice(0, 2) || undefined
-
-  const snapshot = await fetchSnapshot(zip, city, state)
+  // Every number comes from the zip alone (?city=/&state= in old links are ignored)
+  const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
     return NextResponse.json({ error: 'Zip code not found' }, { status: 404 })
   }
@@ -146,7 +159,8 @@ export async function GET(
   const audit = req.nextUrl.searchParams.get('audit') === 'true'
   const body = audit ? { ...snapshot, _audit: buildAudit(snapshot) } : snapshot
 
-  const sources = [snapshot.cpi, snapshot.gas]
+  // Electricity counts only where EIA publishes a state series (territories have none by design)
+  const sources = [snapshot.cpi, snapshot.gas, ...(hasElectricitySeries(snapshot.location.stateAbbr) ? [snapshot.electricity] : [])]
   // A national stand-in for a failed local series is degraded too (short TTL, self-heals).
   const degraded = sources.some((s) => !s?.data || s.stale) || usesNationalFallback(snapshot)
   const cacheHeader = degraded

@@ -74,7 +74,7 @@ describe('hero card provenance', () => {
     expect(src('gas')).toMatch(/ · (EIA|BLS) · [A-Z][a-z]{2} (\d{1,2}, )?\d{4}$/)
     expect(src('rent')).toBe('Travis County · Zillow · Aug 2026')
     expect(src('groceries')).toBe('West South Central div. · BLS · Aug 2026')
-    expect(src('tariff')).toBe('Yale Budget Lab')
+    expect(src('electricity')).toBe('Texas · EIA · Jul 2026')
   })
 
   test('ⓘ is an accessible disclosure: button with aria-expanded/aria-controls, toggles, Escape closes', () => {
@@ -202,10 +202,27 @@ describe('chart provenance', () => {
     expect(screen.getByTestId('chart-window')).toHaveTextContent('% change since Jan 2025')
   })
 
-  test('CPI and gas charts are labeled not seasonally adjusted', () => {
-    for (const id of ['gas', 'cpi-groceries', 'cpi-shelter', 'cpi-energy']) {
+  test('CPI and gas charts are labeled not seasonally adjusted; electricity names both lines', () => {
+    for (const id of ['gas', 'cpi-groceries', 'cpi-shelter']) {
       expect(getChartInput(id, clone(austin)).provenance.adjustment).toBe('not seasonally adjusted')
     }
+    expect(getChartInput('electricity', clone(austin)).provenance.adjustment)
+      .toBe('bold line seasonally adjusted by whatchanged; thin line as published')
+  })
+
+  test('electricity graph: ¢/kWh lines, statewide provenance, headline = the card %, U.S. line is the adjusted one only', () => {
+    const snap = clone(austin)
+    const config = chartConfigs.find(c => c.id === 'electricity')!
+    const input = getChartInput('electricity', snap)
+    const e = snap.electricity.data!
+    expect(input.headline?.pct).toBe(e.change)
+    expect(input.data[input.data.length - 1]).toEqual({ date: e.latestPeriod, sa: e.series[e.series.length - 1].sa, price: e.current })
+    expect(Object.keys(input.nationalData[0]).sort()).toEqual(['date', 'sa'])
+    render(<EraChart config={config} data={input.data} nationalData={input.nationalData} provenance={input.provenance}
+      nationalLabel={input.nationalLabel} info={input.info} />)
+    expect(screen.getByTestId('provenance')).toHaveTextContent('EIA average residential electricity price · Texas (statewide), monthly')
+    expect(screen.getByTestId('provenance')).toHaveTextContent('Jul 2026')
+    expect(screen.getByTestId('chart-info')).toHaveTextContent('seasonal')
   })
 
   test('gas chart mentions the dashed U.S. line only while it is shown', () => {
@@ -254,7 +271,7 @@ describe('stale CPI tier inference (entries cached before `tier` existed)', () =
     expect(cpiTierOf({ ...(base as object), areaCode: code } as never)).toBe(tier)
   })
   test('Urban Hawaii (metro S49F) is not mislabeled as a region', () => {
-    expect(cpiGeoLabel({ metro: 'Urban Hawaii', seriesIds: { groceries: 'CUURS49FSAF11', shelter: '', energy: '' } } as never))
+    expect(cpiGeoLabel({ metro: 'Urban Hawaii', seriesIds: { groceries: 'CUURS49FSAF11', shelter: '' } } as never))
       .toBe('metro: Honolulu (BLS area: Urban Hawaii)')
   })
 })

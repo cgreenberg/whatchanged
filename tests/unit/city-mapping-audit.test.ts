@@ -1,6 +1,6 @@
 /**
  * Mapping audit: top 5 cities in every US state.
- * Asserts the CPI area (groceries/shelter/energy all use it) and the EIA gas
+ * Asserts the CPI area (groceries/shelter both use it) and the EIA gas
  * series + tier for each city's county. Expected values are hand-maintained:
  *   - CPI: S-codes = BLS CPI metro (county in the OMB 2013 CBSA BLS samples),
  *     01x0–04x0 = Census division.

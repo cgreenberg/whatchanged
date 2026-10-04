@@ -18,764 +18,637 @@
     {
      "date": "2016-01",
      "groceries": 254.764,
-     "shelter": 354.211,
-     "energy": 164.917
+     "shelter": 354.211
     },
     {
      "date": "2016-02",
      "groceries": 252.679,
-     "shelter": 355.645,
-     "energy": 158.388
+     "shelter": 355.645
     },
     {
      "date": "2016-03",
      "groceries": 250.602,
-     "shelter": 356.133,
-     "energy": 164.258
+     "shelter": 356.133
     },
     {
      "date": "2016-04",
      "groceries": 253.019,
-     "shelter": 356.781,
-     "energy": 171.881
+     "shelter": 356.781
     },
     {
      "date": "2016-05",
      "groceries": 250.536,
-     "shelter": 358.177,
-     "energy": 174.573
+     "shelter": 358.177
     },
     {
      "date": "2016-06",
      "groceries": 250.577,
-     "shelter": 359.395,
-     "energy": 181.925
+     "shelter": 359.395
     },
     {
      "date": "2016-07",
      "groceries": 249.377,
-     "shelter": 360.664,
-     "energy": 179.845
+     "shelter": 360.664
     },
     {
      "date": "2016-08",
      "groceries": 249.074,
-     "shelter": 361.869,
-     "energy": 175.157
+     "shelter": 361.869
     },
     {
      "date": "2016-09",
      "groceries": 249.354,
-     "shelter": 361.8,
-     "energy": 176.174
+     "shelter": 361.8
     },
     {
      "date": "2016-10",
      "groceries": 248.197,
-     "shelter": 363.532,
-     "energy": 173.699
+     "shelter": 363.532
     },
     {
      "date": "2016-11",
      "groceries": 248.012,
-     "shelter": 365.114,
-     "energy": 178.323
+     "shelter": 365.114
     },
     {
      "date": "2016-12",
      "groceries": 247.754,
-     "shelter": 365.319,
-     "energy": 183.116
+     "shelter": 365.319
     },
     {
      "date": "2017-01",
      "groceries": 249.82,
-     "shelter": 365.684,
-     "energy": 187.773
+     "shelter": 365.684
     },
     {
      "date": "2017-02",
      "groceries": 249.874,
-     "shelter": 365.599,
-     "energy": 188.161
+     "shelter": 365.599
     },
     {
      "date": "2017-03",
      "groceries": 250.689,
-     "shelter": 366.03,
-     "energy": 185.553
+     "shelter": 366.03
     },
     {
      "date": "2017-04",
      "groceries": 252.619,
-     "shelter": 366.709,
-     "energy": 187.875
+     "shelter": 366.709
     },
     {
      "date": "2017-05",
      "groceries": 251.321,
-     "shelter": 367.192,
-     "energy": 191.888
+     "shelter": 367.192
     },
     {
      "date": "2017-06",
      "groceries": 252.02,
-     "shelter": 367.964,
-     "energy": 193.402
+     "shelter": 367.964
     },
     {
      "date": "2017-07",
      "groceries": 252.61,
-     "shelter": 368.84,
-     "energy": 189.791
+     "shelter": 368.84
     },
     {
      "date": "2017-08",
      "groceries": 252.606,
-     "shelter": 370.744,
-     "energy": 190.395
+     "shelter": 370.744
     },
     {
      "date": "2017-09",
      "groceries": 252.197,
-     "shelter": 370.662,
-     "energy": 201.202
+     "shelter": 370.662
     },
     {
      "date": "2017-10",
      "groceries": 253.405,
-     "shelter": 371.091,
-     "energy": 191.166
+     "shelter": 371.091
     },
     {
      "date": "2017-11",
      "groceries": 252.759,
-     "shelter": 371.403,
-     "energy": 192.583
+     "shelter": 371.403
     },
     {
      "date": "2017-12",
      "groceries": 252.929,
-     "shelter": 372.257,
-     "energy": 195.283
+     "shelter": 372.257
     },
     {
      "date": "2018-01",
      "groceries": 253.655,
-     "shelter": 373.008,
-     "energy": 197.004
+     "shelter": 373.008
     },
     {
      "date": "2018-02",
      "groceries": 254.308,
-     "shelter": 373.327,
-     "energy": 201.51
+     "shelter": 373.327
     },
     {
      "date": "2018-03",
      "groceries": 253.35,
-     "shelter": 374.763,
-     "energy": 200.928
+     "shelter": 374.763
     },
     {
      "date": "2018-04",
      "groceries": 255.712,
-     "shelter": 375.314,
-     "energy": 203.774
+     "shelter": 375.314
     },
     {
      "date": "2018-05",
      "groceries": 254.915,
-     "shelter": 375.974,
-     "energy": 213.077
+     "shelter": 375.974
     },
     {
      "date": "2018-06",
      "groceries": 255.693,
-     "shelter": 375.65,
-     "energy": 217.13
+     "shelter": 375.65
     },
     {
      "date": "2018-07",
      "groceries": 256.679,
-     "shelter": 376.707,
-     "energy": 215.616
+     "shelter": 376.707
     },
     {
      "date": "2018-08",
      "groceries": 256.82,
-     "shelter": 377.549,
-     "energy": 211.412
+     "shelter": 377.549
     },
     {
      "date": "2018-09",
      "groceries": 259.499,
-     "shelter": 378.195,
-     "energy": 211.348
+     "shelter": 378.195
     },
     {
      "date": "2018-10",
      "groceries": 257.363,
-     "shelter": 378.368,
-     "energy": 209.046
+     "shelter": 378.368
     },
     {
      "date": "2018-11",
      "groceries": 256.92,
-     "shelter": 378.954,
-     "energy": 203.113
+     "shelter": 378.954
     },
     {
      "date": "2018-12",
      "groceries": 257.467,
-     "shelter": 379.546,
-     "energy": 197.33
+     "shelter": 379.546
     },
     {
      "date": "2019-01",
      "groceries": 259.288,
-     "shelter": 380.188,
-     "energy": 197.187
+     "shelter": 380.188
     },
     {
      "date": "2019-02",
      "groceries": 258.689,
-     "shelter": 381.584,
-     "energy": 192.94
+     "shelter": 381.584
     },
     {
      "date": "2019-03",
      "groceries": 259.546,
-     "shelter": 382.414,
-     "energy": 198.185
+     "shelter": 382.414
     },
     {
      "date": "2019-04",
      "groceries": 258.348,
-     "shelter": 384.22,
-     "energy": 201.948
+     "shelter": 384.22
     },
     {
      "date": "2019-05",
      "groceries": 256.611,
-     "shelter": 384.085,
-     "energy": 205.33
+     "shelter": 384.085
     },
     {
      "date": "2019-06",
      "groceries": 258.911,
-     "shelter": 384.598,
-     "energy": 208.222
+     "shelter": 384.598
     },
     {
      "date": "2019-07",
      "groceries": 257.017,
-     "shelter": 385.269,
-     "energy": 206.481
+     "shelter": 385.269
     },
     {
      "date": "2019-08",
      "groceries": 258.183,
-     "shelter": 385.875,
-     "energy": 202.981
+     "shelter": 385.875
     },
     {
      "date": "2019-09",
      "groceries": 258.462,
-     "shelter": 387.167,
-     "energy": 199.539
+     "shelter": 387.167
     },
     {
      "date": "2019-10",
      "groceries": 260.764,
-     "shelter": 386.148,
-     "energy": 196.399
+     "shelter": 386.148
     },
     {
      "date": "2019-11",
      "groceries": 256.906,
-     "shelter": 387.012,
-     "energy": 198.918
+     "shelter": 387.012
     },
     {
      "date": "2019-12",
      "groceries": 258.504,
-     "shelter": 387.979,
-     "energy": 198.837
+     "shelter": 387.979
     },
     {
      "date": "2020-01",
      "groceries": 261.131,
-     "shelter": 389.79,
-     "energy": 201.655
+     "shelter": 389.79
     },
     {
      "date": "2020-02",
      "groceries": 260.651,
-     "shelter": 390.984,
-     "energy": 196.98
+     "shelter": 390.984
     },
     {
      "date": "2020-03",
      "groceries": 261.184,
-     "shelter": 392.352,
-     "energy": 189.692
+     "shelter": 392.352
     },
     {
      "date": "2020-04",
      "groceries": 270.644,
-     "shelter": 391.605,
-     "energy": 179.746
+     "shelter": 391.605
     },
     {
      "date": "2020-05",
      "groceries": 274.785,
-     "shelter": 391.742,
-     "energy": 177.516
+     "shelter": 391.742
     },
     {
      "date": "2020-06",
      "groceries": 272.888,
-     "shelter": 391.894,
-     "energy": 187.978
+     "shelter": 391.894
     },
     {
      "date": "2020-07",
      "groceries": 270.732,
-     "shelter": 392.217,
-     "energy": 188.409
+     "shelter": 392.217
     },
     {
      "date": "2020-08",
      "groceries": 269.424,
-     "shelter": 392.469,
-     "energy": 184.925
+     "shelter": 392.469
     },
     {
      "date": "2020-09",
      "groceries": 268.109,
-     "shelter": 393.526,
-     "energy": 185.227
+     "shelter": 393.526
     },
     {
      "date": "2020-10",
      "groceries": 268.221,
-     "shelter": 392.135,
-     "energy": 181.818
+     "shelter": 392.135
     },
     {
      "date": "2020-11",
      "groceries": 267.638,
-     "shelter": 393.007,
-     "energy": 182.86
+     "shelter": 393.007
     },
     {
      "date": "2020-12",
      "groceries": 268.16,
-     "shelter": 392.874,
-     "energy": 189.109
+     "shelter": 392.874
     },
     {
      "date": "2021-01",
      "groceries": 267.564,
-     "shelter": 392.787,
-     "energy": 196.015
+     "shelter": 392.787
     },
     {
      "date": "2021-02",
      "groceries": 267.5,
-     "shelter": 393.648,
-     "energy": 204.83
+     "shelter": 393.648
     },
     {
      "date": "2021-03",
      "groceries": 268.347,
-     "shelter": 394.286,
-     "energy": 201.575
+     "shelter": 394.286
     },
     {
      "date": "2021-04",
      "groceries": 271.55,
-     "shelter": 395.644,
-     "energy": 208.61
+     "shelter": 395.644
     },
     {
      "date": "2021-05",
      "groceries": 271.019,
-     "shelter": 396.656,
-     "energy": 213.605
+     "shelter": 396.656
     },
     {
      "date": "2021-06",
      "groceries": 273.446,
-     "shelter": 398.824,
-     "energy": 219.623
+     "shelter": 398.824
     },
     {
      "date": "2021-07",
      "groceries": 275.851,
-     "shelter": 399.091,
-     "energy": 220.523
+     "shelter": 399.091
     },
     {
      "date": "2021-08",
      "groceries": 276.818,
-     "shelter": 397.863,
-     "energy": 225.06
+     "shelter": 397.863
     },
     {
      "date": "2021-09",
      "groceries": 280.498,
-     "shelter": 398.191,
-     "energy": 226.369
+     "shelter": 398.191
     },
     {
      "date": "2021-10",
      "groceries": 281.298,
-     "shelter": 397.565,
-     "energy": 231.275
+     "shelter": 397.565
     },
     {
      "date": "2021-11",
      "groceries": 283.223,
-     "shelter": 398.601,
-     "energy": 233.247
+     "shelter": 398.601
     },
     {
      "date": "2021-12",
      "groceries": 284.34,
-     "shelter": 397.582,
-     "energy": 230.256
+     "shelter": 397.582
     },
     {
      "date": "2022-01",
      "groceries": 287.86,
-     "shelter": 398.68,
-     "energy": 251.912
+     "shelter": 398.68
     },
     {
      "date": "2022-02",
      "groceries": 291.811,
-     "shelter": 401.151,
-     "energy": 236.894
+     "shelter": 401.151
     },
     {
      "date": "2022-03",
      "groceries": 293.548,
-     "shelter": 402.69,
-     "energy": 267.556
+     "shelter": 402.69
     },
     {
      "date": "2022-04",
      "groceries": 298.825,
-     "shelter": 404.237,
-     "energy": 270.704
+     "shelter": 404.237
     },
     {
      "date": "2022-05",
      "groceries": 301.121,
-     "shelter": 405.41,
-     "energy": 293.717
+     "shelter": 405.41
     },
     {
      "date": "2022-06",
      "groceries": 301.169,
-     "shelter": 407.236,
-     "energy": 305.732
+     "shelter": 407.236
     },
     {
      "date": "2022-07",
      "groceries": 308.723,
-     "shelter": 408.155,
-     "energy": 287.905
+     "shelter": 408.155
     },
     {
      "date": "2022-08",
      "groceries": 309.877,
-     "shelter": 409.148,
-     "energy": 282.833
+     "shelter": 409.148
     },
     {
      "date": "2022-09",
      "groceries": 308.665,
-     "shelter": 411.946,
-     "energy": 267.439
+     "shelter": 411.946
     },
     {
      "date": "2022-10",
      "groceries": 310.55,
-     "shelter": 413.77,
-     "energy": 266.048
+     "shelter": 413.77
     },
     {
      "date": "2022-11",
      "groceries": 312.627,
-     "shelter": 416.435,
-     "energy": 274.553
+     "shelter": 416.435
     },
     {
      "date": "2022-12",
      "groceries": 313.065,
-     "shelter": 419.48,
-     "energy": 260.773
+     "shelter": 419.48
     },
     {
      "date": "2023-01",
      "groceries": 315.61,
-     "shelter": 421.894,
-     "energy": 263.057
+     "shelter": 421.894
     },
     {
      "date": "2023-02",
      "groceries": 316.115,
-     "shelter": 423.779,
-     "energy": 256.082
+     "shelter": 423.779
     },
     {
      "date": "2023-03",
      "groceries": 316.315,
-     "shelter": 426.174,
-     "energy": 243.412
+     "shelter": 426.174
     },
     {
      "date": "2023-04",
      "groceries": 317.146,
-     "shelter": 427.234,
-     "energy": 241.879
+     "shelter": 427.234
     },
     {
      "date": "2023-05",
      "groceries": 313.418,
-     "shelter": 428.969,
-     "energy": 241.983
+     "shelter": 428.969
     },
     {
      "date": "2023-06",
      "groceries": 314.529,
-     "shelter": 430.019,
-     "energy": 251.997
+     "shelter": 430.019
     },
     {
      "date": "2023-07",
      "groceries": 314.574,
-     "shelter": 431.935,
-     "energy": 254.755
+     "shelter": 431.935
     },
     {
      "date": "2023-08",
      "groceries": 313.259,
-     "shelter": 434.382,
-     "energy": 263.188
+     "shelter": 434.382
     },
     {
      "date": "2023-09",
      "groceries": 315.621,
-     "shelter": 436.675,
-     "energy": 265.191
+     "shelter": 436.675
     },
     {
      "date": "2023-10",
      "groceries": 317.787,
-     "shelter": 437.792,
-     "energy": 255.787
+     "shelter": 437.792
     },
     {
      "date": "2023-11",
      "groceries": 316.301,
-     "shelter": 439.95,
-     "energy": 257.063
+     "shelter": 439.95
     },
     {
      "date": "2023-12",
      "groceries": 315.692,
-     "shelter": 441.713,
-     "energy": 250.174
+     "shelter": 441.713
     },
     {
      "date": "2024-01",
      "groceries": 317.847,
-     "shelter": 444.186,
-     "energy": 257.051
+     "shelter": 444.186
     },
     {
      "date": "2024-02",
      "groceries": 315.929,
-     "shelter": 445.467,
-     "energy": 254.754
+     "shelter": 445.467
     },
     {
      "date": "2024-03",
      "groceries": 315.211,
-     "shelter": 447.121,
-     "energy": 260.297
+     "shelter": 447.121
     },
     {
      "date": "2024-04",
      "groceries": 318.325,
-     "shelter": 448.643,
-     "energy": 261.118
+     "shelter": 448.643
     },
     {
      "date": "2024-05",
      "groceries": 315.821,
-     "shelter": 453.975,
-     "energy": 261.744
+     "shelter": 453.975
     },
     {
      "date": "2024-06",
      "groceries": 318.218,
-     "shelter": 455.639,
-     "energy": 271.499
+     "shelter": 455.639
     },
     {
      "date": "2024-07",
      "groceries": 316.68,
-     "shelter": 457.675,
-     "energy": 272.961
+     "shelter": 457.675
     },
     {
      "date": "2024-08",
      "groceries": 316.518,
-     "shelter": 460.573,
-     "energy": 262.861
+     "shelter": 460.573
     },
     {
      "date": "2024-09",
      "groceries": 320.248,
-     "shelter": 462.68,
-     "energy": 259.181
+     "shelter": 462.68
     },
     {
      "date": "2024-10",
      "groceries": 319.668,
-     "shelter": 464.023,
-     "energy": 255.872
+     "shelter": 464.023
     },
     {
      "date": "2024-11",
      "groceries": 320.692,
-     "shelter": 465.192,
-     "energy": 252.766
+     "shelter": 465.192
     },
     {
      "date": "2024-12",
      "groceries": 321.974,
-     "shelter": 466.673,
-     "energy": 258.75
+     "shelter": 466.673
     },
     {
      "date": "2025-01",
      "groceries": 322.052,
-     "shelter": 468.314,
-     "energy": 265.42
+     "shelter": 468.314
     },
     {
      "date": "2025-02",
      "groceries": 324.204,
-     "shelter": 470.263,
-     "energy": 267.29
+     "shelter": 470.263
     },
     {
      "date": "2025-03",
      "groceries": 325.517,
-     "shelter": 470.491,
-     "energy": 262.612
+     "shelter": 470.491
     },
     {
      "date": "2025-04",
      "groceries": 321.696,
-     "shelter": 473.4,
-     "energy": 265.506
+     "shelter": 473.4
     },
     {
      "date": "2025-05",
      "groceries": 324.126,
-     "shelter": 474.437,
-     "energy": 263.853
+     "shelter": 474.437
     },
     {
      "date": "2025-06",
      "groceries": 323.98,
-     "shelter": 475.889,
-     "energy": 282.062
+     "shelter": 475.889
     },
     {
      "date": "2025-07",
      "groceries": 327.698,
-     "shelter": 475.826,
-     "energy": 283.592
+     "shelter": 475.826
     },
     {
      "date": "2025-08",
      "groceries": 327.652,
-     "shelter": 479.001,
-     "energy": 277.146
+     "shelter": 479.001
     },
     {
      "date": "2025-09",
      "groceries": 331.2,
-     "shelter": 479.592,
-     "energy": 273.256
+     "shelter": 479.592
     },
     {
      "date": "2025-11",
      "groceries": 333.322,
-     "shelter": 481.077,
-     "energy": 274.019
+     "shelter": 481.077
     },
     {
      "date": "2025-12",
      "groceries": 331.683,
-     "shelter": 486.062,
-     "energy": 274.426
+     "shelter": 486.062
     },
     {
      "date": "2026-01",
      "groceries": 332.699,
-     "shelter": 486.339,
-     "energy": 272.501
+     "shelter": 486.339
     },
     {
      "date": "2026-02",
      "groceries": 335.211,
-     "shelter": 488.397,
-     "energy": 280.711
+     "shelter": 488.397
     },
     {
      "date": "2026-03",
      "groceries": 335.931,
-     "shelter": 488.89,
-     "energy": 307.478
+     "shelter": 488.89
     },
     {
      "date": "2026-04",
      "groceries": 340.829,
-     "shelter": 492.646,
-     "energy": 329.275
+     "shelter": 492.646
     },
     {
      "date": "2026-05",
      "groceries": 336.965,
-     "shelter": 497.291,
-     "energy": 334.726
+     "shelter": 497.291
     },
     {
      "date": "2026-06",
      "groceries": 336.978,
-     "shelter": 496.178,
-     "energy": 327.78
+     "shelter": 496.178
     },
     {
      "date": "2026-07",
      "groceries": 338.451,
-     "shelter": 498.478,
-     "energy": 328.04
+     "shelter": 498.478
     },
     {
      "date": "2026-08",
      "groceries": 337.79,
-     "shelter": 499.903,
-     "energy": 319.762
+     "shelter": 499.903
     }
    ],
    "metro": "New York-Newark-Jersey City",
@@ -783,771 +656,643 @@
    "seriesIds": {
     "groceries": "CUURS12ASAF11",
     "shelter": "CUURS12ASAH1",
-    "energy": "CUURS12ASA0E",
     "rent": "CUURS12ASEHA"
    },
    "nationalSeries": [
     {
      "date": "2016-01",
      "groceries": 242.017,
-     "shelter": 283.498,
-     "energy": 180.171
+     "shelter": 283.498
     },
     {
      "date": "2016-02",
      "groceries": 242.062,
-     "shelter": 284.435,
-     "energy": 172.061
+     "shelter": 284.435
     },
     {
      "date": "2016-03",
      "groceries": 240.329,
-     "shelter": 285.196,
-     "energy": 179.017
+     "shelter": 285.196
     },
     {
      "date": "2016-04",
      "groceries": 240.635,
-     "shelter": 285.836,
-     "energy": 185.652
+     "shelter": 285.836
     },
     {
      "date": "2016-05",
      "groceries": 239.354,
-     "shelter": 286.924,
-     "energy": 192.673
+     "shelter": 286.924
     },
     {
      "date": "2016-06",
      "groceries": 238.43,
-     "shelter": 288.069,
-     "energy": 200.035
+     "shelter": 288.069
     },
     {
      "date": "2016-07",
      "groceries": 238.207,
-     "shelter": 288.78,
-     "energy": 195.94
+     "shelter": 288.78
     },
     {
      "date": "2016-08",
      "groceries": 238.088,
-     "shelter": 289.605,
-     "energy": 193.524
+     "shelter": 289.605
     },
     {
      "date": "2016-09",
      "groceries": 238.12,
-     "shelter": 290.445,
-     "energy": 195.852
+     "shelter": 290.445
     },
     {
      "date": "2016-10",
      "groceries": 238.145,
-     "shelter": 291.407,
-     "energy": 194.786
+     "shelter": 291.407
     },
     {
      "date": "2016-11",
      "groceries": 236.93,
-     "shelter": 291.953,
-     "energy": 191.402
+     "shelter": 291.953
     },
     {
      "date": "2016-12",
      "groceries": 236.464,
-     "shelter": 292.612,
-     "energy": 193.306
+     "shelter": 292.612
     },
     {
      "date": "2017-01",
      "groceries": 237.365,
-     "shelter": 293.56,
-     "energy": 199.608
+     "shelter": 293.56
     },
     {
      "date": "2017-02",
      "groceries": 237.918,
-     "shelter": 294.444,
-     "energy": 198.195
+     "shelter": 294.444
     },
     {
      "date": "2017-03",
      "groceries": 238.256,
-     "shelter": 295.044,
-     "energy": 198.597
+     "shelter": 295.044
     },
     {
      "date": "2017-04",
      "groceries": 238.817,
-     "shelter": 295.706,
-     "energy": 202.869
+     "shelter": 295.706
     },
     {
      "date": "2017-05",
      "groceries": 238.964,
-     "shelter": 296.503,
-     "energy": 203.132
+     "shelter": 296.503
     },
     {
      "date": "2017-06",
      "groceries": 238.3,
-     "shelter": 297.446,
-     "energy": 204.646
+     "shelter": 297.446
     },
     {
      "date": "2017-07",
      "groceries": 238.953,
-     "shelter": 297.919,
-     "energy": 202.554
+     "shelter": 297.919
     },
     {
      "date": "2017-08",
      "groceries": 238.843,
-     "shelter": 299.157,
-     "energy": 205.894
+     "shelter": 299.157
     },
     {
      "date": "2017-09",
      "groceries": 239.128,
-     "shelter": 299.844,
-     "energy": 215.711
+     "shelter": 299.844
     },
     {
      "date": "2017-10",
      "groceries": 239.543,
-     "shelter": 300.846,
-     "energy": 207.29
+     "shelter": 300.846
     },
     {
      "date": "2017-11",
      "groceries": 238.403,
-     "shelter": 301.185,
-     "energy": 209.383
+     "shelter": 301.185
     },
     {
      "date": "2017-12",
      "groceries": 238.579,
-     "shelter": 301.985,
-     "energy": 206.598
+     "shelter": 301.985
     },
     {
      "date": "2018-01",
      "groceries": 239.828,
-     "shelter": 302.928,
-     "energy": 210.663
+     "shelter": 302.928
     },
     {
      "date": "2018-02",
      "groceries": 239.19,
-     "shelter": 303.653,
-     "energy": 213.519
+     "shelter": 303.653
     },
     {
      "date": "2018-03",
      "groceries": 239.158,
-     "shelter": 304.847,
-     "energy": 212.554
+     "shelter": 304.847
     },
     {
      "date": "2018-04",
      "groceries": 240.129,
-     "shelter": 305.716,
-     "energy": 218.83
+     "shelter": 305.716
     },
     {
      "date": "2018-05",
      "groceries": 239.287,
-     "shelter": 306.913,
-     "energy": 226.81
+     "shelter": 306.913
     },
     {
      "date": "2018-06",
      "groceries": 239.158,
-     "shelter": 307.521,
-     "energy": 229.137
+     "shelter": 307.521
     },
     {
      "date": "2018-07",
      "groceries": 239.82,
-     "shelter": 308.393,
-     "energy": 227.107
+     "shelter": 308.393
     },
     {
      "date": "2018-08",
      "groceries": 240.015,
-     "shelter": 309.296,
-     "energy": 226.939
+     "shelter": 309.296
     },
     {
      "date": "2018-09",
      "groceries": 240.125,
-     "shelter": 309.702,
-     "energy": 226.165
+     "shelter": 309.702
     },
     {
      "date": "2018-10",
      "groceries": 239.882,
-     "shelter": 310.382,
-     "energy": 225.757
+     "shelter": 310.382
     },
     {
      "date": "2018-11",
      "groceries": 239.352,
-     "shelter": 310.95,
-     "energy": 215.91
+     "shelter": 310.95
     },
     {
      "date": "2018-12",
      "groceries": 239.989,
-     "shelter": 311.652,
-     "energy": 205.905
+     "shelter": 311.652
     },
     {
      "date": "2019-01",
      "groceries": 241.381,
-     "shelter": 312.696,
-     "energy": 200.563
+     "shelter": 312.696
     },
     {
      "date": "2019-02",
      "groceries": 242.057,
-     "shelter": 313.88,
-     "energy": 202.74
+     "shelter": 313.88
     },
     {
      "date": "2019-03",
      "groceries": 242.555,
-     "shelter": 315.135,
-     "energy": 211.724
+     "shelter": 315.135
     },
     {
      "date": "2019-04",
      "groceries": 241.878,
-     "shelter": 316.263,
-     "energy": 222.499
+     "shelter": 316.263
     },
     {
      "date": "2019-05",
      "groceries": 242.145,
-     "shelter": 317.188,
-     "energy": 225.773
+     "shelter": 317.188
     },
     {
      "date": "2019-06",
      "groceries": 241.407,
-     "shelter": 318.3,
-     "energy": 221.373
+     "shelter": 318.3
     },
     {
      "date": "2019-07",
      "groceries": 241.359,
-     "shelter": 319.136,
-     "energy": 222.492
+     "shelter": 319.136
     },
     {
      "date": "2019-08",
      "groceries": 241.153,
-     "shelter": 319.679,
-     "energy": 216.978
+     "shelter": 319.679
     },
     {
      "date": "2019-09",
      "groceries": 241.543,
-     "shelter": 320.569,
-     "energy": 215.418
+     "shelter": 320.569
     },
     {
      "date": "2019-10",
      "groceries": 242.34,
-     "shelter": 320.762,
-     "energy": 216.351
+     "shelter": 320.762
     },
     {
      "date": "2019-11",
      "groceries": 241.726,
-     "shelter": 321.267,
-     "energy": 214.636
+     "shelter": 321.267
     },
     {
      "date": "2019-12",
      "groceries": 241.75,
-     "shelter": 321.766,
-     "energy": 212.982
+     "shelter": 321.766
     },
     {
      "date": "2020-01",
      "groceries": 243.11,
-     "shelter": 323.053,
-     "energy": 213.043
+     "shelter": 323.053
     },
     {
      "date": "2020-02",
      "groceries": 244.054,
-     "shelter": 324.254,
-     "energy": 208.354
+     "shelter": 324.254
     },
     {
      "date": "2020-03",
      "groceries": 245.163,
-     "shelter": 324.615,
-     "energy": 199.573
+     "shelter": 324.615
     },
     {
      "date": "2020-04",
      "groceries": 251.717,
-     "shelter": 324.522,
-     "energy": 183.081
+     "shelter": 324.522
     },
     {
      "date": "2020-05",
      "groceries": 253.827,
-     "shelter": 325.265,
-     "energy": 183.076
+     "shelter": 325.265
     },
     {
      "date": "2020-06",
      "groceries": 255.042,
-     "shelter": 325.814,
-     "energy": 193.379
+     "shelter": 325.814
     },
     {
      "date": "2020-07",
      "groceries": 252.563,
-     "shelter": 326.58,
-     "energy": 197.665
+     "shelter": 326.58
     },
     {
      "date": "2020-08",
      "groceries": 252.352,
-     "shelter": 326.997,
-     "energy": 197.362
+     "shelter": 326.997
     },
     {
      "date": "2020-09",
      "groceries": 251.369,
-     "shelter": 327.116,
-     "energy": 198.858
+     "shelter": 327.116
     },
     {
      "date": "2020-10",
      "groceries": 251.937,
-     "shelter": 327.273,
-     "energy": 196.458
+     "shelter": 327.273
     },
     {
      "date": "2020-11",
      "groceries": 250.407,
-     "shelter": 327.435,
-     "energy": 194.388
+     "shelter": 327.435
     },
     {
      "date": "2020-12",
      "groceries": 251.253,
-     "shelter": 327.702,
-     "energy": 198.155
+     "shelter": 327.702
     },
     {
      "date": "2021-01",
      "groceries": 252.107,
-     "shelter": 328.282,
-     "energy": 205.273
+     "shelter": 328.282
     },
     {
      "date": "2021-02",
      "groceries": 252.716,
-     "shelter": 329.005,
-     "energy": 213.277
+     "shelter": 329.005
     },
     {
      "date": "2021-03",
      "groceries": 253.231,
-     "shelter": 330.122,
-     "energy": 225.861
+     "shelter": 330.122
     },
     {
      "date": "2021-04",
      "groceries": 254.76,
-     "shelter": 331.354,
-     "energy": 229.116
+     "shelter": 331.354
     },
     {
      "date": "2021-05",
      "groceries": 255.516,
-     "shelter": 332.454,
-     "energy": 235.339
+     "shelter": 332.454
     },
     {
      "date": "2021-06",
      "groceries": 257.412,
-     "shelter": 334.222,
-     "energy": 240.72
+     "shelter": 334.222
     },
     {
      "date": "2021-07",
      "groceries": 259.022,
-     "shelter": 335.812,
-     "energy": 244.8
+     "shelter": 335.812
     },
     {
      "date": "2021-08",
      "groceries": 259.825,
-     "shelter": 336.284,
-     "energy": 246.639
+     "shelter": 336.284
     },
     {
      "date": "2021-09",
      "groceries": 262.695,
-     "shelter": 337.451,
-     "energy": 248.228
+     "shelter": 337.451
     },
     {
      "date": "2021-10",
      "groceries": 265.478,
-     "shelter": 338.671,
-     "energy": 255.338
+     "shelter": 338.671
     },
     {
      "date": "2021-11",
      "groceries": 266.384,
-     "shelter": 339.997,
-     "energy": 259.1
+     "shelter": 339.997
     },
     {
      "date": "2021-12",
      "groceries": 267.555,
-     "shelter": 341.241,
-     "energy": 256.207
+     "shelter": 341.241
     },
     {
      "date": "2022-01",
      "groceries": 270.711,
-     "shelter": 342.604,
-     "energy": 260.653
+     "shelter": 342.604
     },
     {
      "date": "2022-02",
      "groceries": 274.568,
-     "shelter": 344.607,
-     "energy": 267.771
+     "shelter": 344.607
     },
     {
      "date": "2022-03",
      "groceries": 278.612,
-     "shelter": 346.618,
-     "energy": 298.246
+     "shelter": 346.618
     },
     {
      "date": "2022-04",
      "groceries": 282.161,
-     "shelter": 348.389,
-     "energy": 298.469
+     "shelter": 348.389
     },
     {
      "date": "2022-05",
      "groceries": 285.953,
-     "shelter": 350.58,
-     "energy": 316.761
+     "shelter": 350.58
     },
     {
      "date": "2022-06",
      "groceries": 288.884,
-     "shelter": 352.967,
-     "energy": 340.917
+     "shelter": 352.967
     },
     {
      "date": "2022-07",
      "groceries": 292.972,
-     "shelter": 354.935,
-     "energy": 325.407
+     "shelter": 354.935
     },
     {
      "date": "2022-08",
      "groceries": 295.007,
-     "shelter": 357.264,
-     "energy": 305.372
+     "shelter": 357.264
     },
     {
      "date": "2022-09",
      "groceries": 296.771,
-     "shelter": 359.704,
-     "energy": 297.343
+     "shelter": 359.704
     },
     {
      "date": "2022-10",
      "groceries": 298.401,
-     "shelter": 362.093,
-     "energy": 300.359
+     "shelter": 362.093
     },
     {
      "date": "2022-11",
      "groceries": 298.284,
-     "shelter": 364.195,
-     "energy": 292.953
+     "shelter": 364.195
     },
     {
      "date": "2022-12",
      "groceries": 299.089,
-     "shelter": 366.868,
-     "energy": 274.937
+     "shelter": 366.868
     },
     {
      "date": "2023-01",
      "groceries": 301.435,
-     "shelter": 369.585,
-     "energy": 283.33
+     "shelter": 369.585
     },
     {
      "date": "2023-02",
      "groceries": 302.483,
-     "shelter": 372.51,
-     "energy": 281.673
+     "shelter": 372.51
     },
     {
      "date": "2023-03",
      "groceries": 301.918,
-     "shelter": 374.971,
-     "energy": 279.084
+     "shelter": 374.971
     },
     {
      "date": "2023-04",
      "groceries": 302.328,
-     "shelter": 376.636,
-     "energy": 283.352
+     "shelter": 376.636
     },
     {
      "date": "2023-05",
      "groceries": 302.535,
-     "shelter": 378.776,
-     "energy": 279.816
+     "shelter": 378.776
     },
     {
      "date": "2023-06",
      "groceries": 302.335,
-     "shelter": 380.594,
-     "energy": 283.854
+     "shelter": 380.594
     },
     {
      "date": "2023-07",
      "groceries": 303.455,
-     "shelter": 382.226,
-     "energy": 284.828
+     "shelter": 382.226
     },
     {
      "date": "2023-08",
      "groceries": 303.716,
-     "shelter": 383.221,
-     "energy": 294.328
+     "shelter": 383.221
     },
     {
      "date": "2023-09",
      "groceries": 303.925,
-     "shelter": 385.433,
-     "energy": 296.004
+     "shelter": 385.433
     },
     {
      "date": "2023-10",
      "groceries": 304.788,
-     "shelter": 386.435,
-     "energy": 286.754
+     "shelter": 386.435
     },
     {
      "date": "2023-11",
      "groceries": 303.224,
-     "shelter": 387.892,
-     "energy": 277.029
+     "shelter": 387.892
     },
     {
      "date": "2023-12",
      "groceries": 303.005,
-     "shelter": 389.433,
-     "energy": 269.375
+     "shelter": 389.433
     },
     {
      "date": "2024-01",
      "groceries": 305.037,
-     "shelter": 391.896,
-     "energy": 270.42
+     "shelter": 391.896
     },
     {
      "date": "2024-02",
      "groceries": 305.469,
-     "shelter": 393.906,
-     "energy": 276.331
+     "shelter": 393.906
     },
     {
      "date": "2024-03",
      "groceries": 305.426,
-     "shelter": 396.174,
-     "energy": 285.002
+     "shelter": 396.174
     },
     {
      "date": "2024-04",
      "groceries": 305.707,
-     "shelter": 397.539,
-     "energy": 290.76
+     "shelter": 397.539
     },
     {
      "date": "2024-05",
      "groceries": 305.679,
-     "shelter": 399.274,
-     "energy": 290.139
+     "shelter": 399.274
     },
     {
      "date": "2024-06",
      "groceries": 305.752,
-     "shelter": 400.234,
-     "energy": 286.675
+     "shelter": 400.234
     },
     {
      "date": "2024-07",
      "groceries": 306.643,
-     "shelter": 401.545,
-     "energy": 287.868
+     "shelter": 401.545
     },
     {
      "date": "2024-08",
      "groceries": 306.402,
-     "shelter": 403.257,
-     "energy": 282.614
+     "shelter": 403.257
     },
     {
      "date": "2024-09",
      "groceries": 307.767,
-     "shelter": 404.133,
-     "energy": 275.74
+     "shelter": 404.133
     },
     {
      "date": "2024-10",
      "groceries": 308.2,
-     "shelter": 405.287,
-     "energy": 272.807
+     "shelter": 405.287
     },
     {
      "date": "2024-11",
      "groceries": 307.972,
-     "shelter": 406.25,
-     "energy": 268.213
+     "shelter": 406.25
     },
     {
      "date": "2024-12",
      "groceries": 308.38,
-     "shelter": 407.242,
-     "energy": 267.963
+     "shelter": 407.242
     },
     {
      "date": "2025-01",
      "groceries": 310.936,
-     "shelter": 409.153,
-     "energy": 273.045
+     "shelter": 409.153
     },
     {
      "date": "2025-02",
      "groceries": 311.284,
-     "shelter": 410.635,
-     "energy": 275.867
+     "shelter": 410.635
     },
     {
      "date": "2025-03",
      "groceries": 312.815,
-     "shelter": 411.99,
-     "energy": 275.734
+     "shelter": 411.99
     },
     {
      "date": "2025-04",
      "groceries": 311.84,
-     "shelter": 413.389,
-     "energy": 279.888
+     "shelter": 413.389
     },
     {
      "date": "2025-05",
      "groceries": 312.491,
-     "shelter": 414.689,
-     "energy": 280.097
+     "shelter": 414.689
     },
     {
      "date": "2025-06",
      "groceries": 313.028,
-     "shelter": 415.455,
-     "energy": 284.307
+     "shelter": 415.455
     },
     {
      "date": "2025-07",
      "groceries": 313.263,
-     "shelter": 416.271,
-     "energy": 283.395
+     "shelter": 416.271
     },
     {
      "date": "2025-08",
      "groceries": 314.608,
-     "shelter": 417.902,
-     "energy": 283.247
+     "shelter": 417.902
     },
     {
      "date": "2025-09",
      "groceries": 316.042,
-     "shelter": 418.598,
-     "energy": 283.589
+     "shelter": 418.598
     },
     {
      "date": "2025-11",
      "groceries": 313.954,
-     "shelter": 418.593,
-     "energy": 279.588
+     "shelter": 418.593
     },
     {
      "date": "2025-12",
      "groceries": 315.664,
-     "shelter": 420.134,
-     "energy": 274.131
+     "shelter": 420.134
     },
     {
      "date": "2026-01",
      "groceries": 317.431,
-     "shelter": 421.526,
-     "energy": 272.668
+     "shelter": 421.526
     },
     {
      "date": "2026-02",
      "groceries": 318.898,
-     "shelter": 422.776,
-     "energy": 277.179
+     "shelter": 422.776
     },
     {
      "date": "2026-03",
      "groceries": 318.755,
-     "shelter": 424.45,
-     "energy": 310.28
+     "shelter": 424.45
     },
     {
      "date": "2026-04",
      "groceries": 320.859,
-     "shelter": 427.049,
-     "energy": 329.907
+     "shelter": 427.049
     },
     {
      "date": "2026-05",
      "groceries": 321.047,
-     "shelter": 428.677,
-     "energy": 346.042
+     "shelter": 428.677
     },
     {
      "date": "2026-06",
      "groceries": 321.631,
-     "shelter": 429.062,
-     "energy": 328.95
+     "shelter": 429.062
     },
     {
      "date": "2026-07",
      "groceries": 321.643,
-     "shelter": 429.491,
-     "energy": 325.15
+     "shelter": 429.491
     },
     {
      "date": "2026-08",
      "groceries": 321.5,
-     "shelter": 430.611,
-     "energy": 329.351
+     "shelter": 430.611
     }
    ],
    "groceriesBaselinePeriod": "2025-01",
@@ -5751,41 +5496,1314 @@
  "census": {
   "data": {
    "zip": "10001",
-   "medianIncome": 123393,
    "medianRent": 3024,
+   "rent": 3024,
    "year": 2023,
+   "source": "acs",
+   "sourceLabel": "Census ACS 2023 5-year, zip 10001",
    "isFallback": false,
-   "isRentFallback": false,
-   "isCityLevel": false
+   "isRentFallback": false
   },
   "error": null,
   "fetchedAt": "2026-10-02T19:35:22.890Z",
   "sourceId": "census-acs"
  },
- "tariff": {
+ "electricity": {
   "data": {
-   "medianIncome": 123393,
-   "tariffRate": 0.0205,
-   "estimatedCost": 2530,
-   "source": "Yale Budget Lab",
-   "incomeSource": "census-acs-2023",
-   "isFallback": false
+   "state": "NY",
+   "stateName": "New York",
+   "seriesId": "ELEC.PRICE.NY-RES.M",
+   "current": 29.9,
+   "latestPeriod": "2026-07",
+   "baseline": 25.34,
+   "baselinePeriod": "2025-01",
+   "saCurrent": 29.214,
+   "saBaseline": 26.013,
+   "change": 12.31,
+   "rawChange": 18,
+   "usageKwh": 587.4,
+   "usageFrom": "2025-08",
+   "usageTo": "2026-07",
+   "series": [
+    {
+     "date": "2016-01",
+     "price": 16.56,
+     "sa": 17
+    },
+    {
+     "date": "2016-02",
+     "price": 16.76,
+     "sa": 16.839
+    },
+    {
+     "date": "2016-03",
+     "price": 16.79,
+     "sa": 17.605
+    },
+    {
+     "date": "2016-04",
+     "price": 17.38,
+     "sa": 17.983
+    },
+    {
+     "date": "2016-05",
+     "price": 17.71,
+     "sa": 17.573
+    },
+    {
+     "date": "2016-06",
+     "price": 17.87,
+     "sa": 17.525
+    },
+    {
+     "date": "2016-07",
+     "price": 17.93,
+     "sa": 17.519
+    },
+    {
+     "date": "2016-08",
+     "price": 17.99,
+     "sa": 17.724
+    },
+    {
+     "date": "2016-09",
+     "price": 18.36,
+     "sa": 17.658
+    },
+    {
+     "date": "2016-10",
+     "price": 18.26,
+     "sa": 17.666
+    },
+    {
+     "date": "2016-11",
+     "price": 17.73,
+     "sa": 17.672
+    },
+    {
+     "date": "2016-12",
+     "price": 17.17,
+     "sa": 17.742
+    },
+    {
+     "date": "2017-01",
+     "price": 17.3,
+     "sa": 17.759
+    },
+    {
+     "date": "2017-02",
+     "price": 17.48,
+     "sa": 17.563
+    },
+    {
+     "date": "2017-03",
+     "price": 17.02,
+     "sa": 17.846
+    },
+    {
+     "date": "2017-04",
+     "price": 17.3,
+     "sa": 17.9
+    },
+    {
+     "date": "2017-05",
+     "price": 18.53,
+     "sa": 18.387
+    },
+    {
+     "date": "2017-06",
+     "price": 18.74,
+     "sa": 18.378
+    },
+    {
+     "date": "2017-07",
+     "price": 18.79,
+     "sa": 18.359
+    },
+    {
+     "date": "2017-08",
+     "price": 18.56,
+     "sa": 18.285
+    },
+    {
+     "date": "2017-09",
+     "price": 18.8,
+     "sa": 18.082
+    },
+    {
+     "date": "2017-10",
+     "price": 18.74,
+     "sa": 18.131
+    },
+    {
+     "date": "2017-11",
+     "price": 17.8,
+     "sa": 17.741
+    },
+    {
+     "date": "2017-12",
+     "price": 16.99,
+     "sa": 17.556
+    },
+    {
+     "date": "2018-01",
+     "price": 17.75,
+     "sa": 18.221
+    },
+    {
+     "date": "2018-02",
+     "price": 18.19,
+     "sa": 18.276
+    },
+    {
+     "date": "2018-03",
+     "price": 17.52,
+     "sa": 18.37
+    },
+    {
+     "date": "2018-04",
+     "price": 17.98,
+     "sa": 18.604
+    },
+    {
+     "date": "2018-05",
+     "price": 18.51,
+     "sa": 18.367
+    },
+    {
+     "date": "2018-06",
+     "price": 19.28,
+     "sa": 18.908
+    },
+    {
+     "date": "2018-07",
+     "price": 19.37,
+     "sa": 18.926
+    },
+    {
+     "date": "2018-08",
+     "price": 19.02,
+     "sa": 18.738
+    },
+    {
+     "date": "2018-09",
+     "price": 19.28,
+     "sa": 18.543
+    },
+    {
+     "date": "2018-10",
+     "price": 19.29,
+     "sa": 18.663
+    },
+    {
+     "date": "2018-11",
+     "price": 18.17,
+     "sa": 18.11
+    },
+    {
+     "date": "2018-12",
+     "price": 17.33,
+     "sa": 17.907
+    },
+    {
+     "date": "2019-01",
+     "price": 17.3,
+     "sa": 17.759
+    },
+    {
+     "date": "2019-02",
+     "price": 17.65,
+     "sa": 17.733
+    },
+    {
+     "date": "2019-03",
+     "price": 16.85,
+     "sa": 17.667
+    },
+    {
+     "date": "2019-04",
+     "price": 17.54,
+     "sa": 18.148
+    },
+    {
+     "date": "2019-05",
+     "price": 17.35,
+     "sa": 17.216
+    },
+    {
+     "date": "2019-06",
+     "price": 18.53,
+     "sa": 18.172
+    },
+    {
+     "date": "2019-07",
+     "price": 18.64,
+     "sa": 18.212
+    },
+    {
+     "date": "2019-08",
+     "price": 18.38,
+     "sa": 18.108
+    },
+    {
+     "date": "2019-09",
+     "price": 18.72,
+     "sa": 18.005
+    },
+    {
+     "date": "2019-10",
+     "price": 18.58,
+     "sa": 17.976
+    },
+    {
+     "date": "2019-11",
+     "price": 18.01,
+     "sa": 17.951
+    },
+    {
+     "date": "2019-12",
+     "price": 17.33,
+     "sa": 17.907
+    },
+    {
+     "date": "2020-01",
+     "price": 17.58,
+     "sa": 18.047
+    },
+    {
+     "date": "2020-02",
+     "price": 17.46,
+     "sa": 17.542
+    },
+    {
+     "date": "2020-03",
+     "price": 17.2,
+     "sa": 18.034
+    },
+    {
+     "date": "2020-04",
+     "price": 17.35,
+     "sa": 17.952
+    },
+    {
+     "date": "2020-05",
+     "price": 18.55,
+     "sa": 18.407
+    },
+    {
+     "date": "2020-06",
+     "price": 19.13,
+     "sa": 18.761
+    },
+    {
+     "date": "2020-07",
+     "price": 18.75,
+     "sa": 18.32
+    },
+    {
+     "date": "2020-08",
+     "price": 18.43,
+     "sa": 18.157
+    },
+    {
+     "date": "2020-09",
+     "price": 19.01,
+     "sa": 18.284
+    },
+    {
+     "date": "2020-10",
+     "price": 19.29,
+     "sa": 18.663
+    },
+    {
+     "date": "2020-11",
+     "price": 18.95,
+     "sa": 18.888
+    },
+    {
+     "date": "2020-12",
+     "price": 18.26,
+     "sa": 18.868
+    },
+    {
+     "date": "2021-01",
+     "price": 18.31,
+     "sa": 18.796
+    },
+    {
+     "date": "2021-02",
+     "price": 18.83,
+     "sa": 18.919
+    },
+    {
+     "date": "2021-03",
+     "price": 18.04,
+     "sa": 18.915
+    },
+    {
+     "date": "2021-04",
+     "price": 18.55,
+     "sa": 19.193
+    },
+    {
+     "date": "2021-05",
+     "price": 19.93,
+     "sa": 19.776
+    },
+    {
+     "date": "2021-06",
+     "price": 19.6,
+     "sa": 19.222
+    },
+    {
+     "date": "2021-07",
+     "price": 19.64,
+     "sa": 19.189
+    },
+    {
+     "date": "2021-08",
+     "price": 19.97,
+     "sa": 19.674
+    },
+    {
+     "date": "2021-09",
+     "price": 20.5,
+     "sa": 19.717
+    },
+    {
+     "date": "2021-10",
+     "price": 20.66,
+     "sa": 19.988
+    },
+    {
+     "date": "2021-11",
+     "price": 20.09,
+     "sa": 20.024
+    },
+    {
+     "date": "2021-12",
+     "price": 19.56,
+     "sa": 20.212
+    },
+    {
+     "date": "2022-01",
+     "price": 21.05,
+     "sa": 21.609
+    },
+    {
+     "date": "2022-02",
+     "price": 21.64,
+     "sa": 21.742
+    },
+    {
+     "date": "2022-03",
+     "price": 20.75,
+     "sa": 21.757
+    },
+    {
+     "date": "2022-04",
+     "price": 21.06,
+     "sa": 21.79
+    },
+    {
+     "date": "2022-05",
+     "price": 21.86,
+     "sa": 21.691
+    },
+    {
+     "date": "2022-06",
+     "price": 22.36,
+     "sa": 21.928
+    },
+    {
+     "date": "2022-07",
+     "price": 21.88,
+     "sa": 21.378
+    },
+    {
+     "date": "2022-08",
+     "price": 21.2,
+     "sa": 20.886
+    },
+    {
+     "date": "2022-09",
+     "price": 23.95,
+     "sa": 23.035
+    },
+    {
+     "date": "2022-10",
+     "price": 23.26,
+     "sa": 22.504
+    },
+    {
+     "date": "2022-11",
+     "price": 23.66,
+     "sa": 23.582
+    },
+    {
+     "date": "2022-12",
+     "price": 22.78,
+     "sa": 23.539
+    },
+    {
+     "date": "2023-01",
+     "price": 23.62,
+     "sa": 24.247
+    },
+    {
+     "date": "2023-02",
+     "price": 24.18,
+     "sa": 24.294
+    },
+    {
+     "date": "2023-03",
+     "price": 21.21,
+     "sa": 22.239
+    },
+    {
+     "date": "2023-04",
+     "price": 19.81,
+     "sa": 20.497
+    },
+    {
+     "date": "2023-05",
+     "price": 20.47,
+     "sa": 20.312
+    },
+    {
+     "date": "2023-06",
+     "price": 21.63,
+     "sa": 21.213
+    },
+    {
+     "date": "2023-07",
+     "price": 22.29,
+     "sa": 21.779
+    },
+    {
+     "date": "2023-08",
+     "price": 22.26,
+     "sa": 21.93
+    },
+    {
+     "date": "2023-09",
+     "price": 23.24,
+     "sa": 22.352
+    },
+    {
+     "date": "2023-10",
+     "price": 21.99,
+     "sa": 21.275
+    },
+    {
+     "date": "2023-11",
+     "price": 22.85,
+     "sa": 22.775
+    },
+    {
+     "date": "2023-12",
+     "price": 22.42,
+     "sa": 23.167
+    },
+    {
+     "date": "2024-01",
+     "price": 23.49,
+     "sa": 24.114
+    },
+    {
+     "date": "2024-02",
+     "price": 24.3,
+     "sa": 24.415
+    },
+    {
+     "date": "2024-03",
+     "price": 23.69,
+     "sa": 24.839
+    },
+    {
+     "date": "2024-04",
+     "price": 23.03,
+     "sa": 23.829
+    },
+    {
+     "date": "2024-05",
+     "price": 23.68,
+     "sa": 23.497
+    },
+    {
+     "date": "2024-06",
+     "price": 24.6,
+     "sa": 24.125
+    },
+    {
+     "date": "2024-07",
+     "price": 25.09,
+     "sa": 24.514
+    },
+    {
+     "date": "2024-08",
+     "price": 25.2,
+     "sa": 24.827
+    },
+    {
+     "date": "2024-09",
+     "price": 25.05,
+     "sa": 24.093
+    },
+    {
+     "date": "2024-10",
+     "price": 25.05,
+     "sa": 24.236
+    },
+    {
+     "date": "2024-11",
+     "price": 24.74,
+     "sa": 24.659
+    },
+    {
+     "date": "2024-12",
+     "price": 24.41,
+     "sa": 25.223
+    },
+    {
+     "date": "2025-01",
+     "price": 25.34,
+     "sa": 26.013
+    },
+    {
+     "date": "2025-02",
+     "price": 26.22,
+     "sa": 26.344
+    },
+    {
+     "date": "2025-03",
+     "price": 25.45,
+     "sa": 26.685
+    },
+    {
+     "date": "2025-04",
+     "price": 25.69,
+     "sa": 26.581
+    },
+    {
+     "date": "2025-05",
+     "price": 26.69,
+     "sa": 26.484
+    },
+    {
+     "date": "2025-06",
+     "price": 26.55,
+     "sa": 26.038
+    },
+    {
+     "date": "2025-07",
+     "price": 26.22,
+     "sa": 25.618
+    },
+    {
+     "date": "2025-08",
+     "price": 26.67,
+     "sa": 26.275
+    },
+    {
+     "date": "2025-09",
+     "price": 27.23,
+     "sa": 26.189
+    },
+    {
+     "date": "2025-10",
+     "price": 26.95,
+     "sa": 26.074
+    },
+    {
+     "date": "2025-11",
+     "price": 26.42,
+     "sa": 26.333
+    },
+    {
+     "date": "2025-12",
+     "price": 27.39,
+     "sa": 28.302
+    },
+    {
+     "date": "2026-01",
+     "price": 28.37,
+     "sa": 29.124
+    },
+    {
+     "date": "2026-02",
+     "price": 29.99,
+     "sa": 30.132
+    },
+    {
+     "date": "2026-03",
+     "price": 28.55,
+     "sa": 29.935
+    },
+    {
+     "date": "2026-04",
+     "price": 29.45,
+     "sa": 30.471
+    },
+    {
+     "date": "2026-05",
+     "price": 29.93,
+     "sa": 29.699
+    },
+    {
+     "date": "2026-06",
+     "price": 29.49,
+     "sa": 28.921
+    },
+    {
+     "date": "2026-07",
+     "price": 29.9,
+     "sa": 29.214
+    }
+   ],
+   "nationalSeries": [
+    {
+     "date": "2016-01",
+     "price": 11.99,
+     "sa": 12.529
+    },
+    {
+     "date": "2016-02",
+     "price": 12.14,
+     "sa": 12.389
+    },
+    {
+     "date": "2016-03",
+     "price": 12.56,
+     "sa": 12.574
+    },
+    {
+     "date": "2016-04",
+     "price": 12.43,
+     "sa": 12.362
+    },
+    {
+     "date": "2016-05",
+     "price": 12.79,
+     "sa": 12.57
+    },
+    {
+     "date": "2016-06",
+     "price": 12.73,
+     "sa": 12.552
+    },
+    {
+     "date": "2016-07",
+     "price": 12.68,
+     "sa": 12.518
+    },
+    {
+     "date": "2016-08",
+     "price": 12.88,
+     "sa": 12.618
+    },
+    {
+     "date": "2016-09",
+     "price": 12.87,
+     "sa": 12.626
+    },
+    {
+     "date": "2016-10",
+     "price": 12.46,
+     "sa": 12.389
+    },
+    {
+     "date": "2016-11",
+     "price": 12.75,
+     "sa": 12.717
+    },
+    {
+     "date": "2016-12",
+     "price": 12.23,
+     "sa": 12.665
+    },
+    {
+     "date": "2017-01",
+     "price": 12.21,
+     "sa": 12.759
+    },
+    {
+     "date": "2017-02",
+     "price": 12.79,
+     "sa": 13.053
+    },
+    {
+     "date": "2017-03",
+     "price": 12.89,
+     "sa": 12.904
+    },
+    {
+     "date": "2017-04",
+     "price": 12.72,
+     "sa": 12.65
+    },
+    {
+     "date": "2017-05",
+     "price": 13.07,
+     "sa": 12.846
+    },
+    {
+     "date": "2017-06",
+     "price": 13.2,
+     "sa": 13.016
+    },
+    {
+     "date": "2017-07",
+     "price": 13.08,
+     "sa": 12.913
+    },
+    {
+     "date": "2017-08",
+     "price": 13.15,
+     "sa": 12.882
+    },
+    {
+     "date": "2017-09",
+     "price": 13.28,
+     "sa": 13.028
+    },
+    {
+     "date": "2017-10",
+     "price": 12.8,
+     "sa": 12.727
+    },
+    {
+     "date": "2017-11",
+     "price": 12.94,
+     "sa": 12.907
+    },
+    {
+     "date": "2017-12",
+     "price": 12.45,
+     "sa": 12.892
+    },
+    {
+     "date": "2018-01",
+     "price": 12.22,
+     "sa": 12.769
+    },
+    {
+     "date": "2018-02",
+     "price": 12.63,
+     "sa": 12.889
+    },
+    {
+     "date": "2018-03",
+     "price": 12.97,
+     "sa": 12.985
+    },
+    {
+     "date": "2018-04",
+     "price": 12.88,
+     "sa": 12.809
+    },
+    {
+     "date": "2018-05",
+     "price": 13.12,
+     "sa": 12.895
+    },
+    {
+     "date": "2018-06",
+     "price": 13.03,
+     "sa": 12.848
+    },
+    {
+     "date": "2018-07",
+     "price": 13.13,
+     "sa": 12.962
+    },
+    {
+     "date": "2018-08",
+     "price": 13.26,
+     "sa": 12.99
+    },
+    {
+     "date": "2018-09",
+     "price": 13.01,
+     "sa": 12.763
+    },
+    {
+     "date": "2018-10",
+     "price": 12.85,
+     "sa": 12.777
+    },
+    {
+     "date": "2018-11",
+     "price": 12.9,
+     "sa": 12.867
+    },
+    {
+     "date": "2018-12",
+     "price": 12.43,
+     "sa": 12.872
+    },
+    {
+     "date": "2019-01",
+     "price": 12.47,
+     "sa": 13.031
+    },
+    {
+     "date": "2019-02",
+     "price": 12.72,
+     "sa": 12.981
+    },
+    {
+     "date": "2019-03",
+     "price": 12.84,
+     "sa": 12.854
+    },
+    {
+     "date": "2019-04",
+     "price": 13.25,
+     "sa": 13.177
+    },
+    {
+     "date": "2019-05",
+     "price": 13.31,
+     "sa": 13.081
+    },
+    {
+     "date": "2019-06",
+     "price": 13.32,
+     "sa": 13.134
+    },
+    {
+     "date": "2019-07",
+     "price": 13.26,
+     "sa": 13.091
+    },
+    {
+     "date": "2019-08",
+     "price": 13.3,
+     "sa": 13.029
+    },
+    {
+     "date": "2019-09",
+     "price": 13.16,
+     "sa": 12.911
+    },
+    {
+     "date": "2019-10",
+     "price": 12.81,
+     "sa": 12.737
+    },
+    {
+     "date": "2019-11",
+     "price": 13.03,
+     "sa": 12.996
+    },
+    {
+     "date": "2019-12",
+     "price": 12.68,
+     "sa": 13.131
+    },
+    {
+     "date": "2020-01",
+     "price": 12.76,
+     "sa": 13.334
+    },
+    {
+     "date": "2020-02",
+     "price": 12.82,
+     "sa": 13.083
+    },
+    {
+     "date": "2020-03",
+     "price": 13.04,
+     "sa": 13.055
+    },
+    {
+     "date": "2020-04",
+     "price": 13.24,
+     "sa": 13.167
+    },
+    {
+     "date": "2020-05",
+     "price": 13.1,
+     "sa": 12.875
+    },
+    {
+     "date": "2020-06",
+     "price": 13.22,
+     "sa": 13.035
+    },
+    {
+     "date": "2020-07",
+     "price": 13.21,
+     "sa": 13.041
+    },
+    {
+     "date": "2020-08",
+     "price": 13.26,
+     "sa": 12.99
+    },
+    {
+     "date": "2020-09",
+     "price": 13.49,
+     "sa": 13.234
+    },
+    {
+     "date": "2020-10",
+     "price": 13.66,
+     "sa": 13.582
+    },
+    {
+     "date": "2020-11",
+     "price": 13.31,
+     "sa": 13.276
+    },
+    {
+     "date": "2020-12",
+     "price": 12.78,
+     "sa": 13.234
+    },
+    {
+     "date": "2021-01",
+     "price": 12.62,
+     "sa": 13.187
+    },
+    {
+     "date": "2021-02",
+     "price": 13.01,
+     "sa": 13.277
+    },
+    {
+     "date": "2021-03",
+     "price": 13.24,
+     "sa": 13.255
+    },
+    {
+     "date": "2021-04",
+     "price": 13.73,
+     "sa": 13.654
+    },
+    {
+     "date": "2021-05",
+     "price": 13.86,
+     "sa": 13.622
+    },
+    {
+     "date": "2021-06",
+     "price": 13.83,
+     "sa": 13.637
+    },
+    {
+     "date": "2021-07",
+     "price": 13.83,
+     "sa": 13.653
+    },
+    {
+     "date": "2021-08",
+     "price": 13.92,
+     "sa": 13.636
+    },
+    {
+     "date": "2021-09",
+     "price": 14.14,
+     "sa": 13.872
+    },
+    {
+     "date": "2021-10",
+     "price": 14.06,
+     "sa": 13.98
+    },
+    {
+     "date": "2021-11",
+     "price": 14.07,
+     "sa": 14.034
+    },
+    {
+     "date": "2021-12",
+     "price": 13.72,
+     "sa": 14.208
+    },
+    {
+     "date": "2022-01",
+     "price": 13.64,
+     "sa": 14.253
+    },
+    {
+     "date": "2022-02",
+     "price": 13.76,
+     "sa": 14.042
+    },
+    {
+     "date": "2022-03",
+     "price": 14.41,
+     "sa": 14.426
+    },
+    {
+     "date": "2022-04",
+     "price": 14.57,
+     "sa": 14.49
+    },
+    {
+     "date": "2022-05",
+     "price": 14.89,
+     "sa": 14.634
+    },
+    {
+     "date": "2022-06",
+     "price": 15.3,
+     "sa": 15.086
+    },
+    {
+     "date": "2022-07",
+     "price": 15.31,
+     "sa": 15.114
+    },
+    {
+     "date": "2022-08",
+     "price": 15.82,
+     "sa": 15.498
+    },
+    {
+     "date": "2022-09",
+     "price": 16.19,
+     "sa": 15.883
+    },
+    {
+     "date": "2022-10",
+     "price": 15.99,
+     "sa": 15.899
+    },
+    {
+     "date": "2022-11",
+     "price": 15.55,
+     "sa": 15.51
+    },
+    {
+     "date": "2022-12",
+     "price": 14.94,
+     "sa": 15.471
+    },
+    {
+     "date": "2023-01",
+     "price": 15.47,
+     "sa": 16.165
+    },
+    {
+     "date": "2023-02",
+     "price": 15.98,
+     "sa": 16.308
+    },
+    {
+     "date": "2023-03",
+     "price": 16.04,
+     "sa": 16.058
+    },
+    {
+     "date": "2023-04",
+     "price": 16.1,
+     "sa": 16.011
+    },
+    {
+     "date": "2023-05",
+     "price": 16.14,
+     "sa": 15.863
+    },
+    {
+     "date": "2023-06",
+     "price": 16.09,
+     "sa": 15.865
+    },
+    {
+     "date": "2023-07",
+     "price": 15.86,
+     "sa": 15.657
+    },
+    {
+     "date": "2023-08",
+     "price": 15.91,
+     "sa": 15.586
+    },
+    {
+     "date": "2023-09",
+     "price": 16.27,
+     "sa": 15.962
+    },
+    {
+     "date": "2023-10",
+     "price": 16.48,
+     "sa": 16.386
+    },
+    {
+     "date": "2023-11",
+     "price": 16.19,
+     "sa": 16.148
+    },
+    {
+     "date": "2023-12",
+     "price": 15.69,
+     "sa": 16.248
+    },
+    {
+     "date": "2024-01",
+     "price": 15.41,
+     "sa": 16.103
+    },
+    {
+     "date": "2024-02",
+     "price": 16.1,
+     "sa": 16.43
+    },
+    {
+     "date": "2024-03",
+     "price": 16.67,
+     "sa": 16.689
+    },
+    {
+     "date": "2024-04",
+     "price": 16.86,
+     "sa": 16.767
+    },
+    {
+     "date": "2024-05",
+     "price": 16.4,
+     "sa": 16.118
+    },
+    {
+     "date": "2024-06",
+     "price": 16.38,
+     "sa": 16.151
+    },
+    {
+     "date": "2024-07",
+     "price": 16.62,
+     "sa": 16.408
+    },
+    {
+     "date": "2024-08",
+     "price": 16.6,
+     "sa": 16.262
+    },
+    {
+     "date": "2024-09",
+     "price": 16.82,
+     "sa": 16.501
+    },
+    {
+     "date": "2024-10",
+     "price": 17.09,
+     "sa": 16.992
+    },
+    {
+     "date": "2024-11",
+     "price": 16.85,
+     "sa": 16.807
+    },
+    {
+     "date": "2024-12",
+     "price": 16.27,
+     "sa": 16.848
+    },
+    {
+     "date": "2025-01",
+     "price": 15.94,
+     "sa": 16.657
+    },
+    {
+     "date": "2025-02",
+     "price": 16.43,
+     "sa": 16.767
+    },
+    {
+     "date": "2025-03",
+     "price": 17.09,
+     "sa": 17.109
+    },
+    {
+     "date": "2025-04",
+     "price": 17.55,
+     "sa": 17.453
+    },
+    {
+     "date": "2025-05",
+     "price": 17.37,
+     "sa": 17.072
+    },
+    {
+     "date": "2025-06",
+     "price": 17.47,
+     "sa": 17.226
+    },
+    {
+     "date": "2025-07",
+     "price": 17.45,
+     "sa": 17.227
+    },
+    {
+     "date": "2025-08",
+     "price": 17.61,
+     "sa": 17.251
+    },
+    {
+     "date": "2025-09",
+     "price": 18.08,
+     "sa": 17.737
+    },
+    {
+     "date": "2025-10",
+     "price": 17.97,
+     "sa": 17.867
+    },
+    {
+     "date": "2025-11",
+     "price": 17.78,
+     "sa": 17.734
+    },
+    {
+     "date": "2025-12",
+     "price": 17.24,
+     "sa": 17.853
+    },
+    {
+     "date": "2026-01",
+     "price": 17.45,
+     "sa": 18.234
+    },
+    {
+     "date": "2026-02",
+     "price": 17.65,
+     "sa": 18.012
+    },
+    {
+     "date": "2026-03",
+     "price": 18.83,
+     "sa": 18.851
+    },
+    {
+     "date": "2026-04",
+     "price": 18.83,
+     "sa": 18.726
+    },
+    {
+     "date": "2026-05",
+     "price": 18.44,
+     "sa": 18.123
+    },
+    {
+     "date": "2026-06",
+     "price": 18.34,
+     "sa": 18.084
+    },
+    {
+     "date": "2026-07",
+     "price": 18.31,
+     "sa": 18.076
+    }
+   ],
+   "nationalChange": 8.52,
+   "nationalLatestPeriod": "2026-07"
   },
   "error": null,
   "fetchedAt": "2026-10-02T19:35:22.890Z",
-  "sourceId": "yale-budget-lab"
- },
- "dollarImpact": {
-  "groceries": 294,
-  "shelter": 2359,
-  "gas": 1.336,
-  "tariff": 2530
- },
- "fetchedAt": "2026-10-02T19:35:22.890Z",
- "cacheStatus": {
-  "cpi": "hit",
-  "gas": "hit",
-  "census": "hit"
+  "sourceId": "eia-electricity"
  },
  "rent": {
   "pct": 11.1,
@@ -5799,5 +6817,18 @@
   "source": "Zillow Observed Rent Index (ZORI)",
   "sourceUrl": "https://www.zillow.com/research/data/",
   "adjustment": "seasonally adjusted by whatchanged"
+ },
+ "dollarImpact": {
+  "groceries": 294,
+  "shelter": 2359,
+  "gas": 1.336,
+  "electricity": 19
+ },
+ "fetchedAt": "2026-10-02T19:35:22.890Z",
+ "cacheStatus": {
+  "cpi": "hit",
+  "gas": "hit",
+  "electricity": "hit",
+  "census": "hit"
  }
 }
