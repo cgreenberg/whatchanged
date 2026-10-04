@@ -12,11 +12,14 @@
  * is therefore EXCLUDED from deletion unless --include-lastgood is passed —
  * deleting it removes the fallback that keeps cards populated during an outage.
  * Matching `:failed` negative-cache entries are deleted too (glob ending in `*`).
+ * Patterns are logical keys; the `wc2:` namespace prefix (KEY_PREFIX in kv.ts) is added
+ * automatically, so only namespaced keys can ever match.
  * Needs KV_REST_API_URL and KV_REST_API_TOKEN (env or .env.local).
  */
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 import { Redis } from '@upstash/redis'
+import { KEY_PREFIX, nsKey } from '../src/lib/cache/kv'
 
 const envPath = resolve(process.cwd(), '.env.local')
 if (existsSync(envPath)) {
@@ -30,8 +33,10 @@ async function main() {
   const args = process.argv.slice(2)
   const yes = args.includes('--yes')
   const includeLastGood = args.includes('--include-lastgood')
-  const pattern = args.find((a) => !a.startsWith('--'))
-  if (!pattern) {
+  const logicalPattern = args.find((a) => !a.startsWith('--'))
+  // Every key the app writes lives under KEY_PREFIX (kv.ts); patterns are given as logical keys.
+  const pattern = logicalPattern && nsKey(logicalPattern)
+  if (!logicalPattern || !pattern) {
     console.error("Usage: npx tsx scripts/flush-keys.ts '<glob-pattern>' [--yes] [--include-lastgood]")
     process.exit(1)
   }

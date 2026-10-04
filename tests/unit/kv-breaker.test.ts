@@ -28,7 +28,7 @@ afterEach(() => {
 })
 
 test('a burst of concurrent GET timeouts trips the breaker despite successful SETs', async () => {
-  const store = new Map<string, unknown>(['a', 'b', 'c', 'cold'].map(k => [k, env()]))
+  const store = new Map<string, unknown>(['a', 'b', 'c', 'cold'].map(k => [kv.nsKey(k), env()]))
   const state = { slow: true }
   kv.__setKvClientForTests(slowGetClient(store, state))
   kv.configureRedisTimeouts({ callTimeoutMs: 20 })
@@ -45,7 +45,7 @@ test('a burst of concurrent GET timeouts trips the breaker despite successful SE
 })
 
 test('a successful GET resets the failure count', async () => {
-  const store = new Map<string, unknown>([['a', env()], ['b', env()]])
+  const store = new Map<string, unknown>([[kv.nsKey('a'), env()], [kv.nsKey('b'), env()]])
   const state = { slow: true }
   kv.__setKvClientForTests(slowGetClient(store, state))
   kv.configureRedisTimeouts({ callTimeoutMs: 20 })

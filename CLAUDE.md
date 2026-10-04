@@ -286,6 +286,8 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 
 ## Cache (`src/lib/cache/kv.ts`, accessors in `src/lib/api/cached-sources.ts`)
 
+**Namespace:** every Redis/in-memory key is stored under `wc2:` (`KEY_PREFIX`, applied only in `kv.ts`; callers use logical keys, `cache:flush` globs add it automatically) so deployments with different stored formats sharing one Redis never collide — bump the prefix whenever the stored format changes.
+
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI
 releases) and on demand. It resolves every zip in `zip-county.json` exactly like the snapshot and fetches

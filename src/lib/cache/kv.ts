@@ -12,6 +12,27 @@ export interface KvClient {
   expire(key: string, seconds: number): Promise<unknown>
 }
 
+/**
+ * Version namespace for EVERY key this app reads or writes (Redis and the in-memory
+ * fallback). Callers use logical keys (`bls:cpi:0000:all`); the prefix is applied
+ * here only, in getRedis() (all Redis commands) and nsKey() (memCache). Bump it
+ * whenever the stored format changes (e.g. the CacheEnvelope shape) so code at
+ * different format versions sharing one Redis (preview vs production) never collide.
+ */
+export const KEY_PREFIX = 'wc2:'
+export const nsKey = (key: string): string => (key.startsWith(KEY_PREFIX) ? key : KEY_PREFIX + key)
+
+/** Wrap a client so every command's key is namespaced. */
+function withPrefix(c: KvClient): KvClient {
+  return {
+    get: <T>(key: string) => c.get<T>(nsKey(key)),
+    set: (key, value, opts) => c.set(nsKey(key), value, opts),
+    del: (...keys) => c.del(...keys.map(nsKey)),
+    incr: (key) => c.incr(nsKey(key)),
+    expire: (key, seconds) => c.expire(nsKey(key), seconds),
+  }
+}
+
 let redisClient: KvClient | null = null
 /** undefined = no override; null = force in-memory; client = use it. Tests only. */
 let clientOverride: KvClient | null | undefined
@@ -50,19 +71,19 @@ export function isProductionRuntime(): boolean {
 }
 
 function getRedis(): KvClient | null {
-  if (clientOverride !== undefined) return clientOverride
+  if (clientOverride !== undefined) return clientOverride && withPrefix(clientOverride)
   if (process.env.NODE_ENV === 'test' || !kvEnvPresent()) {
     return null
   }
   if (!redisClient) {
-    redisClient = new Redis({
+    redisClient = withPrefix(new Redis({
       url: process.env.KV_REST_API_URL,
       token: process.env.KV_REST_API_TOKEN!,
       // Default is 5 retries with exponential backoff (~4s per call during an
       // outage). One fast retry, and every request aborted after ~1s.
       retry: { retries: 1, backoff: () => 50 },
       signal: () => AbortSignal.timeout(callTimeoutMs),
-    }) as unknown as KvClient
+    }) as unknown as KvClient)
   }
   return redisClient
 }
@@ -176,7 +197,7 @@ export async function getCached<T>(key: string): Promise<T | null> {
     const val = await redisCall(redis, (r) => r.get<T>(key), 'read')
     return val ?? null
   }
-  const entry = memCache.get(key)
+  const entry = memCache.get(nsKey(key))
   if (!entry || Date.now() > entry.expiresAt) return null
   return entry.value as T
 }
@@ -187,7 +208,7 @@ export async function setCached<T>(key: string, value: T, ttlSeconds: number): P
     await redisCall(redis, (r) => r.set(key, value, { ex: Math.max(1, Math.round(ttlSeconds)) }))
     return
   }
-  memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })
+  memCache.set(nsKey(key), { value, expiresAt: Date.now() + ttlSeconds * 1000 })
 }
 
 export async function deleteCached(key: string): Promise<void> {
@@ -196,7 +217,7 @@ export async function deleteCached(key: string): Promise<void> {
     await redisCall(redis, (r) => r.del(key))
     return
   }
-  memCache.delete(key)
+  memCache.delete(nsKey(key))
 }
 
 export function clearMemCache() {
@@ -399,9 +420,9 @@ export async function tryAcquireUpstream(source: UpstreamSource, now: Date = new
     }
     if (source === 'bls') return false
   }
-  const entry = memCache.get(key)
+  const entry = memCache.get(nsKey(key))
   const n = (entry && Date.now() <= entry.expiresAt ? (entry.value as number) : 0) + 1
-  memCache.set(key, { value: n, expiresAt: Date.now() + 2 * 86400_000 })
+  memCache.set(nsKey(key), { value: n, expiresAt: Date.now() + 2 * 86400_000 })
   return n <= cap
 }
 

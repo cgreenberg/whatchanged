@@ -65,8 +65,8 @@ afterEach(() => {
 describe('Redis: one slow call is not an outage', () => {
   test('one slow get, then healthy → cached k2 served from Redis, zero upstream fetches, no BudgetExceededError', async () => {
     const { client, store, state } = fakeRedis()
-    store.set('k1', envelope({ x: 1 }))
-    store.set('k2', envelope({ x: 2 }))
+    store.set(kv.nsKey('k1'), envelope({ x: 1 }))
+    store.set(kv.nsKey('k2'), envelope({ x: 2 }))
     kv.__setKvClientForTests(client)
 
     state.slowGets = 1 // one latency spike (> REDIS_CALL_TIMEOUT_MS) on the first read
@@ -106,7 +106,7 @@ describe('Redis: one slow call is not an outage', () => {
 
   test('Redis down → envelopes this instance already read are served from the in-process LRU, no upstream fetch', async () => {
     const { client, store, state } = fakeRedis()
-    store.set('k', envelope({ x: 7 }))
+    store.set(kv.nsKey('k'), envelope({ x: 7 }))
     kv.__setKvClientForTests(client)
     let fetches = 0
     const fetchFn = async () => { fetches++; return { x: 99 } }
@@ -125,7 +125,7 @@ describe('Redis: one slow call is not an outage', () => {
   test('LRU respects the envelope TTL', async () => {
     const { client, store, state } = fakeRedis()
     const old = { __v: kv.CACHE_SCHEMA_VERSION, fetchedAt: new Date(Date.now() - 200_000).toISOString(), data: { x: 1 } }
-    store.set('k', old)
+    store.set(kv.nsKey('k'), old)
     kv.__setKvClientForTests(client)
     // Redis still has it (its own TTL is what Redis enforces); the LRU copy must not outlive ttlSeconds=100.
     await kv.getCachedOrFetch('k', 100, async () => ({ x: 2 }))
@@ -182,7 +182,7 @@ test('budget counter is created with its TTL atomically (SET NX EX) before INCR;
   const now = new Date('2026-10-02T12:00:00Z')
   expect(await kv.tryAcquireUpstream('bls', now)).toBe(true)
   expect(await kv.tryAcquireUpstream('bls', now)).toBe(true)
-  const key = kv.budgetKey('bls', now)
+  const key = kv.nsKey(kv.budgetKey('bls', now))
   expect(state.calls).toEqual([`set ${key} nx ex=${2 * 86400}`, `incr ${key}`, `set ${key} nx ex=${2 * 86400}`, `incr ${key}`])
   expect(store.get(key)).toBe(2)
 })
