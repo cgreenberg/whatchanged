@@ -116,11 +116,14 @@ export const RENT_METRO_SUBLABEL = '(new leases, Zillow, metro)'
 export const ELECTRICITY_SUBLABEL = '(home ¢/kWh, 12-month avg)'
 
 /**
- * Electricity geography line: "Maine · 29.3¢/kWh (Jul '26)" — the 12-month average price (the sublabel says so)
- * and the last month of its window; DC short.
+ * Electricity geography line: "Maine · 29.3¢/kWh (12 mo to Jul '26)" — the 12-month average price and the last month
+ * of its window (not that month's own price). A state name too long for one line ("Massachusetts") is shortened to
+ * its USPS code ("MA · 59.9¢/kWh (12 mo to Dec '26)"); DC is always short.
  */
 export function electricityGeoLine(e: { state: string; stateName: string; current: number; latestPeriod: string }): string {
-  return `${electricityPlace(e, 'short')} · ${e.current.toFixed(1)}¢/kWh (${fmtMonthShort(e.latestPeriod)})`
+  const rest = `${e.current.toFixed(1)}¢/kWh (12 mo to ${fmtMonthShort(e.latestPeriod)})`
+  const full = `${electricityPlace(e, 'short')} · ${rest}`
+  return monoLines(full, FS.extra) > 1 ? `${e.state} · ${rest}` : full
 }
 
 /**
@@ -160,6 +163,17 @@ export function shelterBasisNote(
   if (c?.basis === 'county') return `BLS rent index × ${/Planning Region/.test(c.basisArea ?? '') ? 'planning-region' : 'county'} median ${r}`
   if (c?.basis === 'state') return `BLS rent index × state median ${r}`
   return `BLS rent index × local rent ${r}`
+}
+
+/**
+ * Second line of the shelter "$/yr" pill. The zip's own top-coded median ($3,500+) makes the amount a floor (either
+ * sign: a decrease is at least that big) → "in rent, at least"; bottom-coded (under $100) → "in rent, at most". The
+ * qualifier sits on this line because "at least ≈ +$8,358/yr" at the pill's 40px doesn't fit beside the big number
+ * (tests/unit/share-card-fit.test.ts); the website card face says "at least ≈ +$X/yr in rent" (fmtRentDollars).
+ */
+export function shelterPillSub(c?: { basis?: string; rentCoded?: 'top' | 'bottom' } | null): string {
+  const coded = c?.basis === 'zip' ? c.rentCoded : undefined
+  return coded === 'top' ? 'in rent, at least' : coded === 'bottom' ? 'in rent, at most' : 'in rent'
 }
 
 // ── Main Export ───────────────────────────────────────────────────
@@ -815,7 +829,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
                   {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A')}
                   {shelterDollars != null
-                    ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, 'in rent')
+                    ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, shelterPillSub(snapshot.census.data))
                     : changePill('—', BLUE)}
                 </div>
                 {metaRow(sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat)}

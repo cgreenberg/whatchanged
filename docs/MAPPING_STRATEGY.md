@@ -42,7 +42,9 @@ Sources (all public, no key):
 3. Census 2020 ZCTA ↔ county relationship file (county names, land-area tiebreak)
 4. Census CT county-subdivision relationship file (town → 2022 planning region)
 5. GeoNames US postal codes (CC BY 4.0): adds USPS zips that are not ZCTAs (PO boxes, unique zips
-   such as 20500) with their county, flagged `zcta: false`, and is a fallback for city names
+   such as 20500) with their county, flagged `zcta: false`, and is a fallback for city names. A
+   USPS-only zip whose named Census place touches that county takes the county holding the majority of
+   the place's population (2020 PL 94-171 place-by-county parts; 86339 Sedona AZ → Yavapai)
 
 Island areas without block data are assigned by land area. The build caches downloads in
 `$GEO_CACHE_DIR` and needs `NODE_OPTIONS=--max-old-space-size=6144`.
@@ -274,6 +276,9 @@ Lookup order for rent:
 1. Zip-level (ZCTA) rent
 2. For PO-box/unique zips (`zcta: false`) that have no ACS row: a donor zip's rent (largest residential
    zip in the same city, else the most populous in the county; `po-box-acs.json`), labeled
+   — a zip without its own reliable figure otherwise borrows the nearest reliable same-county zip;
+   a donor whose rent is outside [county median ÷ 1.5, county median × 1.5] is not used: the county
+   median instead, labeled with the rejected zip
 3. Otherwise no local figure (`isRentFallback`): the shelter dollar figure is null; no national rent is
    substituted
 

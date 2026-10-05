@@ -28,7 +28,7 @@ jest.mock('next/og', () => ({
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import {
   generateShareCard, shareGasStandInNote, electricityVsLabel, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
-  electricityGeoLine, electricityBasisNote,
+  electricityGeoLine, electricityBasisNote, shelterPillSub,
   GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, ELECTRICITY_SUBLABEL,
 } from '@/lib/share-card/generate'
 import { ELECTRICITY_STATES } from '@/lib/api/eia-electricity'
@@ -39,6 +39,7 @@ import {
 } from '@/lib/share-card/layout'
 import { sparklineGeometry } from '@/lib/share-card/sparklines'
 import { fmtSignedDollars, fmtSignedPct } from '@/lib/format'
+import { fmtRentDollars } from '@/lib/compute/dollar-translations'
 import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES, STATE_LEVEL_CODES, PAD_DUOAREA } from '@/lib/mappings/eia-gas'
 import { describeDuoarea, toGasPriceData, type GasSeriesData } from '@/lib/api/eia'
@@ -156,9 +157,11 @@ describe('share-card text slots stay within their line budgets', () => {
     state: st, stateName: Object.values(STATE_FIPS_MAP).find((v) => v.abbr === st)!.name, current: 59.9, latestPeriod: '2026-12',
   }))
 
-  test('electricity geography line ("Maine · 29.3¢/kWh (Jul \'26)") fits one line for every state', () => {
+  test('electricity geography line ("Maine · 29.3¢/kWh (12 mo to Jul \'26)") fits one line for every state', () => {
     const lines = elecStates.map((e) => electricityGeoLine(e))
-    expect(lines).toContain("DC · 59.9¢/kWh (Dec '26)")
+    expect(lines).toContain("DC · 59.9¢/kWh (12 mo to Dec '26)")
+    expect(lines).toContain("Maine · 59.9¢/kWh (12 mo to Dec '26)")
+    expect(lines).toContain("MA · 59.9¢/kWh (12 mo to Dec '26)")
     for (const l of lines) expect([l, monoLines(l, FS.extra)]).toEqual([l, 1])
   })
 
@@ -201,6 +204,31 @@ describe('share-card text slots stay within their line budgets', () => {
     expect(labels).toContain('CPI: East South Central (Census division)')
     labels.push(cpiShareLabel({ ...base, fallback: 'national' } as CpiData)!)
     for (const l of labels) expect([l, monoLines(l, 20, headerWidth)]).toEqual([l, 1])
+  })
+
+  test('shelter big number + "$/yr" pill fit one row; a coded rent qualifies the amount on the pill\'s second line', () => {
+    const bebas = ttfMeasure('BebasNeue-Regular.ttf')
+    const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
+    // Widest realistic: shelter ±19.9%, a top-coded $3,500+ rent × 12 × a ±19.9% rent index ≈ ±$8,358/yr
+    for (const pct of [fmtSignedPct(19.9), fmtSignedPct(-19.9)]) {
+      for (const coded of [undefined, 'top', 'bottom'] as const) {
+        for (const d of [8358, -8358]) {
+          const pill = `≈ ${fmtSignedDollars(d, 0)}/yr`
+          const sub = shelterPillSub({ basis: 'zip', rentCoded: coded })
+          // two-line pill: the wider of Barlow 40 text / Barlow 24 sub + 2×18 padding + 2×1.5 border + 12 margin
+          const row = bebas(pct, FS.big) + Math.max(barlow(pill, 40), barlow(sub, 24)) + 2 * 18 + 2 * 1.5 + 12
+          expect([pct, pill, sub, row <= CELL_TEXT_WIDTH]).toEqual([pct, pill, sub, true])
+        }
+      }
+    }
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' })).toBe('in rent, at least')
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' })).toBe('in rent, at most')
+    expect(shelterPillSub({ basis: 'county' })).toBe('in rent')
+    // Website card face: "at least ≈ +$X/yr" / "at least ≈ −$X/yr" (sign-aware), "at most" for bottom-coded
+    expect(fmtRentDollars(1234, 'top')).toBe('at least ≈ +$1,234/yr')
+    expect(fmtRentDollars(-1234, 'top')).toBe('at least ≈ −$1,234/yr')
+    expect(fmtRentDollars(12, 'bottom')).toBe('at most ≈ +$12/yr')
+    expect(fmtRentDollars(1234)).toBe('≈ +$1,234/yr')
   })
 
   test('gas big number + change pill fit one row at the widest realistic values', () => {

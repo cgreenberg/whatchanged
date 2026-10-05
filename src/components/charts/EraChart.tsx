@@ -103,6 +103,8 @@ interface EraChartProps {
   info?: string[]
   /** Ladder trace for "Where does this come from?" under the graph. */
   trace?: TraceStep[]
+  /** Overrides the "first – last" date range (e.g. electricity: centered 12-month average + monthly). */
+  windowText?: (first?: string, last?: string) => string
 }
 
 /** "+3.1% since Jan 2025 · detail" above a graph: the same % as the matching card. */
@@ -309,7 +311,7 @@ function Annotations({ baselineX, baselineText, baselineValue, ends, accent }: {
   )
 }
 
-export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note, info, trace }: EraChartProps) {
+export function EraChart({ config, data, nationalData, provenance, stale, headline, weeklyGasBaseline, nationalLabel, note, info, trace, windowText: windowTextOf }: EraChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>(config.defaultTimeframe)
   const [showNational, setShowNational] = useState(false)
   const mainKey = config.series[0]?.dataKey ?? ''
@@ -382,7 +384,9 @@ export function EraChart({ config, data, nationalData, provenance, stale, headli
   const lastDate = lastDateOf(chartData, mainKey)
   const windowText = config.normalizeToBaseline
     ? `% change since ${fmtPoint(firstDate)}`
-    : `${fmtPoint(firstDate)} – ${fmtPoint(lastDate)}`
+    : windowTextOf
+      ? windowTextOf(firstDate, lastDate)
+      : `${fmtPoint(firstDate)} – ${fmtPoint(lastDate)}`
   const nationalShown = showNational && hasNationalData && !!config.showNationalToggle
   const fullProvenance: Provenance = {
     ...provenance,

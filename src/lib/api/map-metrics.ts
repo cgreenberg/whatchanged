@@ -24,7 +24,7 @@ import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES } from '@/lib/mappings/eia-gas'
 import { cpiShortGeo } from '@/lib/hero-cards'
 import { akGasForCounty, lookupPrGas } from '@/lib/static-gas'
-import { isStaticGasStale } from '@/lib/static-gas-meta'
+import { staticGasStatus } from '@/lib/static-gas-meta'
 import countyCentroids from '@/lib/data/county-centroids.json'
 
 interface CountyGeo {
@@ -49,7 +49,10 @@ export interface MapGasArea {
   source: 'eia' | 'bls' | 'dcra' | 'daco'
   frequency: 'weekly' | 'monthly' | 'semiannual'
   standIn?: true
-  /** Served from the last-good copy (the fresh cache entry expired). */
+  /**
+   * Served from the last-good copy (the fresh cache entry expired), or a bundled DCRA / DACO value whose survey /
+   * month is overdue (staticGasStatus — the card marks the same value stale).
+   */
   stale?: true
   /** $/gal since the baseline (same figure as the gas card), current $/gal and the latest date; null = not cached. */
   change: number | null
@@ -156,10 +159,9 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
   // (bundled static data, so it is always present), instead of the Anchorage stand-in
   const staticGas = new Map<string, MapGasArea>()
 
-  // Same staleness rule as the card: an overdue DACO month / DCRA survey falls to the next rung (EIA U.S. for
-  // Puerto Rico, the Anchorage BLS stand-in for Alaska), never a value the card would no longer show.
-  const prHit = lookupPrGas().hit
-  const pr = prHit && !isStaticGasStale('daco', prHit.data.latestDate, now) ? prHit : null
+  // Same rule as the card's ladder (staticGasStatus): an overdue DACO month / DCRA survey is still the value shown,
+  // marked stale — exactly what the gas card shows for the county's zips.
+  const pr = lookupPrGas().hit
 
   for (const [fips, g] of Object.entries(COUNTY_GEO)) {
     // Puerto Rico: DACO's island-wide monthly price (the card's rung), not the U.S. average
@@ -168,6 +170,7 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
       if (!staticGas.has(id)) {
         staticGas.set(id, {
           id, label: pr.lookup.geoLevel, source: 'daco', frequency: 'monthly',
+          ...(staticGasStatus('daco', pr.data.latestDate, now) === 'stale' ? { stale: true as const } : {}),
           change: Number(pr.data.change.toFixed(3)), current: pr.data.current, asOf: pr.data.latestDate,
         })
         gasIdx.set(id, gasAreas.length)
@@ -181,10 +184,11 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
       continue
     }
     const ak = g.state === 'AK' && g.gasSource === 'bls' && g.gasTier === 2 ? akGasForCounty(fips, COUNTY_NAMES[fips]?.name) : null
-    if (ak && !isStaticGasStale('dcra', ak.data.latestDate, now)) {
+    if (ak) {
       const id = `d:${fips}`
       staticGas.set(id, {
         id, label: ak.label, source: 'dcra', frequency: 'semiannual',
+        ...(staticGasStatus('dcra', ak.data.latestDate, now) === 'stale' ? { stale: true as const } : {}),
         change: Number(ak.data.change.toFixed(3)), current: ak.data.current, asOf: ak.data.latestDate,
       })
       gasIdx.set(id, gasAreas.length)

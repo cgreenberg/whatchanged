@@ -35,7 +35,7 @@ import { fmtRentFigure } from '@/lib/compute/dollar-translations'
 import type { StaticGasLookup } from '@/lib/static-gas'
 import {
   DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME,
-  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, dcraStationsText, isStaticGasStale,
+  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, dcraStationsText, staticGasStatus,
 } from '@/lib/static-gas-meta'
 import {
   HEATING_STATES, hasHeatingSeries, isValidHeating, heatingSeriesId, heatingSeriesUrl, heatingSeasonStatus, NATIONAL_HEATING,
@@ -177,7 +177,7 @@ export type StaticHitInfo = {
   kind: 'dcra' | 'daco'; match?: 'community' | 'nearest' | 'region'; place: string; km?: number; stations?: number; retailer?: string
 }
 
-/** A static gas series (bundled): used unless its latest survey/month is overdue. */
+/** A static gas series (bundled): shown as the winner; marked 'stale' when its latest survey/month is overdue (staticGasStatus, shared with the map). */
 function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, l: L): RungOutcome<GasRungValue> {
   if (!r.hit) {
     return {
@@ -188,7 +188,7 @@ function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, 
     }
   }
   const h = r.hit
-  const stale = isStaticGasStale(kind, h.data.latestDate, now)
+  const status = staticGasStatus(kind, h.data.latestDate, now)
   const geography = kind === 'daco'
     ? { name: 'Puerto Rico (island-wide)', level: 'island' as const }
     : h.match === 'region'
@@ -203,7 +203,7 @@ function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, 
         ? stationsNote.trim()
         : undefined
   return {
-    status: stale ? 'stale' : 'used',
+    status,
     value: {
       data: h.data, cacheHit: true, stale: false, fetchedAt: now.toISOString(), lookup: h.lookup,
       staticHit: {
@@ -214,7 +214,7 @@ function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, 
     asOf: h.data.latestDate,
     seriesId: h.lookup.seriesId,
     geography,
-    ...(stale ? { reason: STALE_REASON } : note ? { reason: note } : {}),
+    ...(status === 'stale' ? { reason: STALE_REASON } : note ? { reason: note } : {}),
   }
 }
 

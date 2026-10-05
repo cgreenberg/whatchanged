@@ -224,9 +224,13 @@ describe('chart provenance', () => {
     expect(input.data.find(p => p.date === '2025-01')!.avg12).toBe(e.baseline)
     expect(Object.keys(input.nationalData[0]).sort()).toEqual(['avg12', 'date'])
     render(<EraChart config={config} data={input.data} nationalData={input.nationalData} provenance={input.provenance}
-      nationalLabel={input.nationalLabel} info={input.info} />)
-    expect(screen.getByTestId('provenance')).toHaveTextContent('EIA average residential electricity price · Texas (statewide), monthly')
-    expect(screen.getByTestId('provenance')).toHaveTextContent('Jul 2026')
+      nationalLabel={input.nationalLabel} info={input.info} windowText={input.windowText} />)
+    expect(screen.getByTestId('provenance')).toHaveTextContent('EIA average residential electricity price · Texas (statewide) · ')
+    // The bold line ends at its window's center (6 months back); the thin monthly line runs to the latest month
+    const fmt = (ym: string) => new Date(`${ym}-15T12:00:00Z`).toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    expect(screen.getByTestId('provenance')).toHaveTextContent(
+      `12-mo avg through ${fmt(lastAvg.date)} (centered); monthly through ${fmt(e.latestPeriod)}`,
+    )
     expect(screen.getByTestId('chart-info')).toHaveTextContent('Why 12-month averages')
   })
 

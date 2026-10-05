@@ -13,7 +13,8 @@
  * Sources (all public, no key needed):
  *   1. Census 2020 ZCTA ↔ tabulation block relationship file
  *      https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_tabblock20_natl.txt
- *   2. 2020 PL 94-171 redistricting geoheaders (block POP100 / HU100 / COUSUB)
+ *   2. 2020 PL 94-171 redistricting geoheaders (block POP100 / HU100 / COUSUB; place names and place-by-county
+ *      population parts, SUMLEV 160 / 155, for USPS-only zips)
  *      https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/{State}/{st}2020.pl.zip
  *   3. Census 2020 ZCTA ↔ county relationship file (county names, land-area tiebreak)
  *   4. Census ACS 2022 CT county-subdivision relationship file (town → 2022 planning region)
@@ -56,6 +57,27 @@ const GEONAMES_BASE = 'https://download.geonames.org/export/zip'
 const GEONAMES_COUNTRIES = ['US', 'PR', 'VI', 'GU', 'MP', 'AS']
 const ODS_URL =
   'https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/georef-united-states-of-america-zc-point/exports/csv?select=zip_code,usps_city,stusps_code&delimiter=%3B'
+
+/** "Sedona city" → "Sedona", "Juneau city and borough" → "Juneau", "Indianapolis city (balance)" → "Indianapolis". */
+function placeBaseName(name: string): string {
+  let s = name.replace(/\s*\((balance|part)\)$/, '').replace(/\s+CDP$/, '')
+  while (/\s[a-z][a-z]*$/.test(s)) s = s.replace(/\s[a-z][a-z]*$/, '')
+  return s
+}
+
+/** Comparable place / USPS city name: case, accents, punctuation and St./Ft./Mt. abbreviations ignored. */
+function normPlace(name: string): string {
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[.']/g, '')
+    .replace(/-/g, ' ')
+    .replace(/\b(st|ste)\b/g, (m) => (m === 'st' ? 'saint' : 'sainte'))
+    .replace(/\bft\b/g, 'fort')
+    .replace(/\bmt\b/g, 'mount')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 // ---------------------------------------------------------------------------
 // Download helpers
@@ -178,9 +200,27 @@ async function main() {
   console.log('Reading PL 94-171 block geoheaders...')
   const blockWeights = new Map<number, number>()
   const ctBlockRegion = new Map<number, string>()
+  /** Place (state FIPS + place code) → population by county (SUMLEV 155, State-Place-County parts). */
+  const placeCountyPop = new Map<string, Map<string, number>>()
+  /** "ST|normalized place name" → place keys (SUMLEV 160 names, legal/statistical descriptor stripped). */
+  const placeByName = new Map<string, string[]>()
   for (const file of plFiles) {
     for await (const line of lines(file, 'latin1')) {
       const c = line.split('|')
+      if (c[2] === '155' && c[4] === '00') {
+        const key = `${c[12]}${c[29]}`
+        const m = placeCountyPop.get(key) ?? new Map<string, number>()
+        m.set(`${c[12]}${c[14]}`, (m.get(`${c[12]}${c[14]}`) ?? 0) + Number(c[90]))
+        placeCountyPop.set(key, m)
+        continue
+      }
+      if (c[2] === '160' && c[4] === '00') {
+        const k = `${c[1]}|${normPlace(placeBaseName(c[87]))}`
+        const list = placeByName.get(k) ?? []
+        list.push(`${c[12]}${c[29]}`)
+        placeByName.set(k, list)
+        continue
+      }
       if (c[2] !== '750') continue
       const geocode = c[9]
       const pop = Number(c[90])
@@ -388,6 +428,26 @@ async function main() {
     const to = cityCountyFix(zcta, e.stateAbbr, e.countyFips, true)
     if (to) result[zcta] = { ...e, countyFips: to, countyName: countyNames[to] ?? e.countyName }
   }
+  // USPS-only zips (no ZCTA, so no blocks of their own): the county holding the MAJORITY of the population of the
+  // Census place the zip is named for (2020 PL 94-171 place-by-county parts, SUMLEV 155). 86339 Sedona AZ: the city is
+  // 74% Yavapai, so its PO boxes are Yavapai (GeoNames files them under Coconino). The place must have a part in the
+  // county GeoNames files the zip under (so a same-named place elsewhere in the state — Glasgow borough, Beaver County
+  // PA, for 16644 Glasgow in Cambria County — never matches). No such place, or no county above half the place's
+  // population (New York city: Kings holds 31%) → the GeoNames county and the city rule below.
+  const placeMoves: string[] = []
+  let viaPlaceCount = 0
+  function placeMajorityCounty(city: string, stateAbbr: string, geonamesCounty: string): string | null {
+    if (!city) return null
+    const keys = (placeByName.get(`${stateAbbr}|${normPlace(city)}`) ?? []).filter((k) => placeCountyPop.get(k)?.has(geonamesCounty))
+    if (keys.length !== 1) return null
+    const parts = placeCountyPop.get(keys[0])
+    if (!parts) return null
+    const total = [...parts.values()].reduce((a, b) => a + b, 0)
+    const top = [...parts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
+    if (!top || total <= 0 || top[1] * 2 <= total || !countyNames[top[0]]) return null
+    viaPlaceCount++
+    return top[0]
+  }
   let added = 0
   const unresolved: string[] = []
   for (const g of Object.values(geonames)) {
@@ -397,7 +457,14 @@ async function main() {
     let countyFips = g.countyFips
     let ctRegion: string | undefined
     if (g.state === 'CT' && /^091[1-9]0$/.test(countyFips)) ctRegion = countyFips
-    if (countyNames[countyFips] && !ctRegion) countyFips = cityCountyFix(g.zip, g.state, countyFips, false) ?? countyFips
+    // The named place's majority county (round 13) — else the GeoNames county, corrected by the city rule
+    const viaPlace = placeMajorityCounty(cityFor(g.zip, g.state) || g.city, g.state, countyFips)
+    if (viaPlace) {
+      if (viaPlace !== countyFips) {
+        placeMoves.push(`${g.zip} ${cityFor(g.zip, g.state) || g.city}, ${g.state}: ${countyNames[countyFips] ?? countyFips} (${countyFips}) → ${countyNames[viaPlace]} (${viaPlace})`)
+      }
+      countyFips = viaPlace
+    } else if (countyNames[countyFips] && !ctRegion) countyFips = cityCountyFix(g.zip, g.state, countyFips, false) ?? countyFips
     if (!countyNames[countyFips]) {
       const viaCity = cityCounty[`${g.state}|${g.city.toLowerCase()}`]
       if (viaCity) {
@@ -426,6 +493,7 @@ async function main() {
   }
   console.log(`ZCTA zips: ${zctaCount.toLocaleString()}, USPS-only zips added: ${added.toLocaleString()}`)
   console.log(`Mail-only zips moved to their city's county: ${cityFixes.length}\n  ${cityFixes.join('\n  ')}`)
+  console.log(`USPS-only zips assigned by their place's majority county: ${viaPlaceCount}; differing from GeoNames: ${placeMoves.length}\n  ${placeMoves.join('\n  ')}`)
   if (unresolved.length) console.log(`Unresolved USPS-only zips (skipped): ${unresolved.length}\n  ${unresolved.join('\n  ')}`)
 
   // 9. Write
@@ -459,6 +527,9 @@ async function main() {
     ['98683', '53011'],
     ['10001', '36061'],
     ['20500', '11001'], // White House (USPS unique zip)
+    ['86339', '04025'], // Sedona PO boxes → Yavapai (74% of Sedona city's population)
+    ['25888', '54019'], // Mount Hope WV PO boxes → Fayette
+    ['21240', '24003'], // BWI airport ZCTA → Anne Arundel
   ]
   let ok = true
   for (const [zip, fips] of checks) {

@@ -35,6 +35,7 @@ function PlainChart({ config, snapshot }: { config: ChartConfig; snapshot: Econo
       note={input.note}
       info={input.info}
       trace={metric ? snapshot.trace?.[metric] : undefined}
+      windowText={input.windowText}
       headline={input.headline ? <ChartHeadline pct={input.headline.pct} detail={input.headline.detail} window={input.headline.window} dim={input.headline.dim} /> : undefined}
     />
   )

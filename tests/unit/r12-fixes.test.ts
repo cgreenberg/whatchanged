@@ -1,6 +1,6 @@
 /**
  * Round-12 fixes: gas displayed change from both sides as printed (L1), Zillow series that isn't current
- * (New Kent VA), county-out-of-range metro reason (L3), map uses the card's static-gas staleness rule (L6),
+ * (New Kent VA), county-out-of-range metro reason (L3), map and card share the static-gas staleness rule (L6),
  * DCRA one-station source line, electricity baseline window constants.
  */
 import { displayedChange, electricityCenterOf, ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO, addMonths } from '@/lib/baseline'
@@ -49,9 +49,11 @@ describe('electricity baseline window', () => {
 describe('Zillow county series that is not current (New Kent County VA)', () => {
   test('wording', () => {
     expect(notCurrentText('New Kent County', { n: 1, last: '2026-07' }))
-      .toBe("Zillow's series for New Kent County isn't current (one month, Jul 2026)")
+      .toBe("Zillow's series for New Kent County is too new to use (only one month, Jul 2026)")
+    expect(notCurrentText('X County', { n: 3, last: '2026-07' }))
+      .toBe("Zillow's series for X County is too new to use (only three months, from May 2026)")
     expect(notCurrentText('X County', { n: 14, last: '2026-03' }))
-      .toBe("Zillow's series for X County isn't current (14 months, through Mar 2026)")
+      .toBe("Zillow's series for X County is too new to use (only 14 months, from Feb 2025)")
   })
   test('county lookup and the metro stand-in say why (card + map panel)', () => {
     expect(countyNotCurrent('51127')).toEqual({ n: 1, last: '2026-07' })
@@ -61,21 +63,46 @@ describe('Zillow county series that is not current (New Kent County VA)', () => 
     const m = lookupMetroRent('51127', 'New Kent County')
     if (m.data) {
       expect(m.data.countyWhy).toBe('not-current')
-      expect(rentMetroNote(m.data)).toMatch(/^Zillow's series for New Kent County isn't current \(one month, Jul 2026\); this is the /)
+      expect(rentMetroNote(m.data)).toMatch(/^Zillow's series for New Kent County is too new to use \(only one month, Jul 2026\); this is the /)
     }
   })
 })
 
-describe('L6 map uses the card staleness rule for DCRA / DACO', () => {
-  test('current surveys are on the map; overdue ones fall to the next rung (as the card does)', async () => {
-    const now = await buildMapMetrics(new Date('2026-10-04T12:00:00Z'))
-    expect(now.gas.some((a) => a.source === 'dcra')).toBe(true)
-    expect(now.gas.some((a) => a.source === 'daco')).toBe(true)
-    const later = await buildMapMetrics(new Date('2030-01-01T00:00:00Z'))
-    expect(later.gas.some((a) => a.source === 'dcra' || a.source === 'daco')).toBe(false)
-    // Puerto Rico → EIA U.S. (the card's next rung after DACO); Alaska → the Anchorage stand-in
-    const prIdx = later.counties['72001'][0]
-    expect(later.gas[prIdx].id).toBe('e:NUS')
+describe('L6 map and card agree on static gas (DCRA / DACO), current or overdue', () => {
+  // Both sides from one rule (staticGasStatus): an overdue survey / month stays the value shown, marked stale.
+  async function bothSides(zip: string, now: Date) {
+    clearMemCache()
+    resetMapMetricsMemo()
+    jest.useFakeTimers({ now, doNotFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'nextTick', 'queueMicrotask'] })
+    try {
+      const s = (await fetchSnapshot(zip))!
+      const card = buildHeroCards(s).find((c) => c.id === 'gas')!
+      const m = await buildMapMetrics(now)
+      const area = m.gas[m.counties[s.location.countyFips][0]]
+      return { s, card, area }
+    } finally {
+      jest.useRealTimers()
+    }
+  }
+
+  test.each([
+    ['00901', 'daco'],
+    ['99701', 'dcra'],
+  ] as const)('%s: same %s series and same stale flag on the card and the map', async (zip, kind) => {
+    for (const [when, stale] of [[new Date('2026-10-04T12:00:00Z'), false], [new Date('2030-01-01T00:00:00Z'), true]] as const) {
+      const { s, card, area } = await bothSides(zip, when)
+      const g = s.gas.data!
+      expect(g.staticSource?.kind).toBe(kind)
+      expect(area.source).toBe(kind)
+      expect(!!s.gas.stale).toBe(stale)
+      expect(!!card.stale).toBe(stale)
+      expect(!!area.stale).toBe(stale)
+      expect(area.asOf).toBe(g.latestDate)
+      if (kind === 'daco') {
+        expect(area.current).toBe(g.current)
+        expect(area.change).toBeCloseTo(g.change, 3)
+      }
+    }
   })
 })
 

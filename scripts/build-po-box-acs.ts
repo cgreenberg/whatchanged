@@ -41,11 +41,15 @@
  *              stored under the region FIPS and named "... Planning Region, CT";
  *   states   — the state's ACS 2023 5-year median gross rent (B25064, state rows).
  *
+ * Representative donors (round 13): a PO-box or nearest donor whose rent is outside [county median / 1.5, county
+ * median × 1.5] (DONOR_BAND) is dropped and the zip uses its county median (listed in `unrepresentative`, labeled).
+ *
  * src/lib/data/census-acs.ts picks, in order: own zip → PO-box donor → nearest → county → state.
  *
  * Output: src/lib/data/po-box-acs.json
  *   { byZip: { [poZip]: donorZip }, nearest: { [zip]: [donorZip, miles] | [donorZip, miles, 1 (same town)] },
- *     donorMoe: { [donorZip]: B25064 margin of error, $ (90%) }, counties: { [countyFips]: { rent, name } },
+ *     donorMoe: { [donorZip]: B25064 margin of error, $ (90%) }, unrepresentative: { [zip]: [rejectedDonor, rent] },
+ *     counties: { [countyFips]: { rent, name } },
  *     states: { [ST]: { rent, name } } }
  *
 
@@ -151,6 +155,8 @@ const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
 
 /** Farther than this, the county median is a better stand-in than one distant zip. */
 const NEAREST_MAX_MILES = 100
+/** A donor rent more than this factor above or below the county median is not representative: county median instead. */
+const DONOR_BAND = 1.5
 
 async function main() {
   mkdirSync(CACHE, { recursive: true })
@@ -290,6 +296,37 @@ async function main() {
     if (s && !states[e.stateAbbr]) states[e.stateAbbr] = { rent: s, name: e.stateName }
   }
 
+  // Representative donors only (round 13): a borrowed rent outside [county median / DONOR_BAND, county median ×
+  // DONOR_BAND] says more about the donor zip than about this one (39356: $130 vs Jasper County MS $809; 59440: $1,339
+  // vs Chouteau County MT $485), so the zip uses its county median instead (labeled by census-acs.ts, which names the
+  // rejected donor). Applies to PO-box donors and nearest-zip donors alike; CT compares with the planning region.
+  const countyMedianOf = (zip: string, e: ZipEntry): number | undefined =>
+    countyRent.get(e.stateAbbr === 'CT' ? ct.byZip[zip] ?? ct.byCounty[e.countyFips] ?? e.countyFips : e.countyFips)
+  const unrepresentative: Record<string, [string, number]> = {}
+  const band = { poBox: 0, nearest: 0 }
+  const outsideBand = (zip: string, donor: string): number | null => {
+    const c = countyMedianOf(zip, zips[zip])
+    const r = acs[donor]?.medianRent
+    if (!c || typeof r !== 'number') return null
+    return r > c * DONOR_BAND || r < c / DONOR_BAND ? r : null
+  }
+  for (const [zip, donor] of Object.entries(byZip)) {
+    const r = outsideBand(zip, donor)
+    if (r === null) continue
+    delete byZip[zip]
+    unrepresentative[zip] = [donor, r]
+    band.poBox++
+  }
+  for (const [zip, n] of Object.entries(nearest)) {
+    const r = outsideBand(zip, n[0])
+    if (r === null) continue
+    delete nearest[zip]
+    unrepresentative[zip] = [n[0], r]
+    band.nearest++
+    nNearest--
+    if (n[2] === 1) nSameTown--
+  }
+
   // Margin of error of every donor used (shown in the trace; tests check the ≤30% rule against it)
   const donorMoe: Record<string, number> = {}
   for (const d of [...Object.values(byZip), ...Object.values(nearest).map((n) => n[0])]) {
@@ -305,16 +342,19 @@ async function main() {
         'Donors need a reliable B25064 median rent: margin of error <= 30% of the estimate and not top/bottom-coded (3,500+ / 100-). ' +
         'nearest: zip without its own published ACS median rent → [nearest residential ZCTA in the same county with a reliable one within 100 mi, miles, 1 if a same-town zip was preferred over a nearer one] (Census 2023 gazetteer points). ' +
         'donorMoe: donor zip → B25064 margin of error ($, 90%). ' +
+        'unrepresentative: zip → [rejected donor zip, its median rent] — the donor rent was outside [county median / 1.5, county median × 1.5], so the zip uses its county median. ' +
         'counties / states: ACS 2023 5-year median gross rent (B25064), published values only; Connecticut zips use their 2022 planning region (keys 09110-09190).',
       byZip,
       nearest,
       donorMoe,
+      unrepresentative: Object.fromEntries(Object.entries(unrepresentative).sort(([a], [b]) => a.localeCompare(b))),
       counties,
       states,
     }) + '\n'
   )
   console.log(`po-box-acs.json: ${sameCity} same-city donors, ${county} county donors, ${none} without a donor`)
   console.log(`  unreliable as donors: ${unreliable.coded} top/bottom-coded, ${unreliable.moe} MOE > ${MAX_DONOR_MOE_SHARE * 100}% or not computable`)
+  console.log(`  unrepresentative donors → county median: ${band.poBox + band.nearest} (${band.poBox} PO-box, ${band.nearest} nearest-zip)`)
   console.log(`  rent basis: ${nNearest} nearest-zip donors (${nSameTown} same-town, ${nNoPoint} zips without a point), ${Object.keys(counties).length} county medians, ${Object.keys(states).length} state medians`)
 }
 

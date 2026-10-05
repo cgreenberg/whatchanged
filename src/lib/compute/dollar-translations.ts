@@ -6,6 +6,8 @@
  * amount (money saved), never a positive one.
  */
 
+import { fmtSignedDollars } from '@/lib/format'
+
 /** US median gross rent (Census ACS). Used only for display fallbacks, never for local dollar translations. */
 export const NATIONAL_MEDIAN_RENT = 1271
 /** Typical household annual food-at-home spend (~$6,000/yr). */
@@ -19,6 +21,16 @@ export function fmtRentFigure(rent: number, coded?: 'top' | 'bottom' | null): st
   if (coded === 'top') return '$3,500+'
   if (coded === 'bottom') return 'under $100'
   return `$${Math.round(rent).toLocaleString('en-US')}`
+}
+
+/**
+ * The shelter "$/yr in rent" amount: "≈ +$1,230/yr". When the rent base is the zip's own top-coded median ($3,500+)
+ * the true amount is at least this big (either sign: "at least ≈ −$420/yr" for a decrease); bottom-coded (under $100)
+ * → "at most".
+ */
+export function fmtRentDollars(dollars: number, coded?: 'top' | 'bottom' | null): string {
+  const amount = `≈ ${fmtSignedDollars(dollars, 0)}/yr`
+  return coded === 'top' ? `at least ${amount}` : coded === 'bottom' ? `at most ${amount}` : amount
 }
 
 export interface DollarImpact {

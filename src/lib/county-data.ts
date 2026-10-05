@@ -422,7 +422,8 @@ export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPa
   if (r && r.level === 'metro' && Number.isFinite(r.pct)) {
     out.rent = {
       text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,
-      area: `${r.geoName} (${metroStandInWhy(r)}; the metro's is used)`,
+      // No outer parentheses: the reason can carry its own ("… too new to use (only one month, Jul 2026)")
+      area: `${r.geoName} · ${metroStandInWhy(r)}; the metro's is used`,
     }
   }
   return out

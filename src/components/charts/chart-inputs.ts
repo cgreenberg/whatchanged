@@ -34,6 +34,8 @@ export interface ChartInput {
   info?: string[]
   /** Headline above the graph: the same % as the card, what it compares (default "since Jan 2025"), a short detail. */
   headline?: { pct: number; detail?: string; window?: string; dim?: boolean }
+  /** Footer/kicker date range from the visible main line's first and last dates (default "Jan 2025 – Aug 2026"). */
+  windowText?: (first?: string, last?: string) => string
 }
 
 /** Insert an empty row for each listed date not already present (kept sorted by date). */
@@ -140,10 +142,18 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
               },
             }
           : {}),
+        // The bold line is a centered 12-month average (its last point is 6 months before the latest month); the thin
+        // line is the monthly price as published, through the latest month
+        ...(e
+          ? {
+              windowText: (_first?: string, last?: string) =>
+                `12-mo avg through ${last ? fmtMonthYear(last.slice(0, 7)) : DATE_UNAVAILABLE} (centered); monthly through ${fmtMonthYear(e.latestPeriod)}`,
+            }
+          : {}),
         provenance: {
           source: ELECTRICITY_SOURCE,
           sourceUrl: ELECTRICITY_SOURCE_URL,
-          geography: e ? `${place} (statewide), monthly` : place,
+          geography: e ? `${place} (statewide)` : place,
           asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
           adjustment: `bold line: ${ELECTRICITY_ADJUSTMENT}; thin line: monthly price as published`,
         },

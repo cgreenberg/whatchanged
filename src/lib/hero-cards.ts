@@ -7,7 +7,7 @@ import type { Provenance } from '@/lib/provenance'
 import { RENT_STALE_DAYS, monthOlderThan } from '@/lib/staleness'
 import type { TraceMetric } from '@/lib/resolution/types'
 import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
-import { ANNUAL_GROCERY_BASE, fmtRentFigure } from '@/lib/compute/dollar-translations'
+import { ANNUAL_GROCERY_BASE, fmtRentFigure, fmtRentDollars } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
 import { notCurrentText } from '@/lib/rent-range'
@@ -692,7 +692,9 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
       : !hasLocalRent
         ? 'No local rent figure for a dollar estimate.'
         : 'No dollar estimate: the BLS rent-of-primary-residence index for this area is unavailable right now.'
-  const dollarNote = dollars !== null ? `≈ ${fmtSignedDollars(dollars, 0)}/yr in rent: ${SHELTER_DOLLAR_BASIS}` : undefined
+  // The zip's own top-/bottom-coded median ($3,500+ / under $100) bounds the $ figure: "at least" / "at most"
+  const rentDollars = dollars !== null ? fmtRentDollars(dollars, census!.basis === 'zip' ? census!.rentCoded : undefined) : null
+  const dollarNote = rentDollars !== null ? `${rentDollars} in rent: ${SHELTER_DOLLAR_BASIS}` : undefined
   const nationalValue = natOk ? `National: ${fmtSignedPct(nat!.pct)} (U.S. city avg, BLS CPI shelter)` : undefined
   const moreProvenance: Provenance[] | undefined = rentIdx !== null && !cpiIsNational
     ? [{
@@ -709,7 +711,7 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
     status: 'ok',
     geoTag: cpiShortGeo(c),
     value: fmtSignedPct(pct),
-    inline: dollars !== null ? `≈ ${fmtSignedDollars(dollars, 0)}/yr in rent` : undefined,
+    inline: rentDollars !== null ? `${rentDollars} in rent` : undefined,
     direction: directionOf(pct),
     secondary: sourceLineOf(sinceMonth(c.shelterBaselinePeriod ?? BASELINE_MONTH), natOk ? `U.S. ${fmtSignedPct(nat!.pct)}` : undefined),
     dollarNote,

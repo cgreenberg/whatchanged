@@ -4,6 +4,7 @@ import { eiaGasSeriesId, EIA_GAS_PRODUCT } from '@/lib/api/eia'
 import { hasElectricitySeries } from '@/lib/api/eia-electricity'
 import type { EconomicSnapshot } from '@/types'
 import { usesNationalFallback, cpiItemStale } from '@/lib/hero-cards'
+import { BASELINE_MONTH } from '@/lib/baseline'
 
 function computeAge(fetchedAt: string | undefined): number | null {
   if (!fetchedAt) return null
@@ -88,7 +89,12 @@ function buildAudit(snapshot: EconomicSnapshot) {
         state: e.state,
         sector: 'RES',
         method: '12-month average price (mean of 12 published monthly prices); no seasonal adjustment',
-        baseline: { from: e.baselineFrom, period: e.baselinePeriod, avg12: e.baseline, monthPrice: e.baselineMonthPrice },
+        // baseline window: baselineFrom…baselinePeriod (Aug 2024–Jul 2025, centered on Jan 2025); its single published
+        // month shown in the ⓘ is Jan 2025 itself (centerMonth), not the window's last month
+        baseline: {
+          from: e.baselineFrom, period: e.baselinePeriod, avg12: e.baseline,
+          centerMonth: { period: BASELINE_MONTH, price: e.baselineMonthPrice },
+        },
         latest: { from: e.currentFrom, period: e.latestPeriod, avg12: e.current, monthPrice: e.latestMonthPrice },
         usage: { kwhPerMonth: e.usageKwh, from: e.usageFrom ?? null, to: e.usageTo ?? null },
         stale: snapshot.electricity.stale ?? false,

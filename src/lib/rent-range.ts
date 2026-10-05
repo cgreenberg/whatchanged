@@ -12,14 +12,23 @@ export interface NotCurrentInfo { n: number; last: string }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 
-/** "Zillow's series for New Kent County isn't current (one month, Jul 2026)" / "(14 months, through Mar 2026)". */
+/**
+ * "Zillow's series for New Kent County is too new to use (only one month, Jul 2026)" /
+ * "(only three months, from May 2026)". The first month counts back n − 1 months from the last (Zillow county
+ * series run without gaps once they start).
+ */
 export function notCurrentText(county: string, info: NotCurrentInfo | undefined): string {
   const m = /^(\d{4})-(\d{2})$/.exec(info?.last ?? '')
-  const last = m ? `${MONTHS[Number(m[2]) - 1]} ${m[1]}` : ''
   const n = info?.n ?? 0
+  const monthName = (idx: number) => `${MONTHS[((idx % 12) + 12) % 12]} ${Math.floor(idx / 12)}`
+  const lastIdx = m ? Number(m[1]) * 12 + Number(m[2]) - 1 : null
   const count = n > 0 ? `${n <= 10 ? NUMBER_WORDS[n] : n} month${n === 1 ? '' : 's'}` : ''
-  const detail = count && last ? (n === 1 ? `${count}, ${last}` : `${count}, through ${last}`) : last ? `through ${last}` : ''
-  return `Zillow's series for ${county} isn't current${detail ? ` (${detail})` : ''}`
+  const detail = lastIdx === null
+    ? count ? `only ${count}` : ''
+    : count
+      ? n === 1 ? `only ${count}, ${monthName(lastIdx)}` : `only ${count}, from ${monthName(lastIdx - (n - 1))}`
+      : `only through ${monthName(lastIdx)}`
+  return `Zillow's series for ${county} is too new to use${detail ? ` (${detail})` : ''}`
 }
 
 /** "−20% to +50%". */

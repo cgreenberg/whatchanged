@@ -21,6 +21,11 @@ interface RentBasisFile {
   nearest?: Record<string, [string, number] | [string, number, 1] | undefined>
   /** Donor zip → its B25064 margin of error ($, 90%). */
   donorMoe?: Record<string, number | undefined>
+  /**
+   * Zip whose donor (PO-box or nearest) was rejected as unrepresentative — its rent outside [county median / 1.5,
+   * county median × 1.5] → [that donor zip, its median rent]; the zip uses its county median.
+   */
+  unrepresentative?: Record<string, [string, number] | undefined>
   /** ACS 5-year county / state median gross rent (B25064), published values only (CT: planning-region FIPS keys). */
   counties?: Record<string, { rent: number; name: string } | undefined>
   states?: Record<string, { rent: number; name: string } | undefined>
@@ -81,7 +86,8 @@ export function cityContainsZip(zip: string, city: string, state: string): boole
  *   2. USPS-only zips: a residential donor zip in the same city, else county ('po-donor');
  *   3. suppressed/missing rent: the nearest residential zip in the same county with a reliable rent — margin of
  *      error ≤ 30%, not top/bottom-coded — within 100 mi, same town preferred ('nearest-zip');
- *   4. the county's ACS median gross rent ('county'; Connecticut: the zip's planning region);
+ *   4. the county's ACS median gross rent ('county'; Connecticut: the zip's planning region) — also when the PO-box /
+ *      nearest donor's rent is more than 1.5× above or below it (unrepresentative; the note names the rejected zip);
  *   5. the state's ACS median gross rent ('state').
  * Only a zip with none of these (territories ACS doesn't cover, unknown zips) → basis 'none', isRentFallback.
  */
@@ -157,6 +163,7 @@ export function getCensusData(zip: string): CensusData {
   const loc = lookupZip(zip)
   const county = loc ? BASIS.counties?.[rentCountyKey(zip, loc.stateAbbr, loc.countyFips)] : undefined
   if (loc && county && county.rent > 0) {
+    const rejected = BASIS.unrepresentative?.[zip]
     return {
       zip,
       medianRent: county.rent,
@@ -164,7 +171,9 @@ export function getCensusData(zip: string): CensusData {
       year: ACS_GEO_YEAR,
       source: 'acs',
       basis: 'county',
-      basisNote: `${county.name} median (no zip figure)`,
+      basisNote: rejected
+        ? `${county.name} median (zip ${rejected[0]}'s $${rejected[1].toLocaleString('en-US')} rent is unrepresentative)`
+        : `${county.name} median (no zip figure)`,
       basisArea: county.name,
       sourceLabel: acsLabel(ACS_GEO_YEAR, `${county.name} median`),
       isFallback: false,

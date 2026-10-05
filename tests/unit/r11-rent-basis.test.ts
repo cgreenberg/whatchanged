@@ -16,6 +16,7 @@ const B = basis as unknown as {
   byZip: Record<string, string>
   nearest: Record<string, [string, number] | [string, number, 1]>
   donorMoe: Record<string, number>
+  unrepresentative: Record<string, [string, number]>
   counties: Record<string, { rent: number; name: string }>
   states: Record<string, { rent: number; name: string }>
 }
@@ -65,7 +66,10 @@ test('the value equals the published figure of the geography it names (never a s
         // Connecticut: ACS county rows are the 2022 planning regions
         const key = e.stateAbbr === 'CT' ? getLausAreaFipsForZip(z)! : e.countyFips
         expect(d.medianRent).toBe(B.counties[key].rent)
-        expect(d.basisNote).toBe(`${B.counties[key].name} median (no zip figure)`)
+        const rejected = B.unrepresentative[z]
+        expect(d.basisNote).toBe(rejected
+          ? `${B.counties[key].name} median (zip ${rejected[0]}'s $${rejected[1].toLocaleString('en-US')} rent is unrepresentative)`
+          : `${B.counties[key].name} median (no zip figure)`)
         expect(d.sourceLabel).toContain(B.counties[key].name)
         break
       }
@@ -135,4 +139,25 @@ test('a zip with its own figure keeps it; county and state medians are ACS 2023 
   expect(getCensusData('98683')).toMatchObject({ basis: 'zip', source: 'acs' })
   expect(Object.values(B.counties).every((c) => c.rent > 0 && /, [A-Z]{2}$/.test(c.name))).toBe(true)
   expect(Object.keys(B.states).length).toBeGreaterThanOrEqual(52)
+})
+
+test('borrowed donor rents are representative: within [county median / 1.5, county median × 1.5], else the county median', () => {
+  const countyKey = (z: string) => (ZIPS[z].stateAbbr === 'CT' ? getLausAreaFipsForZip(z)! : ZIPS[z].countyFips)
+  for (const [z, d] of all) {
+    if (d.basis !== 'po-donor' && d.basis !== 'nearest-zip') continue
+    const c = B.counties[countyKey(z)]?.rent
+    if (!c) continue
+    expect([z, d.medianRent >= c / 1.5 && d.medianRent <= c * 1.5]).toEqual([z, true])
+  }
+  const cases: Array<[string, string, number]> = [
+    ['39356', '39338', 130], ['18820', '18823', 258], ['18842', '18823', 258], ['94020', '94060', 854], ['94021', '94060', 854],
+    ['94074', '94060', 854], ['95607', '95937', 683], ['95637', '95937', 683], ['95679', '95937', 683], ['95698', '95937', 683],
+    ['89412', '89424', 550], ['59440', '59450', 1339],
+  ]
+  for (const [z, donor, rent] of cases) {
+    const d = getCensusData(z)
+    expect([z, d.basis, d.medianRent]).toEqual([z, 'county', B.counties[countyKey(z)].rent])
+    expect(B.unrepresentative[z]).toEqual([donor, rent])
+    expect(d.basisNote).toContain(`zip ${donor}'s $${rent.toLocaleString('en-US')} rent is unrepresentative`)
+  }
 })

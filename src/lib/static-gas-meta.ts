@@ -25,11 +25,19 @@ export const DACO_STALE_DAYS = 75
 
 /**
  * true when a bundled static gas series (Alaska DCRA survey / Puerto Rico DACO) is overdue: its latest survey or month
- * ended more than DCRA_STALE_DAYS / DACO_STALE_DAYS before `now`. The card's ladder then falls to the next rung, and
- * the county map does the same (one rule for both).
+ * ended more than DCRA_STALE_DAYS / DACO_STALE_DAYS before `now`.
  */
 export function isStaticGasStale(kind: 'dcra' | 'daco', latestDate: string, now: Date = new Date()): boolean {
   return monthOlderThan(latestDate.slice(0, 7), kind === 'dcra' ? DCRA_STALE_DAYS : DACO_STALE_DAYS, now)
+}
+
+/**
+ * How a bundled static gas value is shown — ONE rule for the gas card's ladder (rung status) and the county map
+ * (area `stale` flag): an overdue survey / month is still the value shown, marked stale ('stale'); otherwise 'used'.
+ * It never falls to the next rung, so the card and the map always show the same series for the same place.
+ */
+export function staticGasStatus(kind: 'dcra' | 'daco', latestDate: string, now: Date = new Date()): 'used' | 'stale' {
+  return isStaticGasStale(kind, latestDate, now) ? 'stale' : 'used'
 }
 
 /** "1 station surveyed (University Chevron)." / "3 stations surveyed." / "Station count not published." */
