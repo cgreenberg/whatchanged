@@ -19,7 +19,7 @@ export interface KvClient {
  * whenever the stored format changes (e.g. the CacheEnvelope shape) so code at
  * different format versions sharing one Redis (preview vs production) never collide.
  */
-export const KEY_PREFIX = 'wc2:'
+export const KEY_PREFIX = 'wc3:'
 export const nsKey = (key: string): string => (key.startsWith(KEY_PREFIX) ? key : KEY_PREFIX + key)
 
 /** Wrap a client so every command's key is namespaced. */

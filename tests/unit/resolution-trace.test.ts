@@ -156,7 +156,7 @@ describe('trace semantics', () => {
       expect(steps.find((x) => isUsedStatus(x.status))).toMatchObject({ rungId: 'gas.dcra-community', geography: { level: 'community' } })
       expect(steps.find((x) => x.rungId === 'gas.bls-hiak-standin')!.status).toBe('not-needed')
       const card = buildHeroCards(s)[0]
-      expect(card.sourceLine).toMatch(/ survey · DCRA · Jul 2026$/)
+      expect(card.sourceLine).toMatch(/ survey · DCRA(, 1 station)? · Jul 2026$/)
       expect(card.nationalValue).toBeUndefined()
       expect(card.info.join(' ')).toMatch(/CC BY 4\.0/)
     }

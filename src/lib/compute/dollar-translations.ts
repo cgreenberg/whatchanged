@@ -33,9 +33,9 @@ export interface DollarImpact {
   /** $/gallon change since the Jan 20 2025 baseline (signed). Per gallon, NOT annual. */
   gas: number | null
   /**
-   * $/mo on electricity (signed, whole dollars): change in the state's seasonally adjusted residential
-   * price since Jan 2025 (¢/kWh) × the state's average residential use (kWh per customer per month,
-   * latest 12 months) ÷ 100. null when either is unavailable.
+   * $/mo on electricity (signed, whole dollars): change in the state's 12-month average residential price
+   * (latest 12 months − the 12 months centered on Jan 2025, ¢/kWh) × the state's average residential use
+   * (kWh per customer per month, latest 12 months) ÷ 100. null when either is unavailable.
    */
   electricity: number | null
 }
@@ -78,7 +78,7 @@ export function computeDollarImpact(opts: {
   gasChange?: number | null
   /** LOCAL median rent only — pass null/undefined when the zip has no Census rent. */
   medianRent?: number | null
-  /** State residential 12-month average price, latest 12 months − 12 months ending Jan 2025, ¢/kWh. */
+  /** State residential 12-month average price, latest 12 months − 12 months centered on Jan 2025 (Aug 2024–Jul 2025), ¢/kWh. */
   electricityPriceChangeCents?: number | null
   /** State average residential use, kWh per customer per month (12-month average). */
   electricityUsageKwh?: number | null

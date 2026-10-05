@@ -186,8 +186,10 @@ export interface RentData {
   cbsa?: string
   countyName?: string
   /** Metro rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short;
-   * 'no-baseline' = it has no Jan 2025 value). */
-  countyWhy?: 'none' | 'too-new' | 'no-baseline'
+   * 'no-baseline' = it has no Jan 2025 value; 'not-current' = it stops before Zillow's latest month). */
+  countyWhy?: 'none' | 'too-new' | 'no-baseline' | 'not-current'
+  /** countyWhy 'not-current': months the county's series has and its last month ("one month, Jul 2026"). */
+  countyNotCurrent?: { n: number; last: string }
   /**
    * The series is too short to estimate its own seasonal pattern, so it is adjusted with this pool's typical
    * pattern ("Maine counties", "U.S. counties").

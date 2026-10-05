@@ -44,8 +44,10 @@ test('description uses the same numbers as the cards, with a signed gas change',
   expect(d).not.toContain('$-')
   expect(d).toContain('Rent −2.3% (Travis Co.)')
   expect(d).toContain('Groceries +3.1% (West South Central div.)')
-  // Statewide EIA electricity, % change of the 12-month average price (Texas: +6.7% from the recorded fixture)
-  expect(d).toContain('Electricity +6.7% (12-mo avg, Texas)')
+  // Statewide EIA electricity, % change of the 12-month average price (Texas: +4.9% from the recorded fixture),
+  // with its OWN window after the "Since Jan 2025:" list (not under that prefix)
+  expect(d).toContain("; Electricity +4.9% (Texas, 12-mo avg vs yr centered on Jan '25)")
+  expect(d.indexOf('Electricity')).toBeGreaterThan(d.indexOf('Groceries'))
   expect(d).not.toMatch(/tariff/i)
   expect(d.split(' · ').pop()).toBe('whatchanged.us')
 })
@@ -53,7 +55,8 @@ test('description uses the same numbers as the cards, with a signed gas change',
 test('every number in the description carries a geography tag; short enough for a social preview', async () => {
   mockFetch.mockResolvedValue(snap())
   const d = (await meta({ zip: '78701' })).openGraph?.description as string
-  const parts = d.replace(/^Since [A-Z][a-z]{2} \d{4}: /, '').split(' · ').slice(0, -1)
+  // "Since Jan 2025: a · b · c; Electricity … · whatchanged.us" (electricity has its own window after "; ")
+  const parts = d.replace(/^Since [A-Z][a-z]{2} \d{4}: /, '').split(/ · |; /).slice(0, -1)
   expect(parts.length).toBe(4)
   for (const p of parts) expect(p).toMatch(/\([^)]+\)$/)
   expect(d.length).toBeLessThanOrEqual(200)

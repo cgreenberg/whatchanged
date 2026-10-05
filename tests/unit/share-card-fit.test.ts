@@ -226,14 +226,14 @@ describe('share-card text slots stay within their line budgets', () => {
       shelter: sparklineBudget({ sublabel: SHELTER_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: shelterBasisNote(12345) }, 0),
       electricity: sparklineBudget({
         sublabel: ELECTRICITY_SUBLABEL, extra: electricityGeoLine(elecStates.find((e) => e.state === 'MA')!),
-        metaRows: [[electricityVsLabel('2025-01'), 'Natl: +10.0%']], note: electricityBasisNote(1999, 'Massachusetts'),
+        metaRows: [[electricityVsLabel(), 'Natl: +10.0%']], note: electricityBasisNote(1999, 'Massachusetts'),
       }, 0),
     }
     for (const [k, h] of Object.entries(budgets)) expect([k, h > 60]).toEqual([k, true])
     expect(monoLines(shelterBasisNote(12345), FS.meta)).toBeGreaterThan(0)
     expect(monoLines(shelterBasisNote(12345), FS.note)).toBe(1)
-    // The electricity meta row ("vs yr to Jan '25" + "Natl: −10.0%") leaves at least a 2-character gap
-    expect(`${electricityVsLabel('2025-01')}  Natl: −10.0%`.length).toBeLessThanOrEqual(monoCharsPerLine(FS.meta))
+    // The electricity meta row ("vs Aug'24–Jul'25" + "Natl: −10.0%") leaves at least a 2-character gap
+    expect(`${electricityVsLabel()}  Natl: −10.0%`.length).toBeLessThanOrEqual(monoCharsPerLine(FS.meta))
     // Borrowed rent bases name their source and still fit one line
     for (const c of [{ basis: 'nearest-zip', donorZip: '35464' }, { basis: 'po-donor', donorZip: '10025' }, { basis: 'county' }, { basis: 'state' }]) {
       expect([c.basis, monoLines(shelterBasisNote(12345, c), FS.note)]).toEqual([c.basis, 1])

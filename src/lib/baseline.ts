@@ -11,6 +11,27 @@ export const BASELINE_MONTH_LABEL = 'Jan 2025'
 export const BASELINE_MONTH_LONG = 'January 2025'
 export const BASELINE_DAY_LABEL = 'Jan 20, 2025'
 
+/**
+ * Electricity (EIA monthly, compared as 12-month average prices): the baseline is the 12-month window CENTERED on
+ * Jan 2025. A 12-month window can't be centered exactly on Jan 20: Jul 2024–Jun 2025 has its midpoint at ~Jan 1,
+ * 2025 (19 days early), Aug 2024–Jul 2025 at ~Jan 30, 2025 (10 days late), so Aug 2024–Jul 2025 it is.
+ */
+export const ELECTRICITY_BASELINE_FROM = '2024-08'
+export const ELECTRICITY_BASELINE_TO = '2025-07'
+/** "the 12 months centered on Jan 2025" (ⓘ, graph headline) and the card / share / OG short form. */
+export const ELECTRICITY_BASELINE_LABEL = `the 12 months centered on ${BASELINE_MONTH_LABEL}`
+export const ELECTRICITY_BASELINE_SHORT = "yr centered on Jan '25"
+/** Months from a 12-month window's center month (where the graph plots its average) to its last month. */
+export const ELECTRICITY_CENTER_LAG = 6
+/** "YYYY-MM" shifted by `k` months. */
+export function addMonths(ym: string, k: number): string {
+  const [y, m] = ym.split('-').map(Number)
+  const t = y * 12 + (m - 1) + k
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`
+}
+/** Center month of the 12-month window ending `windowEnd` (where the graph plots that average): end − 6 months. */
+export const electricityCenterOf = (windowEnd: string): string => addMonths(windowEnd, -ELECTRICITY_CENTER_LAG)
+
 /** Weekly gas: last reading on or before Jan 20 2025, no earlier than this. */
 export const GAS_BASELINE_EARLIEST = '2025-01-06'
 /** Monthly BLS: Jan 2025, else latest month back to this one. */
@@ -121,7 +142,10 @@ export function monthlyChangeSinceBaseline<T extends { date: string }>(
  * "$4.49 now vs $3.12 then" always reads "+$1.37", never a 3-decimal difference that rounds to "+$1.36".
  */
 export function displayedChange(current: number, baseline: number): number {
-  const v = Math.round(current * 100) / 100 - Math.round(baseline * 100) / 100
+  // Round each side exactly as the page prints it (toFixed(2)): Math.round(x * 100) disagrees with toFixed on
+  // binary halves (2.905 prints "$2.90" but Math.round gives 2.91), which made "$3.00 vs $2.90" read "+$0.09".
+  const shown = (x: number) => Number(x.toFixed(2))
+  const v = shown(current) - shown(baseline)
   const r = Number(v.toFixed(2))
   return Object.is(r, -0) ? 0 : r
 }

@@ -30,12 +30,12 @@ import { hasElectricitySeries, electricitySeriesId, type ElectricitySeriesData }
 import { CPI_CHANGE_RANGE } from '@/lib/api/validate'
 import { isBlsPeriodStale, isElectricityPeriodStale, monthOlderThan, RENT_STALE_DAYS } from '@/lib/staleness'
 import type { CountyRentLookup } from '@/lib/rent'
-import { rentRangeText } from '@/lib/rent-range'
+import { rentRangeText, notCurrentText } from '@/lib/rent-range'
 import { fmtRentFigure } from '@/lib/compute/dollar-translations'
 import type { StaticGasLookup } from '@/lib/static-gas'
 import {
-  DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME, DCRA_STALE_DAYS,
-  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, DACO_STALE_DAYS, dcraStationsText,
+  DCRA_SOURCE, DCRA_PUBLISHER, DCRA_LICENSE, DCRA_DATA_URL, DCRA_HOME,
+  DACO_SOURCE, DACO_PUBLISHER, DACO_HOME, DACO_DATA_URL, dcraStationsText, isStaticGasStale,
 } from '@/lib/static-gas-meta'
 import {
   HEATING_STATES, hasHeatingSeries, isValidHeating, heatingSeriesId, heatingSeriesUrl, heatingSeasonStatus, NATIONAL_HEATING,
@@ -188,7 +188,7 @@ function staticGasOutcome(kind: 'dcra' | 'daco', r: StaticGasLookup, now: Date, 
     }
   }
   const h = r.hit
-  const stale = monthOlderThan(h.data.latestDate.slice(0, 7), kind === 'dcra' ? DCRA_STALE_DAYS : DACO_STALE_DAYS, now)
+  const stale = isStaticGasStale(kind, h.data.latestDate, now)
   const geography = kind === 'daco'
     ? { name: 'Puerto Rico (island-wide)', level: 'island' as const }
     : h.match === 'region'
@@ -529,7 +529,8 @@ const ZILLOW_HOME = 'https://www.zillow.com/research/data/'
 const ZILLOW_LICENSE = 'Zillow Research data; attribution required'
 
 /** Why the metro series stands in, with the county's true reason. */
-function metroStandInReason(why: RentData['countyWhy'], county: string): string {
+function metroStandInReason(why: RentData['countyWhy'], county: string, notCurrent?: RentData['countyNotCurrent']): string {
+  if (why === 'not-current') return `${notCurrentText(county, notCurrent)}; its metro’s series stands in.`
   if (why === 'too-new') return `Zillow's series for ${county} is too new to measure since Jan 2025; its metro’s series stands in.`
   if (why === 'no-baseline') return `Zillow's series for ${county} has no Jan 2025 value; its metro’s series stands in.`
   return `Zillow publishes no rent series for ${county}; its metro’s series stands in.`
@@ -575,7 +576,9 @@ const RENT = {
               ? `Zillow's series for ${countyOnly(l)} is too new (it needs data from Jan 2024) to measure since Jan 2025.`
               : r.why === 'no-baseline'
                 ? `Zillow's series for ${countyOnly(l)} has no Jan 2025 value, so its change since Jan 2025 can't be measured.`
-                : `Zillow publishes no rent series for ${countyOnly(l)}.`,
+                : r.why === 'not-current'
+                  ? `${notCurrentText(countyOnly(l), r.notCurrent)}.`
+                  : `Zillow publishes no rent series for ${countyOnly(l)}.`,
         }
       },
     }),
@@ -604,13 +607,15 @@ const RENT = {
             value: r.data,
             asOf: r.data.asOf,
             geography: { name: r.data.geoName, level: 'metro' },
-            reason: stale ? STALE_REASON : metroStandInReason(r.data.countyWhy, countyOnly(l)),
+            reason: stale ? STALE_REASON : metroStandInReason(r.data.countyWhy, countyOnly(l), r.data.countyNotCurrent),
           }
         }
         return {
           status: r.why === 'out-of-range' || r.why === 'flagged' ? 'invalid' : 'not-applicable',
           reason: r.why === 'out-of-range'
             ? `Zillow's metro figure for ${countyOnly(l)} is outside the plausible range (${rentRangeText()}), so it isn't shown.`
+            : r.why === 'county-out-of-range'
+              ? `Withheld because ${countyOnly(l)}'s own Zillow series is outside the plausible range (${rentRangeText()}); its metro’s series doesn't stand in for it.`
             : r.why === 'flagged'
               ? `Zillow's figure for ${countyOnly(l)}’s metro is a statistical outlier among U.S. areas (often a shift in which homes are listed, not in rents), so it doesn't stand in for the county.`
               : `${countyOnly(l)} isn't in a metro with a Zillow rent series back to Jan 2025.`,
@@ -665,7 +670,8 @@ const ELECTRICITY = {
   comparison: 'EIA U.S. average, same method and the same 12-month windows.',
   method:
     'The big number is the average of the latest 12 published monthly prices (¢/kWh); the % compares it with the average ' +
-    'of the 12 months ending January 2025 (Feb 2024–Jan 2025). Residential prices swing with the seasons (summer often ' +
+    'of the 12 months centered on January 2025 (Aug 2024–Jul 2025; midpoint ~Jan 30, the closest a 12-month window ' +
+    'gets to Jan 20 — a year ending Jan 2025 would be centered on mid-2024). Residential prices swing with the seasons (summer often ' +
     'well above winter), so single months mostly measure the calendar; full years count every season once, no seasonal ' +
     'model needed. ≈ $/mo = change in the 12-month average price × the state\'s average home use (residential sales ÷ ' +
     'customers, latest 12 months).',
@@ -930,7 +936,7 @@ const RENT_BASE = {
     rentBaseRung('county', {
       label: 'County median rent', level: 'county',
       covers: 'Counties with no usable zip figure: the county’s ACS median gross rent (Connecticut: the zip’s planning region, the county-level geography Census now reports).',
-      why: () => 'Census publishes no median rent for this county-level area.',
+      why: (l) => `Census publishes no median rent for the county-level area covering this zip (${countyOnly(l)}).`,
     }),
     rentBaseRung('state', {
       label: 'State median rent', level: 'state',

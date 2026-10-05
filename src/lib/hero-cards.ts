@@ -10,6 +10,7 @@ import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE, fmtRentFigure } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
+import { notCurrentText } from '@/lib/rent-range'
 import {
   DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL, dcraStationsText,
 } from '@/lib/static-gas-meta'
@@ -17,6 +18,10 @@ import {
   BASELINE_MONTH,
   BASELINE_MONTH_LABEL,
   BASELINE_DAY_LABEL,
+  ELECTRICITY_BASELINE_FROM,
+  ELECTRICITY_BASELINE_TO,
+  ELECTRICITY_BASELINE_LABEL,
+  ELECTRICITY_BASELINE_SHORT,
   gasBaselineIndex,
   gasNationalMatching,
   monthlyChangeSinceBaseline,
@@ -48,7 +53,7 @@ export interface HeroCardModel {
   status: 'ok' | 'unavailable'
   /** Big number on the card. */
   value?: string
-  /** Small qualifier after the big number ("avg, last 12 mo"). */
+  /** Small qualifier after the big number ("12-mo avg": the latest 12 months). */
   valueNote?: string
   /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent", "≈ +$33/mo". */
   inline?: string
@@ -489,7 +494,12 @@ function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel
     accentColor: ACCENTS.gas,
     provenance,
     stale: !!s.gas.stale,
-    sourceLine: sourceLineOf(gasShortGeo(g, s.location?.stateAbbr), dcra ? 'DCRA' : 'DACO', latest ? fmtMonthYear(latest) : undefined),
+    // A one-station survey price is said on the card face, not only in the ⓘ
+    sourceLine: sourceLineOf(
+      gasShortGeo(g, s.location?.stateAbbr),
+      dcra ? (g.staticSource?.match !== 'region' && g.staticSource?.stations === 1 ? 'DCRA, 1 station' : 'DCRA') : 'DACO',
+      latest ? fmtMonthYear(latest) : undefined,
+    ),
   }
   const range = STATIC_GAS_RANGE[dcra ? 'dcra' : 'daco']
   if (!inRange(g.current, range) || !inRange(g.baseline, range) || !Number.isFinite(g.change)) {
@@ -609,9 +619,11 @@ export function metroShortName(geoName: string): string {
 }
 
 /** Why a metro figure is on a county's card. */
-export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'countyWhy'>): string {
+export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'countyWhy' | 'countyNotCurrent'>): string {
   const county = r.countyName ? countyOnly(r.countyName) : 'this county'
-  const why = r.countyWhy === 'too-new'
+  const why = r.countyWhy === 'not-current'
+    ? notCurrentText(county, r.countyNotCurrent)
+    : r.countyWhy === 'too-new'
     ? `Zillow's series for ${county} is too new (it needs data from Jan 2024) to measure since Jan 2025`
     : r.countyWhy === 'no-baseline'
       ? `Zillow's series for ${county} has no Jan 2025 value, so its change since Jan 2025 can't be measured`
@@ -771,20 +783,18 @@ export const ELECTRICITY_SOURCE = 'EIA average residential electricity price'
 export const ELECTRICITY_SOURCE_URL = 'https://www.eia.gov/electricity/data/browser/'
 export const ELECTRICITY_ADJUSTMENT = '12-month average prices (no seasonal adjustment needed)'
 /** Card label beside the big number (the 12-month average price). */
-export const ELECTRICITY_VALUE_NOTE = 'avg, last 12 mo'
+export const ELECTRICITY_VALUE_NOTE = '12-mo avg'
 /** Why the card compares 12-month averages (ⓘ on the card and the graph). */
 export const ELECTRICITY_METHOD_NOTE =
   'Why 12-month averages: residential electricity prices swing with the seasons (in many states summer\'s price per kWh ' +
   'runs well above winter\'s), so comparing one month with another mostly measures the calendar. Averaging a full year on ' +
-  'both sides counts every season once: the latest 12 months vs the 12 months ending January 2025.'
-/** "Feb 2025": the month after `ym` (the 12-month baseline window ends the month before it). */
-export function monthAfter(ym: string): string {
-  const [y, m] = ym.split('-').map(Number)
-  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
-}
-/** "+7.4% vs 12 mo to Jan 2025" (the card face; the ⓘ spells out both 12-month windows). */
-export function electricityChangePhrase(e: Pick<ElectricityData, 'change' | 'baselinePeriod'>): string {
-  return `${fmtSignedPct(e.change)} vs 12 mo to ${fmtMonthYear(e.baselinePeriod)}`
+  'both sides counts every season once: the latest 12 months vs the 12 months centered on January 2025 ' +
+  `(${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}; a year can't be centered exactly on ` +
+  'Jan 20, and this window\'s midpoint, about Jan 30, is the closest). A year ending January 2025 would be centered on ' +
+  'mid-2024 and count months of change from before January 2025.'
+/** "+7.4% vs yr centered on Jan '25" (the card face; the ⓘ spells out both 12-month windows). */
+export function electricityChangePhrase(e: Pick<ElectricityData, 'change'>): string {
+  return `${fmtSignedPct(e.change)} vs ${ELECTRICITY_BASELINE_SHORT}`
 }
 /** "Aug 2025–Jul 2026". */
 export const fmtWindow = (from: string | undefined, to: string) => (from ? `${fmtMonthYear(from)}–${fmtMonthYear(to)}` : fmtMonthYear(to))
@@ -810,7 +820,7 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     sourceUrl: ELECTRICITY_SOURCE_URL,
     geography: e ? `${place} (statewide average)` : place,
     window: e
-      ? `12 months ending ${fmtMonthYear(e.latestPeriod)} vs 12 months ending ${fmtMonthYear(e.baselinePeriod)}`
+      ? `12 months ending ${fmtMonthYear(e.latestPeriod)} vs ${ELECTRICITY_BASELINE_LABEL} (${fmtWindow(e.baselineFrom, e.baselinePeriod)})`
       : `since ${BASELINE_MONTH_LABEL}`,
     asOf: e ? fmtMonthYear(e.latestPeriod) : DATE_UNAVAILABLE,
     adjustment: ELECTRICITY_ADJUSTMENT,
@@ -841,7 +851,7 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo: change in the 12-month average price (${priceChange >= 0 ? '+' : '−'}${Math.abs(priceChange).toFixed(2)}¢/kWh) × an average ${place} home's monthly use (${usage})`
     : undefined
   const detail = `12-month average price: ${fmtCents(e.current)} (${fmtWindow(e.currentFrom, e.latestPeriod)}) vs ` +
-    `${fmtCents(e.baseline)} (${fmtWindow(e.baselineFrom, e.baselinePeriod)}). ` +
+    `${fmtCents(e.baseline)} (${fmtWindow(e.baselineFrom, e.baselinePeriod)}, centered on ${BASELINE_MONTH_LABEL}). ` +
     `Latest month as published: ${fmtCents(e.latestMonthPrice)} in ${fmtMonthYear(e.latestPeriod)}.`
   const natOk = typeof e.nationalChange === 'number' && Number.isFinite(e.nationalChange)
   const nationalValue = natOk ? `National: ${fmtSignedPct(e.nationalChange!)} (U.S. average, EIA, same 12-month windows)` : undefined
@@ -938,6 +948,7 @@ const mark = (c: HeroCardModel) => (c.outlier ? OUTLIER_MARK : '')
 export function metadataDescription(snapshot: EconomicSnapshot): string {
   const cards = buildHeroCards(snapshot)
   const parts: string[] = []
+  let elec = ''
   for (const c of cards) {
     if (c.status !== 'ok') continue
     if (c.id === 'gas' && snapshot.gas.data) {
@@ -951,12 +962,14 @@ export function metadataDescription(snapshot: EconomicSnapshot): string {
     if (c.id === 'shelter') parts.push(`Shelter CPI ${c.value}${tag(c)}`)
     if (c.id === 'groceries') parts.push(`Groceries ${c.value}${tag(c)}`)
     if (c.id === 'electricity' && snapshot.electricity?.data) {
-      parts.push(`Electricity ${fmtSignedPct(snapshot.electricity.data.change)} (12-mo avg${c.geoTag ? `, ${c.geoTag}` : ''})`)
+      // Its own window (not "since Jan 2025"): latest 12-mo average vs the 12 months centered on Jan 2025
+      elec = `Electricity ${fmtSignedPct(snapshot.electricity.data.change)} (${c.geoTag ? `${c.geoTag}, ` : ''}12-mo avg vs ${ELECTRICITY_BASELINE_SHORT})`
     }
   }
   const head = parts.length ? `Since ${BASELINE_MONTH_LABEL}: ` : ''
   const gasStandIn = cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)
   const foot = (cards.some(c => c.status === 'ok' && c.outlier) ? ` · ${OUTLIER_MARK}unusual value` : '') +
     (gasStandIn ? ` · ${GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, 'text'))}` : '')
-  return `${head}${parts.join(' · ')}${foot} · whatchanged.us`
+  const body = `${head}${parts.join(' · ')}${elec ? `${parts.length ? '; ' : ''}${elec}` : ''}`
+  return `${body}${foot} · whatchanged.us`
 }

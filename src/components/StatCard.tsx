@@ -12,7 +12,7 @@ export interface StatCardProps {
   label: string
   /** Big number, e.g. "+3.1%". Ignored when `unavailable`. */
   value?: string
-  /** Small qualifier right after the big number, e.g. "avg, last 12 mo". */
+  /** Small qualifier right after the big number, e.g. "12-mo avg". */
   valueNote?: string
   /** Short dollar translation beside the big number, e.g. "≈ +$87/mo". */
   inline?: string

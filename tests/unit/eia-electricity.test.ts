@@ -35,14 +35,16 @@ const mean12 = (st: string, from: string, to: string) => {
 beforeEach(() => clearMemCache())
 
 describe('buildElectricitySeries (recorded EIA rows)', () => {
-  test('Maine: 12-month average price (Aug 2025–Jul 2026) vs the 12 months ending Jan 2025, 12-month usage', () => {
+  test('Maine: 12-month average price (Aug 2025–Jul 2026) vs the 12 months centered on Jan 2025, 12-month usage', () => {
     const d = buildElectricitySeries(ROWS, 'ME')
-    expect(d).toMatchObject({ state: 'ME', stateName: 'Maine', seriesId: 'ELEC.PRICE.ME-RES.M', method: 'avg12' })
-    expect([d.baselineFrom, d.baselinePeriod]).toEqual(['2024-02', '2025-01'])
+    expect(d).toMatchObject({ state: 'ME', stateName: 'Maine', seriesId: 'ELEC.PRICE.ME-RES.M', method: 'avg12c' })
+    expect([d.baselineFrom, d.baselinePeriod]).toEqual(['2024-08', '2025-07'])
     expect([d.currentFrom, d.latestPeriod]).toEqual(['2025-08', '2026-07'])
-    expect(d.baseline).toBeCloseTo(mean12('ME', '2024-02', '2025-01'), 3)
+    expect(d.baseline).toBeCloseTo(mean12('ME', '2024-08', '2025-07'), 3)
     expect(d.current).toBeCloseTo(mean12('ME', '2025-08', '2026-07'), 3)
-    expect(d.change).toBeCloseTo((mean12('ME', '2025-08', '2026-07') / mean12('ME', '2024-02', '2025-01') - 1) * 100, 1)
+    expect(d.change).toBeCloseTo((mean12('ME', '2025-08', '2026-07') / mean12('ME', '2024-08', '2025-07') - 1) * 100, 1)
+    // Window ending Jan 2025 (centered on ~Aug 2024) would say +21.2%; centered on Jan 2025: +9.8%
+    expect(d.change).toBeCloseTo(9.8, 0)
     // EIA published: 26.13¢ (Jan 2025), 32.41¢ (Jul 2026), kept for the ⓘ
     expect(d.baselineMonthPrice).toBe(26.13)
     expect(d.latestMonthPrice).toBe(32.41)
@@ -58,22 +60,30 @@ describe('buildElectricitySeries (recorded EIA rows)', () => {
     expect(d.latestMonthPrice).toBe(16.27)
     // Single months: +20.5% (Jan 2025 → Jul 2026), mostly season
     expect((16.27 / 13.5 - 1) * 100).toBeCloseTo(20.5, 1)
-    // Full years: ≈ +6.6%, close to the same-month comparisons (Jan→Jan, Jul→Jul two years apart)
-    expect(d.change).toBeGreaterThan(5)
-    expect(d.change).toBeLessThan(8.5)
-    const janJan = (price('GA', '2026-01') / price('GA', '2025-01') - 1) * 100
-    expect(Math.abs(d.change - janJan)).toBeLessThan(2)
+    // Full years: ≈ +4.4% (latest 12 months vs the 12 centered on Jan 2025), close to Jan 2025 → Jan 2026
+    expect(d.change).toBeGreaterThan(3)
+    expect(d.change).toBeLessThan(6)
+    // ≈ the mean of the 12 same-month changes, each month vs the same month a year earlier (Aug 2024 → Aug 2025 …)
+    const yoy = monthRange('2024-08', '2025-07')
+      .map((m) => (price('GA', `${Number(m.slice(0, 4)) + 1}${m.slice(4)}`) / price('GA', m) - 1) * 100)
+      .reduce((a, b) => a + b, 0) / 12
+    expect(Math.abs(d.change - yoy)).toBeLessThan(1)
     expect(d.usageKwh!).toBeGreaterThan(1000)
   })
 
-  test('the series keeps the published price and its trailing 12-month average from 2016 to the latest month', () => {
+  test('the series keeps the published price and its CENTERED 12-month average (t−5…t+6) from 2016', () => {
     const d = buildElectricitySeries(ROWS, 'CA')
     expect(d.series[0].date).toBe('2016-01')
-    expect(d.series[0].avg12).toBeCloseTo(mean12('CA', '2015-02', '2016-01'), 3)
-    expect(d.series[d.series.length - 1]).toMatchObject({ date: '2026-07', price: 33.61 })
+    expect(d.series[0].avg12).toBeCloseTo(mean12('CA', '2015-08', '2016-07'), 3)
+    expect(d.series[d.series.length - 1]).toMatchObject({ date: '2026-07', price: 33.61, avg12: null })
+    // Jan 2025 on the graph = the baseline (Aug 2024–Jul 2025); the line's last point (Jan 2026) = the latest 12 months
     const jan = d.series.find((p) => p.date === '2025-01')!
     expect(jan.price).toBe(30.28)
     expect(jan.avg12).toBeCloseTo(d.baseline, 3)
+    const last = d.series.filter((p) => p.avg12 !== null).pop()!
+    expect(last.date).toBe('2026-01')
+    expect(last.avg12).toBeCloseTo(d.current, 3)
+    expect(d.series.slice(-6).every((p) => p.avg12 === null)).toBe(true)
   })
 
   test('Alaska: unpublished 2016 months stay as gaps (and their 12-month averages too)', () => {
@@ -92,15 +102,15 @@ describe('buildElectricitySeries (recorded EIA rows)', () => {
   test('U.S. average', () => {
     const d = buildElectricitySeries(ROWS, 'US')
     expect(d).toMatchObject({ state: 'US', stateName: 'U.S.', baselineMonthPrice: 15.94, latestMonthPrice: 18.31 })
-    expect(d.change).toBeCloseTo((mean12('US', '2025-08', '2026-07') / mean12('US', '2024-02', '2025-01') - 1) * 100, 1)
+    expect(d.change).toBeCloseTo((mean12('US', '2025-08', '2026-07') / mean12('US', '2024-08', '2025-07') - 1) * 100, 1)
   })
 
   test('no Jan 2025 price, or no full 12 months before it → throws (never a made-up baseline)', () => {
     const late = ROWS.filter((r) => r.stateid === 'ME' && r.period >= '2025-02')
     expect(() => buildElectricitySeries(late, 'ME')).toThrow()
-    const short = ROWS.filter((r) => r.stateid === 'ME' && r.period >= '2024-03')
+    const short = ROWS.filter((r) => r.stateid === 'ME' && r.period >= '2024-09')
     expect(() => buildElectricitySeries(short, 'ME')).toThrow(/12 months/)
-    const gap = ROWS.filter((r) => !(r.stateid === 'ME' && r.period === '2024-06'))
+    const gap = ROWS.filter((r) => !(r.stateid === 'ME' && r.period === '2024-10'))
     expect(() => buildElectricitySeries(gap, 'ME')).toThrow(/12 months/)
     expect(() => buildElectricitySeries(ROWS, 'PR')).toThrow(/No EIA residential electricity price/)
   })
@@ -149,6 +159,7 @@ describe('validation (sanity ranges: 5–60 ¢/kWh, −50…+100 %)', () => {
     ['price too high', { current: 75 }],
     ['price too low', { baseline: 2 }],
     ['older seasonally adjusted payload (no method)', { method: undefined }],
+    ['older 12-months-ending-Jan-2025 payload', { method: 'avg12' }],
     ['change out of range', { change: 140 }],
     ['usage implausible', { usageKwh: 9000 }],
     ['no series', { series: [] }],
@@ -185,12 +196,12 @@ describe('states and paging', () => {
 })
 
 describe('snapshot + card', () => {
-  test('national comparison over the same 12-month windows (ending Jan 2025 → ending the local latest month)', () => {
+  test('national comparison over the same 12-month windows (centered on Jan 2025 → ending the local latest month)', () => {
     const me = buildElectricitySeries(ROWS, 'ME')
     const us = buildElectricitySeries(ROWS, 'US')
     const e = withNationalElectricity(me, us)
-    const at = (d: string) => us.series.find((p) => p.date === d)!.avg12!
-    expect(e.nationalChange).toBeCloseTo((at('2026-07') / at('2025-01') - 1) * 100, 2)
+    expect(e.nationalChange).toBeCloseTo((mean12('US', '2025-08', '2026-07') / mean12('US', '2024-08', '2025-07') - 1) * 100, 2)
+    expect(e.nationalChange).toBeCloseTo(us.change, 2)
     expect(e.nationalSeries).toHaveLength(us.series.length)
   })
 
@@ -209,11 +220,11 @@ describe('snapshot + card', () => {
     const card = buildElectricityCard(s)
     expect(card.status).toBe('ok')
     expect(card.value).toBe(`${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh`)
-    expect(card.valueNote).toBe('avg, last 12 mo')
-    const expected = Math.round(((mean12('ME', '2025-08', '2026-07') - mean12('ME', '2024-02', '2025-01')) * e.usageKwh!) / 100)
+    expect(card.valueNote).toBe('12-mo avg')
+    const expected = Math.round(((mean12('ME', '2025-08', '2026-07') - mean12('ME', '2024-08', '2025-07')) * e.usageKwh!) / 100)
     expect(s.dollarImpact!.electricity).toBe(expected)
     expect(card.inline).toBe(`≈ +$${expected}/mo`)
-    expect(card.secondary).toBe(`+${e.change.toFixed(1)}% vs 12 mo to Jan 2025 · U.S. +${e.nationalChange!.toFixed(1)}%`)
+    expect(card.secondary).toBe(`+${e.change.toFixed(1)}% vs yr centered on Jan '25 · U.S. +${e.nationalChange!.toFixed(1)}%`)
     expect(card.sourceLine).toBe('Maine · EIA · Jul 2026')
     expect(card.info.join(' ')).toContain("average Maine home's monthly use (532 kWh, 12-mo avg Aug 2025–Jul 2026)")
     expect(card.info.join(' ')).toContain('Latest month as published: 32.4¢/kWh in Jul 2026')

@@ -216,7 +216,12 @@ describe('chart provenance', () => {
     const input = getChartInput('electricity', snap)
     const e = snap.electricity.data!
     expect(input.headline?.pct).toBe(e.change)
-    expect(input.data[input.data.length - 1]).toEqual({ date: e.latestPeriod, avg12: e.current, price: e.latestMonthPrice })
+    // The 12-month average is plotted at its window's center month: the latest month has no average yet, and the
+    // line's last point (6 months earlier) is the card's number; its Jan 2025 point is the baseline
+    expect(input.data[input.data.length - 1]).toEqual({ date: e.latestPeriod, avg12: null, price: e.latestMonthPrice })
+    const lastAvg = input.data.filter(p => typeof p.avg12 === 'number').pop()!
+    expect(lastAvg.avg12).toBe(e.current)
+    expect(input.data.find(p => p.date === '2025-01')!.avg12).toBe(e.baseline)
     expect(Object.keys(input.nationalData[0]).sort()).toEqual(['avg12', 'date'])
     render(<EraChart config={config} data={input.data} nationalData={input.nationalData} provenance={input.provenance}
       nationalLabel={input.nationalLabel} info={input.info} />)

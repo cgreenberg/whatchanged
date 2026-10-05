@@ -204,7 +204,7 @@ describe('client metric definitions', () => {
   })
 
   test('footers carry source · geography · window · as-of · adjustment', () => {
-    expect(liveFooter('elec', null)).toBe('EIA average residential electricity price · statewide · 12-month average price vs the 12 months ending Jan 2025 · not loaded · no seasonal adjustment needed')
+    expect(liveFooter('elec', null)).toBe('EIA average residential electricity price · statewide · latest 12-month average price vs the 12 months centered on Jan 2025 (Aug 2024–Jul 2025) · not loaded · no seasonal adjustment needed')
     expect(liveFooter('gas', null)).toMatch(/not seasonally adjusted$/)
   })
 })

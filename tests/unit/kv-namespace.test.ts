@@ -20,8 +20,8 @@ afterEach(() => {
   kv.clearMemCache()
 })
 
-test('prefix is wc2:', () => {
-  expect(kv.KEY_PREFIX).toBe('wc2:')
+test('prefix is wc3:', () => {
+  expect(kv.KEY_PREFIX).toBe('wc3:')
 })
 
 test('every Redis key touched (get/set/del/incr, envelope, lastgood, failed, missing, budget) is prefixed', async () => {
@@ -35,21 +35,21 @@ test('every Redis key touched (get/set/del/incr, envelope, lastgood, failed, mis
   await kv.deleteCached('refresh:last-success')
   await kv.tryAcquireUpstream('eia')
   expect(keys.length).toBeGreaterThan(8)
-  expect(keys.filter(k => !k.startsWith('wc2:'))).toEqual([])
-  expect([...store.keys()].filter(k => !k.startsWith('wc2:'))).toEqual([])
-  expect(keys).toContain('wc2:bls:cpi:0000:all')
-  expect(keys).toContain('wc2:bls:cpi:0000:all:lastgood')
-  expect(keys).toContain('wc2:eia:gas:bad:failed')
-  expect(keys.some(k => k.startsWith('wc2:budget:eia:'))).toBe(true)
+  expect(keys.filter(k => !k.startsWith('wc3:'))).toEqual([])
+  expect([...store.keys()].filter(k => !k.startsWith('wc3:'))).toEqual([])
+  expect(keys).toContain('wc3:bls:cpi:0000:all')
+  expect(keys).toContain('wc3:bls:cpi:0000:all:lastgood')
+  expect(keys).toContain('wc3:eia:gas:bad:failed')
+  expect(keys.some(k => k.startsWith('wc3:budget:eia:'))).toBe(true)
 })
 
 test('in-memory fallback is namespaced consistently and round-trips logical keys', async () => {
   kv.__setKvClientForTests(null)
   await kv.setCached('some:key', { a: 1 }, 100)
   expect(await kv.getCached('some:key')).toEqual({ a: 1 })
-  expect(await kv.getCached('wc2:some:key')).toEqual({ a: 1 }) // already-prefixed is not double-prefixed
+  expect(await kv.getCached('wc3:some:key')).toEqual({ a: 1 }) // already-prefixed is not double-prefixed
   await kv.deleteCached('some:key')
   expect(await kv.getCached('some:key')).toBeNull()
-  expect(kv.nsKey('x')).toBe('wc2:x')
-  expect(kv.nsKey('wc2:x')).toBe('wc2:x')
+  expect(kv.nsKey('x')).toBe('wc3:x')
+  expect(kv.nsKey('wc3:x')).toBe('wc3:x')
 })

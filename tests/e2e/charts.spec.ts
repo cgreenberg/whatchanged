@@ -78,8 +78,8 @@ test.describe('Charts section', () => {
     const chart = page.getByTestId('chart-electricity')
     const cardSecondary = (await page.getByTestId('stat-card-electricity').getByTestId('stat-secondary').textContent())!
     const pct = (await chart.getByTestId('chart-headline-pct').textContent())!.trim()
-    expect(cardSecondary.startsWith(`${pct} vs 12 mo to Jan 2025`)).toBe(true)
-    await expect(chart.getByTestId('chart-headline-window')).toHaveText('12-month average vs the 12 months to Jan 2025')
+    expect(cardSecondary.startsWith(`${pct} vs yr centered on Jan '25`)).toBe(true)
+    await expect(chart.getByTestId('chart-headline-window')).toHaveText('latest 12-month average vs the 12 months centered on Jan 2025')
     // both lines carry their latest value at the right edge
     await expect(chart.getByTestId('end-label-local')).toBeVisible()
     await expect(chart.getByTestId('end-label-local-1')).toBeVisible()

@@ -30,7 +30,7 @@ export interface NationalData {
   gas: NationalMetric | null
   groceries: NationalMetric | null
   shelter: NationalMetric | null
-  /** EIA U.S. average residential electricity: 12-month average price ¢/kWh and its % change vs the 12 months ending Jan 2025. */
+  /** EIA U.S. average residential electricity: 12-month average price ¢/kWh and its % change vs the 12 months centered on Jan 2025 (Aug 2024–Jul 2025). */
   electricity: { current: number; change: number; latestPeriod: string; stale: boolean } | null
 }
 

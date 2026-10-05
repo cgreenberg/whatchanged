@@ -12,7 +12,7 @@
  * is therefore EXCLUDED from deletion unless --include-lastgood is passed —
  * deleting it removes the fallback that keeps cards populated during an outage.
  * Matching `:failed` negative-cache entries are deleted too (glob ending in `*`).
- * Patterns are logical keys; the `wc2:` namespace prefix (KEY_PREFIX in kv.ts) is added
+ * Patterns are logical keys; the `wc3:` namespace prefix (KEY_PREFIX in kv.ts) is added
  * automatically, so only namespaced keys can ever match.
  * Needs KV_REST_API_URL and KV_REST_API_TOKEN (env or .env.local).
  */

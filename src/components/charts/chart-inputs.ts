@@ -3,6 +3,7 @@ import type { ChartConfig } from '@/lib/charts/chart-config'
 import type { Row } from '@/lib/charts/chart-data'
 import { cpiGeoLabel, type Provenance } from '@/lib/provenance'
 import { fmtDay, fmtMonthYear, DATE_UNAVAILABLE } from '@/lib/format'
+import { ELECTRICITY_BASELINE_LABEL } from '@/lib/baseline'
 import {
   HOUSING_NOTE, SHELTER_SHORT_NOTE, gasCaveatFor, gasSourceInfo, isMonthDatedGas, cpiItemStale,
   ELECTRICITY_SOURCE, ELECTRICITY_SOURCE_URL, ELECTRICITY_METHOD_NOTE, ELECTRICITY_ADJUSTMENT, electricityPlace, fmtCents, fmtWindow,
@@ -134,7 +135,7 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
           ? {
               headline: {
                 pct: e.change,
-                window: `12-month average vs the 12 months to ${fmtMonthYear(e.baselinePeriod)}`,
+                window: `latest 12-month average vs ${ELECTRICITY_BASELINE_LABEL}`,
                 detail: `${fmtCents(e.current)} (${fmtWindow(e.currentFrom, e.latestPeriod)}) vs ${fmtCents(e.baseline)} (${fmtWindow(e.baselineFrom, e.baselinePeriod)})`,
               },
             }

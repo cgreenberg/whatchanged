@@ -70,10 +70,10 @@ describe.each([
     const expected = Math.round(((e.current - e.baseline) * e.usageKwh!) / 100)
     expect(snap.dollarImpact!.electricity).toBe(expected)
     expect(text(card('electricity'), 'stat-value')).toBe(`${e.current.toFixed(1)}¢/kWh`)
-    expect(text(card('electricity'), 'stat-value-note')).toBe('avg, last 12 mo')
+    expect(text(card('electricity'), 'stat-value-note')).toBe('12-mo avg')
     expect(text(card('electricity'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
     expect(text(card('electricity'), 'stat-secondary')).toBe(
-      `${fmtSignedPct(e.change)} vs 12 mo to Jan 2025 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
+      `${fmtSignedPct(e.change)} vs yr centered on Jan '25 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
     expect(text(card('electricity'), 'stat-source')).toBe(`${e.stateName} · EIA · ${fmtMonthYear(e.latestPeriod)}`)
     // ⓘ: the dollar basis, both 12-month windows, the latest single month and why full years are compared
     const info = text(card('electricity'), 'stat-info')
@@ -200,7 +200,7 @@ describe('missing or out-of-range sources render "Data unavailable"', () => {
     snap.electricity.data!.change = -3.2
     snap.dollarImpact!.electricity = null
     render(<HeroCards snapshot={snap} />)
-    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% vs 12 mo to Jan 2025/)
+    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% vs yr centered on Jan '25/)
     expect(card('electricity')).toHaveAttribute('data-direction', 'down')
     expect(within(card('electricity')).queryByTestId('stat-inline')).toBeNull()
   })

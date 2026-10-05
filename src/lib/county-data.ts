@@ -7,6 +7,8 @@ import type { MapMetrics } from '@/lib/api/map-metrics'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthYear, fmtDay } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
+import { notCurrentText } from '@/lib/rent-range'
+import { ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO, ELECTRICITY_BASELINE_LABEL, ELECTRICITY_BASELINE_SHORT } from '@/lib/baseline'
 
 /** Site-wide baseline month (Jan 20 2025 → monthly Zillow data use the January 2025 value). */
 export const BASELINE_MONTH = '2025-01'
@@ -279,7 +281,7 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     const e = st ? m.electricity?.[st] : undefined
     if (!e) return null
     return {
-      value: e.pct, text: `${fmtPct(e.pct)} vs 12 mo to ${fmtMonthYear(BASELINE_MONTH)}`, area: `${e.label} statewide`,
+      value: e.pct, text: `${fmtPct(e.pct)} vs ${ELECTRICITY_BASELINE_SHORT}`, area: `${e.label} statewide`,
       detail: `${e.cents.toFixed(1)}¢/kWh avg, 12 months to ${fmtMonthYear(e.asOf)} · EIA${e.stale ? STALE_COPY : ''}`, asOf: e.asOf,
     }
   }
@@ -322,7 +324,7 @@ export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
   if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
-  return `EIA average residential electricity price · statewide · 12-month average price vs the 12 months ending ${fmtMonthYear(BASELINE_MONTH)} · ${latest} · no seasonal adjustment needed`
+  return `EIA average residential electricity price · statewide · latest 12-month average price vs ${ELECTRICITY_BASELINE_LABEL} (${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}) · ${latest} · no seasonal adjustment needed`
 }
 
 export function metricFooter(def: MetricDef, meta: LocalMeta | null, geography = 'county'): string {
@@ -396,6 +398,15 @@ export interface ZipPanelOverrides {
   rent?: { text: string; area: string }
 }
 
+/** Why the county's own Zillow series isn't on the panel (same reasons as the card), short form. */
+function metroStandInWhy(r: NonNullable<EconomicSnapshot['rent']>): string {
+  const county = (r.countyName ?? '').replace(/,\s*[A-Z]{2}$/, '').trim() || 'this county'
+  if (r.countyWhy === 'not-current') return notCurrentText(county, r.countyNotCurrent)
+  if (r.countyWhy === 'too-new') return `Zillow's series for ${county} is too new to measure ${sinceBaseline(null)}`
+  if (r.countyWhy === 'no-baseline') return `Zillow's series for ${county} has no ${fmtMonthYear(BASELINE_MONTH)} value`
+  return 'no Zillow county series'
+}
+
 export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPanelOverrides {
   if (!s) return {}
   const out: ZipPanelOverrides = {}
@@ -411,7 +422,7 @@ export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPa
   if (r && r.level === 'metro' && Number.isFinite(r.pct)) {
     out.rent = {
       text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,
-      area: `${r.geoName} (no Zillow county series; the metro's is used)`,
+      area: `${r.geoName} (${metroStandInWhy(r)}; the metro's is used)`,
     }
   }
   return out

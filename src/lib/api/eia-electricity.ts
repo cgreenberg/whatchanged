@@ -7,15 +7,26 @@
 // summer; Georgia's July price runs ~17% above its January price in a typical year), so comparing
 // one month with another mostly measures the calendar. The headline therefore compares 12-MONTH
 // AVERAGE prices: the average of the latest 12 published monthly prices vs the average of the 12
-// months ending January 2025 (Feb 2024 – Jan 2025). Every season is in both windows, so no
+// months CENTERED on January 2025 (Aug 2024 – Jul 2025). Every season is in both windows, so no
 // seasonal model is needed and nothing is revised when a new month is published (the baseline
 // window is fixed). The big number is the latest 12-month average price.
+//
+// Why a centered baseline window: a window ENDING Jan 2025 (Feb 2024 – Jan 2025) is centered on ~Aug 2024,
+// so about five months of the measured change happened before Jan 2025. A 12-month window can't be centered
+// exactly on Jan 20; of the two candidates, Jul 2024 – Jun 2025 has its midpoint at ~Jan 1, 2025 (19 days
+// before Jan 20) and Aug 2024 – Jul 2025 at ~Jan 30, 2025 (10 days after), so Aug 2024 – Jul 2025 is used.
+//
+// The graph's 12-month average line is plotted at each window's CENTER month (window t−5 … t+6 at month t),
+// so the point at Jan 2025 is the baseline and the line's last point (6 months before the latest month) is the
+// latest 12-month average — the card's two numbers sit on the line.
 //
 // Dollars: (12-mo average price now − 12-mo average price in the baseline window) × the state's
 // average residential use per customer per month over the latest 12 complete months
 // (sales ÷ customers) — a stable, non-seasonal usage figure.
 
-import { BASELINE_MONTH } from '@/lib/baseline'
+import {
+  BASELINE_MONTH, ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO, ELECTRICITY_CENTER_LAG, electricityCenterOf,
+} from '@/lib/baseline'
 
 export const EIA_ELECTRICITY_API = 'https://api.eia.gov/v2/electricity/retail-sales/data/'
 /** First month fetched: a 10-year graph whose 12-month average line starts with the graph (2016-01 needs 2015-02). */
@@ -24,8 +35,11 @@ export const ELECTRICITY_SERIES_START = '2015-01'
 export const ELECTRICITY_CHART_START = '2016-01'
 /** Months in each averaging window. */
 export const ELECTRICITY_AVG_MONTHS = 12
-/** Marks payloads computed with the 12-month-average method (older cached SA payloads lack it → refetched). */
-export const ELECTRICITY_METHOD = 'avg12' as const
+/** Marks payloads computed with the centered-baseline 12-month-average method (older cached payloads → refetched). */
+export const ELECTRICITY_METHOD = 'avg12c' as const
+/** Baseline window: the 12 months centered on Jan 2025 (midpoint ~Jan 30, 2025; see the header and baseline.ts). */
+export { ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO }
+export { ELECTRICITY_CENTER_LAG, electricityCenterOf }
 export const ELECTRICITY_TIMEOUT_MS = 10_000
 /** EIA API v2 returns at most 5,000 rows per request. */
 export const EIA_MAX_ROWS = 5000
@@ -57,7 +71,10 @@ export interface ElectricityPoint {
   date: string // YYYY-MM
   /** Published average residential price, ¢/kWh (null: month not published). */
   price: number | null
-  /** Average of the 12 published monthly prices ending this month, ¢/kWh (null: a month missing). */
+  /**
+   * Average of the 12 published monthly prices CENTERED on this month (this month − 5 … + 6), ¢/kWh; null when a
+   * month is missing or not yet published (the last 6 months of the series).
+   */
   avg12: number | null
 }
 
@@ -70,7 +87,7 @@ export interface ElectricitySeriesData {
   current: number
   currentFrom: string
   latestPeriod: string
-  /** Average price over the 12 months ending Jan 2025 (¢/kWh): `baselineFrom`…`baselinePeriod`. */
+  /** Average price over the 12 months centered on Jan 2025 (¢/kWh): `baselineFrom`…`baselinePeriod` (Aug 2024–Jul 2025). */
   baseline: number
   baselineFrom: string
   baselinePeriod: string
@@ -83,7 +100,7 @@ export interface ElectricitySeriesData {
   usageKwh: number | null
   usageFrom?: string
   usageTo?: string
-  /** Monthly series since ELECTRICITY_CHART_START (published price + trailing 12-month average). */
+  /** Monthly series since ELECTRICITY_CHART_START (published price + centered 12-month average). */
   series: ElectricityPoint[]
 }
 
@@ -152,7 +169,7 @@ const round = (v: number, d: number) => {
 
 /**
  * Pure parser (exported for tests): EIA rows for ONE state (any order) → series data.
- * Throws when the state lacks a complete 12-month window ending Jan 2025 or ending at its latest month.
+ * Throws when the state lacks a complete baseline window (Aug 2024–Jul 2025) or a complete latest 12 months.
  */
 export function buildElectricitySeries(rows: EiaElectricityRow[], state: string): ElectricitySeriesData {
   const st = state.toUpperCase()
@@ -164,12 +181,13 @@ export function buildElectricitySeries(rows: EiaElectricityRow[], state: string)
   const price = months.map((m) => num(byPeriod.get(m)?.price))
   const avg12 = trailingAverage(price)
 
-  const bi = months.indexOf(BASELINE_MONTH)
-  if (bi < 0 || price[bi] === null) throw new Error(`No Jan 2025 EIA electricity price for ${st}`)
-  if (avg12[bi] === null) throw new Error(`No complete 12 months of EIA electricity prices ending Jan 2025 for ${st}`)
+  const ji = months.indexOf(BASELINE_MONTH)
+  if (ji < 0 || price[ji] === null) throw new Error(`No Jan 2025 EIA electricity price for ${st}`)
+  const bi = months.indexOf(ELECTRICITY_BASELINE_TO) // window ELECTRICITY_BASELINE_FROM…ELECTRICITY_BASELINE_TO
+  if (bi < 0 || avg12[bi] === null) throw new Error(`No complete 12 months of EIA electricity prices centered on Jan 2025 for ${st}`)
   let li = months.length - 1
   while (li >= 0 && price[li] === null) li--
-  if (li <= bi) throw new Error(`No EIA electricity price after Jan 2025 for ${st}`)
+  if (li <= bi) throw new Error(`No EIA electricity price after ${ELECTRICITY_BASELINE_TO} for ${st}`)
   if (avg12[li] === null) throw new Error(`No complete latest 12 months of EIA electricity prices for ${st}`)
 
   const usage = averageUsage(
@@ -194,12 +212,14 @@ export function buildElectricitySeries(rows: EiaElectricityRow[], state: string)
     baselinePeriod: months[bi],
     change: round(((current - baseline) / baseline) * 100, 2),
     latestMonthPrice: price[li]!,
-    baselineMonthPrice: price[bi]!,
+    baselineMonthPrice: price[ji]!,
     usageKwh: usage ? round(usage.kwh, 1) : null,
     ...(usage ? { usageFrom: usage.from, usageTo: usage.to } : {}),
     series: months.slice(start, li + 1).map((date, k) => {
-      const i = start + k
-      return { date, price: price[i], avg12: avg12[i] === null ? null : round(avg12[i]!, 3) }
+      // centered: the window ending 6 months later (null past the latest complete window)
+      const w = start + k + ELECTRICITY_CENTER_LAG
+      const v = w <= li ? avg12[w] : null
+      return { date, price: price[start + k], avg12: v === null ? null : round(v, 3) }
     }),
   }
 }

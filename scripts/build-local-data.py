@@ -579,6 +579,10 @@ def main():
     _early = lambda i: np.isfinite(cr[i, :_first_ok + 1]).any()
     zori_rows = {f for i, f in enumerate(ck) if _current(i) and not _early(i)}
     zori_nobase = {f for i, f in enumerate(ck) if _current(i) and _early(i) and not np.isfinite(cr[i, _bi])}
+    # Rows Zillow publishes but that stop before the file's latest month (e.g. New Kent VA: one month, Jul 2026):
+    # {fips: {"n": months with a value, "last": last month with a value}} so the card can say "isn't current".
+    zori_stale = {f: {"n": int(np.isfinite(cr[i]).sum()), "last": crm[int(np.flatnonzero(np.isfinite(cr[i]))[-1])]}
+                  for i, f in enumerate(ck) if np.isfinite(cr[i]).any() and not np.isfinite(cr[i, -1])}
     cr_sa, cr_ok, cr_factors = seasonal_adjust(cr, crm, return_factors=True)
     # Short series (Zillow coverage that starts in 2022-2023, e.g. Androscoggin ME) get their state's typical
     # seasonal pattern instead of being dropped; labeled wherever they are shown (rentSaPool / saPool).
@@ -728,6 +732,8 @@ def main():
                    "tooNew": sorted(f for f in zori_rows if f in counties and f not in cr_out and "rent" not in counties[f]),
                    # Counties whose ZORI row reaches back past POOL_MAX_START but has no Jan 2025 value to measure from
                    "noBaseline": sorted(f for f in zori_nobase if f in counties and f not in cr_out and "rent" not in counties[f]),
+                   # Counties whose ZORI row stops before the file's latest month (not current): months + last month
+                   "notCurrent": {f: v for f, v in sorted(zori_stale.items()) if f in counties and f not in cr_out and "rent" not in counties[f]},
                    # Counties whose own series measures since Jan 2025 but lands outside meta.pctRange: not shown anywhere
                    "outOfRange": sorted(f for f in rent_out_of_range if f in counties)},
                   fh, separators=(",", ":"))

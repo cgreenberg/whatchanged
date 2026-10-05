@@ -1,5 +1,6 @@
 // Client-safe facts about the static (bundled) gas sources — names, links, license — shared by the ladder
 // config (src/lib/resolution/ladders.ts, which never imports data files) and src/lib/static-gas.ts.
+import { monthOlderThan } from '@/lib/staleness'
 
 export const DCRA_SOURCE = 'Alaska DCRA Community Fuel Price Survey'
 export const DCRA_PUBLISHER = 'Alaska DCCED, Division of Community and Regional Affairs'
@@ -21,6 +22,15 @@ export const DACO_DATA_URL =
   'https://docs.pr.gov/files/DACO/Gasolina/Precios%20Promedio%20Mensual%20al%20Consumidor/Precios-Promedios-de-Gasolina-y-Diesel%20(1).xlsx'
 /** Monthly, published a few weeks after the month: older than this = a missed month. */
 export const DACO_STALE_DAYS = 75
+
+/**
+ * true when a bundled static gas series (Alaska DCRA survey / Puerto Rico DACO) is overdue: its latest survey or month
+ * ended more than DCRA_STALE_DAYS / DACO_STALE_DAYS before `now`. The card's ladder then falls to the next rung, and
+ * the county map does the same (one rule for both).
+ */
+export function isStaticGasStale(kind: 'dcra' | 'daco', latestDate: string, now: Date = new Date()): boolean {
+  return monthOlderThan(latestDate.slice(0, 7), kind === 'dcra' ? DCRA_STALE_DAYS : DACO_STALE_DAYS, now)
+}
 
 /** "1 station surveyed (University Chevron)." / "3 stations surveyed." / "Station count not published." */
 export function dcraStationsText(place: string, stations?: number, retailer?: string): string {

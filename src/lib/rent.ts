@@ -7,7 +7,7 @@
 import countyRent from '@/lib/data/county-rent.json'
 import metroRent from '@/lib/data/metro-rent.json'
 import type { RentData } from '@/types'
-import { RENT_PCT_RANGE } from '@/lib/rent-range'
+import { RENT_PCT_RANGE, type NotCurrentInfo } from '@/lib/rent-range'
 
 interface CountyRentRow {
   pct: number
@@ -29,19 +29,28 @@ interface CountyRentFile {
   tooNew?: string[]
   /** Counties whose Zillow series reaches back past Jan 2024 but has no Jan 2025 value to measure from. */
   noBaseline?: string[]
+  /** Counties whose Zillow series stops before the file's latest month: months with a value + the last one. */
+  notCurrent?: Record<string, NotCurrentInfo>
 }
 
 const FILE = countyRent as unknown as CountyRentFile
 const TOO_NEW = new Set(FILE.tooNew ?? [])
 const NO_BASELINE = new Set(FILE.noBaseline ?? [])
 const OUT_OF_RANGE = new Set(FILE.outOfRange ?? [])
+const NOT_CURRENT: Record<string, NotCurrentInfo> = FILE.notCurrent ?? {}
+
+/** The county's own Zillow series when it stops before Zillow's latest month (else undefined). */
+export function countyNotCurrent(countyFips: string | null | undefined): NotCurrentInfo | undefined {
+  return countyFips ? NOT_CURRENT[countyFips] : undefined
+}
 
 /** Why a county's own Zillow series isn't usable, when Zillow publishes a current row for it. */
-function countySeriesWhy(countyFips: string): 'too-new' | 'no-baseline' | 'out-of-range' | null {
+function countySeriesWhy(countyFips: string): 'too-new' | 'no-baseline' | 'out-of-range' | 'not-current' | null {
   return TOO_NEW.has(countyFips) ? 'too-new'
     : NO_BASELINE.has(countyFips) ? 'no-baseline'
       : OUT_OF_RANGE.has(countyFips) ? 'out-of-range'
-        : null
+        : NOT_CURRENT[countyFips] ? 'not-current'
+          : null
 }
 
 interface MetroRentFile {
@@ -70,12 +79,15 @@ export function rentMonthlyChange(curRent: number, pct: number): number {
 /** County rent lookup with the reason when there is no usable figure (for the resolution trace). */
 export type CountyRentLookup =
   | { data: RentData }
-  | { data: null; why: 'no-county' | 'no-series' | 'too-new' | 'no-baseline' | 'out-of-range' | 'malformed' | 'flagged' }
+  | { data: null; why: 'no-county' | 'no-series' | 'too-new' | 'no-baseline' | 'not-current' | 'out-of-range' | 'county-out-of-range' | 'malformed' | 'flagged'; notCurrent?: NotCurrentInfo }
 
 export function lookupCountyRent(countyFips: string | null | undefined): CountyRentLookup {
   if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }
   const row = FILE.counties?.[countyFips]
-  if (!row) return { data: null, why: countySeriesWhy(countyFips) ?? 'no-series' }
+  if (!row) {
+    const why = countySeriesWhy(countyFips) ?? 'no-series'
+    return { data: null, why, ...(why === 'not-current' ? { notCurrent: NOT_CURRENT[countyFips] } : {}) }
+  }
   const bad = checkRow(row)
   if (bad) return { data: null, why: bad }
   const { pct, baseRent, curRent, asOf, name, flagged, note, saPool } = row
@@ -111,7 +123,7 @@ function checkRow(row: Omit<CountyRentRow, 'note'>): 'out-of-range' | 'malformed
 
 function countyWhyForMetro(countyFips: string): NonNullable<RentData['countyWhy']> {
   const w = countySeriesWhy(countyFips)
-  return w === 'too-new' || w === 'no-baseline' ? w : 'none'
+  return w === 'too-new' || w === 'no-baseline' || w === 'not-current' ? w : 'none'
 }
 
 /** The county's metro (OMB 2020 CBSA) when Zillow has no county series: CBSA code + title, without fetching. */
@@ -128,6 +140,9 @@ export function metroForCounty(countyFips: string | null | undefined): { cbsa: s
 export function lookupMetroRent(countyFips: string | null | undefined, countyName?: string): CountyRentLookup {
   if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }
   if (METRO.outOfRangeCounties?.[countyFips]) return { data: null, why: 'out-of-range' }
+  // The county's OWN series is outside the plausible range: withheld, and its metro doesn't stand in (the build
+  // gives such counties no metro row), so the trace says why instead of "not in a metro"
+  if (countySeriesWhy(countyFips) === 'out-of-range') return { data: null, why: 'county-out-of-range' }
   const m = metroForCounty(countyFips)
   if (!m) return { data: null, why: 'no-series' }
   const row = METRO.metros[m.cbsa]
@@ -142,6 +157,7 @@ export function lookupMetroRent(countyFips: string | null | undefined, countyNam
       level: 'metro',
       cbsa: m.cbsa,
       countyWhy: countyWhyForMetro(countyFips),
+      ...(NOT_CURRENT[countyFips] ? { countyNotCurrent: NOT_CURRENT[countyFips] } : {}),
       ...(countyName ? { countyName } : {}),
       pct,
       baseRent,

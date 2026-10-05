@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { fmtSignedDollars, fmtSignedPct, fmtDollars, fmtMonthYear, fmtMonthShort, fmtDay, monthsBetween } from '@/lib/format'
 import {
-  BASELINE_MONTH, BASELINE_MONTH_LABEL, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
+  BASELINE_MONTH_LABEL, ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO, electricityCenterOf, BASELINE_DAY_LABEL, gasBaselineIndex, gasNationalMatching,
   monthlyBaselineIndex,
 } from '@/lib/baseline'
 import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
@@ -123,9 +123,13 @@ export function electricityGeoLine(e: { state: string; stateName: string; curren
   return `${electricityPlace(e, 'short')} · ${e.current.toFixed(1)}¢/kWh (${fmtMonthShort(e.latestPeriod)})`
 }
 
-/** "vs yr to Jan '25": the electricity baseline is the 12-month window ending Jan 2025, not a month (short: shares a row with "Natl"). */
-export function electricityVsLabel(baselinePeriod: string | null | undefined): string {
-  return `vs yr to ${fmtMonthShort(baselinePeriod ?? BASELINE_MONTH)}`
+/**
+ * "vs Aug'24–Jul'25": electricity's own window — the latest 12-month average vs the 12 months centered on Jan 2025,
+ * not "since" a month. Named by its months: it shares a 30-character row with "Natl: −10.0%".
+ */
+export function electricityVsLabel(): string {
+  const m = (ym: string) => fmtMonthShort(ym).replace(' ', '')
+  return `vs ${m(ELECTRICITY_BASELINE_FROM)}–${m(ELECTRICITY_BASELINE_TO)}`
 }
 
 /** Basis of the electricity $/mo pill: the state's average residential use. */
@@ -364,9 +368,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
         })
       : null
 
-  // ── Electricity Sparkline Data (12-month average price, % vs the 12 months ending Jan 2025) ──
+  // ── Electricity Sparkline Data (centered 12-month average price, % vs the 12 months centered on Jan 2025:
+  //    the series plots each average at its window's center month, so the line starts at Jan 2025 = the baseline) ──
   const elecAll = elecData?.series ?? []
-  const elecFrom = elecAll.findIndex((p) => p.date === elecData?.baselinePeriod)
+  const elecFrom = elecData ? elecAll.findIndex((p) => p.date === electricityCenterOf(elecData.baselinePeriod)) : -1
   const elecPairs = (elecFrom >= 0 ? elecAll.slice(elecFrom) : [])
     .filter((p): p is typeof p & { avg12: number } => typeof p.avg12 === 'number')
   const elecBase = elecPairs[0]?.avg12 ?? 1
@@ -395,7 +400,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
           height: sparklineBudget({
             sublabel: ELECTRICITY_SUBLABEL,
             extra: elecGeo,
-            metaRows: [[electricityVsLabel(elecData?.baselinePeriod), elecNat]],
+            metaRows: [[electricityVsLabel(), elecNat]],
             note: elecBasis,
           }),
           bounds: elecPadded,
@@ -839,7 +844,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
               {bigNumber(elecData ? fmtSignedPct(elecData.change) : 'N/A')}
               {changePill(elecDollars != null ? `≈ ${fmtSignedDollars(elecDollars, 0)}/mo` : '—', GREEN)}
             </div>
-            {metaRow(electricityVsLabel(elecData?.baselinePeriod), elecNat)}
+            {metaRow(electricityVsLabel(), elecNat)}
             {elecBasis && basisNote(elecBasis)}
           </div>
         </div>

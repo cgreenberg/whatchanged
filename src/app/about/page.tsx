@@ -77,8 +77,8 @@ export default function AboutPage() {
           Shelter (CPI) tabs, and Electricity prices) and, in states where at least 5% of homes heat with
           fuel oil or propane, a fifth: Home heating, with a tab for each fuel that matters there. Each
           graph has timeframe buttons, an optional U.S. comparison line and an ⓘ with the details. A county
-          map colors every county by the change since January 2025 in gas prices, rent, home prices, grocery
-          prices or electricity prices; tap a county to see all five with the area each number covers. Rent
+          map colors every county by the change since January 2025 in gas prices, rent, home prices or grocery
+          prices, or by electricity prices (latest 12 months vs the 12 months centered on January 2025); tap a county to see all five with the area each number covers. Rent
           and home prices are county figures, with month-by-month playback and the biggest increases and
           decreases. Gas, groceries and electricity are published for metro areas, regions or states, not
           counties, so neighboring counties share a color and there is no playback or ranking for them.
@@ -145,7 +145,12 @@ export default function AboutPage() {
           and home values), January 2025; for BLS consumer prices, the January 2025 index, or the nearest
           earlier month for areas BLS doesn&apos;t publish every month (for example December 2024); for the
           Alaska community fuel survey, the January 2025 survey; and for state electricity prices, the
-          average of the 12 months ending January 2025, compared with the latest 12 months.
+          average of the 12 months centered on January 2025 (August 2024–July 2025), compared with the
+          average of the latest 12 months. A full year on each side counts every season once (residential
+          prices swing with the seasons). A 12-month window can&apos;t be centered exactly on January 20: this
+          one&apos;s midpoint is about January 30 (July 2024–June 2025 would be about January 1, further away).
+          A year ending January 2025 would instead be centered on mid-2024 and count months of change from
+          before January 2025.
         </p>
         <p>
           Each card shows its area, source and the month (or, for weekly gas, the week) of its latest data;

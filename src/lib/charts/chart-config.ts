@@ -107,10 +107,10 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'electricity',
     title: 'Electricity prices',
-    description: "EIA average residential electricity price for your state, in cents per kWh. The bold line is the average of the latest 12 monthly prices (the basis of the card's number and % change); the thin line is each month's published price, which swings with the seasons.",
+    description: "EIA average residential electricity price for your state, in cents per kWh. The bold line is a 12-month average plotted at the middle of its 12 months, so its point at Jan 2025 is the baseline (Aug 2024–Jul 2025) and it ends 6 months before the latest month with the latest 12 months' average: the card's two numbers. The thin line is each month's published price, which swings with the seasons.",
     chartType: 'line',
     series: [
-      { dataKey: 'avg12', label: '12-month average', color: METRIC_COLORS.electricity, type: 'monotone' },
+      { dataKey: 'avg12', label: '12-month average (centered)', color: METRIC_COLORS.electricity, type: 'monotone' },
       { dataKey: 'price', label: 'Monthly price', color: METRIC_COLORS.electricity, type: 'monotone', strokeWidth: 1, strokeOpacity: 0.45, endLabel: 'month' },
     ],
     size: 'medium',

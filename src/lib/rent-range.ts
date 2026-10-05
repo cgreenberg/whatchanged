@@ -6,6 +6,22 @@
  */
 export const RENT_PCT_RANGE: readonly [number, number] = [-20, 50]
 
+/** A county's Zillow series that stops before the file's latest month: months with a value and the last one. */
+export interface NotCurrentInfo { n: number; last: string }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+/** "Zillow's series for New Kent County isn't current (one month, Jul 2026)" / "(14 months, through Mar 2026)". */
+export function notCurrentText(county: string, info: NotCurrentInfo | undefined): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(info?.last ?? '')
+  const last = m ? `${MONTHS[Number(m[2]) - 1]} ${m[1]}` : ''
+  const n = info?.n ?? 0
+  const count = n > 0 ? `${n <= 10 ? NUMBER_WORDS[n] : n} month${n === 1 ? '' : 's'}` : ''
+  const detail = count && last ? (n === 1 ? `${count}, ${last}` : `${count}, through ${last}`) : last ? `through ${last}` : ''
+  return `Zillow's series for ${county} isn't current${detail ? ` (${detail})` : ''}`
+}
+
 /** "−20% to +50%". */
 export function rentRangeText(): string {
   const [lo, hi] = RENT_PCT_RANGE

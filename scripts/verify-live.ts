@@ -155,7 +155,7 @@ function checkElectricity(zip: string, snap: Json, elec: Map<string, Map<string,
   if (!elec) return add(zip, 'electricity', 'SKIP', 'EIA electricity not fetched')
   const src = elec.get(e.state)
   if (!src?.size) return add(zip, 'electricity source', 'FAIL', `EIA returned no residential price for ${e.state}`)
-  add(zip, 'electricity baseline period', e.baselinePeriod === '2025-01' && e.baselineFrom === '2024-02' ? 'PASS' : 'FAIL', `${e.baselineFrom}..${e.baselinePeriod}`)
+  add(zip, 'electricity baseline period', e.baselinePeriod === '2025-07' && e.baselineFrom === '2024-08' ? 'PASS' : 'FAIL', `${e.baselineFrom}..${e.baselinePeriod}`)
   // 12-month averages recomputed from EIA's published monthly prices (independent of the site's code)
   const months = (end: string) => {
     const [y, m] = end.split('-').map(Number)
@@ -168,8 +168,8 @@ function checkElectricity(zip: string, snap: Json, elec: Map<string, Map<string,
     const vs = months(end).map((d) => src.get(d))
     return vs.every(isNum) ? (vs as number[]).reduce((a, v) => a + v, 0) / 12 : null
   }
-  const b = avg('2025-01')
-  add(zip, 'electricity baseline (12-mo avg)', isNum(b) && near(e.baseline, b, 0.0051) ? 'PASS' : 'FAIL', `site ${e.baseline} vs EIA ${b?.toFixed(3)} (${e.state}, Feb 2024–Jan 2025)`)
+  const b = avg('2025-07') // the 12 months centered on Jan 2025
+  add(zip, 'electricity baseline (12-mo avg)', isNum(b) && near(e.baseline, b, 0.0051) ? 'PASS' : 'FAIL', `site ${e.baseline} vs EIA ${b?.toFixed(3)} (${e.state}, Aug 2024–Jul 2025)`)
   const l = avg(e.latestPeriod)
   const srcLatest = [...src.keys()].sort().pop()
   if (!isNum(l)) add(zip, 'electricity latest (12-mo avg)', 'FAIL', `EIA lacks 12 months ending ${e.latestPeriod} for ${e.state}`)

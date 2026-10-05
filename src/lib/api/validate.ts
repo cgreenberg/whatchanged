@@ -43,7 +43,7 @@ export function isValidGasSeries(d: GasSeriesData | null | undefined): boolean {
 /** EIA residential electricity: price 5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo (or none). */
 export function isValidElectricity(d: ElectricitySeriesData | null | undefined): boolean {
   if (!d || !Array.isArray(d.series) || !d.series.length) return false
-  // Older cached payloads (seasonally adjusted method) lack `method` → invalid → refetched.
+  // Older cached payloads (seasonally adjusted, or the 12-months-ending-Jan-2025 'avg12' baseline) → invalid → refetched.
   if (d.method !== ELECTRICITY_METHOD) return false
   for (const v of [d.current, d.baseline, d.latestMonthPrice, d.baselineMonthPrice]) {
     if (!inRange(v, ELECTRICITY_PRICE_RANGE)) return false

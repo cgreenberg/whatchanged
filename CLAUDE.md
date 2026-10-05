@@ -193,14 +193,21 @@ closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx
 | Rent (new leases) | Zillow ZORI county (else metro; a flagged-outlier metro never stands in) % since Jan 2025, SA by whatchanged; range −20…+50 shared by build and runtime (`src/lib/rent-range.ts` = `meta.pctRange`) | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
 | ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without SEHA (validated on its own: `isValidRentIndexChange`) or when CPI is national. Rent base (`rentBase` ladder, `getCensusData`): zip ACS → PO-box donor → nearest zip in the county with a Census rent (≤ 100 mi) → county median → state median, always labeled; never a national constant (`computeShelterImpact`) |
 | Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`); **null** when CPI is national (fallback or territories) |
-| Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = **average of the latest 12 published monthly prices** ("avg, last 12 mo"); "+x% vs 12 mo before Feb 2025" = that average vs the average of Feb 2024–Jan 2025; card "U.S. +y%" = EIA U.S. average, same windows | `round((current − baseline) × usageKwh / 100)` $/mo (change in the 12-month average price), `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
+| Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = **average of the latest 12 published monthly prices** ("avg, last 12 mo"); "+x% vs yr centered on Jan '25" = that average vs the average of Aug 2024–Jul 2025 (the 12 months centered on Jan 2025); card "U.S. +y%" = EIA U.S. average, same windows | `round((current − baseline) × usageKwh / 100)` $/mo (change in the 12-month average price), `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
 
 **Electricity: 12-month averages** (`src/lib/api/eia-electricity.ts`, round 11): residential prices are seasonal
 (Georgia's July price runs ~17% above January), so single-month comparisons mostly measure the season. The old
 seasonal adjustment (2014–2024 factors) no longer fit some states (GA headline swung −3.5%…+7.1% month to month) and its
 centered average leaked 2025 data, so it was replaced: `current` = mean of the latest 12 monthly prices, `baseline` =
-mean of the 12 months ending Jan 2025, `change` = their % difference (`method: 'avg12'`; older cached payloads fail
-`isValidElectricity` and are refetched). The ⓘ shows both windows and the latest single month. Before → after (fixture
+mean of the 12 months ending Jan 2025, `change` = their % difference. **Round 12:** the baseline is now the 12 months
+CENTERED on Jan 2025, Aug 2024–Jul 2025 (`ELECTRICITY_BASELINE_FROM/TO` in `src/lib/baseline.ts`; midpoint ~Jan 30,
+vs ~Jan 1 for Jul 2024–Jun 2025 — the closest a 12-month window gets to Jan 20). A window ending Jan 2025 is centered
+on ~Aug 2024, so ~5 of the ~17 months of change predated Jan 2025. `method: 'avg12c'`; older payloads fail
+`isValidElectricity` and are refetched. The graph plots each 12-month average at its window's center month (t−5…t+6),
+so its Jan 2025 point is the baseline and its last point (latest − 6 months) is the card's number. Card / share / OG
+label: "vs yr centered on Jan '25"; og:description lists electricity after the "Since Jan 2025:" items with its own
+window. Round 11 → 12 (fixture through Jul 2026): GA +6.6% → +4.4%, ME +21.2% → +9.8%, DC +34.8% → +22.0%,
+WA +17.7% → +12.4%, U.S. +9.0% → +6.7%. The ⓘ shows both windows and the latest single month. Before → after (fixture
 through Jul 2026): GA +2.6% / +$4 → +6.6% / +$10; ME +23.3% / +$33 → +21.2% / +$27; U.S. +8.5% → +9.0%. Sanity: price
 5–60 ¢/kWh, change −50…+100 %, usage 100–3,000 kWh/mo.
 
@@ -301,7 +308,7 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
 
 ## Cache (`src/lib/cache/kv.ts`, accessors in `src/lib/api/cached-sources.ts`)
 
-**Namespace:** every Redis/in-memory key is stored under `wc2:` (`KEY_PREFIX`, applied only in `kv.ts`; callers use logical keys, `cache:flush` globs add it automatically) so deployments with different stored formats sharing one Redis never collide — bump the prefix whenever the stored format changes.
+**Namespace:** every Redis/in-memory key is stored under `wc3:` (`KEY_PREFIX`, applied only in `kv.ts`; callers use logical keys, `cache:flush` globs add it automatically) so deployments with different stored formats sharing one Redis never collide — bump the prefix whenever the stored format changes.
 
 **Preload everything.** `.github/workflows/refresh-cache.yml` runs `npm run cache:refresh` (`scripts/refresh-cache.ts` →
 `src/lib/api/refresh.ts`) weekly (Tue 15:00 UTC, after EIA's Monday release), on the 16th and 28th (after BLS CPI

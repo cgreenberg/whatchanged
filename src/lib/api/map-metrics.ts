@@ -24,6 +24,7 @@ import { isValidCpi, isValidGasSeries, isValidElectricity } from './validate'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES } from '@/lib/mappings/eia-gas'
 import { cpiShortGeo } from '@/lib/hero-cards'
 import { akGasForCounty, lookupPrGas } from '@/lib/static-gas'
+import { isStaticGasStale } from '@/lib/static-gas-meta'
 import countyCentroids from '@/lib/data/county-centroids.json'
 
 interface CountyGeo {
@@ -67,7 +68,7 @@ export interface MapCpiArea {
 
 export interface MapElectricity {
   label: string
-  /** % change of the 12-month average price vs the 12 months ending Jan 2025 (same as the electricity card) and that average price. */
+  /** % change of the 12-month average price vs the 12 months centered on Jan 2025 (same as the electricity card) and that average price. */
   pct: number
   cents: number
   asOf: string
@@ -144,7 +145,7 @@ export function resetMapMetricsMemo(): void {
   inflight = null
 }
 
-export async function buildMapMetrics(): Promise<MapMetrics> {
+export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetrics> {
   const gasIdx = new Map<string, number>()
   const gasAreas: Array<{ id: string; lookup: GasLookupResult }> = []
   const cpiIdx = new Map<string, number>()
@@ -155,7 +156,10 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
   // (bundled static data, so it is always present), instead of the Anchorage stand-in
   const staticGas = new Map<string, MapGasArea>()
 
-  const pr = lookupPrGas().hit
+  // Same staleness rule as the card: an overdue DACO month / DCRA survey falls to the next rung (EIA U.S. for
+  // Puerto Rico, the Anchorage BLS stand-in for Alaska), never a value the card would no longer show.
+  const prHit = lookupPrGas().hit
+  const pr = prHit && !isStaticGasStale('daco', prHit.data.latestDate, now) ? prHit : null
 
   for (const [fips, g] of Object.entries(COUNTY_GEO)) {
     // Puerto Rico: DACO's island-wide monthly price (the card's rung), not the U.S. average
@@ -177,7 +181,7 @@ export async function buildMapMetrics(): Promise<MapMetrics> {
       continue
     }
     const ak = g.state === 'AK' && g.gasSource === 'bls' && g.gasTier === 2 ? akGasForCounty(fips, COUNTY_NAMES[fips]?.name) : null
-    if (ak) {
+    if (ak && !isStaticGasStale('dcra', ak.data.latestDate, now)) {
       const id = `d:${fips}`
       staticGas.set(id, {
         id, label: ak.label, source: 'dcra', frequency: 'semiannual',
