@@ -211,7 +211,7 @@ describe('built local data sanity', () => {
     // Sagadahoc ME has no Jan 2025 county series → Portland-South Portland metro (OMB 2020 CBSA 38860)
     expect(mr.counties['23023']).toBe('38860')
     expect(mr.metros['38860'].name).toBe('Portland-South Portland, ME')
-    // Androscoggin ME: its short county series (since late 2022) is now published with a pooled seasonal pattern
+    // Androscoggin ME: its short county series (since late 2022) is published with the state (U.S.) seasonal pattern
     expect(cr.counties['23001']).toMatchObject({ saPool: expect.any(String) })
     const me = readJson<CountyMap>(path.join(dir, 'county', '23.json'))
     expect(me['23023'].rentM).toMatchObject({ cbsa: '38860', rent: mr.metros['38860'].pct })

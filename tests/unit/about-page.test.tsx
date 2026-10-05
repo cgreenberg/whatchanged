@@ -21,7 +21,7 @@ describe('About page', () => {
     for (const s of ['Gas', 'Rent', 'Groceries', 'Electricity', 'Shelter (CPI)', 'Home prices', 'Home heating', 'county map']) expect(t).toContain(s)
     expect(t).toContain('seasonally adjusted by whatchanged')
     expect(t).toContain('12 months centered on January 2025 (August 2024–July 2025)')
-    expect(t).toContain('pooled')
+    expect(t).toContain('county pattern blended with the state pattern based on history length')
     expect(t).toContain('statewide')
     expect(t).toContain('rent of primary residence')
     expect(t).toContain('Honolulu-area*')

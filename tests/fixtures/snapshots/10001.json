@@ -6808,10 +6808,10 @@
   "sourceId": "eia-electricity"
  },
  "rent": {
-  "pct": 11.2,
+  "pct": 12.6,
   "baseRent": 4184,
   "curRent": 4818,
-  "monthlyChange": 485,
+  "monthlyChange": 539,
   "baseMonth": "2025-01",
   "asOf": "2026-08",
   "countyFips": "36061",
@@ -6819,6 +6819,8 @@
   "source": "Zillow Observed Rent Index (ZORI)",
   "sourceUrl": "https://www.zillow.com/research/data/",
   "adjustment": "seasonally adjusted by whatchanged",
+  "saPool": "New York counties",
+  "saW": 0.43,
   "level": "county"
  },
  "dollarImpact": {

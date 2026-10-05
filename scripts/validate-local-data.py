@@ -171,7 +171,7 @@ def main():
                                                if k in c and not lo <= c[k] <= hi])
     inv("No percentile-rank fields shipped", [(f, k) for f, c in counties.items() for k in c if re.fullmatch(r"[a-z]+R", k)])
     ALLOWED = {"n", "z", "hv", "hvCur", "rent", "rentCur", "emp", "approx", "approxFrom", "flags", "note", "hvS", "rentS",
-               "rentSaPool"}
+               "rentSaPool", "rentSaW"}
     inv("County records carry only fields the site reads", [(f, sorted(set(c) - ALLOWED)) for f, c in counties.items() if set(c) - ALLOWED])
     resolved = set(counties)
     # No source publishes these: Kalawao HI (15005) and the island territories (AS 60, GU 66, MP 69, VI 78)
@@ -248,9 +248,17 @@ def main():
             [f for f, c in counties.items() if "hvS" in c or "rentS" in c or "rentM" in c or "rentMS" in c])
         inv("Shard records carry only fields the site reads",
             [(f, sorted(set(c) - ALLOWED - {"rentM", "rentMS"})) for f, c in shards.items() if set(c) - ALLOWED - {"rentM", "rentMS"}])
-        pooled = [f for f, v in crj["counties"].items() if v.get("saPool")]
-        record(S, "County rent seasonally adjusted with a pooled (state / U.S.) seasonal pattern (series too short for their own)",
-               "INFO", f"{len(pooled)} of {len(crj['counties'])} counties, e.g. {pooled[:6]}")
+        # Seasonal adjustment: own pattern blended with the state's by history length (saW = own weight, n/(n+k))
+        inv("Every county rent row names the state / U.S. seasonal pattern it is blended with and its own weight (0..1)",
+            [f for f, v in crj["counties"].items()
+             if not (isinstance(v.get("saPool"), str) and v["saPool"] and isinstance(v.get("saW"), (int, float)) and 0 <= v["saW"] < 1)])
+        inv("Rent meta labels the seasonal method (county pattern blended with the state pattern)",
+            [] if "blended with the state pattern" in (crj["meta"].get("seasonalMethod") or "") else ["county-rent.json meta.seasonalMethod"])
+        w_hist = defaultdict(int)
+        for v in crj["counties"].values():
+            w_hist[v.get("saW")] += 1
+        record(S, "County rent own-pattern weight in the seasonal blend (0 = state pattern only; 0.5 = full 2016-2024 history)",
+               "INFO", str(dict(sorted(w_hist.items(), key=lambda t: (t[0] is None, t[0] or 0)))))
 
         # ---------------------------------------------------------- metro rent (Rent card's metro rung)
         mr_path = os.path.join(a.repo, "src/lib/data/metro-rent.json")

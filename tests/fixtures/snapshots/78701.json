@@ -6693,10 +6693,10 @@
   "sourceId": "eia-electricity"
  },
  "rent": {
-  "pct": -2.3,
+  "pct": -2.0,
   "baseRent": 1625,
   "curRent": 1618,
-  "monthlyChange": -38,
+  "monthlyChange": -33,
   "baseMonth": "2025-01",
   "asOf": "2026-08",
   "countyFips": "48453",
@@ -6704,6 +6704,8 @@
   "source": "Zillow Observed Rent Index (ZORI)",
   "sourceUrl": "https://www.zillow.com/research/data/",
   "adjustment": "seasonally adjusted by whatchanged",
+  "saPool": "Texas counties",
+  "saW": 0.5,
   "level": "county"
  },
  "dollarImpact": {

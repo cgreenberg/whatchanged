@@ -46,11 +46,11 @@ const GOLDEN = [
   ['30303', 'Atlanta: BLS metro gas, Atlanta metro CPI'],
   ['96720', 'Hilo: Honolulu stand-in gas, no Zillow rent → Pacific division shelter'],
   ['00601', 'Adjuntas PR: national gas + CPI, no electricity'],
-  ['10509', 'Brewster NY: Putnam County Zillow rent (pooled seasonal pattern), NY metro CPI'],
+  ['10509', 'Brewster NY: Putnam County Zillow rent (own seasonal pattern blended with the state’s), NY metro CPI'],
   ['55334', 'Gaylord MN: no Zillow county or metro rent for Sibley County → Minneapolis metro shelter'],
   ['19103', 'Philadelphia: BLS metro gas'],
   ['98683', 'Vancouver WA: EIA Washington state gas'],
-  ['04240', 'Lewiston ME: Androscoggin County Zillow rent (short series, pooled seasonal pattern)'],
+  ['04240', 'Lewiston ME: Androscoggin County Zillow rent (short series, state seasonal pattern only)'],
   ['04530', 'Bath ME: Sagadahoc county series too new → Portland-South Portland metro rent'],
   ['99701', 'Fairbanks AK: DCRA community survey gas (own community)'],
   ['99559', 'Bethel AK: DCRA community survey gas (own community)'],
@@ -128,10 +128,15 @@ describe('trace semantics', () => {
     expect(card).toMatchObject({ id: 'rent', status: 'ok', geoTag: 'Portland-South Portland metro' })
     expect(card.sourceLine).toMatch(/^Portland-South Portland metro · Zillow · /)
     expect(card.info.join(' ')).toMatch(/series for Sagadahoc County is too new .* to measure since Jan 2025; this is the Portland-South Portland, ME metro series/)
-    // Androscoggin: a short county series, adjusted with a pooled seasonal pattern and said so
+    // Androscoggin: a short county series, adjusted with its state's (here U.S.) seasonal pattern only and said so
     const lewiston = (await fetchSnapshot('04240'))!
-    expect(lewiston.rent).toMatchObject({ level: 'county', countyFips: '23001', saPool: expect.stringMatching(/counties$/) })
-    expect(buildHeroCards(lewiston)[1].info.join(' ')).toMatch(/Seasonally adjusted with the typical pattern of .* counties/)
+    expect(lewiston.rent).toMatchObject({ level: 'county', countyFips: '23001', saPool: expect.stringMatching(/counties$/), saW: 0 })
+    expect(buildHeroCards(lewiston)[1].info.join(' ')).toMatch(
+      /Seasonally adjusted by whatchanged \(county pattern blended with the state pattern based on history length\): this series is too short to estimate its own pattern, so it uses the typical pattern of .* counties/)
+    // A county with a full 2016-2024 history: half its own pattern, half its state's (n / (n + 8), n = 8)
+    const austin = (await fetchSnapshot('78701'))!
+    expect(austin.rent).toMatchObject({ level: 'county', saPool: 'Texas counties', saW: 0.5 })
+    expect(buildHeroCards(austin)[1].info.join(' ')).toContain('50% the county’s own pattern, 50% the typical pattern of Texas counties.')
   })
 
   test('rent: a county series with data before Jan 2024 but no Jan 2025 value says so, not "too new" (Burnet TX)', async () => {

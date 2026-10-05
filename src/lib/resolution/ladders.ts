@@ -541,9 +541,11 @@ const RENT = {
   title: 'Rent (housing card)',
   method:
     '% change of Zillow\'s typical asking rent on new leases since January 2025, seasonally adjusted by whatchanged ' +
-    '(classical decomposition; seasonal factors use only months whose full 13-month window ends by December 2024, so ' +
-    'nothing after the baseline shapes them). A series too short to estimate its own seasonal pattern uses a pooled one ' +
-    '(its state\'s counties, or U.S. counties where the state has too few) and says so. ≈ $/mo = today\'s typical rent − ' +
+    '(county pattern blended with the state pattern based on history length): classical decomposition whose seasonal ' +
+    'factors use only months whose full 13-month window ends by December 2024, so nothing after the baseline shapes ' +
+    'them; each county\'s (or metro\'s) own pattern gets weight n ÷ (n + 8), n = its fewest years of history for any ' +
+    'calendar month (at most 8, so at most half its own), and the rest is its state\'s typical pattern (U.S. counties ' +
+    'where the state has too few long series); a series with no usable history uses the state pattern. ≈ $/mo = today\'s typical rent − ' +
     'today\'s rent ÷ (1 + %). Changes outside −20% to +50% are not shown; a county\'s own unusual figure is tagged ' +
     '“⚠ unusual”, and an unusual metro figure never stands in for a county.',
   rungs: [
@@ -557,7 +559,7 @@ const RENT = {
       license: ZILLOW_LICENSE,
       pipeline: 'static',
       homepage: ZILLOW_HOME,
-      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonal swings removed; a series too short to estimate its own pattern uses a pooled one — its state’s counties, or U.S. counties where the state has too few — and says so).',
+      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonally adjusted by whatchanged: county pattern blended with the state pattern based on history length; the ⓘ says how much of each).',
       applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
       target: (l) => l.countyFips!,
       geography: (_f, l) => countyLabel(l),

@@ -57,8 +57,8 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
 
 | Metric | Rule | Effect (2026-10 build) |
 |---|---|---|
-| County rent | Own seasonal factors for series with ≥2 leak-free seasonal ratios (ratio months ≤ 2024-06, so no 2025+ value enters a factor) for every calendar month; series with ≥12 months before Jan 2025 but too short for their own factors use their state's pooled pattern (median factors of that state's self-adjusted counties, ≥5; else the U.S. pool), labeled `saPool` on the card/graph. Newer series are dropped (never shown raw as "adjusted"). Levels shown are observed (unadjusted). | 877 counties (243 pooled) |
-| Metro rent | Same SA method (pooled pattern by the principal city's state), sanity range (−30%..+60%), Jan 2025 + latest month, outlier flag vs the county distribution; only for counties with no county row | 205 metros, 461 counties |
+| County rent | Seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length): log seasonal factors = w·own + (1−w)·state pattern, w = n/(n+8), n = fewest leak-free seasonal ratios (ratio months ≤ 2024-06, so no 2025+ value enters a factor) in any calendar month (n ≤ 8, so w ≤ 0.5). State patterns = median factors of that state's counties with ≥6 ratios in every month (≥5 such counties; else the U.S. pattern); a series with no usable ratios uses the state pattern. Shipped as `saPool` (pattern blended in) and `saW` (own weight) and said in the card/graph ⓘ. Series with no data by Jan 2024 are not published. Validated by `scripts/rent-seasonal-holdout.py` (see below) | 877 counties (129 state pattern only, 344 own weight < 0.5, 404 full history at 0.5) |
+| Metro rent | Same SA method (own pattern blended with the principal city's state pattern), sanity range (−30%..+60%), Jan 2025 + latest month, outlier flag vs the county distribution; only for counties with no county row | 205 metros, 461 counties |
 | All Zillow series | Must reach the file's latest month (no stale values mixed in) | — |
 | Movers lists | ≥ 75k jobs, not `approx`, not flagged as a robust outlier (abs(z) > 5 vs counties with ≥20k jobs) for that metric; top/bottom never overlap | — |
 
@@ -80,16 +80,30 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
 - Map "biggest movers" are limited to counties with 75k+ jobs to avoid tiny-county noise.
 - `county-rent.json`: `pct` is the SA change since Jan 2025 (counties passing the SA rule, −30%..+60%);
   `baseRent`/`curRent` are observed (unadjusted) asking rents. A monthly dollar change consistent with `pct` is
-  `curRent - curRent / (1 + pct/100)`; `curRent - baseRent` includes seasonality. Covers 877 counties / 56.8% of zip-county.json zips (2026-10 build; 589 / 47.8% before pooled seasonal patterns). zip-county.json is a housing-unit-weighted Census 2020 build (`scripts/build-zip-county.ts`), not the HUD crosswalk.
-- Pooled seasonal pattern (why it is honest): ZORI's Jan → Aug swing is mostly the shared spring/summer leasing
-  season, so a series too new to fit its own factors (e.g. Androscoggin ME, Zillow coverage since Nov 2022: only 20
-  in-sample ratios) is adjusted with its state's typical factors rather than dropped or shown raw. Baseline and current
-  still come from the county's own series; the card and graph say which pattern was used.
+  `curRent - curRent / (1 + pct/100)`; `curRent - baseRent` includes seasonality. Covers 877 counties / 56.8% of zip-county.json zips (2026-10 build; 589 / 47.8% before short series were adjusted with their state's pattern). zip-county.json is a housing-unit-weighted Census 2020 build (`scripts/build-zip-county.ts`), not the HUD crosswalk.
+- Seasonal blend (why): ZORI's Jan → Aug swing is mostly the shared spring/summer leasing season, and a county's own
+  factors from a few years of ratios are noisy. Holdout test (`scripts/rent-seasonal-holdout.py`): residual seasonality
+  over Jul 2024–Aug 2026 (spread across calendar months of the mean month-over-month % change, pp, mean over counties):
+
+  | n (ratios/month) | counties | raw | own only | state only | blend k=8 | blend k=12 |
+  |---|---|---|---|---|---|---|
+  | 0–1 | 221 | 2.88 | 4.29 | 2.86 | 2.86 | 2.86 |
+  | 2 | 65 | 2.26 | 3.08 | 2.15 | 2.05 | 2.07 |
+  | 3 | 18 | 2.05 | 3.17 | 2.06 | 2.11 | 2.07 |
+  | 4–5 | 42 | 2.19 | 2.69 | 2.10 | 2.10 | 2.08 |
+  | 6–7 | 101 | 1.75 | 2.04 | 1.63 | 1.67 | 1.64 |
+  | 8 | 403 | 1.34 | 1.39 | 1.21 | 1.20 | 1.18 |
+  | all n ≥ 2 | 629 | 1.58 | 1.81 | 1.46 | 1.45 | 1.43 |
+
+  The blend beats own-only factors for 530 of 629 counties (n ≥ 2) and matches state-only overall; k=12 is within
+  noise of k=8, so k=8 (the decided value) ships. Baseline and current still come from the county's own series.
+  The previous rule (own factors with ≥2 ratios per month, state pattern only below that) left more seasonality than no
+  adjustment at all for short series.
 - `metro-rent.json` (rent ladder's metro rung): county FIPS → CBSA by the **OMB March 2020** delineation — verified
   as Zillow's vintage (all 1,831 Zillow county→metro labels agree with it; the 2023 delineation disagrees for 95
   metros) — and CBSA → Zillow metro by Zillow's own RegionID crosswalk (735 of 749 ZORI metros link; the 14 newer
   ones, e.g. Lebanon NH-VT, Dayton OH, have no ID link and are not used). No name matching. Adds 3,481 zips
-  (VA 333, MO 179, IL 178, WV 168, …); pooled SA adds 3,729 county zips (WI 239, PA 192, NC 149, NH 132, …).
+  (VA 333, MO 179, IL 178, WV 168, …); state-pattern SA for short series adds 3,729 county zips (WI 239, PA 192, NC 149, NH 132, …).
 - `ak-gas.json`: per surveyed community (borough FIPS, DCRA region, semiannual series since 2016) + DCRA region
   averages; each Alaska zip outside the Anchorage CBSA maps to its own community (`c`, same name + same borough), else
   the nearest surveyed community in the same borough within 100 km of its ZCTA point (`n`), else the DCRA region average

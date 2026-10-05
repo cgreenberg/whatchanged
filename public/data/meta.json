@@ -12,6 +12,8 @@
    "latest": "2026-08",
    "short": "Zillow ZORI",
    "adjustment": "seasonally adjusted by whatchanged",
+   "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)",
+   "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
    "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases",
    "url": "https://www.zillow.com/research/data/"
   },
@@ -19,6 +21,8 @@
    "latest": "2026-08",
    "short": "Zillow ZORI (metro)",
    "adjustment": "seasonally adjusted by whatchanged",
+   "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)",
+   "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
    "label": "Zillow Observed Rent Index (ZORI), metro",
    "geography": "OMB CBSA delineation, March 2020 (list 1)",
    "url": "https://www.zillow.com/research/data/"

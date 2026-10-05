@@ -147,7 +147,7 @@ exports[`trace snapshots (golden zips) 04101 — Portland ME: EIA PADD 1A gas, Z
 }
 `;
 
-exports[`trace snapshots (golden zips) 04240 — Lewiston ME: Androscoggin County Zillow rent (short series, pooled seasonal pattern) 1`] = `
+exports[`trace snapshots (golden zips) 04240 — Lewiston ME: Androscoggin County Zillow rent (short series, state seasonal pattern only) 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | Maine (statewide) [state] | 2026-07 | ELEC.PRICE.ME-RES.M",
@@ -245,7 +245,7 @@ exports[`trace snapshots (golden zips) 04530 — Bath ME: Sagadahoc county serie
 }
 `;
 
-exports[`trace snapshots (golden zips) 10509 — Brewster NY: Putnam County Zillow rent (pooled seasonal pattern), NY metro CPI 1`] = `
+exports[`trace snapshots (golden zips) 10509 — Brewster NY: Putnam County Zillow rent (own seasonal pattern blended with the state’s), NY metro CPI 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | New York (statewide) [state] | 2026-07 | ELEC.PRICE.NY-RES.M",

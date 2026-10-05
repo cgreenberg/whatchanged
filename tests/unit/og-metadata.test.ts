@@ -42,7 +42,7 @@ test('description uses the same numbers as the cards, with a signed gas change',
   expect(d.startsWith('Since Jan 2025: ')).toBe(true)
   expect(d).toContain('Gas −$0.12/gal (Texas state avg)')
   expect(d).not.toContain('$-')
-  expect(d).toContain('Rent −2.3% (Travis Co.)')
+  expect(d).toContain('Rent −2.0% (Travis Co.)')
   expect(d).toContain('Groceries +3.1% (West South Central div.)')
   // Statewide EIA electricity, % change of the 12-month average price (Texas: +4.9% from the recorded fixture),
   // with its OWN window after the "Since Jan 2025:" list (not under that prefix)

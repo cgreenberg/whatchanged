@@ -10,11 +10,11 @@
   "section": "1. Built JSON matches raw source",
   "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all counties)",
   "status": "PASS",
-  "detail": "median |adj| 1.47 pts, mean -1.43, p95 |adj| 3.06",
+  "detail": "median |adj| 1.46 pts, mean -1.47, p95 |adj| 2.36",
   "metrics": {
    "n": 877,
-   "median_abs": 1.47,
-   "mean": -1.43
+   "median_abs": 1.46,
+   "mean": -1.47
   }
  },
  {
@@ -35,7 +35,7 @@
   "section": "2. Coverage and geography",
   "check": "Site zips whose county has published rent (SA since Jan 2025)",
   "status": "INFO",
-  "detail": "23427/41195 (57%)",
+  "detail": "23428/41195 (57%)",
   "metrics": {}
  },
  {
@@ -84,14 +84,14 @@
   "section": "4. Rent \u2014 independent source (Apartment List)",
   "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
   "status": "PASS",
-  "detail": "{'n': 370, 'pearson': 0.845, 'spearman': 0.764, 'mae': 2.29, 'bias': 0.67, 'sign_agree': 0.824}",
+  "detail": "{'n': 370, 'pearson': 0.86, 'spearman': 0.777, 'mae': 2.24, 'bias': 0.7, 'sign_agree': 0.83}",
   "metrics": {
    "n": 370,
-   "pearson": 0.845,
-   "spearman": 0.764,
-   "mae": 2.29,
-   "bias": 0.67,
-   "sign_agree": 0.824
+   "pearson": 0.86,
+   "spearman": 0.777,
+   "mae": 2.24,
+   "bias": 0.7,
+   "sign_agree": 0.83
   }
  },
  {
@@ -107,28 +107,28 @@
   "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
   "check": "rent %",
   "status": "WARN",
-  "detail": "4 flagged: Taylor County, TX +47.9, San Francisco County, CA +33.6, Ouachita Parish, LA +25.8, Calcasieu Parish, LA +23.8",
+  "detail": "4 flagged: Taylor County, TX +48.1, San Francisco County, CA +34.2, Ouachita Parish, LA +25.7, Calcasieu Parish, LA +23.2",
   "metrics": {
    "flagged": [
     [
      "48441",
      "Taylor County, TX",
-     47.9
+     48.1
     ],
     [
      "06075",
      "San Francisco County, CA",
-     33.6
+     34.2
     ],
     [
      "22073",
      "Ouachita Parish, LA",
-     25.8
+     25.7
     ],
     [
      "22019",
      "Calcasieu Parish, LA",
-     23.8
+     23.2
     ]
    ]
   }
@@ -268,9 +268,23 @@
  },
  {
   "section": "6. Shipped data invariants",
-  "check": "County rent seasonally adjusted with a pooled (state / U.S.) seasonal pattern (series too short for their own)",
+  "check": "Every county rent row names the state / U.S. seasonal pattern it is blended with and its own weight (0..1)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Rent meta labels the seasonal method (county pattern blended with the state pattern)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County rent own-pattern weight in the seasonal blend (0 = state pattern only; 0.5 = full 2016-2024 history)",
   "status": "INFO",
-  "detail": "243 of 877 counties, e.g. ['01015', '01033', '01043', '01045', '01051', '01069']",
+  "detail": "{0.0: 129, 0.11: 114, 0.2: 66, 0.27: 19, 0.33: 17, 0.38: 26, 0.43: 44, 0.47: 58, 0.5: 404}",
   "metrics": {}
  },
  {
@@ -361,7 +375,7 @@
   "section": "6. Shipped data invariants",
   "check": "Metro rent seasonal adjustment size (built SA - raw NSA)",
   "status": "PASS",
-  "detail": "median |adj| 1.42 pts over 205 metros",
+  "detail": "median |adj| 1.43 pts over 205 metros",
   "metrics": {}
  },
  {
@@ -375,7 +389,7 @@
   "section": "6. Shipped data invariants",
   "check": "Zips that get metro rent (no county series)",
   "status": "INFO",
-  "detail": "3477 zips, 461 counties, 205 metros",
+  "detail": "3476 zips, 461 counties, 205 metros",
   "metrics": {}
  },
  {

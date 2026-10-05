@@ -593,7 +593,7 @@ export function buildRentCard(
   const dollarNote = `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
   const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
   const metroNote = metro ? rentMetroNote(r) : undefined
-  const poolNote = r.saPool ? rentPoolNote(r.saPool) : undefined
+  const poolNote = rentSeasonalNote(r.saPool, r.saW, metro ? 'metro' : 'county')
   return {
     ...base,
     status: 'ok',
@@ -631,9 +631,18 @@ export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'coun
   return `${why}; this is the ${r.geoName} series (the county's metro area).`
 }
 
-/** Pooled seasonal adjustment, said plainly. */
-export function rentPoolNote(pool: string): string {
-  return `Seasonally adjusted with the typical pattern of ${pool}: this series is too new to estimate its own.`
+/** How rent is seasonally adjusted (same label as the data's meta.seasonalMethod). */
+export const RENT_SA_LABEL =
+  'seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)'
+
+/** The seasonal adjustment of one rent series, said plainly: how much of its own pattern vs its state's it uses. */
+export function rentSeasonalNote(pool: string | undefined, w: number | undefined, level: 'county' | 'metro' = 'county'): string {
+  const head = `Seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)`
+  if (!pool || typeof w !== 'number' || !Number.isFinite(w)) return `${head}.`
+  const own = level === 'metro' ? 'the metro’s own pattern' : 'the county’s own pattern'
+  if (w <= 0) return `${head}: this series is too short to estimate its own pattern, so it uses the typical pattern of ${pool}.`
+  const ownPct = Math.round(w * 100)
+  return `${head}: ${ownPct}% ${own}, ${100 - ownPct}% the typical pattern of ${pool}.`
 }
 
 /** Wording for the shelter card's dollar figure (owner-approved). */

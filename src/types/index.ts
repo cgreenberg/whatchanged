@@ -191,10 +191,12 @@ export interface RentData {
   /** countyWhy 'not-current': months the county's series has and its last month ("one month, Jul 2026"). */
   countyNotCurrent?: { n: number; last: string }
   /**
-   * The series is too short to estimate its own seasonal pattern, so it is adjusted with this pool's typical
-   * pattern ("Maine counties", "U.S. counties").
+   * Seasonal adjustment: the series' own pattern is blended with this pool's typical pattern based on history
+   * length ("Maine counties", "U.S. counties" where the state has too few long series).
    */
   saPool?: string
+  /** Weight on the series' own seasonal pattern (0..1; 0 = too short for its own, the pool's pattern only). */
+  saW?: number
   /** % change since the baseline month, seasonally adjusted by whatchanged. */
   pct: number
   /** Observed (not seasonally adjusted) typical asking rent in the baseline month, $/mo. */

@@ -22,10 +22,11 @@ Outputs
 Methodology notes (details in docs/LOCAL_DATA_SOURCES.md)
   * Baseline is the Jan 2025 monthly value (matches the rest of the site).
   * ZHVI is published seasonally adjusted by Zillow. ZORI is NOT, so we seasonally adjust it here (classical
-    decomposition, factors fit on 2016-2024). A series keeps its own factors if every calendar month has >= 2
-    leak-free seasonal ratios (ratio months <= 2024-06); shorter series with >= 12 months before Jan 2025 use
-    their state's pooled pattern; newer ones are dropped (never shown raw as if adjusted). Rent levels shown to users are
-    the observed (unadjusted) latest values.
+    decomposition, leak-free: ratio months <= 2024-06). Every series' log seasonal factors are its own shrunk toward
+    its state's pattern with weight n/(n+8), n = fewest ratios in any calendar month (state / U.S. patterns from series
+    with >= 6 ratios per month; a series with no usable ratios takes the state pattern). Series with no data by
+    Jan 2024 are dropped (never shown raw as if adjusted). Rent levels shown to users are the observed (unadjusted)
+    latest values.
   * Every series must reach the common latest month of its file; stale series are dropped.
   * Connecticut legacy counties take their jobs count from a planning region (same mapping as bls.ts);
     Valdez-Cordova AK (map shape) takes Chugach's. Flagged "approx".
@@ -33,16 +34,13 @@ Methodology notes (details in docs/LOCAL_DATA_SOURCES.md)
     the "biggest movers" lists, together with approximated counties. County jobs (BLS QCEW, latest
     quarter) are used only to pick which counties are large enough for those lists.
 """
-import argparse, glob, json, os, re, sys, zipfile
+import argparse, glob, json, os, re, sys, warnings, zipfile
 from collections import defaultdict
 import numpy as np
 import pandas as pd
 
 BASE = "2025-01"
 SERIES_START = "2016-01"
-# A series keeps its OWN seasonal pattern when every calendar month has at least this many in-sample (leak-free,
-# ratio months <= 2024-06) seasonal ratios; otherwise it takes its state's pooled pattern (pooled_adjust).
-MIN_RATIOS_PER_MONTH = 2
 
 # Sanity filters (see docs/LOCAL_DATA_SOURCES.md)
 OUTLIER_Z = 5.0
@@ -73,81 +71,118 @@ def add_months(m, k):
     return f"{y + mo // 12:04d}-{mo % 12 + 1:02d}"
 
 
-def seasonal_adjust(mat, months, additive=False, fit_end="2024-12", return_factors=False):
-    """mat: (n_series, n_months) float array with NaNs, months contiguous.
-    Factors use only data through fit_end: a ratio month t needs the centered 13-month window t-6..t+6, so only
-    ratio months <= fit_end - 6 (2024-06) are used and no 2025+ value ever enters a factor (the Jan 2025
-    baseline never revises when Zillow publishes a new month).
-    Returns (SA matrix, ok mask). Series with < MIN_RATIOS_PER_MONTH in-sample ratios for any calendar month
-    come back as NaN rows
-    (ok=False), so raw data can never be published under an "adjusted" label. With return_factors, also
-    the (n_series, 12) calendar-month factors (valid where ok) for pooled_adjust."""
-    assert months == month_range(months[0], months[-1]), "seasonal_adjust needs contiguous months"
+def seasonal_factors(mat, months, fit_end="2024-12"):
+    """Classical-decomposition multiplicative seasonal factors, leak-free.
+    mat: (n_series, n_months) float array with NaNs, months contiguous. A ratio month t needs the centered
+    13-month window t-6..t+6, so only ratio months <= fit_end - 6 (2024-06) are used and no 2025+ value ever enters a
+    factor (the Jan 2025 baseline never revises when Zillow publishes a new month).
+    Returns (factors (n_series, 12), each row normalized to average 1 (NaN where a calendar month has no ratio),
+    n (n_series,) = the MINIMUM number of in-sample ratios over the 12 calendar months)."""
+    assert months == month_range(months[0], months[-1]), "seasonal factors need contiguous months"
     n, T = mat.shape
     w = np.r_[0.5, np.ones(11), 0.5] / 12.0  # centered 2x12 moving average
     cma = np.full_like(mat, np.nan)
     for t in range(6, T - 6):
         cma[:, t] = (mat[:, t - 6:t + 7] * w).sum(axis=1)  # NaN propagates if any missing
-    ratio = (mat - cma) if additive else (mat / cma)
+    ratio = mat / cma
     cal = np.array([int(m[5:]) for m in months])
     ratio_end = add_months(fit_end, -6)  # full centered window ends <= fit_end
     fit = np.array([(SERIES_START <= m <= ratio_end) for m in months])
-    factors = np.full((n, 12), 0.0 if additive else 1.0)
-    for k in range(1, 13):
-        sel = fit & (cal == k)
-        if sel.any():
-            factors[:, k - 1] = np.nanmedian(ratio[:, sel], axis=1)
-    if additive:
-        factors -= np.nanmean(factors, axis=1, keepdims=True)
-    else:
+    factors = np.full((n, 12), np.nan)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN rows (series with no ratio in a month)
+        for k in range(1, 13):
+            sel = fit & (cal == k)
+            if sel.any():
+                factors[:, k - 1] = np.nanmedian(ratio[:, sel], axis=1)
         factors /= np.nanmean(factors, axis=1, keepdims=True)
     per_month = np.stack([np.isfinite(ratio[:, fit & (cal == k)]).sum(axis=1) for k in range(1, 13)], axis=1)
-    ok = (per_month.min(axis=1) >= MIN_RATIOS_PER_MONTH) & np.isfinite(factors).all(axis=1)
-    f = factors[:, cal - 1]
-    sa = (mat - f) if additive else (mat / f)
+    return factors, per_month.min(axis=1)
+
+
+def apply_factors(mat, months, factors):
+    cal = np.array([int(m[5:]) for m in months]) - 1
+    return mat / factors[:, cal]
+
+
+def seasonal_adjust(mat, months, fit_end="2024-12"):
+    """Own-pattern adjustment for long series (the U.S. row). Returns (SA matrix, ok mask: >= POOL_MIN_RATIOS ratios
+    in every calendar month); rows that are not ok come back NaN."""
+    factors, n = seasonal_factors(mat, months, fit_end)
+    ok = (n >= POOL_MIN_RATIOS) & np.isfinite(factors).all(axis=1)
+    sa = apply_factors(mat, months, factors)
     sa[~ok] = np.nan
-    if return_factors:
-        return sa, ok, factors
     return sa, ok
 
 
-MIN_POOL_SERIES = 5  # a state's pooled seasonal pattern needs at least this many self-adjusted county series
-POOL_MAX_START = "2024-01"  # pooled adjustment only for series with >= 12 months of data before the Jan 2025 baseline
+# Seasonal shrinkage (round 13). Every county / metro rent series is adjusted with its OWN log seasonal factors shrunk
+# toward its state's pooled pattern: log f = w * log f_own + (1 - w) * log f_pool, w = n / (n + SHRINK_K), where n is
+# the minimum number of leak-free ratios per calendar month. A holdout test (scripts/rent-seasonal-holdout.py) showed
+# own factors from a few ratios remove less seasonality than the state pattern does; the blend beats both.
+SHRINK_K = 8
+POOL_MIN_RATIOS = 6  # only series with >= this many ratios in every calendar month build a state (or U.S.) pool
+MIN_POOL_SERIES = 5  # a state's pool needs at least this many such series; otherwise the U.S. pool is used
+# Full label of the rent adjustment (data meta "seasonalMethod"; the card ⓘ / trace / About say the same). The short
+# "adjustment" label stays "seasonally adjusted by whatchanged" for the compact provenance line.
+RENT_SA_LABEL = "seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)"
+RENT_SA_META = {"seasonalMethod": RENT_SA_LABEL,
+                "seasonalDetail": f"log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + {SHRINK_K}), n = fewest "
+                                  "leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with "
+                                  f">= {POOL_MIN_RATIOS} ratios per month; saPool = pool used, saW = w"}
+POOL_MAX_START = "2024-01"  # a series is published only with >= 12 months of data before the Jan 2025 baseline
 
 
-def pool_factors(factors, ok, groups):
-    """Typical (median) multiplicative seasonal factors per group (state FIPS) from series that have their
-    own (ok) factors, normalized to average 1; '' = the U.S. pool (every ok series)."""
-    out = {}
-    def norm(f):
-        return f / np.nanmean(f)
-    out[""] = norm(np.nanmedian(factors[ok], axis=0))
+def pool_factors(factors, n, groups):
+    """Typical (median) multiplicative seasonal factors per group (state FIPS) from series with >= POOL_MIN_RATIOS
+    ratios per calendar month, normalized to average 1; '' = the U.S. pool (every such series)."""
+    good = (n >= POOL_MIN_RATIOS) & np.isfinite(factors).all(axis=1)
+    norm = lambda f: f / np.mean(f)
+    out = {"": norm(np.median(factors[good], axis=0))}
+    g_arr = np.array(groups)
     for g in sorted(set(groups)):
-        sel = ok & (np.array(groups) == g)
+        sel = good & (g_arr == g)
         if sel.sum() >= MIN_POOL_SERIES:
-            out[g] = norm(np.nanmedian(factors[sel], axis=0))
+            out[g] = norm(np.median(factors[sel], axis=0))
     return out
 
 
-def pooled_adjust(mat, months, sa, ok, groups, pools):
-    """Series too short to fit their own seasonal factors (ok=False) are adjusted with their state's pooled
-    factors (else the U.S. pool), so a county or metro whose Zillow series only starts in 2022-2023 still gets
-    an honest seasonally adjusted change. Series that start after POOL_MAX_START stay unpublished. Returns
-    (SA matrix, pool label per row: None = own factors,
-    state FIPS = that state's pool, '' = U.S. pool). Rows with no data stay NaN."""
-    cal = np.array([int(m[5:]) for m in months]) - 1
-    sa = sa.copy()
-    labels = [None] * len(groups)
-    first_ok = months.index(POOL_MAX_START) if POOL_MAX_START in months else 0
+def shrink_weight(n, k=None):
+    k = SHRINK_K if k is None else k
+    return n / (n + k)
+
+
+def shrunk_factors(factors, n, groups, pools, k=None):
+    """Per-series factors shrunk toward the group pool. Returns (factors, own weight w, pool key per row)."""
+    out = np.full_like(factors, np.nan)
+    w = np.zeros(len(groups))
+    keys = []
     for i, g in enumerate(groups):
-        if ok[i] or not np.isfinite(mat[i]).any():
-            continue
-        if not np.isfinite(mat[i, :first_ok + 1]).any():  # too new (thin early Zillow coverage): not published
-            continue
         key = g if g in pools else ""
-        sa[i] = mat[i] / pools[key][cal]
-        labels[i] = key
-    return sa, labels
+        keys.append(key)
+        lp = np.log(pools[key])
+        if n[i] >= 1 and np.isfinite(factors[i]).all():
+            w[i] = shrink_weight(n[i], k)
+            lf = w[i] * np.log(factors[i]) + (1 - w[i]) * lp
+        else:
+            lf = lp  # no usable ratios: the pool's pattern
+        f = np.exp(lf)
+        out[i] = f / np.mean(f)
+    return out, w, keys
+
+
+def shrink_adjust(mat, months, groups, pools=None, k=None):
+    """Seasonally adjust every row with its own pattern shrunk toward its state's pool (pools are built from these
+    rows when not given). Rows whose data start after POOL_MAX_START stay unpublished (NaN). Returns
+    (SA matrix, own weight w per row, pool key per row: state FIPS or '' = U.S., pools)."""
+    factors, n = seasonal_factors(mat, months)
+    if pools is None:
+        pools = pool_factors(factors, n, groups)
+    f, w, keys = shrunk_factors(factors, n, groups, pools, k)
+    sa = apply_factors(mat, months, f)
+    first_ok = months.index(POOL_MAX_START) if POOL_MAX_START in months else 0
+    early = np.isfinite(mat[:, :first_ok + 1]).any(axis=1)
+    sa[~early] = np.nan  # too new (thin early Zillow coverage): not published
+    return sa, w, keys, pools
 
 
 def load_zillow(path, key_fn):
@@ -249,11 +284,10 @@ def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fi
     mk, mm, mmonths, mdf = load_zillow(R("zori_metro.csv"), lambda d: d.RegionID.astype(str).tolist())
     keep = [i for i, t in enumerate(mdf.RegionType.tolist()) if t == "msa"]
     mk = [mk[i] for i in keep]; mm = mm[keep]
-    msa, mok, _ = seasonal_adjust(mm, mmonths, return_factors=True)
     cbsa_of = [links.get(k) for k in mk]
-    # pooled seasonal pattern: the state of the metro's first principal city (e.g. "Bluefield, WV-VA" -> WV)
+    # state pattern the metro is shrunk toward: the state of the metro's first principal city (e.g. "Bluefield, WV-VA" -> WV)
     groups = [abbr_to_fips.get((titles.get(c) or ", ").rsplit(", ", 1)[1][:2], "") if c else "" for c in cbsa_of]
-    msa, mpool = pooled_adjust(mm, mmonths, msa, mok, groups, rent_pools)
+    msa, mw, mpool, _ = shrink_adjust(mm, mmonths, groups, rent_pools)
     msa = np.round(msa, 2)  # shipped precision (rentMS reproduces pct exactly)
     _, _, pct = change_since(msa, mmonths)
     bi = mmonths.index(BASE)
@@ -273,8 +307,7 @@ def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fi
             continue
         row = {"name": titles[cb], "pct": round(float(pct[i]), 1), "baseRent": int(round(mm[i, bi])),
                "curRent": int(round(mm[i, -1])), "asOf": mmonths[-1]}
-        if mpool[i] is not None:
-            row["saPool"] = pool_name(mpool[i])
+        row["saPool"] = pool_name(mpool[i]); row["saW"] = round(float(mw[i]), 2)
         if abs(pct[i] - med) / mad > OUTLIER_Z:
             row["flagged"] = True
         metros[cb] = row
@@ -583,16 +616,19 @@ def main():
     # {fips: {"n": months with a value, "last": last month with a value}} so the card can say "isn't current".
     zori_stale = {f: {"n": int(np.isfinite(cr[i]).sum()), "last": crm[int(np.flatnonzero(np.isfinite(cr[i]))[-1])]}
                   for i, f in enumerate(ck) if np.isfinite(cr[i]).any() and not np.isfinite(cr[i, -1])}
-    cr_sa, cr_ok, cr_factors = seasonal_adjust(cr, crm, return_factors=True)
-    # Short series (Zillow coverage that starts in 2022-2023, e.g. Androscoggin ME) get their state's typical
-    # seasonal pattern instead of being dropped; labeled wherever they are shown (rentSaPool / saPool).
-    rent_pools = pool_factors(cr_factors, cr_ok, [f[:2] for f in ck])
-    cr_sa, cr_pool = pooled_adjust(cr, crm, cr_sa, cr_ok, [f[:2] for f in ck], rent_pools)
+    # Every series: its own seasonal pattern shrunk toward its state's (weight n/(n+SHRINK_K), n = fewest leak-free
+    # ratios in any calendar month); a short series (e.g. Androscoggin ME, from late 2022) gets mostly or only the
+    # state pattern. Pool and own weight ship with each row (rentSaPool / rentSaW, saPool / saW).
+    cr_sa, cr_w, cr_pool, rent_pools = shrink_adjust(cr, crm, [f[:2] for f in ck])
+    _n_by = defaultdict(int)
+    for v in cr_w[np.isfinite(cr_sa[:, -1])]:
+        _n_by[round(float(v), 2)] += 1
+    print(f"rent SA: k={SHRINK_K}, {len(rent_pools) - 1} state pools (+U.S.); own-weight distribution {dict(sorted(_n_by.items()))}")
     cr_sa = np.round(cr_sa, 2)  # the shipped series' precision, so the Rent tab reproduces the card's % exactly
     _, _, pct = change_since(cr_sa, crm)
     state_names = {v["countyFips"][:2]: v["stateName"] for v in zip_county.values()}
     pool_name = lambda key: f"{state_names.get(key, key)} counties" if key else "U.S. counties"
-    meta["sources"]["zori"] = {"latest": crm[-1], "short": "Zillow ZORI", "adjustment": "seasonally adjusted by whatchanged",
+    meta["sources"]["zori"] = {"latest": crm[-1], "short": "Zillow ZORI", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                                "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases", "url": "https://www.zillow.com/research/data/"}
     county_rent = {}
     bi = crm.index(BASE)
@@ -617,12 +653,11 @@ def main():
             # Seasonally adjusted ZORI levels since SERIES_START for the Housing graph (2 decimals so the
             # graph's latest % change reproduces `rent` exactly)
             counties[f]["rentS"] = compact_series(cr_sa[i], crm, 2)
-            if cr_pool[i] is not None:
-                counties[f]["rentSaPool"] = pool_name(cr_pool[i])
+            counties[f]["rentSaPool"] = pool_name(cr_pool[i]); counties[f]["rentSaW"] = round(float(cr_w[i]), 2)
             if np.isfinite(cr[i, bi]):
                 county_rent[f] = {"pct": round(float(pct[i]), 1), "baseRent": int(round(cr[i, bi])),
                                   "curRent": int(round(cr[i, -1])), "asOf": crm[-1],
-                                  **({"saPool": pool_name(cr_pool[i])} if cr_pool[i] is not None else {})}
+                                  "saPool": pool_name(cr_pool[i]), "saW": round(float(cr_w[i]), 2)}
 
     # QCEW (latest quarter only): county jobs. Used for ONE thing: the "biggest movers" lists only rank counties with
     # >= 75,000 jobs, and the outlier pool is counties with >= 20,000 jobs. Not displayed.
@@ -685,9 +720,9 @@ def main():
     for f, cb in metro_counties.items():
         m = metro_rows[cb]
         counties[f]["rentM"] = {k: v for k, v in {"n": m["name"], "cbsa": cb, "rent": m["pct"], "cur": m["curRent"],
-                                                   "flag": m.get("flagged"), "saPool": m.get("saPool")}.items() if v is not None}
+                                                   "flag": m.get("flagged"), "saPool": m.get("saPool"), "saW": m.get("saW")}.items() if v is not None}
         counties[f]["rentMS"] = metro_series[cb]
-    meta["sources"]["zoriMetro"] = {"latest": metro_asof, "short": "Zillow ZORI (metro)", "adjustment": "seasonally adjusted by whatchanged",
+    meta["sources"]["zoriMetro"] = {"latest": metro_asof, "short": "Zillow ZORI (metro)", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                                     "label": "Zillow Observed Rent Index (ZORI), metro", "geography": METRO_DELINEATION,
                                     "url": "https://www.zillow.com/research/data/"}
 
@@ -722,7 +757,7 @@ def main():
             if (counties[f].get("note") or {}).get("rent"):
                 cr_out[f]["note"] = counties[f]["note"]["rent"]
     with open(os.path.join(a.repo, "src/lib/data/county-rent.json"), "w") as fh:
-        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI)", "adjustment": "seasonally adjusted by whatchanged",
+        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI)", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                             "baseMonth": BASE, "asOf": crm[-1], "pctRange": [RENT_HERO_MIN, RENT_HERO_MAX],
                             "levels": "baseRent/curRent are observed (not seasonally adjusted) typical asking rents, $/mo",
                             "dollarChange": "monthly change consistent with pct = curRent - curRent / (1 + pct/100)"},
@@ -742,7 +777,7 @@ def main():
     # Server-importable metro rent: same fields as county rows; `counties` maps county FIPS -> CBSA code for counties
     # with no county row (OMB March 2020 delineation, the vintage Zillow's metros use).
     with open(os.path.join(a.repo, "src/lib/data/metro-rent.json"), "w") as fh:
-        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI), metro", "adjustment": "seasonally adjusted by whatchanged",
+        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI), metro", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                             "baseMonth": BASE, "asOf": metro_asof, "geography": METRO_DELINEATION, "pctRange": [RENT_HERO_MIN, RENT_HERO_MAX],
                             "levels": "baseRent/curRent are observed (not seasonally adjusted) typical asking rents, $/mo"},
                    "metros": metro_rows, "counties": metro_counties,

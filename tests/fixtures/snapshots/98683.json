@@ -6693,10 +6693,10 @@
   "sourceId": "eia-electricity"
  },
  "rent": {
-  "pct": 0.7,
+  "pct": 0.8,
   "baseRent": 1829,
   "curRent": 1891,
-  "monthlyChange": 13,
+  "monthlyChange": 15,
   "baseMonth": "2025-01",
   "asOf": "2026-08",
   "countyFips": "53011",
@@ -6704,6 +6704,8 @@
   "source": "Zillow Observed Rent Index (ZORI)",
   "sourceUrl": "https://www.zillow.com/research/data/",
   "adjustment": "seasonally adjusted by whatchanged",
+  "saPool": "Washington counties",
+  "saW": 0.5,
   "level": "county"
  },
  "dollarImpact": {

@@ -9,7 +9,7 @@ import {
 } from '@/lib/county-data'
 import { fmtMonthYear } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
-import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE, rentPoolNote } from '@/lib/hero-cards'
+import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE, rentSeasonalNote } from '@/lib/hero-cards'
 import { LADDERS } from '@/lib/resolution/ladders'
 import { resolveLadderSync } from '@/lib/resolution/resolve'
 import type { TraceStep } from '@/lib/resolution/types'
@@ -187,11 +187,12 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
         />
       )
     }
-    const pool = active === 'rent' ? (metroTab ? c?.rentM?.saPool : c?.rentSaPool) : undefined
+    const seasonal = active !== 'rent' ? undefined
+      : metroTab ? rentSeasonalNote(c?.rentM?.saPool, c?.rentM?.saW, 'metro') : rentSeasonalNote(c?.rentSaPool, c?.rentSaW)
     input = {
       ...input,
       note: active === 'rent' ? (metroTab ? ZORI_METRO_NOTE(rentGeo) : ZORI_SHORT_NOTE) : ZHVI_SHORT_NOTE,
-      info: [HOUSING_NOTE, ...(pool ? [rentPoolNote(pool)] : [])],
+      info: [HOUSING_NOTE, ...(seasonal ? [seasonal] : [])],
     }
   }
 

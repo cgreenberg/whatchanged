@@ -6704,6 +6704,8 @@
   "source": "Zillow Observed Rent Index (ZORI)",
   "sourceUrl": "https://www.zillow.com/research/data/",
   "adjustment": "seasonally adjusted by whatchanged",
+  "saPool": "Connecticut counties",
+  "saW": 0.5,
   "level": "county"
  },
  "dollarImpact": {
