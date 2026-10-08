@@ -1,0 +1,369 @@
+import { server } from '../mocks/server'
+import { blsFixtureFor, electricityRowsFor, heatingRowsFor } from '../mocks/handlers'
+import { hasHeatingSeries, heatingCacheKey, type EiaHeatingRow } from '@/lib/api/eia-heating'
+import { parseNyserdaRows, NYSERDA_CACHE_KEY } from '@/lib/api/nyserda'
+import { LADDERS } from '@/lib/resolution/ladders'
+import { firstApplicable } from '@/lib/resolution/resolve'
+import nyserdaFixture from '../fixtures/nyserda-heating-oil.json'
+import { hasElectricitySeries, electricityCacheKey, type EiaElectricityRow } from '@/lib/api/eia-electricity'
+import {
+  clearMemCache,
+  getCachedEnvelope,
+  getCachedOrFetch,
+  lastGoodKey,
+  tryAcquireUpstream,
+  budgetKey,
+  writeEnvelope,
+  BudgetExceededError,
+  dailyBudget,
+  __setKvClientForTests,
+  type KvClient,
+} from '@/lib/cache/kv'
+import {
+  planRefresh,
+  planBlsRequests,
+  runRefresh,
+  summarize,
+  BLS_MAX_SERIES_PER_REQUEST,
+  CPI_AREAS_PER_REQUEST,
+  type RefreshDeps,
+} from '@/lib/api/refresh'
+import { fetchSnapshot } from '@/lib/api/snapshot'
+import { lookupZip } from '@/lib/data/zip-lookup'
+import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+import { getGasLookup, buildSeriesFromData, type EiaRawPoint } from '@/lib/api/eia'
+import { nationalGasLookupFor } from '@/lib/api/cached-sources'
+import { cpiCacheKey } from '@/lib/api/bls-cpi'
+import { CPI_TO_EIA_CITY } from '@/lib/mappings/eia-gas'
+import eiaFixture from '../fixtures/eia-gas.json'
+
+// Zips covering: metro CPI + EIA city (10001), state gas (98683), PADD gas +
+// division CPI (04101), CT planning region (06902), PR municipio (00601),
+// Cleveland county override (44113), BLS monthly gas: Urban Hawaii (96813),
+// Philadelphia metro (19103); Milwaukee (53202) is EIA PADD 2 (no BLS division tier).
+const SAMPLE_ZIPS = ['10001', '98683', '04101', '06902', '00601', '44113', '96813', '19103', '53202']
+
+function runtimeKeysFor(zip: string): string[] {
+  const loc = lookupZip(zip)!
+  const area = getMetroCpiAreaForCounty(loc.countyFips, loc.stateAbbr)
+  const gas = getGasLookup(loc.stateAbbr, area.areaCode, loc.countyFips)
+  // A static gas rung (Puerto Rico DACO, Alaska survey) answers from bundled data: no gas keys at runtime
+  const ladderLoc = { zip, stateAbbr: loc.stateAbbr, countyFips: loc.countyFips, countyName: loc.countyName, cpiAreaCode: area.areaCode }
+  const staticGas = firstApplicable(LADDERS.gas, ladderLoc)?.rung.pipeline === 'static'
+  const elec = hasElectricitySeries(loc.stateAbbr) ? [electricityCacheKey(loc.stateAbbr), electricityCacheKey('US')] : []
+  // Heating: NY heating oil comes from NYSERDA (one key); elsewhere the EIA state series + its U.S. comparison
+  const heat: string[] = []
+  const st = loc.stateAbbr
+  if (st === 'NY') heat.push(NYSERDA_CACHE_KEY)
+  else if (hasHeatingSeries('oil', st)) heat.push(heatingCacheKey('oil', st), heatingCacheKey('oil', 'US'))
+  if (hasHeatingSeries('propane', st)) heat.push(heatingCacheKey('propane', st), heatingCacheKey('propane', 'US'))
+  return [...new Set([cpiCacheKey(area.areaCode), ...(staticGas ? [] : [gas.cacheKey, nationalGasLookupFor(gas).cacheKey]), ...elec, ...heat])]
+}
+
+const fastOpts = { blsPauseMs: 0, backoffMs: 0 }
+
+function countUpstreamCalls() {
+  const calls = { bls: 0, eia: 0 }
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.includes('api.bls.gov')) calls.bls++
+    if (request.url.includes('api.eia.gov')) calls.eia++
+  })
+  return calls
+}
+
+afterEach(() => {
+  server.events.removeAllListeners()
+  __setKvClientForTests(undefined)
+  delete process.env.BLS_RUNTIME_DAILY_BUDGET
+  delete process.env.EIA_RUNTIME_DAILY_BUDGET
+})
+
+describe('planRefresh', () => {
+  const plan = planRefresh()
+
+  test('plans prices only: no county unemployment (LAUS) targets', () => {
+    expect(plan).not.toHaveProperty('lausAreas')
+    expect(Object.keys(plan).sort()).toEqual(['cpiAreas', 'electricityStates', 'gasLookups', 'heating', 'nyserda'])
+  })
+
+  test('home heating: every SHOPP state series a zip resolves to + each product\'s U.S. average; NYSERDA once', () => {
+    const keys = plan.heating!.map((h) => `${h.product}:${h.area}`)
+    expect(keys).toEqual(expect.arrayContaining(['oil:ME', 'oil:NY', 'oil:US', 'propane:GA', 'propane:US']))
+    expect(keys).not.toContain('oil:GA')
+    expect(keys.filter((k) => k.startsWith('oil:'))).toHaveLength(22) // 21 states + US (EIA's DC series is empty)
+    expect(keys.filter((k) => k.startsWith('propane:'))).toHaveLength(39) // 38 states + US
+    expect(plan.nyserda).toBe(true)
+    expect(planRefresh(['30303']).nyserda).toBe(false)
+  })
+
+  test('electricity: every state + DC that any zip resolves to, plus US; no territories', () => {
+    expect(plan.electricityStates).toHaveLength(52)
+    expect(plan.electricityStates).toEqual(expect.arrayContaining(['US', 'DC', 'AK', 'HI', 'ME']))
+    for (const t of ['PR', 'GU', 'VI']) expect(plan.electricityStates).not.toContain(t)
+  })
+
+  test('covers every CPI area (23 metros + 9 divisions + national) and every gas series', () => {
+    const codes = plan.cpiAreas.map((a) => a.areaCode)
+    expect(codes).toContain('0000')
+    expect(codes).toEqual(expect.arrayContaining(['S12A', 'S49G', '0110', '0490']))
+    expect(codes.filter((c) => c.startsWith('S')).length).toBe(23)
+    const eia = plan.gasLookups.filter((g) => g.source === 'eia')
+    const bls = plan.gasLookups.filter((g) => g.source === 'bls')
+    expect(eia.map((g) => g.duoarea)).toEqual(expect.arrayContaining(['NUS', 'YCLE', 'SWA', 'R1X', 'R1Y', 'R1Z', 'R20', 'R5XCA']))
+    expect(eia.every((g) => g.cacheKey.startsWith('eia:gas:epmr:'))).toBe(true)
+    // BLS monthly tiers: every CPI metro without an EIA city (incl. Honolulu/Anchorage) + U.S.; no divisions —
+    // except metros lying wholly in a state EIA prices weekly (Tampa FL, Dallas TX, Riverside and San Diego CA),
+    // whose zips take the weekly state average instead (Minneapolis stays: its Wisconsin counties use it)
+    const weeklyStateMetros = ['S35D', 'S37A', 'S49C', 'S49E']
+    const metrosWithoutEiaCity = codes.filter((c) => c.startsWith('S') && !CPI_TO_EIA_CITY[c] && !weeklyStateMetros.includes(c))
+    expect(bls.map((g) => g.areaCode).sort()).toEqual(['0000', ...metrosWithoutEiaCity].sort())
+    expect(bls.every((g) => g.cacheKey === `bls:gas:${g.areaCode}` && g.seriesId === `APU${g.areaCode}74714`)).toBe(true)
+  })
+
+  test('BLS-tier zips: their EIA outage fallback (state / PADD; NUS for HI/AK) is warmed too', () => {
+    const keys = new Set(plan.gasLookups.map((g) => g.cacheKey))
+    for (const zip of ['19103', '20001', '30303', '96720', '99701']) {
+      const l = lookupZip(zip)!
+      const area = getMetroCpiAreaForCounty(l.countyFips, l.stateAbbr)
+      expect(getGasLookup(l.stateAbbr, area.areaCode, l.countyFips).source).toBe('bls')
+      expect(keys.has(getGasLookup(l.stateAbbr, area.areaCode, l.countyFips, { eiaOnly: true }).cacheKey)).toBe(true)
+    }
+    expect(getGasLookup('HI', '0490', '15001', { eiaOnly: true }).duoarea).toBe('NUS')
+  })
+
+  test('BLS gas series ride along in the CPI batches: 3 BLS requests, each ≤ 50 series', () => {
+    const reqs = planBlsRequests(plan)
+    // 32 local CPI areas × 3 items (food at home, shelter, rent of primary residence SEHA) + national + 17 BLS gas series
+    expect(reqs.length).toBe(3)
+    // CPI energy (SA0E) is no longer fetched (the Energy graph became the Electricity graph)
+    expect(reqs.flatMap((r) => r.ids).some((id) => id.endsWith('SA0E'))).toBe(false)
+    // Every local CPI area's SEHA series is requested in the same batch as its other items
+    for (const r of reqs) for (const a of r.cpiAreas) expect(r.ids).toContain(`CUUR${a.areaCode}SEHA`)
+    expect(reqs.every((r) => r.ids.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
+    const gasIds = reqs.flatMap((r) => r.gas.map((g) => g.seriesId))
+    expect(gasIds.length).toBe(plan.gasLookups.filter((g) => g.source === 'bls').length)
+    for (const r of reqs) for (const g of r.gas) expect(r.ids).toContain(g.seriesId)
+  })
+
+  test('the plan includes every key the runtime can request for the sample zips', () => {
+    const planned = new Set([
+      ...plan.cpiAreas.map((a) => cpiCacheKey(a.areaCode)),
+      ...plan.gasLookups.map((g) => g.cacheKey),
+      ...plan.electricityStates!.map((st) => electricityCacheKey(st)),
+      ...plan.heating!.map((h) => heatingCacheKey(h.product, h.area)),
+      ...(plan.nyserda ? [NYSERDA_CACHE_KEY] : []),
+    ])
+    for (const zip of SAMPLE_ZIPS) for (const key of runtimeKeysFor(zip)) expect(planned).toContain(key)
+  })
+})
+
+describe('runRefresh — full plan with mocked upstreams', () => {
+  test('batches ≤ 50 series per BLS request; reports call counts', async () => {
+    const plan = planRefresh()
+    const blsBatches: string[][] = []
+    const deps: RefreshDeps = {
+      fetchBls: async (ids) => {
+        blsBatches.push(ids)
+        return Object.fromEntries(ids.map((id) => [id, blsFixtureFor(id)]))
+      },
+      fetchGas: async () => buildSeriesFromData(eiaFixture.response.data as EiaRawPoint[]),
+      fetchElectricity: async (states) => {
+        elecRequests.push(states)
+        return { rows: electricityRowsFor(states) as EiaElectricityRow[], requests: 2 }
+      },
+      fetchHeating: async (products, areas) => {
+        heatRequests.push(areas)
+        const codes = products.map((p) => (p === 'oil' ? 'EPD2F' : 'EPLLPA'))
+        const duo = areas.map((a) => (a === 'US' ? 'NUS' : `S${a}`))
+        // the real query (since 2016, ~17,400 rows) takes 4 pages
+        return { rows: heatingRowsFor(duo, codes) as EiaHeatingRow[], requests: 4 }
+      },
+      fetchNyserda: async () => parseNyserdaRows(nyserdaFixture),
+      write: async () => undefined,
+      sleep: async () => undefined,
+      log: () => undefined,
+    }
+    const elecRequests: string[][] = []
+    const heatRequests: string[][] = []
+    const report = await runRefresh(plan, deps, fastOpts)
+    const s = summarize(report)
+    expect(blsBatches.every((b) => b.length <= BLS_MAX_SERIES_PER_REQUEST)).toBe(true)
+    // Electricity: ONE query for every state + US (paged: 2 EIA requests)
+    expect(elecRequests).toEqual([plan.electricityStates])
+    expect(blsBatches.every((b) => new Set(b).size === b.length)).toBe(true)
+    // CPI batches of CPI_AREAS_PER_REQUEST areas; BLS gas series fill their spare room, overflowing into one more
+    expect(Math.ceil((plan.cpiAreas.length - 1) / CPI_AREAS_PER_REQUEST)).toBe(3)
+    expect(s.blsCalls).toBe(planBlsRequests(plan).length)
+    // 32 local CPI areas × 3 items (+ national) + 17 BLS gas series → 3 BLS requests per full refresh
+    expect(s.blsCalls).toBe(3)
+    expect(blsBatches.flat().some((id) => id.startsWith('LAU') || id.startsWith('LNU'))).toBe(false)
+    // EIA: one GET per gas duoarea + electricity (2 pages) + heating fuel (one query, 4 pages); NYSERDA: 1 keyless call
+    expect(heatRequests).toHaveLength(1)
+    expect(s.eiaCalls).toBe(plan.gasLookups.filter((g) => g.source === 'eia').length + 2 + 4)
+    expect(s.otherCalls).toBe(1)
+    expect(s.errors).toBe(0)
+    expect(s.written).toBe(plan.cpiAreas.length + plan.gasLookups.length + plan.electricityStates!.length + plan.heating!.length + 1)
+    expect(report.results.filter((r) => r.key.startsWith('eia:electricity:')).every((r) => r.status === 'written')).toBe(true)
+  })
+
+  test('a failing BLS batch is retried with backoff, then reported as errors (no writes)', async () => {
+    const plan = {
+      cpiAreas: [
+        { areaCode: '0490', areaName: 'Pacific', tier: 2 as const },
+        { areaCode: '0480', areaName: 'Mountain', tier: 2 as const },
+      ],
+      gasLookups: [],
+    }
+    let calls = 0
+    const writes: string[] = []
+    const report = await runRefresh(
+      plan,
+      {
+        fetchBls: async () => {
+          calls++
+          throw new Error('BLS API error: 503')
+        },
+        fetchGas: async () => {
+          throw new Error('unused')
+        },
+        write: async (key) => {
+          writes.push(key)
+        },
+        sleep: async () => undefined,
+        log: () => undefined,
+      },
+      { ...fastOpts, retries: 2 }
+    )
+    expect(calls).toBe(3)
+    expect(report.blsCalls).toBe(3)
+    expect(summarize(report).errors).toBe(2)
+    expect(writes).toEqual([])
+  })
+
+  test('a BLS daily-threshold error halts further BLS requests', async () => {
+    const plan = planRefresh() // 3 CPI batches
+    let calls = 0
+    const report = await runRefresh(
+      plan,
+      {
+        fetchBls: async () => {
+          calls++
+          throw new Error('BLS refresh API failed: daily threshold for total number of requests allocated has been reached')
+        },
+        fetchGas: async () => buildSeriesFromData(eiaFixture.response.data as EiaRawPoint[]),
+        write: async () => undefined,
+        sleep: async () => undefined,
+        log: () => undefined,
+      },
+      fastOpts
+    )
+    expect(calls).toBe(1)
+    expect(report.blsCalls).toBe(1)
+  })
+})
+
+describe('refresh and runtime produce identical keys and envelopes', () => {
+  beforeEach(() => clearMemCache())
+
+  test.each(SAMPLE_ZIPS)('zip %s', async (zip) => {
+    const keys = runtimeKeysFor(zip)
+
+    // 1. Refresh path (real fetch/parse via MSW mocks), writing to the in-memory cache
+    const report = await runRefresh(planRefresh([zip]), undefined, fastOpts)
+    expect(summarize(report).errors).toBe(0)
+    const refreshed = new Map<string, unknown>()
+    for (const key of keys) {
+      const env = await getCachedEnvelope<unknown>(key)
+      expect(env).not.toBeNull()
+      expect(await getCachedEnvelope<unknown>(lastGoodKey(key))).toEqual(env)
+      refreshed.set(key, env)
+    }
+
+    // 2. A request served after the refresh makes no upstream calls
+    const calls = countUpstreamCalls()
+    const warm = await fetchSnapshot(zip)
+    expect(calls).toEqual({ bls: 0, eia: 0 })
+    expect(warm!.cacheStatus).toMatchObject({ cpi: 'hit', gas: 'hit' })
+
+    // 3. Runtime path from a cold cache writes the same keys with the same envelope shape + data
+    clearMemCache()
+    await fetchSnapshot(zip)
+    for (const key of keys) {
+      const env = await getCachedEnvelope<unknown>(key)
+      const ref = refreshed.get(key) as { __v: number; data: unknown }
+      expect(env).not.toBeNull()
+      expect(Object.keys(env!).sort()).toEqual(Object.keys(ref).sort())
+      expect(env!.__v).toBe(ref.__v)
+      expect(env!.data).toEqual(ref.data)
+    }
+  })
+})
+
+describe('runtime upstream budget', () => {
+  beforeEach(() => clearMemCache())
+
+  test('daily counter caps upstream calls (key budget:{source}:{YYYY-MM-DD})', async () => {
+    process.env.BLS_RUNTIME_DAILY_BUDGET = '3'
+    const now = new Date('2026-10-02T12:00:00Z')
+    expect(budgetKey('bls', now)).toBe('budget:bls:2026-10-02')
+    const results = []
+    for (let i = 0; i < 5; i++) results.push(await tryAcquireUpstream('bls', now))
+    expect(results).toEqual([true, true, true, false, false])
+    // EIA has its own counter
+    expect(await tryAcquireUpstream('eia', now)).toBe(true)
+  })
+
+  /** Exhaust the BLS budget: cap 1, already spent. */
+  async function exhaustBls() {
+    process.env.BLS_RUNTIME_DAILY_BUDGET = '1'
+    expect(await tryAcquireUpstream('bls')).toBe(true)
+  }
+
+  test('empty, zero, negative or malformed budget env → default (never silently disables fetches)', async () => {
+    for (const v of ['', '  ', '0', '-5', 'abc', '2.5']) {
+      process.env.BLS_RUNTIME_DAILY_BUDGET = v
+      expect(dailyBudget('bls')).toBe(60)
+    }
+    process.env.BLS_RUNTIME_DAILY_BUDGET = '7'
+    expect(dailyBudget('bls')).toBe(7)
+  })
+
+  test('over budget: serves last-good if present, else BudgetExceededError — never fetches', async () => {
+    await exhaustBls()
+    const fetchFn = jest.fn(async () => 'fresh')
+    await writeEnvelope('k:with-lastgood', 'old', 1)
+    await new Promise((r) => setTimeout(r, 1100)) // primary key expires, last-good remains
+    const r = await getCachedOrFetch('k:with-lastgood', 60, fetchFn, { budget: 'bls' })
+    expect(r).toMatchObject({ data: 'old', stale: true })
+    await expect(getCachedOrFetch('k:none', 60, fetchFn, { budget: 'bls' })).rejects.toBeInstanceOf(BudgetExceededError)
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
+  test('budget exhausted → uncached zip makes zero BLS calls, sources "Data unavailable"', async () => {
+    await exhaustBls()
+    const calls = countUpstreamCalls()
+    const snapshot = await fetchSnapshot('98683')
+    expect(calls.bls).toBe(0)
+    expect(snapshot!.cpi.data).toBeNull()
+    expect(snapshot!.cpi.error).toBe('Data unavailable')
+    expect(snapshot!.gas.data).not.toBeNull() // EIA budget separate
+  })
+
+  test('Redis unreachable → in-process circuit breaker caps BLS calls per hour', async () => {
+    const down = () => Promise.reject(new Error('ECONNREFUSED'))
+    const brokenRedis: KvClient = { get: down, set: down, del: down, incr: down, expire: down }
+    __setKvClientForTests(brokenRedis)
+    const fetchFn = jest.fn(async () => 'x')
+    let ok = 0
+    for (let i = 0; i < 20; i++) {
+      try {
+        await getCachedOrFetch(`bls:cpi:test${i}:all`, 60, fetchFn, { budget: 'bls' })
+        ok++
+      } catch (e) {
+        expect(e).toBeInstanceOf(BudgetExceededError)
+      }
+    }
+    expect(fetchFn).toHaveBeenCalledTimes(5)
+    expect(ok).toBe(5)
+  })
+})

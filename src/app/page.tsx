@@ -1,62 +1,57 @@
 import type { Metadata } from 'next'
 import { fetchSnapshot } from '@/lib/api/snapshot'
-import { estimateTariffCost, formatDollars } from '@/lib/tariff'
+import { cityContainsZip } from '@/lib/data/census-acs'
 import HomeContent from '@/components/HomeContent'
+import { metadataDescription } from '@/lib/hero-cards'
+import { BASELINE_MONTH_LONG, BASELINE_DAY_LABEL } from '@/lib/baseline'
+import { firstParam, ogImagePath, pageUrl, type PlaceQuery } from '@/lib/share-url'
 
 type Props = {
-  searchParams: Promise<{ zip?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
+const GENERIC_TITLE = `What Changed in Your Town Since ${BASELINE_MONTH_LONG}?`
+const GENERIC_DESCRIPTION = 'Enter your zip code. See what changed.'
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { zip } = await searchParams
+  // Repeated params (?city=a&city=b) arrive as arrays: use the first value.
+  const sp = await searchParams
+  const zip = firstParam(sp.zip)
+  const city = firstParam(sp.city)
+  const state = firstParam(sp.state)
 
   if (!zip || !/^\d{5}$/.test(zip)) {
     return {
-      title: 'What Changed in Your Town Since January 2025?',
-      description: 'Enter your zip code. See what changed.',
+      title: GENERIC_TITLE,
+      description: GENERIC_DESCRIPTION,
       openGraph: {
         type: 'website',
         siteName: 'WhatChanged.us',
-        title: 'What Changed in Your Town Since January 2025?',
-        description: 'Enter your zip code. See what changed.',
+        title: GENERIC_TITLE,
+        description: GENERIC_DESCRIPTION,
         images: [{ url: '/api/og', width: 1200, height: 630 }],
       },
       twitter: { card: 'summary_large_image', site: '@whatchangedus' },
     }
   }
 
+  const requested: PlaceQuery = city && state ? { zip, city: city.slice(0, 100), state: state.slice(0, 2) } : { zip }
   const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
-    return {
-      title: 'What Changed in Your Town Since January 2025?',
-      description: 'Enter your zip code. See what changed.',
-    }
+    return { title: GENERIC_TITLE, description: GENERIC_DESCRIPTION }
   }
 
+  // Echo city/state into og:url and the OG image only when they're validated against the zip
+  const place: PlaceQuery = requested.city && requested.state && cityContainsZip(zip, requested.city, requested.state)
+    ? requested
+    : { zip }
   const cityName = snapshot.location.cityName || snapshot.location.countyName
-  const state = snapshot.location.stateAbbr
-  const title = `What Changed in ${cityName}, ${state} (${zip})?`
-  const ogTitle = `What changed in ${cityName}, ${state} since Jan. 20, 2025?`
-
-  const vParam = new Date().toISOString().slice(0, 7)
-  const ogImageUrl = `/api/og?zip=${zip}&v=${vParam}`
-
-  const parts: string[] = []
-  if (snapshot.gas.data) {
-    parts.push(`Gas: ${snapshot.gas.data.change > 0 ? '+' : ''}$${snapshot.gas.data.change.toFixed(2)}/gal`)
-  }
-  if (snapshot.cpi.data) {
-    parts.push(`Groceries: ${snapshot.cpi.data.groceriesChange > 0 ? '+' : ''}${snapshot.cpi.data.groceriesChange.toFixed(1)}%`)
-  }
-  if (snapshot.cpi.data?.shelterChange !== undefined) {
-    parts.push(`Shelter: ${snapshot.cpi.data.shelterChange > 0 ? '+' : ''}${snapshot.cpi.data.shelterChange.toFixed(1)}%`)
-  }
-  if (snapshot.census.data) {
-    const cost = estimateTariffCost(snapshot.census.data.medianIncome)
-    parts.push(`Tariff cost ~${formatDollars(cost)}/yr`)
-  }
-  parts.push('Check your zip at whatchanged.us')
-  const description = parts.join(' · ')
+  const stateAbbr = snapshot.location.stateAbbr
+  const title = `What Changed in ${cityName}, ${stateAbbr} (${zip})?`
+  const ogTitle = `What changed in ${cityName}, ${stateAbbr} since ${BASELINE_DAY_LABEL}?`
+  // `v` only busts social-crawler caches (monthly); it is never displayed
+  const ogImageUrl = ogImagePath(place, new Date().toISOString().slice(0, 7))
+  const description = metadataDescription(snapshot)
 
   return {
     title,
@@ -65,13 +60,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       siteName: 'WhatChanged.us',
       title: ogTitle,
       description,
-      url: `https://whatchanged.us/?zip=${zip}`,
-      images: [{
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        type: 'image/png',
-      }],
+      url: pageUrl(place),
+      images: [{ url: ogImageUrl, width: 1200, height: 630, type: 'image/png' }],
     },
     twitter: {
       card: 'summary_large_image',

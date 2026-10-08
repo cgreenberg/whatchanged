@@ -1,4 +1,5 @@
-import { getGasLookup } from '@/lib/api/eia'
+import { getGasLookup, describeDuoarea, buildSeriesFromData, isGasStale, type EiaRawPoint } from '@/lib/api/eia'
+import eiaFixture from '../fixtures/eia-gas.json'
 
 describe('getGasLookup — Tier 1: county FIPS override', () => {
   test('Cuyahoga County (Cleveland) maps to YCLE at tier 1', () => {
@@ -6,7 +7,7 @@ describe('getGasLookup — Tier 1: county FIPS override', () => {
     expect(result.duoarea).toBe('YCLE')
     expect(result.tier).toBe(1)
     expect(result.geoLevel).toBe('Cleveland area avg')
-    expect(result.cacheKey).toBe('eia:gas:city:YCLE')
+    expect(result.cacheKey).toBe('eia:gas:epmr:city:YCLE')
   })
 
   test('Lorain County (Cleveland suburb) also maps to YCLE', () => {
@@ -28,7 +29,7 @@ describe('getGasLookup — Tier 1: CPI area → EIA city', () => {
     expect(result.duoarea).toBe('Y48SE')
     expect(result.tier).toBe(1)
     expect(result.geoLevel).toBe('Seattle area avg')
-    expect(result.cacheKey).toBe('eia:gas:city:Y48SE')
+    expect(result.cacheKey).toBe('eia:gas:epmr:city:Y48SE')
   })
 
   test('Los Angeles CPI area (S49A) maps to Y05LA', () => {
@@ -82,11 +83,11 @@ describe('getGasLookup — Tier 1: CPI area → EIA city', () => {
 
 describe('getGasLookup — Tier 2: state-level fallback', () => {
   test('WA with unknown CPI area falls back to state tier 2', () => {
-    const result = getGasLookup('WA', 'S49G')
+    const result = getGasLookup('WA', 'S99Z')
     expect(result.duoarea).toBe('SWA')
     expect(result.tier).toBe(2)
     expect(result.geoLevel).toBe('Washington state avg')
-    expect(result.cacheKey).toBe('eia:gas:state:WA')
+    expect(result.cacheKey).toBe('eia:gas:epmr:state:WA')
   })
 
   test('CA with no CPI area falls back to state tier 2', () => {
@@ -121,11 +122,11 @@ describe('getGasLookup — Tier 3: PAD district fallback', () => {
     expect(result.duoarea).toBe('R1Z')
     expect(result.tier).toBe(3)
     expect(result.geoLevel).toBe('Lower Atlantic (PADD 1C) avg')
-    expect(result.cacheKey).toBe('eia:gas:pad:1C')
+    expect(result.cacheKey).toBe('eia:gas:epmr:pad:1C')
   })
 
-  test('KS (PAD 2 — Midwest) maps to R20', () => {
-    const result = getGasLookup('KS')
+  test('KY (PAD 2 — Midwest; East South Central division is mostly PADD 3) maps to R20', () => {
+    const result = getGasLookup('KY')
     expect(result.duoarea).toBe('R20')
     expect(result.tier).toBe(3)
     expect(result.geoLevel).toBe('Midwest (PADD 2) avg')
@@ -145,11 +146,12 @@ describe('getGasLookup — Tier 3: PAD district fallback', () => {
     expect(result.geoLevel).toBe('Rocky Mountain (PADD 4) avg')
   })
 
-  test('OR (PAD 5 — West Coast) maps to R50', () => {
+  test('OR (PAD 5 — West Coast) maps to R5XCA (PADD 5 excl. California)', () => {
     const result = getGasLookup('OR')
-    expect(result.duoarea).toBe('R50')
+    expect(result.duoarea).toBe('R5XCA')
     expect(result.tier).toBe(3)
-    expect(result.geoLevel).toBe('West Coast (PADD 5) avg')
+    expect(result.geoLevel).toBe('West Coast excl. California (PADD 5) avg')
+    expect(result.cacheKey).toBe('eia:gas:epmr:pad:5XCA')
   })
 })
 
@@ -159,7 +161,7 @@ describe('getGasLookup — national fallback', () => {
     expect(result.duoarea).toBe('NUS')
     expect(result.geoLevel).toBe('National avg')
     expect(result.tier).toBe(3)
-    expect(result.cacheKey).toBe('eia:gas:national')
+    expect(result.cacheKey).toBe('eia:gas:epmr:national')
   })
 
   test('empty state string returns national fallback', () => {
@@ -169,46 +171,78 @@ describe('getGasLookup — national fallback', () => {
   })
 })
 
-describe('EIA gas data supports 10Y range', () => {
-  test('buildSeriesFromData handles data spanning 10+ years', () => {
-    const wideData = [
-      { period: '2016-06-20', value: '2.645', 'area-name': 'Washington', duoarea: 'SWA' },
-      { period: '2019-06-17', value: '3.125', 'area-name': 'Washington', duoarea: 'SWA' },
-      { period: '2025-01-13', value: '3.241', 'area-name': 'Washington', duoarea: 'SWA' },
-      { period: '2025-02-24', value: '3.348', 'area-name': 'Washington', duoarea: 'SWA' },
-    ]
-    const sorted = [...wideData].sort((a, b) => a.period.localeCompare(b.period))
-    const series = sorted
-      .filter(d => d.value !== null && d.value !== '--' && !isNaN(parseFloat(d.value)))
-      .map(d => ({ date: d.period, price: parseFloat(d.value) }))
-
-    expect(series.length).toBe(4)
-    expect(series[0].date).toBe('2016-06-20')
-    expect(series[series.length - 1].date).toBe('2025-02-24')
-
-    const firstYear = parseInt(series[0].date.slice(0, 4))
-    const lastYear = parseInt(series[series.length - 1].date.slice(0, 4))
-    expect(lastYear - firstYear).toBeGreaterThanOrEqual(9)
+describe('getGasLookup — tier, key and label derive from the duoarea', () => {
+  test('county override pointing at a STATE series is tier 2 with the state key', () => {
+    const r = getGasLookup('WA', '0490', '53011') // Clark County → SWA
+    expect(r.duoarea).toBe('SWA')
+    expect(r.tier).toBe(2)
+    expect(r.cacheKey).toBe('eia:gas:epmr:state:WA')
+    expect(r.cacheKey).toBe(getGasLookup('WA').cacheKey)
   })
 
-  test('baseline is still anchored to Jan 20 2025 with 10Y data', () => {
-    const BASELINE_DATE = '2025-01-20'
-    const data = [
-      { period: '2016-06-20', value: '2.645', 'area-name': 'WA', duoarea: 'SWA' },
-      { period: '2025-01-13', value: '3.241', 'area-name': 'WA', duoarea: 'SWA' },
-      { period: '2025-01-20', value: '3.300', 'area-name': 'WA', duoarea: 'SWA' },
-      { period: '2025-02-24', value: '3.348', 'area-name': 'WA', duoarea: 'SWA' },
-    ]
-    const sorted = [...data].sort((a, b) => a.period.localeCompare(b.period))
-    const series = sorted
-      .filter(d => d.value !== null && !isNaN(parseFloat(d.value)))
-      .map(d => ({ date: d.period, price: parseFloat(d.value) }))
+  test('county override pointing at a PADD series is tier 3 with the PADD key and PADD label', () => {
+    const r = getGasLookup('LA', '0370', '22071') // Orleans Parish → R30
+    expect(r.duoarea).toBe('R30')
+    expect(r.tier).toBe(3)
+    expect(r.cacheKey).toBe('eia:gas:epmr:pad:3')
+    expect(r.geoLevel).toBe('Gulf Coast (PADD 3) avg')
+    expect(r.cacheKey).toBe(getGasLookup('LA').cacheKey)
+  })
 
-    const baselineTime = new Date(BASELINE_DATE).getTime()
-    const onOrBefore = series.filter(d => new Date(d.date).getTime() <= baselineTime)
-    const baseline = onOrBefore[onOrBefore.length - 1].price
+  test('a PADD series has one key whether reached via override or state fallback', () => {
+    expect(describeDuoarea('R50', 'West Coast avg').cacheKey).toBe('eia:gas:epmr:pad:5')
+    expect(describeDuoarea('R50', 'West Coast avg').geoLevel).toBe('West Coast (PADD 5) avg')
+  })
 
-    expect(baseline).toBe(3.300)
-    expect(baseline).not.toBe(2.645)
+  test('R5XCA is labeled West Coast excl. California', () => {
+    const r = describeDuoarea('R5XCA')
+    expect(r.tier).toBe(3)
+    expect(r.geoLevel).toBe('West Coast excl. California (PADD 5) avg')
+    expect(r.cacheKey).toBe('eia:gas:epmr:pad:5XCA')
+  })
+
+  test('city codes are tier 1, NUS is the shared national key', () => {
+    expect(describeDuoarea('Y48SE').tier).toBe(1)
+    expect(describeDuoarea('NUS').cacheKey).toBe('eia:gas:epmr:national')
+  })
+})
+
+describe('buildSeriesFromData (real parser, EIA fixture)', () => {
+  const data = eiaFixture.response.data as EiaRawPoint[]
+
+  test('baseline = last weekly reading on or before 2025-01-20 (Jan 13/20/27 trio → Jan 20)', () => {
+    const r = buildSeriesFromData(data)
+    expect(r.baselineDate).toBe('2025-01-20')
+    expect(r.baseline).toBe(3.489)
+    expect(r.latestDate).toBe('2025-02-24')
+    expect(r.current).toBe(3.752)
+    // Change of the prices as displayed ($3.75 − $3.49)
+    expect(r.change).toBe(0.26)
+    expect(r.series[0].date).toBe('2016-06-20')
+  })
+
+  test('without a Jan 20 reading the baseline is Jan 13 (never Jan 27)', () => {
+    const r = buildSeriesFromData(data.filter((d) => d.period !== '2025-01-20'))
+    expect(r.baselineDate).toBe('2025-01-13')
+    expect(r.baseline).toBe(3.512)
+  })
+
+  test('"--" values are skipped, both for baseline and latest', () => {
+    const r = buildSeriesFromData([
+      { period: '2025-03-03', value: '--' },
+      ...data.map((d) => (d.period === '2025-01-20' ? { ...d, value: '--' } : d)),
+    ])
+    expect(r.baselineDate).toBe('2025-01-13')
+    expect(r.latestDate).toBe('2025-02-24')
+  })
+
+  test('no reading within the week before Jan 20 → throws (no fake baseline)', () => {
+    expect(() => buildSeriesFromData(data.filter((d) => d.period >= '2025-01-27' || d.period < '2025-01-01'))).toThrow()
+  })
+
+  test('isGasStale flags data older than 10 days', () => {
+    const now = new Date('2025-03-10T00:00:00Z').getTime()
+    expect(isGasStale('2025-03-03', now)).toBe(false)
+    expect(isGasStale('2025-02-24', now)).toBe(true)
   })
 })

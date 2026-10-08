@@ -2,7 +2,10 @@ import { fetchSnapshot } from '@/lib/api/snapshot'
 import { clearMemCache } from '@/lib/cache/kv'
 import { server } from '../mocks/server'
 import { http, HttpResponse } from 'msw'
-import { blsSource, blsCpiSource, eiaSource, usaSpendingSource } from '@/lib/api/source-registry'
+import { blsFixtureFor } from '../mocks/handlers'
+import eiaFixture from '../fixtures/eia-gas.json'
+import { isGasStale } from '@/lib/api/eia'
+import { blsCpiSource, eiaSource } from '@/lib/api/source-registry'
 
 describe('fetchSnapshot', () => {
   beforeEach(() => clearMemCache())
@@ -12,21 +15,21 @@ describe('fetchSnapshot', () => {
     expect(snapshot).not.toBeNull()
     expect(snapshot!.zip).toBe('98683')
     expect(snapshot!.location).toBeDefined()
-    expect(snapshot!.unemployment).toBeDefined()
+    // Prices only: county unemployment (BLS LAUS) is no longer part of the snapshot
+    expect((snapshot as unknown as Record<string, unknown>).unemployment).toBeUndefined()
+    expect(snapshot!.cacheStatus).not.toHaveProperty('unemployment')
     expect(snapshot!.cpi).toBeDefined()
     expect(snapshot!.gas).toBeDefined()
-    expect(snapshot!.federal).toBeDefined()
+    expect((snapshot as unknown as Record<string, unknown>).federal).toBeUndefined()
     expect(snapshot!.census).toBeDefined()
     expect(snapshot!.fetchedAt).toBeDefined()
   })
 
-  test('all 4 external sources return data (not null)', async () => {
+  test('both external sources return data (not null)', async () => {
     const snapshot = await fetchSnapshot('98683')
     expect(snapshot).not.toBeNull()
-    expect(snapshot!.unemployment.data).not.toBeNull()
     expect(snapshot!.cpi.data).not.toBeNull()
     expect(snapshot!.gas.data).not.toBeNull()
-    expect(snapshot!.federal.data).not.toBeNull()
   })
 
   test('returns null for unknown zip', async () => {
@@ -45,7 +48,6 @@ describe('fetchSnapshot', () => {
     expect(snapshot!.gas.data).toBeNull()
     expect(snapshot!.gas.error).toBeTruthy()
     // Other sources should still succeed
-    expect(snapshot!.unemployment.data).not.toBeNull()
     expect(snapshot!.cpi.data).not.toBeNull()
   })
 
@@ -56,8 +58,6 @@ describe('fetchSnapshot', () => {
     expect(snapshot!.census.error).toBeNull()
     expect(snapshot!.census.data!.zip).toBe('98683')
     // Use ranges instead of exact values — Census ACS data updates annually
-    expect(snapshot!.census.data!.medianIncome).toBeGreaterThan(20000)
-    expect(snapshot!.census.data!.medianIncome).toBeLessThan(500000)
     expect(snapshot!.census.data!.medianRent).toBeGreaterThan(200)
     expect(snapshot!.census.data!.medianRent).toBeLessThan(10000)
   })
@@ -72,38 +72,137 @@ describe('fetchSnapshot', () => {
     }
   })
 
-  test('snapshot series data spans back to at least 2016 for 10Y charts', async () => {
+  test('BLS requests ask for >= 9 years of history (10Y charts)', async () => {
+    const startYears: number[] = []
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { startyear: string; endyear: string }
+        startYears.push(Number(body.endyear) - Number(body.startyear))
+        return HttpResponse.json({ status: 'REQUEST_SUCCEEDED', Results: { series: [] } })
+      })
+    )
+    await fetchSnapshot('98683')
+    expect(startYears.length).toBeGreaterThan(0)
+    for (const span of startYears) expect(span).toBeGreaterThanOrEqual(9)
+  })
+
+  test('values come from the recorded fixture with their baseline periods', async () => {
     const snapshot = await fetchSnapshot('98683')
-    expect(snapshot).not.toBeNull()
+    const c = snapshot!.cpi.data!
+    expect(c.seriesIds?.groceries).toBe('CUUR0490SAF11')
+    expect(c.groceriesBaselinePeriod).toBe('2025-01')
+    expect(c.groceriesChange).toBe(4.0)
+    expect(c.shelterChange).toBe(5.3)
+    // Gas: real recorded EIA EPMR (regular) response for Washington state
+    const g = snapshot!.gas.data!
+    expect(g.duoarea).toBe('SWA')
+    expect(g.baselineDate).toBe('2025-01-20')
+    expect(g.baseline).toBe(3.791)
+    expect(g.current).toBe(5.453)
+    expect(g.latestDate).toBe('2026-09-28')
+    expect(g.nationalSeries?.length).toBeGreaterThan(0)
+    expect(snapshot!.gas.stale ?? false).toBe(isGasStale(g.latestDate!))
+    // Rent of primary residence (recorded SEHA, Pacific): 133.636 → 139.819 = +4.6%
+    expect(c.seriesIds?.rent).toBe('CUUR0490SEHA')
+    expect(c.rentIndexChange).toBe(4.6)
+    // Dollar translations: $6,000 × 4.0% = $240; shelter $ = local rent × 12 × rent-index 4.6% (not shelter 5.3%)
+    expect(snapshot!.dollarImpact!.groceries).toBe(240)
+    const rent = snapshot!.census.data!.medianRent
+    expect(snapshot!.dollarImpact!.shelter).toBe(Math.round((rent * 12 * 4.6) / 100))
+    expect(snapshot!.dollarImpact!.shelter).not.toBe(Math.round((rent * 12 * 5.3) / 100))
+  })
 
-    // Unemployment series should include pre-2020 data
-    if (snapshot!.unemployment.data) {
-      const dates = snapshot!.unemployment.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('out-of-range values are rejected → source unavailable, not cached', async () => {
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid: string[] }
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: {
+            series: body.seriesid.map((id) => ({
+              seriesID: id,
+              data: [
+                { year: '2026', period: 'M08', value: '300.0' },
+                { year: '2025', period: 'M01', value: '100.0' },
+              ],
+            })),
+          },
+        })
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.cpi.data).toBeNull() // +200% > +50%
+    expect(snapshot!.dollarImpact!.groceries).toBeNull()
+  })
 
-    // CPI series should include pre-2020 data
-    if (snapshot!.cpi.data) {
-      const dates = snapshot!.cpi.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('primary gas failure falls back to national, labeled, and not stored under the primary key', async () => {
+    const { getCachedEnvelope } = await import('@/lib/cache/kv')
+    server.use(
+      http.get('https://api.eia.gov/v2/petroleum/pri/gnd/data/', ({ request }) => {
+        const area = new URL(request.url).searchParams.get('facets[duoarea][]')
+        if (area !== 'NUS') return new HttpResponse(null, { status: 503 })
+        return HttpResponse.json(eiaFixture)
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.gas.data!.isNationalFallback).toBe(true)
+    expect(snapshot!.gas.data!.duoarea).toBe('NUS')
+    expect(await getCachedEnvelope('eia:gas:epmr:state:WA')).toBeNull()
+  })
 
-    // Gas series should include pre-2020 data
-    if (snapshot!.gas.data) {
-      const dates = snapshot!.gas.data.series.map(p => p.date)
-      const earliest = dates.sort()[0]
-      expect(parseInt(earliest.slice(0, 4))).toBeLessThanOrEqual(2019)
-    }
+  test('local CPI failure → national CPI marked fallback, shelter and groceries $ impact null', async () => {
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid: string[] }
+        if (body.seriesid.includes('CUUR0490SAF11')) return new HttpResponse(null, { status: 503 })
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: { series: body.seriesid.map((id) => ({ seriesID: id, data: blsFixtureFor(id) })) },
+        })
+      })
+    )
+    const snapshot = await fetchSnapshot('98683')
+    const c = snapshot!.cpi.data!
+    expect(c.areaCode).toBe('0000')
+    expect(c.fallback).toBe('national')
+    expect(c.shelterChange).toEqual(expect.any(Number))
+    expect(snapshot!.dollarImpact!.shelter).toBeNull()
+    // A U.S. CPI % is not a local cost: no groceries $ either (same rule as shelter)
+    expect(snapshot!.dollarImpact!.groceries).toBeNull()
+  })
+
+  test('local CPI success → no fallback marker', async () => {
+    const snapshot = await fetchSnapshot('98683')
+    expect(snapshot!.cpi.data!.fallback).toBeUndefined()
   })
 })
 
 describe('source registry docsUrls', () => {
   test('all sources have docsUrl for debugging', () => {
-    for (const source of [blsSource, blsCpiSource, eiaSource, usaSpendingSource]) {
+    for (const source of [blsCpiSource, eiaSource]) {
       expect(source.docsUrl).toBeTruthy()
       expect(source.docsUrl).toMatch(/^https:\/\//)
     }
+  })
+})
+
+describe('fetchSnapshot — no county unemployment (LAUS) requests', () => {
+  beforeEach(() => clearMemCache())
+
+  test.each(['98683', '06902'])('%s requests only CPI series from BLS', async (zip) => {
+    const requested: string[] = []
+    server.use(
+      http.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', async ({ request }) => {
+        const body = (await request.json()) as { seriesid?: string[] }
+        requested.push(...(body.seriesid ?? []))
+        return HttpResponse.json({
+          status: 'REQUEST_SUCCEEDED',
+          Results: { series: (body.seriesid ?? []).map(id => ({ seriesID: id, data: blsFixtureFor(id) })) },
+        })
+      })
+    )
+    await fetchSnapshot(zip)
+    expect(requested.length).toBeGreaterThan(0)
+    expect(requested.every((id) => id.startsWith('CUUR'))).toBe(true)
   })
 })

@@ -1,0 +1,160 @@
+/**
+ * Plausible range for a rent % change since Jan 2025 (same as other price changes, CPI −20%…+50%).
+ * scripts/build-local-data.py applies the same range and writes it into county-rent.json and metro-rent.json
+ * (meta.pctRange); tests/unit/rent-range.test.ts and scripts/validate-local-data.py fail if they ever differ.
+ * Kept in its own module so client code (ladder docs) can use it without bundling the rent data.
+ */
+export const RENT_PCT_RANGE: readonly [number, number] = [-20, 50]
+
+/**
+ * A county's Zillow series that stops before the file's latest month: months with a value, the first and last of
+ * them (`first` is absent in data built before round 14; it is then counted back n − 1 months from `last`).
+ */
+export interface NotCurrentInfo { n: number; last: string; first?: string }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+/** Month index of the Jan 2025 baseline (year × 12 + month − 1). */
+const BASE_IDX = 2025 * 12
+
+const monthIdx = (ym: string | undefined): number | null => {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym ?? '')
+  return m ? Number(m[1]) * 12 + Number(m[2]) - 1 : null
+}
+const monthName = (idx: number) => `${MONTHS[((idx % 12) + 12) % 12]} ${Math.floor(idx / 12)}`
+
+/**
+ * Why a county's stopped Zillow series isn't used. A series that started before Jan 2025 and then stopped "isn't
+ * current (through Mar 2026)"; a newer one is "too new to use (only one month, Jul 2026)" / "(only three months, from
+ * May 2026)", n = the months that actually have a value (a gap doesn't count) and the first month is the real one.
+ * Legacy data without `first`: counting back n − 1 months from `last` gives the LATEST the series can have started
+ * (gaps would make it earlier). Before Jan 2025 → certainly "isn't current"; otherwise the start is unknown, so the
+ * text names no start month and doesn't claim "too new" (unless n = 1, where first = last).
+ */
+export function notCurrentText(county: string, info: NotCurrentInfo | undefined): string {
+  const n = info?.n ?? 0
+  const lastIdx = monthIdx(info?.last)
+  const knownFirst = monthIdx(info?.first)
+  const latestFirst = knownFirst ?? (lastIdx !== null && n > 0 ? lastIdx - (n - 1) : null)
+  if (latestFirst !== null && latestFirst < BASE_IDX && lastIdx !== null) {
+    return `Zillow's series for ${county} isn't current (through ${monthName(lastIdx)})`
+  }
+  const count = n > 0 ? `${n <= 10 ? NUMBER_WORDS[n] : n} month${n === 1 ? '' : 's'}` : ''
+  if (knownFirst === null && n > 1 && lastIdx !== null) {
+    return `Zillow's series for ${county} isn't usable (only ${count} of data, through ${monthName(lastIdx)})`
+  }
+  const detail = lastIdx === null
+    ? count ? `only ${count}` : ''
+    : count
+      ? n === 1 ? `only ${count}, ${monthName(lastIdx)}` : `only ${count}, from ${monthName(knownFirst ?? lastIdx)}`
+      : `only through ${monthName(lastIdx)}`
+  return `Zillow's series for ${county} is too new to use${detail ? ` (${detail})` : ''}`
+}
+
+/**
+ * A series' seasonal-pattern caveat (RentData.saCaveat; county-rent.json / metro-rent.json `saCaveat`, county shards
+ * `rentSaCav`, metro `rentM.cav`): `month` = the calendar month of the DISPLAYED (as-of) reading, `gap` = the effect
+ * on the shown % of the series' own recent seasonal swing (January → that month) differing from the blended pattern's:
+ * the shown % minus the % the same readings would show under the own recent pattern (points; > 0 → the shown % may be
+ * too high, < 0 → too low — signed, so it reads right for a fall too). `low` is a legacy (round-14) field and is ignored.
+ */
+export interface SeasonalCaveat { gap: number; month: number; low?: boolean }
+
+/** A caveat is shown when the own-vs-blend gap at the displayed month is bigger than this (points). */
+export const RENT_SEASONAL_GAP_MIN = 1.5
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+/** Is this a caveat to show? (|gap| > RENT_SEASONAL_GAP_MIN, month 1–12.) */
+export function hasSeasonalCaveat(c: SeasonalCaveat | null | undefined): c is SeasonalCaveat {
+  return !!c && typeof c.gap === 'number' && Number.isFinite(c.gap) && Math.abs(c.gap) > RENT_SEASONAL_GAP_MIN &&
+    Number.isInteger(c.month) && c.month >= 1 && c.month <= 12
+}
+
+/**
+ * The gap as worded: |gap| to one decimal ("2.2"), the same precision as the shown % and the own-pattern figure, so
+ * the three add up on the card (−1.5% + 2.2 points = +0.7%).
+ */
+export function seasonalCaveatPoints(c: SeasonalCaveat): number {
+  return Math.round(Math.abs(c.gap) * 10) / 10
+}
+
+/**
+ * What the worded gap means for the card's $/mo (curRent − curRent / (1 + pct/100)): the change at the SHOWN % (one
+ * decimal) minus the change at the shown % ∓ the worded (one-decimal) points — the same figures the sentence prints,
+ * so the $ matches them — whole dollars, ≥ 0. null without a usable rent level and %.
+ */
+export function seasonalCaveatDollars(c: SeasonalCaveat, pct: number | undefined, curRent: number | undefined): number | null {
+  if (typeof pct !== 'number' || !Number.isFinite(pct) || typeof curRent !== 'number' || !(curRent > 0)) return null
+  const shown = Math.round(pct * 10) / 10
+  const x = seasonalCaveatPoints(c) * Math.sign(c.gap)
+  const monthly = (p: number) => curRent - curRent / (1 + p / 100)
+  const v = Math.abs(monthly(shown) - monthly(shown - x))
+  return Number.isFinite(v) ? Math.round(v) : null
+}
+
+/** Signed direction of the possible error: gap > 0 → the shown % may be too HIGH, < 0 → too LOW (sign-safe for falls). */
+export function seasonalCaveatDirection(c: SeasonalCaveat): 'too high' | 'too low' {
+  return c.gap > 0 ? 'too high' : 'too low'
+}
+
+/**
+ * The % the same readings would show under the series' own recent seasonal pattern: shown − the worded (one-decimal)
+ * gap, one decimal, so it matches the points in the same sentence (Collier FL −1.5% with gap −2.2 → +0.7%). null
+ * without a usable shown %.
+ */
+export function seasonalOwnPatternPct(c: SeasonalCaveat, pct: number | undefined): number | null {
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return null
+  const v = Math.round((Math.round(pct * 10) / 10 - seasonalCaveatPoints(c) * Math.sign(c.gap)) * 10) / 10
+  return Number.isFinite(v) ? (Object.is(v, -0) ? 0 : v) : null
+}
+
+/**
+ * Even the direction of the change is uncertain: the own-pattern figure has the other sign from the shown one, or rounds
+ * to 0 (Collier FL −1.5% vs +0.7%; Kittitas WA −0.5% vs +2.5%). A big gap with the same sign is not (Blue Earth MN
+ * +6.3%, gap −8.4 → +14.7%: the rise may be larger, not a fall). Compared at the one decimal shown.
+ */
+export function seasonalDirectionUncertain(c: SeasonalCaveat, pct: number | undefined): boolean {
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return false
+  const own = seasonalOwnPatternPct(c, pct)
+  if (own === null) return false
+  return own === 0 || Math.sign(own) !== Math.sign(Math.round(pct * 10) / 10)
+}
+
+/** "+0.7%", "−1.5%", "0.0%": rounded to one decimal before the sign, so −0.04 is "0.0%", never "−0.0%". */
+const signedPct = (v: number) => {
+  const r = Math.round(v * 10) / 10
+  return `${r > 0 ? '+' : r < 0 ? '−' : ''}${Math.abs(r).toFixed(1)}%`
+}
+
+/**
+ * Honest caveat when the series' own recent seasonal swing from January to the DISPLAYED month differs from the
+ * blended pattern used to adjust it by more than RENT_SEASONAL_GAP_MIN points. Worded by sign, so it reads right for
+ * falls too: "This August reading (−1.5%) may be about 2.2 percentage points too low (≈ $50/mo): the county’s recent
+ * seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +0.7%; the
+ * possible error is as large as the change itself, so even its direction is uncertain." `rent` (the shown % and
+ * current rent) adds the shown %, the $/mo and the own-pattern figure.
+ */
+export function rentSeasonalCaveat(
+  c: SeasonalCaveat | undefined,
+  level: 'county' | 'metro' | 'city' = 'county',
+  rent?: { pct?: number; curRent?: number },
+): string | undefined {
+  if (!hasSeasonalCaveat(c)) return undefined
+  const usd = rent ? seasonalCaveatDollars(c, rent.pct, rent.curRent) : null
+  const own = seasonalOwnPatternPct(c, rent?.pct)
+  const shown = own !== null ? ` (${signedPct(rent!.pct!)})` : ''
+  return `This ${MONTH_NAMES[c.month - 1]} reading${shown} may be about ${seasonalCaveatPoints(c)} percentage points ` +
+    `${seasonalCaveatDirection(c)}${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}: ` +
+    `the ${level}’s recent seasonal swing differs from the pattern used to adjust it.` +
+    (own !== null ? ` Under its own recent pattern it would be about ${signedPct(own)}` +
+      `${seasonalDirectionUncertain(c, rent!.pct) ? '; the possible error is as large as the change itself, so even its direction is uncertain' : ''}.` : '')
+}
+
+/** Short marker for tight spaces (map tooltip, share image). */
+export const SEASONAL_CAVEAT_SHORT = '†seasonal pattern uncertain'
+
+/** "−20% to +50%". */
+export function rentRangeText(): string {
+  const [lo, hi] = RENT_PCT_RANGE
+  return `${lo < 0 ? '−' : ''}${Math.abs(lo)}% to +${hi}%`
+}

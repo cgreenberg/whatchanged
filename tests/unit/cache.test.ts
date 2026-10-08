@@ -1,4 +1,4 @@
-import { getCached, setCached, clearMemCache, getCachedOrFetch } from '@/lib/cache/kv'
+import { getCached, setCached, clearMemCache, getCachedOrFetch, getCachedEnvelope } from '@/lib/cache/kv'
 
 // NODE_ENV=test is set by Jest, so the in-memory fallback is always used here
 // (getRedis() returns null in test env)
@@ -101,17 +101,75 @@ describe('getCachedOrFetch', () => {
   test('negative cache: second call within negativeTtl does not call fetchFn', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('Broken'))
     // First call: failure sets negative cache
-    await expect(getCachedOrFetch('neg-cache', 60, fetchFn, 60)).rejects.toThrow()
+    await expect(getCachedOrFetch('neg-cache', 60, fetchFn, { negativeTtl: 60 })).rejects.toThrow()
     // Second call: should throw "Negative cache hit" without calling fetchFn
-    await expect(getCachedOrFetch('neg-cache', 60, fetchFn, 60)).rejects.toThrow('Negative cache hit')
+    await expect(getCachedOrFetch('neg-cache', 60, fetchFn, { negativeTtl: 60 })).rejects.toThrow('Negative cache hit')
     expect(fetchFn).toHaveBeenCalledTimes(1)
   })
 
-  test('stores fetched data so subsequent calls are cache hits', async () => {
+  test('stores fetched data with fetchedAt inside the cached value', async () => {
     const fetchFn = jest.fn().mockResolvedValue('fresh-data')
-    await getCachedOrFetch('store-test', 60, fetchFn)
-    const cached = await getCached<string>('store-test')
-    expect(cached).toBe('fresh-data')
+    const first = await getCachedOrFetch('store-test', 60, fetchFn)
+    const env = await getCachedEnvelope<string>('store-test')
+    expect(env?.data).toBe('fresh-data')
+    expect(env?.fetchedAt).toBe(first.fetchedAt)
+    const second = await getCachedOrFetch('store-test', 60, fetchFn)
+    expect(second.fetchedAt).toBe(first.fetchedAt) // upstream fetch time, not request time
+  })
+
+  test('legacy (non-envelope) cached values are treated as misses', async () => {
+    await setCached('legacy', { shelterChange: 0 }, 60)
+    const fetchFn = jest.fn().mockResolvedValue({ shelterChange: 3.1 })
+    const r = await getCachedOrFetch('legacy', 60, fetchFn)
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect(r.data).toEqual({ shelterChange: 3.1 })
+  })
+
+  test('validator: invalid fetched data is not cached and throws', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({ rate: 99 })
+    await expect(
+      getCachedOrFetch('bad', 60, fetchFn, { validate: (d: { rate: number }) => d.rate <= 25 })
+    ).rejects.toThrow(/validation/)
+    expect(await getCachedEnvelope('bad')).toBeNull()
+  })
+
+  test('validator: invalid cached entry is ignored and refetched', async () => {
+    await getCachedOrFetch('val', 60, async () => ({ rate: 99 }))
+    const fetchFn = jest.fn().mockResolvedValue({ rate: 5 })
+    const r = await getCachedOrFetch('val', 60, fetchFn, { validate: (d: { rate: number }) => d.rate <= 25 })
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect(r.data.rate).toBe(5)
+  })
+
+  test('fetch failure serves the last-good copy with stale=true', async () => {
+    await getCachedOrFetch('lg', 0.001, async () => 'good')
+    await new Promise((r) => setTimeout(r, 10)) // primary entry expires; last-good remains
+    const failing = jest.fn().mockRejectedValue(new Error('down'))
+    const r = await getCachedOrFetch('lg', 60, failing)
+    expect(r).toMatchObject({ data: 'good', stale: true })
+    // Negative cache now set: next call serves last-good without refetching
+    const r2 = await getCachedOrFetch('lg', 60, failing)
+    expect(r2).toMatchObject({ data: 'good', stale: true })
+    expect(failing).toHaveBeenCalledTimes(1)
+  })
+
+  test('concurrent callers for the same key share one fetch (stampede protection)', async () => {
+    let resolve!: (v: string) => void
+    const fetchFn = jest.fn().mockImplementation(() => new Promise<string>((r) => { resolve = r }))
+    const a = getCachedOrFetch('stampede', 60, fetchFn)
+    const b = getCachedOrFetch('stampede', 60, fetchFn)
+    await new Promise((r) => setTimeout(r, 0))
+    resolve('once')
+    const [ra, rb] = await Promise.all([a, b])
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect(ra.data).toBe('once')
+    expect(rb.data).toBe('once')
+  })
+
+  test('forceRefresh refetches even when cached', async () => {
+    await getCachedOrFetch('force', 60, async () => 'old')
+    const r = await getCachedOrFetch('force', 60, async () => 'new', { forceRefresh: true })
+    expect(r).toMatchObject({ data: 'new', cacheHit: false })
   })
 })
 

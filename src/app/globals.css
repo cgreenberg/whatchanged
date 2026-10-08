@@ -1,25 +1,68 @@
 @import "tailwindcss";
 
+/*
+ * "Data desk" tokens: deep charcoal (never pure black), warm off-white ink, hairline rules.
+ * One accent per metric; everything else stays neutral. Mirrors src/lib/theme.ts.
+ * Fonts (next/font): --nf-display (IBM Plex Sans Condensed), --nf-sans (IBM Plex Sans), --nf-mono (IBM Plex Mono).
+ */
 :root {
-  --background: #0A0A0A;
-  --foreground: #F5F5F5;
+  --background: #111316;
+  --foreground: #F1EFEA;
+  /* Aliases for markup that still names the old fonts (about page) */
+  --font-bebas: var(--nf-display), 'Arial Narrow', sans-serif;
+  --font-inter: var(--nf-sans), system-ui, sans-serif;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: #0A0A0A;
-  --color-foreground: #F5F5F5;
-  --color-electric-amber: #F59E0B;
-  --color-danger-red: #EF4444;
-  --color-muted: #6B7280;
-  --font-bebas: var(--font-bebas);
-  --font-inter: var(--font-inter);
+  --color-background: #111316;
+  --color-foreground: #F1EFEA;
+  --color-desk: #111316;
+  --color-surface: #171A1E;
+  --color-raised: #1F2328;
+  --color-line: #2A2F36;
+  --color-grid: #22262C;
+  --color-ink: #F1EFEA;
+  --color-ink-2: #B3B8C0;
+  --color-ink-3: #8C929B;
+  --color-caution: #E9C46A;
+  --color-gas: #F2A93B;
+  --color-groceries: #F07D62;
+  --color-rent: #5EA8F2;
+  --color-homeprices: #B394F7;
+  --color-electricity: #3EC4A6;
+  --color-heating: #EE82B4;
+  /* kept for older markup */
+  --color-electric-amber: #F2A93B;
+  --color-danger-red: #F07D62;
+  --color-muted: #8C929B;
+  --font-display: var(--nf-display), 'Arial Narrow', sans-serif;
+  --font-sans: var(--nf-sans), system-ui, sans-serif;
+  --font-mono: var(--nf-mono), ui-monospace, monospace;
 }
 
 body {
-  background-color: #0A0A0A;
-  color: #F5F5F5;
-  font-family: var(--font-inter, Arial, sans-serif);
+  background-color: #111316;
+  color: #F1EFEA;
+  font-family: var(--nf-sans), system-ui, sans-serif;
 }
+
+/* Figures line up in every table, axis and card */
+.tnum { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Small uppercase metadata label (kicker) */
+.kicker {
+  font-family: var(--nf-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recharts-text { font-variant-numeric: tabular-nums; }
+.recharts-surface:focus, .recharts-wrapper:focus, .recharts-wrapper *:focus { outline: none; }
+
+input[type="checkbox"] { accent-color: #F1EFEA; }
 
 @keyframes reveal-left {
   from { clip-path: inset(0 100% 0 0); }

@@ -1,0 +1,4265 @@
+{
+ "_recorded": "Real BLS API v2 response for CUUR{area}SEHA (CPI rent of primary residence), all 37 CPI areas the app uses, startyear 2024, endyear 2026, recorded 2026-10-04 in ONE batched call. Trimmed to 2024-11 onward, monthly periods only; periodName/latest dropped; footnotes kept only for preliminary ('P').",
+ "status": "REQUEST_SUCCEEDED",
+ "responseTime": 0,
+ "message": [],
+ "Results": {
+  "series": [
+   {
+    "seriesID": "CUURS11ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "493.760"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "491.717"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "489.296"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "487.943"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "486.465"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "483.919"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "483.483"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "483.368"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "481.998"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "480.236"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "476.913"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "474.544"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "476.161"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "473.343"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "471.244"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "469.733"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "468.119"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "466.868"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "466.464"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "465.361"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "462.584"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS12ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "509.228"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "508.793"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "506.466"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "506.058"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "504.077"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "499.433"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "497.593"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "496.869"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "495.917"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "493.131"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "490.877"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "489.523"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "487.723"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "486.164"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "484.585"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "483.517"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "481.445"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "479.706"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "478.226"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "477.103"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "475.507"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS12BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "428.306"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "428.741"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "429.656"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "428.240"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "425.896"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "421.884"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "421.585"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "419.710"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "417.061"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "416.287"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "413.743"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "411.203"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "409.635"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "409.271"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "407.860"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "406.891"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "405.228"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "404.877"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "402.983"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "401.166"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "399.709"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS23ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "471.853"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "469.310"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "467.954"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "466.072"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "464.262"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "460.749"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "459.197"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "458.680"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "456.573"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "455.203"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "452.973"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "449.407"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "446.745"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "444.439"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "442.452"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "441.395"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "440.096"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "438.594"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "436.540"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "434.614"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "433.196"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS23BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "366.644"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "365.413"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "364.961"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "361.380"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "360.341"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "356.479"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "356.477"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "356.376"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "355.916"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "360.494"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "359.435"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "356.809"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "357.073"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "355.589"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "355.165"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "356.397"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "354.998"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "356.050"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "354.551"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "353.201"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "350.402"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS24ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "378.312"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "377.678"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "376.512"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "374.525"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "373.614"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "371.232"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "369.944"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "367.876"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "366.825"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "366.230"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "364.293"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "362.116"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "362.124"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "360.799"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "359.026"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "357.068"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "356.234"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "356.465"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "355.512"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "355.224"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "353.931"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS24BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "335.203"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "333.395"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "331.815"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "330.029"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "328.436"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "323.401"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "322.661"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "325.012"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "320.873"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "321.614"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "321.363"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "322.438"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "319.968"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "325.186"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "322.682"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "322.227"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "321.365"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "317.313"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "316.904"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "320.101"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "319.739"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS35ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "445.993"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "445.589"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "446.328"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "445.206"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "444.389"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "443.678"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "443.601"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "443.341"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "442.978"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "442.768"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "440.915"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "440.209"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "438.983"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "437.420"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "437.091"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "435.218"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "434.586"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "433.596"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "431.781"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "429.409"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "428.019"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS35BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "489.193"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "489.870"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "488.528"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "491.505"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "490.539"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "487.964"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "487.193"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "486.910"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "486.835"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "483.925"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "482.124"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "477.558"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "474.958"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "475.478"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "472.999"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "474.174"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "472.134"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "472.079"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "471.468"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "469.633"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "469.140"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS35CSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "414.609"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "414.086"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "412.375"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "412.354"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "409.844"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "409.562"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "408.255"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "407.758"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "407.473"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "405.696"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "410.588"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "410.302"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "410.324"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "408.634"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "408.094"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "407.728"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "406.958"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "406.291"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "405.129"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "404.964"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "404.772"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS35DSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "427.952"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "427.969"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "426.336"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "428.265"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "426.828"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "426.354"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "425.689"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "424.491"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "426.501"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "423.302"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "421.418"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "420.561"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "420.223"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "419.024"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "413.825"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "413.930"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "413.638"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "412.118"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "411.849"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "410.490"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "410.268"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS35ESEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "466.212"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "462.982"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "460.128"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "458.197"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "457.190"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "454.290"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "453.928"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "455.260"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "455.994"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "455.972"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "452.566"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "451.168"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "449.858"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "447.430"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "446.301"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "444.577"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "445.358"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "444.057"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "442.699"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "441.779"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "440.578"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS37ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "372.301"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "372.135"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "371.747"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "370.565"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "371.911"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "371.387"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "371.322"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "371.794"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "372.357"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "370.888"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "369.538"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "368.679"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "367.865"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "368.080"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "371.866"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "373.740"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "373.631"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "374.129"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "372.293"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "371.656"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "370.951"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS37BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "327.411"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "327.470"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "327.788"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "328.688"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "329.846"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "328.701"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "330.582"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "332.601"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "331.376"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "331.455"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "330.269"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "329.301"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "330.218"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "329.048"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "328.892"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "328.642"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "326.760"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "325.774"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "324.878"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "326.168"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "326.691"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS48ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "235.508"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "235.062"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "235.143"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "235.110"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "235.681"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "236.394"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "234.709"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "235.329"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "236.909"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "236.142"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "236.609"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "236.317"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "235.202"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "235.999"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "236.045"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "237.655"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "237.278"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "238.045"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "238.334"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "240.376"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "240.868"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS48BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "411.927"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "412.153"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "411.376"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "411.339"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "410.721"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "411.436"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "414.717"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "414.165"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "414.161"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "413.726"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "409.447"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "409.015"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "410.810"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "411.320"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "410.647"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "410.554"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "409.400"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "408.559"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "407.227"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "411.269"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "410.167"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49ASEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "501.811"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "500.922"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "499.739"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "497.150"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "495.716"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "494.377"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "493.909"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "492.544"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "489.174"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "489.205"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "487.273"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "485.570"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "485.425"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "484.690"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "483.397"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "481.698"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "480.585"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "477.991"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "476.538"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "474.878"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "472.970"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49BSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "533.851"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "534.331"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "532.233"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "532.128"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "532.153"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "528.147"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "527.201"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "526.399"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "524.777"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "522.026"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "521.377"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "520.140"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "518.556"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "519.449"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "518.386"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "518.366"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "518.493"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "517.183"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "517.581"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "515.886"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "513.494"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49CSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "156.914"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "154.964"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "154.136"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "154.102"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "153.065"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "152.480"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "153.191"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "154.024"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "153.416"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "153.118"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "152.620"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "152.351"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "152.330"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "152.552"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "152.100"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "151.770"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "150.856"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "150.206"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "148.270"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "146.421"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "145.818"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49DSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "521.032"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "520.173"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "519.254"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "518.255"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "517.166"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "514.428"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "514.645"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "514.304"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "513.905"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "511.828"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "509.626"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "509.211"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "508.463"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "506.403"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "505.292"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "505.763"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "504.949"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "503.078"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "502.736"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "504.102"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "502.942"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49ESEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "559.876"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "557.976"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "557.024"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "556.464"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "555.530"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "552.948"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "554.072"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "552.141"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "552.720"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "549.512"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "549.048"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "547.901"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "547.592"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "543.879"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "546.093"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "544.973"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "541.253"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "538.839"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "537.553"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "530.687"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "528.870"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49FSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "443.953"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "443.047"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "440.911"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "440.562"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "432.135"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "428.109"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "425.256"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "422.637"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "416.793"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "413.911"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "420.868"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "419.742"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "419.090"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "418.283"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "418.747"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "419.958"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "419.542"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "418.063"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "415.567"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "416.069"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "412.877"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUURS49GSEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "262.460"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "260.635"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "259.490"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "258.937"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "258.142"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "256.862"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "256.518"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "256.917"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "256.586"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "255.153"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "253.911"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "253.730"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "253.952"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "253.107"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "253.453"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "252.328"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "250.096"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "249.781"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "247.815"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "247.269"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "246.889"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0110SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "145.198"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "144.603"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "144.004"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "143.315"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "142.607"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "141.767"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "141.533"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "141.099"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "140.296"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "139.802"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "138.888"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "138.197"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "137.685"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "137.205"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "136.953"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "136.444"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "135.760"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "135.264"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "134.792"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "134.050"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "133.071"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0120SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "136.776"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "136.576"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "136.162"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "136.058"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "135.341"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "134.260"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "133.823"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "133.636"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "133.311"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "132.738"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "132.223"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "131.794"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "131.277"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "130.783"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "130.303"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "129.890"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "129.388"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "129.016"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "128.671"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "128.152"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "127.714"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0230SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "146.921"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "146.374"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "146.070"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "145.514"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "144.887"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "143.756"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "143.711"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "143.403"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "142.699"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "142.638"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "141.889"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "140.982"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "140.454"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "139.873"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "139.356"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "139.058"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "138.650"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "138.229"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "137.340"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "136.643"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "136.084"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0240SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "144.652"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "144.130"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "143.719"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "143.160"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "142.544"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "141.158"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "140.681"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "140.352"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "139.938"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "139.737"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "139.220"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "138.784"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "138.450"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "138.226"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "137.535"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "137.066"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "136.704"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "136.156"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "135.708"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "135.833"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "135.575"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0350SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "150.577"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "150.445"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "150.249"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "150.171"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "149.596"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "149.091"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "148.781"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "148.841"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "148.830"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "148.256"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "148.318"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "148.045"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "147.317"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "147.143"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "146.811"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "146.755"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "146.546"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "146.244"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "146.221"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "145.622"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "145.216"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0360SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "151.411"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "151.236"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "150.609"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "150.582"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "150.047"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "148.962"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "148.904"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "148.348"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "147.928"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "147.257"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "147.061"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "146.508"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "145.389"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "144.891"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "144.230"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "143.895"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "143.370"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "143.055"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "142.997"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "142.814"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "142.413"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0370SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "136.678"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "136.443"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "136.276"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "136.226"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "136.283"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "135.695"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "135.592"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "135.843"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "135.575"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "135.373"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "135.080"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "134.807"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "134.417"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "134.350"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "134.621"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "134.693"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "134.386"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "134.279"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "133.907"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "133.610"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "133.292"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0480SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "148.812"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "148.150"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "148.079"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "148.126"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "148.273"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "148.289"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "148.167"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "148.081"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "148.125"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "147.779"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "147.816"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "147.537"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "147.468"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "147.369"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "147.351"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "147.144"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "147.121"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "146.954"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "147.073"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "147.415"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "146.754"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0490SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "139.819"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "139.443"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "139.033"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "138.905"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "138.586"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "138.144"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "137.999"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "137.748"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "137.271"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "136.764"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "136.392"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "136.114"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "135.809"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "135.592"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "135.372"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "135.111"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "134.695"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "134.153"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "133.636"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "133.184"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "132.706"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0100SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "481.417"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "480.389"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "478.796"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "477.940"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "475.463"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "471.917"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "470.573"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "469.717"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "468.186"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "466.266"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "464.135"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "462.420"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "460.632"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "458.933"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "457.466"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "455.951"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "454.054"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "452.655"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "451.349"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "449.357"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "447.338"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0200SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "389.553"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "388.116"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "387.215"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "385.731"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "384.070"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "380.836"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "380.343"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "379.506"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "377.879"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "377.587"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "375.805"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "373.825"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "372.598"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "371.382"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "369.841"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "368.887"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "367.844"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "366.602"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "364.642"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "363.549"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "362.342"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0300SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "411.111"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "410.637"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "410.000"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "409.819"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "408.775"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "407.132"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "406.509"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "406.689"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "406.324"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "405.003"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "404.807"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "403.967"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "402.108"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "401.626"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "401.118"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "400.996"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "400.242"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "399.556"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "399.187"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "397.871"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "396.806"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0400SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "484.907"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "483.411"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "482.256"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "481.944"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "481.196"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "480.018"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "479.538"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "478.799"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "477.548"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "475.910"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "474.891"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "473.937"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "473.038"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "472.368"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "471.741"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "470.879"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "469.698"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "468.076"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "466.701"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "465.647"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "463.879"
+     }
+    ]
+   },
+   {
+    "seriesID": "CUUR0000SEHA",
+    "data": [
+     {
+      "year": "2026",
+      "period": "M08",
+      "value": "448.997"
+     },
+     {
+      "year": "2026",
+      "period": "M07",
+      "value": "447.963"
+     },
+     {
+      "year": "2026",
+      "period": "M06",
+      "value": "446.945"
+     },
+     {
+      "year": "2026",
+      "period": "M05",
+      "value": "446.380"
+     },
+     {
+      "year": "2026",
+      "period": "M04",
+      "value": "445.029"
+     },
+     {
+      "year": "2026",
+      "period": "M03",
+      "value": "442.864"
+     },
+     {
+      "year": "2026",
+      "period": "M02",
+      "value": "442.157"
+     },
+     {
+      "year": "2026",
+      "period": "M01",
+      "value": "441.718"
+     },
+     {
+      "year": "2025",
+      "period": "M12",
+      "value": "440.667"
+     },
+     {
+      "year": "2025",
+      "period": "M11",
+      "value": "439.275"
+     },
+     {
+      "year": "2025",
+      "period": "M10",
+      "value": "-"
+     },
+     {
+      "year": "2025",
+      "period": "M09",
+      "value": "438.212"
+     },
+     {
+      "year": "2025",
+      "period": "M08",
+      "value": "436.981"
+     },
+     {
+      "year": "2025",
+      "period": "M07",
+      "value": "435.489"
+     },
+     {
+      "year": "2025",
+      "period": "M06",
+      "value": "434.594"
+     },
+     {
+      "year": "2025",
+      "period": "M05",
+      "value": "433.698"
+     },
+     {
+      "year": "2025",
+      "period": "M04",
+      "value": "432.956"
+     },
+     {
+      "year": "2025",
+      "period": "M03",
+      "value": "431.798"
+     },
+     {
+      "year": "2025",
+      "period": "M02",
+      "value": "430.603"
+     },
+     {
+      "year": "2025",
+      "period": "M01",
+      "value": "429.506"
+     },
+     {
+      "year": "2024",
+      "period": "M12",
+      "value": "428.151"
+     },
+     {
+      "year": "2024",
+      "period": "M11",
+      "value": "426.651"
+     }
+    ]
+   }
+  ]
+ }
+}

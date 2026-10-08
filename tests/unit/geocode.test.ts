@@ -47,3 +47,14 @@ describe('reverseGeocodeToZip', () => {
     expect(result).toBeNull()
   })
 })
+
+describe('/api/geocode canonical redirect', () => {
+  test('non-canonical coordinates → 308 to the 4-decimal URL, CDN-cacheable', async () => {
+    const { NextRequest } = await import('next/server')
+    const { GET } = await import('@/app/api/geocode/route')
+    const res = await GET(new NextRequest('http://localhost/api/geocode?lat=45.6387281&lng=-122.6614861'))
+    expect(res.status).toBe(308)
+    expect(res.headers.get('location')).toBe('http://localhost/api/geocode?lat=45.6387&lng=-122.6615')
+    expect(res.headers.get('cache-control')).toBe('public, s-maxage=86400')
+  })
+})

@@ -1,177 +1,148 @@
 /**
  * Exhaustive mapping test: every zip in zip-county.json resolves through the
- * full mapping chain (county FIPS, CPI area, EIA gas, LAUS series, census).
+ * full mapping chain (county FIPS, CPI area, EIA gas, LAUS area, census), and
+ * src/lib/data/county-geo.json (consumed by scripts/build-local-data.py) agrees
+ * with the live lookups.
+ *
+ * Valid code sets are derived from the source modules, so adding a code in one
+ * place doesn't require editing a copy here.
  *
  * Collects ALL failures into an array so every broken zip is reported in one run.
  */
 
 import { getGasLookup } from '@/lib/api/eia'
-import { buildSeriesId } from '@/lib/api/bls'
-import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
+import { getMetroCpiAreaForCounty, BLS_CPI_AREAS, STATE_TO_DIVISION } from '@/lib/mappings/county-metro-cpi'
+import {
+  CPI_TO_EIA_CITY,
+  COUNTY_EIA_CITY_OVERRIDES,
+  STATE_LEVEL_CODES,
+  PAD_DUOAREA,
+} from '@/lib/mappings/eia-gas'
+import { BLS_GAS_PUBLISHED_AREAS } from '@/lib/mappings/bls-gas'
+import { getLausAreaFipsForZip, CT_PLANNING_REGION_NAMES } from '@/lib/mappings/laus-area'
+import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import zipCounty from '@/lib/data/zip-county.json'
+import countyGeo from '@/lib/data/county-geo.json'
 import censusAcs from '@/lib/data/census-acs.json'
 
-// --- Known valid sets ---
-
-const VALID_CPI_AREA_CODES = new Set([
-  // National
-  '0000',
-  // Metros (23)
-  'S11A', 'S12A', 'S12B',
-  'S23A', 'S23B', 'S24A', 'S24B',
-  'S35A', 'S35B', 'S35C', 'S35D', 'S35E', 'S37A', 'S37B',
-  'S48A', 'S48B', 'S49A', 'S49B', 'S49C', 'S49D', 'S49E', 'S49F', 'S49G',
-  // Divisions (9)
-  '0110', '0120', '0230', '0240', '0350', '0360', '0370', '0480', '0490',
-  // Regions (4)
-  '0100', '0200', '0300', '0400',
-])
+const VALID_CPI_AREA_CODES = new Set(['0000', ...Object.keys(BLS_CPI_AREAS)])
 
 const VALID_EIA_DUOAREA_CODES = new Set([
-  // Cities (10)
-  'YBOS', 'Y35NY', 'YMIA', 'YORD', 'YCLE', 'Y44HO', 'YDEN', 'Y05LA', 'Y05SF', 'Y48SE',
-  // States (9)
-  'SCA', 'SCO', 'SFL', 'SMA', 'SMN', 'SNY', 'SOH', 'STX', 'SWA',
-  // PADs (7)
-  'R1X', 'R1Y', 'R1Z', 'R20', 'R30', 'R40', 'R50',
-  // Special (3)
-  'NUS', 'R5XCA', 'R10',
+  'NUS',
+  ...Object.values(CPI_TO_EIA_CITY).map(c => c.duoarea),
+  ...Object.values(COUNTY_EIA_CITY_OVERRIDES).map(c => c.duoarea),
+  ...Object.values(STATE_LEVEL_CODES).map(c => c.duoarea),
+  ...Object.values(PAD_DUOAREA),
 ])
-
-const US_STATES = new Set([
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-  'DC',
-])
-
-// --- Types ---
 
 interface ZipEntry {
   countyFips: string
   countyName: string
   stateName: string
   stateAbbr: string
-  cityName?: string
+  cityName: string
+  zcta?: boolean
 }
 
 interface CensusEntry {
-  medianIncome: number
-  medianRent: number
-  year: number
+  /** null = Census suppressed the estimate (never a synthetic fallback value). */
+  medianRent: number | null
 }
+
+interface CountyGeo {
+  state: string
+  cpiArea: string
+  cpiTier: number
+  cpiName: string
+  gasSource: string
+  gasDuoarea: string
+  gasTier: number
+  lausFips: string
+  approx?: boolean
+}
+
+const zips = zipCounty as Record<string, ZipEntry>
+const geo = countyGeo as Record<string, CountyGeo>
 
 describe('exhaustive zip mappings', () => {
   jest.setTimeout(120_000)
 
   it('every zip resolves through the full mapping chain', () => {
-    const zips = zipCounty as Record<string, ZipEntry>
-    const census = censusAcs as Record<string, CensusEntry>
+    const census = censusAcs as unknown as Record<string, CensusEntry>
     const failures: string[] = []
 
-    // Tier distribution counters
-    const cpiTierCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 }
-    const gasTierCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
-    let censusHits = 0
-    let censusMisses = 0
+    for (const [zip, entry] of Object.entries(zips)) {
+      const { countyFips, stateAbbr, stateName } = entry
 
-    const zipCodes = Object.keys(zips)
-
-    for (const zip of zipCodes) {
-      const entry = zips[zip]
-      const { countyFips, stateAbbr } = entry
-
-      // 1. countyFips must be a 5-digit string
+      if (!/^\d{5}$/.test(zip)) failures.push(`${zip}: zip is not 5 digits`)
       if (!/^\d{5}$/.test(countyFips)) {
         failures.push(`${zip}: countyFips "${countyFips}" is not a 5-digit string`)
         continue
       }
-
-      // 2. CPI area lookup
-      const cpiArea = getMetroCpiAreaForCounty(countyFips, stateAbbr)
-
-      if (!VALID_CPI_AREA_CODES.has(cpiArea.areaCode)) {
-        failures.push(`${zip}: CPI areaCode "${cpiArea.areaCode}" not in valid set`)
+      const st = STATE_FIPS_MAP[countyFips.slice(0, 2)]
+      if (!st || st.abbr !== stateAbbr || st.name !== stateName) {
+        failures.push(`${zip}: county ${countyFips} state prefix does not match ${stateAbbr}/${stateName}`)
       }
+      if (!entry.countyName) failures.push(`${zip}: empty countyName`)
 
-      if (![1, 2, 3, 4].includes(cpiArea.tier)) {
-        failures.push(`${zip}: CPI tier ${cpiArea.tier} not in [1,2,3,4]`)
+      // CPI
+      const cpi = getMetroCpiAreaForCounty(countyFips, stateAbbr)
+      if (!VALID_CPI_AREA_CODES.has(cpi.areaCode)) {
+        failures.push(`${zip}: CPI areaCode "${cpi.areaCode}" not in BLS_CPI_AREAS`)
       }
+      // States + DC never fall past the division tier; only territories get national
+      const isState = Boolean(STATE_TO_DIVISION[stateAbbr])
+      if (isState && cpi.tier > 2) failures.push(`${zip}: ${stateAbbr} got CPI tier ${cpi.tier}`)
+      if (!isState && cpi.areaCode !== '0000') failures.push(`${zip}: territory ${stateAbbr} got CPI ${cpi.areaCode}`)
 
-      // US states (50 + DC) should never get tier 3 or 4 — only territories
-      if (US_STATES.has(stateAbbr.toUpperCase()) && (cpiArea.tier === 3 || cpiArea.tier === 4)) {
-        failures.push(
-          `${zip}: US state ${stateAbbr} got CPI tier ${cpiArea.tier} (area: ${cpiArea.areaCode}, name: ${cpiArea.areaName})`
-        )
+      // Gas
+      const gas = getGasLookup(stateAbbr, cpi.areaCode, countyFips)
+      if (gas.source === 'eia' && !VALID_EIA_DUOAREA_CODES.has(gas.areaCode)) {
+        failures.push(`${zip}: EIA duoarea "${gas.areaCode}" not produced by eia-gas.ts tables`)
       }
-
-      cpiTierCounts[cpiArea.tier] = (cpiTierCounts[cpiArea.tier] ?? 0) + 1
-
-      // 3. EIA gas lookup
-      const gasLookup = getGasLookup(stateAbbr, cpiArea.areaCode, countyFips)
-
-      if (!gasLookup.duoarea || !VALID_EIA_DUOAREA_CODES.has(gasLookup.duoarea)) {
-        failures.push(`${zip}: EIA duoarea "${gasLookup.duoarea}" not in valid set`)
+      if (gas.source === 'bls' && !BLS_GAS_PUBLISHED_AREAS.has(gas.areaCode)) {
+        failures.push(`${zip}: BLS gas area "${gas.areaCode}" has no published APU…74714 series`)
       }
+      if (isState && gas.duoarea === 'NUS') failures.push(`${zip}: ${stateAbbr} fell back to national gas`)
 
-      gasTierCounts[gasLookup.tier] = (gasTierCounts[gasLookup.tier] ?? 0) + 1
-
-      // 4. LAUS series ID (with CT remapping via buildSeriesId)
-      const lausId = buildSeriesId(countyFips)
-
-      if (!/^LAUCN\d{5}0000000003$/.test(lausId)) {
-        failures.push(`${zip}: LAUS series ID "${lausId}" does not match expected format`)
-      }
-
-      // 5. Census data (optional — not every zip has census data)
-      const censusEntry = census[zip]
-      if (censusEntry) {
-        censusHits++
-        if (!(censusEntry.medianIncome > 0)) {
-          failures.push(`${zip}: census medianIncome ${censusEntry.medianIncome} is not > 0`)
+      // LAUS area
+      const laus = getLausAreaFipsForZip(zip)
+      if (stateAbbr === 'CT') {
+        if (!laus || !CT_PLANNING_REGION_NAMES[laus]) {
+          failures.push(`${zip}: CT zip LAUS area ${laus} is not a planning region`)
         }
-        if (!(censusEntry.medianRent > 0)) {
-          failures.push(`${zip}: census medianRent ${censusEntry.medianRent} is not > 0`)
-        }
-      } else {
-        censusMisses++
+      } else if (laus !== countyFips) {
+        failures.push(`${zip}: LAUS area ${laus} != county ${countyFips}`)
+      }
+
+      // county-geo.json must agree with the live lookups
+      const g = geo[countyFips]
+      if (!g) {
+        failures.push(`${zip}: county ${countyFips} missing from county-geo.json (run scripts/build-county-geo.ts)`)
+      } else if (
+        g.state !== stateAbbr ||
+        g.cpiArea !== cpi.areaCode ||
+        g.cpiTier !== cpi.tier ||
+        g.gasSource !== gas.source ||
+        g.gasDuoarea !== gas.areaCode ||
+        g.gasTier !== gas.tier
+      ) {
+        failures.push(`${zip}: county-geo.json ${JSON.stringify(g)} != live ${cpi.areaCode}/${gas.source}:${gas.areaCode}`)
+      }
+
+      // Census rent (the shelter card's $ base) is optional (USPS-only zips have none), but must be sane when present
+      const c = census[zip]
+      if (c && c.medianRent !== null && !(c.medianRent > 0)) {
+        failures.push(`${zip}: census rent not > 0`)
       }
     }
 
-    // Print tier distribution summary
-    console.log('\n=== Exhaustive Zip Mapping Summary ===')
-    console.log(`Total zips: ${zipCodes.length}`)
-    console.log(`\nCPI Tier Distribution:`)
-    console.log(`  Tier 1 (metro):    ${cpiTierCounts[1]}`)
-    console.log(`  Tier 2 (division): ${cpiTierCounts[2]}`)
-    console.log(`  Tier 3 (regional): ${cpiTierCounts[3]}`)
-    console.log(`  Tier 4 (national): ${cpiTierCounts[4]}`)
-    console.log(`\nEIA Gas Tier Distribution:`)
-    console.log(`  Tier 1 (city):  ${gasTierCounts[1]}`)
-    console.log(`  Tier 2 (state): ${gasTierCounts[2]}`)
-    console.log(`  Tier 3 (PAD):   ${gasTierCounts[3]}`)
-    console.log(`\nCensus ACS:`)
-    console.log(`  With data:    ${censusHits}`)
-    console.log(`  Without data: ${censusMisses}`)
-
-    if (failures.length > 0) {
-      console.log(`\n=== FAILURES (${failures.length}) ===`)
-      // Group failures by category
-      const cpiFailures = failures.filter((f) => f.includes('CPI'))
-      const gasFailures = failures.filter((f) => f.includes('EIA'))
-      const lausFailures = failures.filter((f) => f.includes('LAUS'))
-      const censusFailures = failures.filter((f) => f.includes('census'))
-      const fipsFailures = failures.filter((f) => f.includes('countyFips'))
-
-      if (fipsFailures.length) console.log(`\nFIPS failures (${fipsFailures.length}):`, fipsFailures.slice(0, 10))
-      if (cpiFailures.length) console.log(`\nCPI failures (${cpiFailures.length}):`, cpiFailures.slice(0, 10))
-      if (gasFailures.length) console.log(`\nGas failures (${gasFailures.length}):`, gasFailures.slice(0, 10))
-      if (lausFailures.length) console.log(`\nLAUS failures (${lausFailures.length}):`, lausFailures.slice(0, 10))
-      if (censusFailures.length) console.log(`\nCensus failures (${censusFailures.length}):`, censusFailures.slice(0, 10))
-    }
-
+    if (failures.length > 0) console.log(`FAILURES (${failures.length}):`, failures.slice(0, 30))
     expect(failures).toEqual([])
+  })
+
+  it('county-geo.json has no counties absent from zip-county.json', () => {
+    const counties = new Set(Object.values(zips).map(z => z.countyFips))
+    expect(Object.keys(geo).filter(f => !counties.has(f))).toEqual([])
   })
 })

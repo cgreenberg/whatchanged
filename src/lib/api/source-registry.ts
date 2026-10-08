@@ -1,16 +1,8 @@
 import type { DataSource } from './sources'
-import type { UnemploymentData, CpiData, GasPriceData, FederalFundingData } from '@/types'
-import { fetchUnemployment } from './bls'
+import type { CpiData, GasPriceData } from '@/types'
 import { fetchCpi } from './bls-cpi'
 import { fetchGasPrice } from './eia'
-import { fetchFederalFunding } from './usaspending'
-
-export const blsSource: DataSource<UnemploymentData> = {
-  id: 'bls-laus',
-  name: 'BLS Local Area Unemployment Statistics',
-  docsUrl: 'https://www.bls.gov/lau/',
-  fetch: fetchUnemployment,
-}
+import { fetchElectricitySeries, type ElectricitySeriesData } from './eia-electricity'
 
 export const blsCpiSource: DataSource<CpiData> = {
   id: 'bls-cpi',
@@ -26,9 +18,9 @@ export const eiaSource: DataSource<GasPriceData> = {
   fetch: fetchGasPrice,
 }
 
-export const usaSpendingSource: DataSource<FederalFundingData> = {
-  id: 'usaspending',
-  name: 'USASpending.gov Federal Awards',
-  docsUrl: 'https://www.usaspending.gov/',
-  fetch: fetchFederalFunding,
+export const eiaElectricitySource: DataSource<ElectricitySeriesData> = {
+  id: 'eia-electricity',
+  name: 'EIA Average Residential Electricity Price (state)',
+  docsUrl: 'https://www.eia.gov/opendata/browser/electricity/retail-sales',
+  fetch: fetchElectricitySeries,
 }

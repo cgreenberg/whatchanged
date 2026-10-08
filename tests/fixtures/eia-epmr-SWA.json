@@ -1,0 +1,5210 @@
+{
+ "_recorded": "EIA API v2 /petroleum/pri/gnd/data weekly, facets product=EPMR duoarea=SWA, sort period desc, length 520; recorded 2026-10-02 (api_key removed, fields trimmed)",
+ "response": {
+  "total": 520,
+  "dateFormat": "YYYY-MM-DD",
+  "frequency": "weekly",
+  "data": [
+   {
+    "period": "2026-09-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.453",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.516",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.503",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.483",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.259",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.214",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.121",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.056",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.045",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.01",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.898",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.849",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.897",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.029",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.152",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.343",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.444",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.524",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.57",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.591",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.595",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.529",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.299",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.225",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.213",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.233",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.194",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.16",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.788",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.522",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.202",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.143",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.009",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.863",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.763",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.685",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.657",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.645",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.71",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.774",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.817",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.87",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.98",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.027",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.039",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.052",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.117",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.173",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.253",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.305",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.357",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.409",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.449",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.515",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.536",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.365",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.294",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.291",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.313",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.314",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.273",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.245",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.26",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.26",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.274",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.301",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.29",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.219",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.2",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.232",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.246",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.177",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.118",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.092",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.098",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.141",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.195",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.225",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.037",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.934",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.92",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.944",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.998",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.01",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.017",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.91",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.851",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.823",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.791",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.756",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.751",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.747",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.763",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.776",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.825",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.872",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.834",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.843",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.864",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.871",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.897",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.912",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.917",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.872",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.908",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.95",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.99",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.99",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.057",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.018",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.041",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.08",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.049",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.108",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.096",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.133",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.145",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.148",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.159",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.18",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.286",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.38",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.48",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.475",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.519",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.542",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.545",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.539",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.547",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.501",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.407",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.278",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.169",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.085",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.016",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.927",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.795",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.783",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.8",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.82",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.843",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.897",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.927",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.987",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.001",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.055",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.102",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.153",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.209",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.273",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.329",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.405",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.554",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.662",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.764",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.885",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.994",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.926",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.955",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.969",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.992",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.969",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.96",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.956",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.929",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.849",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.821",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.84",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.855",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.88",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.874",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.769",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.687",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.575",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.571",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.524",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.492",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.466",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.494",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.447",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.37",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.262",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.166",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.093",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.087",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.111",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.101",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.101",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.039",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.978",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.991",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.987",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.91",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.81",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.741",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.698",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.703",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.759",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.952",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.193",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.391",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.539",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.674",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.674",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.716",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.869",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.074",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.215",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.171",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.789",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.468",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.488",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.481",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.594",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.624",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.67",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.754",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.892",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.979",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.091",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.223",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.322",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.352",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.416",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.409",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.252",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.074",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "5.075",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.872",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.686",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.564",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.529",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.495",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.516",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.574",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.634",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.618",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.669",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "4.303",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.888",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.87",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.857",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.855",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.858",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.86",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.864",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.825",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.75",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.732",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.749",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.755",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.771",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.776",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.778",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.777",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.783",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.79",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.806",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.767",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.761",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.755",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.762",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.781",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.792",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.797",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.802",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.806",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.801",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.782",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.752",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.753",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.725",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.732",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.68",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.605",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.525",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.494",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.49",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.442",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.437",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.412",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.37",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.348",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.273",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.244",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.229",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.229",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.223",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.215",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.13",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.055",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.969",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.843",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.779",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.733",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.67",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.649",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.635",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.602",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.603",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.603",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.605",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.614",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.645",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.649",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.653",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.648",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.637",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.652",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.658",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.674",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.69",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.693",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.712",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.734",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.747",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.75",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.745",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.735",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.712",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.698",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.705",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.715",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.694",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.645",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.617",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.607",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.563",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.508",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.45",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.366",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.336",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.278",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.252",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.228",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.242",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.31",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.407",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.483",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.575",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.696",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.865",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.909",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.919",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.915",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.904",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.918",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.907",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.919",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.941",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.959",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.972",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.005",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.005",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.055",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.166",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.196",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.232",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.267",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.287",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.298",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.294",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.265",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.202",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.123",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.076",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.059",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.047",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.055",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.046",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.076",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.087",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.095",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.111",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.121",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.143",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.172",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.193",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.219",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.237",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.304",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.348",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.405",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.43",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.437",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.461",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.451",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.404",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.36",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.275",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.151",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.049",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.96",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.85",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.784",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.738",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.742",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.74",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.736",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.745",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.763",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.813",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.868",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.915",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.989",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.008",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.055",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.138",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.201",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.283",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.321",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.389",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.43",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.442",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.452",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.41",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.349",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.311",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.291",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.288",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.3",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.288",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.271",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.282",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.282",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.289",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.3",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.31",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.33",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.328",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.334",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.342",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.359",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.364",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.381",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.378",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.336",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.289",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.32",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.248",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.233",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.204",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.168",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.148",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.114",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.063",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.994",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.983",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.954",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.96",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.979",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.961",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.928",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.908",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.893",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.886",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.887",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.887",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.923",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.929",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.95",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.972",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.989",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.985",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.92",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.888",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.886",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.902",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.928",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.974",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-25",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.016",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-18",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.035",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-11",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.04",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-04",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "3.026",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.938",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.867",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.822",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.803",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.782",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.773",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.786",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.78",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.76",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.779",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.8",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.827",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.857",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-29",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.861",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-22",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.864",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-15",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.863",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-08",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.869",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-01",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.9",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.899",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.885",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-10",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.878",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-03",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.84",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.82",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.818",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.805",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.747",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-27",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.726",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-20",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.693",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-13",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.688",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-06",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.684",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-30",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.69",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-23",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.703",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-16",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.707",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-09",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.673",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-02",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.624",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-26",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.571",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-19",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.527",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-12",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.512",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-05",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.533",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-28",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.566",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-21",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.598",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-14",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.646",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-07",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.685",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-31",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.696",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-24",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.698",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-17",
+    "duoarea": "SWA",
+    "area-name": "WASHINGTON",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_SWA_DPG",
+    "value": "2.67",
+    "units": "$/GAL"
+   }
+  ]
+ }
+}

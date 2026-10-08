@@ -1,8 +1,16 @@
 /**
  * audit-zip-mappings.ts
  *
- * Audits every zip code in the HUD crosswalk for CPI and gas-tier mapping issues.
+ * Audits every zip in src/lib/data/zip-county.json for CPI, gas and LAUS mapping issues.
  * Run with: npx tsx scripts/audit-zip-mappings.ts
+ *
+ * Data sources being audited:
+ *   - zip-county.json: built by scripts/build-zip-county.ts — each zip → county
+ *     holding most of its 2020 housing units (Census ZCTA↔block + PL 94-171),
+ *     plus USPS-only zips (PO boxes, unique zips; `zcta: false`) from GeoNames.
+ *   - cbsa-cpi-crosswalk.json: built by scripts/build-cbsa-cpi-crosswalk.ts from
+ *     the OMB 2013 CBSA delineation (the one BLS's 2018 CPI area design uses).
+ *   - ct-planning-regions.json: CT zip / legacy county → 2022 planning region (LAUS).
  *
  * This script makes NO API calls — it only reads static bundled data.
  */
@@ -20,14 +28,15 @@ import {
   getMetroCpiAreaForCounty,
   BLS_CPI_AREAS,
   STATE_TO_REGION,
+  STATE_TO_DIVISION,
 } from '../src/lib/mappings/county-metro-cpi'
 
 import { getGasLookup } from '../src/lib/api/eia'
+import { getLausAreaFipsForZip, CT_PLANNING_REGION_NAMES } from '../src/lib/mappings/laus-area'
 import {
   CPI_TO_EIA_CITY,
   COUNTY_EIA_CITY_OVERRIDES,
   STATE_TO_PAD,
-  PAD_NAMES,
 } from '../src/lib/mappings/eia-gas'
 
 // ---------------------------------------------------------------------------
@@ -42,6 +51,7 @@ interface ZipEntry {
   stateName: string
   stateAbbr: string
   cityName: string
+  zcta?: false
 }
 
 const zipCountyData: Record<string, ZipEntry> = JSON.parse(
@@ -66,7 +76,9 @@ interface ZipAuditResult {
   gasLabel: string
   gasTier: GasTier
   gasTierName: string
-  cpiSource: 'cbsa-metro' | 'regional' | 'national-fallback'
+  cpiSource: 'cbsa-metro' | 'division' | 'national-fallback'
+  lausFips: string | null
+  zcta: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -92,9 +104,11 @@ for (const zip of allZips) {
   const gasTierName =
     gasLookup.duoarea === 'NUS'
       ? 'national'
+      : gasLookup.source === 'bls'
+      ? `BLS monthly (${gasLookup.areaCode})`
       : gasLookup.tier === 1
       ? (() => {
-          if (COUNTY_EIA_CITY_OVERRIDES[countyFips]) return 'city (county override)'
+          if (COUNTY_EIA_CITY_OVERRIDES[countyFips]?.duoarea.startsWith('Y')) return 'city (county override)'
           return 'city (via CPI area)'
         })()
       : gasLookup.tier === 2
@@ -103,8 +117,8 @@ for (const zip of allZips) {
 
   const cpiSource: ZipAuditResult['cpiSource'] = (cbsaCrosswalk as Record<string, string>)[countyFips]
     ? 'cbsa-metro'
-    : STATE_TO_REGION[state]
-    ? 'regional'
+    : STATE_TO_DIVISION[state]
+    ? 'division'
     : 'national-fallback'
 
   results.push({
@@ -115,11 +129,13 @@ for (const zip of allZips) {
     cityName,
     cpiAreaCode: cpi.areaCode,
     cpiAreaName: cpi.areaName,
-    gasDuoarea: gasLookup.duoarea,
+    gasDuoarea: gasLookup.areaCode,
     gasLabel: gasLookup.geoLevel,
     gasTier,
     gasTierName,
     cpiSource,
+    lausFips: getLausAreaFipsForZip(zip),
+    zcta: entry.zcta !== false,
   })
 }
 
@@ -165,7 +181,7 @@ const cbsaGaps: CbsaGap[] = []
 for (const county of uniqueCounties) {
   // Flag counties that get city-level gas (tier 1 — they're clearly in a metro)
   // but are NOT in the CBSA crosswalk (they fall back to regional CPI).
-  if (county.gasTier === 1 && county.cpiSource !== 'cbsa-metro') {
+  if (county.gasTier === 1 && county.cpiSource !== 'cbsa-metro' && !COUNTY_EIA_CITY_OVERRIDES[county.countyFips]) {
     cbsaGaps.push({
       countyFips: county.countyFips,
       countyName: county.countyName,
@@ -260,7 +276,7 @@ console.log(`  Unique counties:  ${uniqueCounties.length.toLocaleString()}`)
 console.log(`  Unique states:    ${statesInData.size}`)
 
 // ---------------------------------------------------------------------------
-h2('ISSUE A — MISSING STATE REGIONAL CPI MAPPING (falls back to national CPI)')
+h2('ISSUE A — MISSING STATE DIVISION/REGION CPI MAPPING (falls back to national CPI)')
 
 if (missingRegionCpi.length === 0) {
   console.log('  PASS: All states in zip data have a STATE_TO_REGION entry.')
@@ -268,7 +284,7 @@ if (missingRegionCpi.length === 0) {
   missingRegionCpi.sort().forEach(state => {
     const zipsInState = results.filter(r => r.stateAbbr === state).length
     console.log(`  MISSING: ${state} — ${zipsInState.toLocaleString()} zips fall back to National CPI`)
-    console.log(`    FIX: Add ${state} to STATE_TO_REGION in county-metro-cpi.ts`)
+    console.log(`    FIX: Add ${state} to STATE_TO_DIVISION/STATE_TO_REGION in county-metro-cpi.ts (territories: national CPI is expected)`)
   })
 }
 
@@ -281,7 +297,7 @@ if (missingPad.length === 0) {
   missingPad.sort().forEach(state => {
     const zipsInState = results.filter(r => r.stateAbbr === state).length
     console.log(`  MISSING: ${state} — ${zipsInState.toLocaleString()} zips fall back to National gas`)
-    console.log(`    FIX: Add ${state} to STATE_TO_PAD in eia.ts`)
+    console.log(`    FIX: Add ${state} to STATE_TO_PAD in src/lib/mappings/eia-gas.ts (territories have no PADD — national gas is expected)`)
   })
 }
 
@@ -292,6 +308,7 @@ console.log('   but are NOT in the CBSA crosswalk, so they fall back to regional
 
 if (cbsaGaps.length === 0) {
   console.log('\n  PASS: All counties with city-level gas have a CBSA metro CPI assignment.')
+  console.log('  (Cleveland YCLE overrides are expected here: Cleveland is not a BLS CPI metro.)')
 } else {
   console.log(`\n  ${cbsaGaps.length} counties get city gas but only regional CPI:`)
   for (const g of cbsaGaps.sort((a, b) => a.countyFips.localeCompare(b.countyFips))) {
@@ -321,6 +338,36 @@ if (cpiGasCoverageGaps.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
+h2('ISSUE E — LAUS AREA (unemployment) RESOLUTION')
+const badLaus = results.filter(
+  r =>
+    !r.lausFips ||
+    (r.stateAbbr === 'CT' ? !CT_PLANNING_REGION_NAMES[r.lausFips] : r.lausFips !== r.countyFips)
+)
+if (badLaus.length === 0) {
+  console.log('  PASS: every CT zip resolves to a 2022 planning region; every other zip to its county.')
+} else {
+  for (const r of badLaus.slice(0, 50)) {
+    console.log(`  ${r.zip} ${r.cityName}, ${r.stateAbbr} county ${r.countyFips} → LAUS ${r.lausFips ?? 'NONE'}`)
+  }
+  console.log(`  ${badLaus.length} zips with a bad LAUS area. FIX: re-run scripts/build-zip-county.ts`)
+}
+
+// ---------------------------------------------------------------------------
+h2('ISSUE F — ZIP DATA INTEGRITY')
+const badEntries = results.filter(r => !/^\d{5}$/.test(r.countyFips) || !r.countyName)
+if (badEntries.length === 0) {
+  console.log('  PASS: every zip has a 5-digit county FIPS and a county name.')
+} else {
+  for (const r of badEntries.slice(0, 50)) console.log(`  ${r.zip}: county '${r.countyFips}' '${r.countyName}'`)
+  console.log(`  ${badEntries.length} zips with missing county data.`)
+}
+const uspsOnly = results.filter(r => !r.zcta).length
+const noCity = results.filter(r => !r.cityName).length
+console.log(`  USPS-only zips (PO box / unique, no Census ZCTA): ${uspsOnly.toLocaleString()}`)
+console.log(`  Zips without a city name: ${noCity.toLocaleString()}`)
+
+// ---------------------------------------------------------------------------
 h1('COVERAGE SUMMARY')
 
 h2('Gas price resolution by tier (zip count)')
@@ -344,10 +391,10 @@ for (const [duoarea, count] of sortedGasAreas) {
   console.log(`  ${duoarea.padEnd(8)}  ${label.padEnd(35)}  ${count.toLocaleString().padStart(7)} zips`)
 }
 
-h2('States with no regional CPI mapping (full national fallback)')
-const nationalFallbackStates = [...statesInData].filter(s => !STATE_TO_REGION[s]).sort()
+h2('States/territories with no division CPI mapping (full national fallback)')
+const nationalFallbackStates = [...statesInData].filter(s => !STATE_TO_DIVISION[s]).sort()
 if (nationalFallbackStates.length === 0) {
-  console.log('  None — all states have regional CPI coverage.')
+  console.log('  None — all states have division CPI coverage.')
 } else {
   for (const state of nationalFallbackStates) {
     const count = results.filter(r => r.stateAbbr === state).length

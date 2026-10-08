@@ -1,0 +1,5210 @@
+{
+ "_recorded": "EIA API v2 /petroleum/pri/gnd/data weekly, facets product=EPMR duoarea=NUS, sort period desc, length 520; recorded 2026-10-02 (api_key removed, fields trimmed)",
+ "response": {
+  "total": 520,
+  "dateFormat": "YYYY-MM-DD",
+  "frequency": "weekly",
+  "data": [
+   {
+    "period": "2026-09-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.465",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.478",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.319",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-09-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.157",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.071",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.085",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.049",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.006",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-08-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.079",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.096",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.001",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.855",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-07-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.777",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.831",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.914",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.052",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.146",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-06-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.305",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.475",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.49",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.5",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-05-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.452",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.123",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.044",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.123",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-04-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.12",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.99",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.961",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.72",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.502",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-03-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.015",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.937",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.924",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.902",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-02-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.867",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.853",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.806",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.779",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2026-01-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.796",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.811",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.841",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.895",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.94",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-12-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.985",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.061",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.062",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.056",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-11-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.019",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.035",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.019",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.061",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-10-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.124",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.118",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.173",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.168",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.192",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-09-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.177",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.147",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.125",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.118",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-08-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.14",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.123",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.121",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.13",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-07-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.125",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.164",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.213",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.139",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.108",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-06-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.127",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.16",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.173",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.12",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-05-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.147",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.133",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.141",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.168",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-04-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.243",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.162",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.115",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.058",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.069",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-03-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.078",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.125",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.148",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.128",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-02-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.082",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.103",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.109",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.043",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2025-01-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.047",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.006",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.024",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.016",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.008",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-12-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.034",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.044",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.046",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.052",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-11-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.069",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.097",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.144",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.171",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-10-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.136",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.179",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.185",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.18",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.236",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-09-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.289",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.313",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.382",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.414",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-08-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.448",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.484",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.471",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.496",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.489",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-07-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.479",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.438",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.435",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.429",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-06-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.516",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.577",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.584",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.608",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-05-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.643",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.653",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.668",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.628",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.591",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-04-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.517",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.523",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.453",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.376",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-03-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.35",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.249",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.269",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.192",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-02-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.136",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.095",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.062",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.058",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.073",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2024-01-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.089",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.116",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.053",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.136",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-12-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.231",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.238",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.289",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.349",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-11-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.396",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.473",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.533",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.576",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.684",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-10-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.798",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.837",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.878",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.822",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-09-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.807",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.813",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.868",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.85",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-08-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.828",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.757",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.596",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.559",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.546",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-07-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.527",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.571",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.577",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.595",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-06-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.541",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.571",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.534",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.536",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.533",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-05-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.6",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.656",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.663",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.596",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-04-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.497",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.421",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.422",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.456",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-03-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.389",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.342",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.379",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.39",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-02-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.444",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.489",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.415",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.31",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.259",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2023-01-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.223",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.091",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.12",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.239",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-12-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.39",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.534",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.648",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.762",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-11-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.796",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.742",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.769",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.871",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.912",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-10-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.782",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.711",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.654",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.69",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-09-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.746",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.827",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.88",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.938",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.038",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-08-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.192",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.33",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.49",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.646",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-07-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.771",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.872",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.962",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "5.006",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-06-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.876",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.624",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.593",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.491",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.328",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-05-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.182",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.107",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.066",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.091",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-04-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.17",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.231",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.239",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.315",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-03-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "4.102",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.608",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.53",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.487",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-02-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.444",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.368",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.323",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.306",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.295",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2022-01-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.281",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.275",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.295",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.315",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-12-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.341",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.38",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.395",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.399",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.41",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-11-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.39",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.383",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.322",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.267",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-10-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.19",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.175",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.184",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.165",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-09-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.176",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.139",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.145",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.174",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.172",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-08-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.159",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.136",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.153",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.133",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-07-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.122",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.091",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.06",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.069",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-06-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.035",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.027",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.02",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "3.028",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.961",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-05-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.89",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.872",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.855",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.849",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-04-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.857",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.852",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.865",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.853",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.771",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-03-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.711",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.633",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.501",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.461",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-02-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.409",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.392",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.379",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.317",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2021-01-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.249",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.243",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.224",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.158",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-12-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.156",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.12",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.102",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.111",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.096",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-11-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.112",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.143",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.15",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.167",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-10-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.172",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.169",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.168",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.183",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-09-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.211",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.222",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.182",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.166",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.166",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-08-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.176",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.175",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.186",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.195",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-07-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.177",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.174",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.129",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.098",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.036",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-06-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.974",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.96",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.878",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.851",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-05-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.789",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.773",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.812",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.853",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-04-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "1.924",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.005",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.12",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.248",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.375",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-03-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.423",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.466",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.428",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.419",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-02-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.455",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.506",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.537",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.57",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2020-01-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.578",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.571",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.532",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.536",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.561",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-12-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.575",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.579",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.592",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.615",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-11-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.605",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.596",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.638",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.629",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-10-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.645",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.642",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.654",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.552",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.55",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-09-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.563",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.574",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.598",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.624",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-08-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.688",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.715",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.75",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.779",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.743",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-07-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.713",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.654",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.67",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.732",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-06-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.807",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.822",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.852",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.866",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-05-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.897",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.887",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.841",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.828",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.745",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-04-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.691",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.623",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.548",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.471",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-03-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.422",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.39",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.317",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.276",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-02-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.254",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.256",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.251",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.247",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2019-01-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.237",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.266",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.321",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.369",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.421",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-12-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.451",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.539",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.611",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.686",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-11-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.753",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.811",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.841",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.879",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.903",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-10-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.866",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.844",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.841",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.833",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-09-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.824",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.827",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.821",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.843",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-08-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.852",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.846",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.831",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.865",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.857",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-07-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.844",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.833",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.879",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.911",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-06-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.94",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.962",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.923",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.873",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-05-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.845",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.846",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.798",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.747",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.694",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-04-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.7",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.648",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.598",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.559",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-03-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.56",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.548",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.557",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.607",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-02-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.637",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.607",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.567",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.557",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.522",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2018-01-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.52",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.472",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.45",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.485",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-12-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.5",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.533",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.568",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.592",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-11-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.561",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.488",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.479",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.489",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.504",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-10-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.565",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-25",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.583",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-18",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.634",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-11",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.685",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-09-04",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.679",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.399",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.36",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.384",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-08-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.378",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.352",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.312",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.278",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.297",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-07-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.26",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.288",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.318",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.366",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-06-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.414",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-29",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.406",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-22",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.399",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-15",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.369",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-08",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.372",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-05-01",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.411",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.449",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.436",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-10",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.424",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-04-03",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.36",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.315",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.321",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.323",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-03-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.341",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-27",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.314",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-20",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.302",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-13",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.307",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-02-06",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.293",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-30",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.296",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-23",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.326",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-16",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.358",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-09",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.388",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2017-01-02",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.377",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-26",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.309",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-19",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.264",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-12",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.236",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-12-05",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.208",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-28",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.154",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-21",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.155",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-14",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.184",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-11-07",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.233",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-31",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.23",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-24",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.243",
+    "units": "$/GAL"
+   },
+   {
+    "period": "2016-10-17",
+    "duoarea": "NUS",
+    "area-name": "U.S.",
+    "product": "EPMR",
+    "product-name": "Regular Gasoline",
+    "series": "EMM_EPMR_PTE_NUS_DPG",
+    "value": "2.257",
+    "units": "$/GAL"
+   }
+  ]
+ }
+}

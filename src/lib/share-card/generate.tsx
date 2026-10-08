@@ -1,677 +1,497 @@
 import React from 'react'
 import { ImageResponse } from 'next/og'
 import { fetchSnapshot } from '@/lib/api/snapshot'
-import { estimateTariffCost, formatDollars } from '@/lib/tariff'
+import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, monthsBetween } from '@/lib/format'
+import { electricityCenterOf, gasBaselineIndex, monthlyBaselineIndex, ELECTRICITY_CENTER_LAG } from '@/lib/baseline'
+import {
+  buildHeroCards, imageSourcesLine, usesNationalFallback, OUTLIER_MARK, isGasStandIn, standInPlace, GAS_STANDIN_MARK,
+  imageCountyName, gasLevelText, isMonthlyGas, type HeroCardModel,
+} from '@/lib/hero-cards'
+import {
+  hasSeasonalCaveat, seasonalCaveatPoints, seasonalCaveatDollars, seasonalCaveatDirection, seasonalOwnPatternPct,
+  seasonalDirectionUncertain, type SeasonalCaveat,
+} from '@/lib/rent-range'
+import { rentCodedQualifier } from '@/lib/compute/dollar-translations'
 import { loadShareFonts } from '@/lib/share-card/fonts'
-import { buildLineSparklineV3, buildTariffBarChart } from '@/lib/share-card/sparklines'
+import { buildShareChart, chartUnavailable } from '@/lib/share-card/sparklines'
+import { rentChartSeries } from '@/lib/share-card/rent-series'
+import { fontMeasure } from '@/lib/share-card/measure'
+import {
+  dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_NONE, RANGE_START, RENT_ADJUSTMENT_TAG, shortSourceDate,
+} from '@/lib/share-card/labels'
+export { QUADRANT_TITLES }
+import {
+  BIG_UNIT_SCALE, CARD_SIZE, CELL_PADDING, FOOTER_H, FOOTNOTE_PAD_Y, FS, HEADER_H, SIDE_PAD, SLOT, TITLE_TAG_GAP,
+  chartHeight, fitSourceLine, footnoteZoneHeight, rowHeight,
+} from '@/lib/share-card/layout'
 
 // ── Design Tokens ─────────────────────────────────────────────────
-const BG = '#0b0c0f'
+const BG = '#111316' // data-desk charcoal (src/lib/theme.ts)
 const BORDER = 'rgba(255,255,255,0.10)'
-const TEXT_PRIMARY = '#F0EBE1'
-const TEXT_SECONDARY = '#A89F93'
-const TEXT_TERTIARY = '#6B6560'
-const AMBER = '#F0A500'
-const BLUE = '#3D9EFF'
-const PURPLE = '#A87EFF'
-const RED = '#F04040'
+const TEXT_PRIMARY = '#F1EFEA'
+const TEXT_SECONDARY = '#B3B8C0'
+const TEXT_TERTIARY = '#8C929B'
+// Metric accents match the site (src/lib/theme.ts METRIC_COLORS); AMBER is also the brand accent
+const AMBER = '#F2A93B'
+const GAS = AMBER
+const GROCERIES = '#F07D62'
+const BLUE = '#5EA8F2'
+const GREEN = '#3EC4A6'
 
-// RGB equivalents for use in rgba() strings
-const ACCENT_RGB: Record<string, string> = {
-  [AMBER]: '240,165,0',
-  [BLUE]: '61,158,255',
-  [PURPLE]: '168,126,255',
-  [RED]: '240,64,64',
+/** Share image cache: shorter when any source is missing or stale so it self-heals. */
+export const SHARE_CACHE_OK = 'public, max-age=3600, s-maxage=86400'
+export const SHARE_CACHE_DEGRADED = 'public, max-age=60, s-maxage=300'
+
+
+// ── Header geometry ───────────────────────────────────────────────
+const CITY_SIZES = [76, 68, 60, 52] as const
+const DATE_LINE_FS = 20
+const DATE_LINE_LS = 0.04 * DATE_LINE_FS
+const DATE_SUB_FS = 16
+const DATE_ARROW_W = 30
+const DATE_BOX_PAD_X = 14
+/** Caveat marks after a big number are drawn at this fraction of FS.big. */
+export const MARK_SCALE = 0.45
+
+/** Width (px) of the header date box for these two lines. */
+export function dateBoxWidth(end: string | null, sub: string | null): number {
+  const mono = fontMeasure('DMMono-Regular.ttf', 0.6)
+  // No dated card: one line, "SINCE JAN 20, 2025" (no arrow, no end)
+  const line1 = end
+    ? mono(RANGE_START, DATE_LINE_FS, DATE_LINE_LS) + DATE_ARROW_W + mono(end, DATE_LINE_FS, DATE_LINE_LS)
+    : mono(RANGE_NONE, DATE_LINE_FS, DATE_LINE_LS)
+  return Math.ceil(Math.max(line1, sub ? mono(sub, DATE_SUB_FS) : 0) + 2 * DATE_BOX_PAD_X + 2)
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
-function formatSigned(value: number, decimals = 1, suffix = ''): string {
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(decimals)}${suffix}`
+/** Largest header font (Bebas Neue) at which the place name fits beside the date box; null = none (ellipsis at the smallest). */
+export function cityFontSize(text: string, width: number): number | null {
+  const bebas = fontMeasure('BebasNeue-Regular.ttf', 0.45)
+  return CITY_SIZES.find((s) => bebas(text, s) <= width) ?? null
+}
+export const CITY_MIN_FS = CITY_SIZES[CITY_SIZES.length - 1]
+
+/**
+ * Monthly x-axis on real time: each point's position is its month offset over the span, so a run of missing months
+ * (e.g. a BLS publication gap) is shown as a gap, not squeezed into one step.
+ */
+export function monthlyAxis(series: Array<{ date: string }>): { xFractions: number[]; gapAfter: number[]; gapLabels: string[] } {
+  if (series.length < 2) return { xFractions: series.map(() => 0), gapAfter: [], gapLabels: [] }
+  const first = series[0].date
+  const span = monthsBetween(first, series[series.length - 1].date) || 1
+  const xFractions = series.map((p) => monthsBetween(first, p.date) / span)
+  // > 2 months between points (bimonthly areas publish every other month: not a gap)
+  const gapAfter = series.slice(0, -1).flatMap((p, i) => (monthsBetween(p.date, series[i + 1].date) > 2 ? [i] : []))
+  // "no data Feb–Jul" (missing months between the two points; years shown when they differ)
+  const gapLabels = gapAfter.map((i) => {
+    const from = addMonths(series[i].date, 1)
+    const to = addMonths(series[i + 1].date, -1)
+    const mon = (d: string) => fmtMonthShort(d).split(' ')[0]
+    if (from === to) return `no data ${mon(from)}`
+    return from.slice(0, 4) === to.slice(0, 4)
+      ? `no data ${mon(from)}–${mon(to)}`
+      : `no data ${fmtMonthShort(from)}–${fmtMonthShort(to)}`
+  })
+  return { xFractions, gapAfter, gapLabels }
 }
 
-function getMonthLabel(series: Array<{ date: string }>, idx: number): string {
-  const d = series[idx]?.date // "2025-01" format
-  if (!d) return ''
-  const [year, month] = d.split('-')
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ]
-  return `${months[parseInt(month, 10) - 1] || ''} '${year.slice(2)}`
+/** Gas pill: "now $3.21" (weekly), else the price over its month ("$4.78" / "Aug avg", "$5.10" / "Jul survey"). */
+export function sharePillForGas(g: { current: number; latestDate?: string | null; source?: string; frequency?: string }): { text: string; sub?: string } {
+  const kind = g.source === 'dcra' ? 'survey' : isMonthlyGas(g as Parameters<typeof isMonthlyGas>[0]) ? 'monthly' : 'weekly'
+  const full = gasLevelText(g.current, kind, g.latestDate)
+  const m = /^(.*) (\$\d+\.\d\d)$/.exec(full)
+  return !m || full.startsWith('now ') ? { text: full } : { text: m[2], sub: m[1] }
+}
+
+/** Electricity chart tick for an average plotted at its window's center month: "12 mo to Jul '26" (the window's end). */
+export function elecWindowTick(center: string | undefined): string {
+  return center ? `12 mo to ${fmtMonthShort(addMonths(center, ELECTRICITY_CENTER_LAG))}` : ''
+}
+
+function addMonths(d: string, n: number): string {
+  const [y, m] = d.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7)
+}
+
+/** Day-based x positions (weekly EIA, monthly BLS and the twice-yearly Alaska survey all on real time). */
+function dateFractions(dates: string[]): number[] {
+  const t = dates.map((d) => Date.parse(d.length === 7 ? `${d}-01` : d))
+  const span = t[t.length - 1] - t[0]
+  return t.map((x) => (span > 0 && Number.isFinite(x) ? (x - t[0]) / span : 0))
+}
+
+/** % change of each value vs the first (the chart's baseline point). */
+const pctFromFirst = (vals: number[]) => (vals[0] ? vals.map((v) => ((v - vals[0]) / vals[0]) * 100) : [])
+
+/** Y tick text: "0%", "+7.0%", "−1.8%". */
+export const pctTick = (v: number) => (Math.abs(v) < 0.05 ? '0%' : fmtSignedPct(v))
+
+/**
+ * Footnote for the rent seasonal-pattern caveat (rent-range.ts rentSeasonalCaveat, short form), signed so it reads
+ * right for a fall too: "† Seasonal pattern uncertain: Aug rent may be ~2.2 pts too low (≈ $50/mo); own pattern +0.7%,
+ * direction uncertain." `mark` is "†", or "‡" when the value also carries the outlier "†". null when there is no caveat.
+ */
+export function shareSeasonalNote(
+  c: SeasonalCaveat | undefined, rent: { pct: number; curRent: number; asOf: string }, mark = '†',
+): string | null {
+  if (!hasSeasonalCaveat(c)) return null
+  const usd = seasonalCaveatDollars(c, rent.pct, rent.curRent)
+  const own = seasonalOwnPatternPct(c, rent.pct)
+  const mon = fmtMonthShort(`${rent.asOf.slice(0, 4)}-${String(c.month).padStart(2, '0')}`).split(' ')[0] // the caveat's (as-of) month
+  return `${mark} Seasonal pattern uncertain: ${mon} rent may be ~${seasonalCaveatPoints(c)} pts ${seasonalCaveatDirection(c)}` +
+    `${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}` +
+    `${own !== null ? `; own pattern ${fmtSignedPct(own)}${seasonalDirectionUncertain(c, rent.pct) ? ', direction uncertain' : ''}` : ''}.`
+}
+
+/** Footnote for a flagged (outlier) rent figure. */
+export const SHARE_OUTLIER_NOTE = `${OUTLIER_MARK} Unusual rent value: far outside most U.S. counties; treat with caution.`
+
+/** Footnote for a HI/AK gas stand-in ("*" on "Honolulu-area*" in the gas source line). */
+export function shareGasStandInNote(location: Parameters<typeof standInPlace>[0]): string {
+  return `${GAS_STANDIN_MARK} No gas series for ${standInPlace(location, 'image')} — local prices often higher; trend may differ.`
+}
+
+/**
+ * Second line of the shelter "$/yr" pill, only for a coded Census rent: the zip's own top-coded median ($3,500+)
+ * makes the amount a floor on its size ("or more in rent"; "or more saved in rent" for a decrease), bottom-coded
+ * (under $100) a ceiling ("or less in rent"). null otherwise (one-line pill).
+ */
+export function shelterPillSub(c?: { basis?: string; rentCoded?: 'top' | 'bottom' } | null, dollars?: number | null): string | null {
+  const q = rentCodedQualifier(typeof dollars === 'number' ? dollars : 1, c?.basis === 'zip' ? c.rentCoded : undefined)
+  return q ? `${q} in rent` : null
+}
+
+/** One quadrant of the template. */
+export interface QuadrantModel {
+  id: keyof typeof QUADRANT_TITLES
+  accent: string
+  big: string
+  /** Caveat marks after the big number ("†", "†‡"), drawn small; their footnotes are above the footer. */
+  mark?: string
+  /** Small tag after the title ("seas. adj." for Zillow rent). */
+  tag?: string
+  unit?: string
+  pill?: { text: string; sub?: string | null }
+  chart: React.ReactElement | null
+  source: string
 }
 
 // ── Main Export ───────────────────────────────────────────────────
-export async function generateShareCard(zip: string, city?: string, state?: string): Promise<Response> {
-  const snapshot = await fetchSnapshot(zip, city, state)
+export async function generateShareCard(zip: string): Promise<Response> {
+  const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
     return new Response('Zip code not found', { status: 404 })
   }
 
   const { location } = snapshot
-  const cityName = location.cityName || location.countyName
-  const stateAbbr = location.stateAbbr
-
-  // Extract data fields with null guards
+  const place = `${(location.cityName || location.countyName).toUpperCase()}, ${location.stateAbbr}`
   const cpiData = snapshot.cpi.data
-  const censusData = snapshot.census.data
   const gasData = snapshot.gas.data
 
-  // Month/year for header date badge
-  const now = new Date()
-  const monthYear = now
-    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    .toUpperCase()
+  // Same view-models as the page's hero cards (sanity ranges, rent vs CPI shelter)
+  const cards = buildHeroCards(snapshot)
+  const card = (id: string): HeroCardModel | undefined => cards.find((c) => c.id === id)
+  const ok = (id: string) => card(id)?.status === 'ok'
+  const rent = ok('rent') ? snapshot.rent ?? null : null
+  const elecData = ok('electricity') ? snapshot.electricity?.data ?? null : null
+  const degraded = cards.some((c) => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)
 
-  // ── Tariff Estimate ──────────────────────────────────────────────
-  const tariffCost = censusData ? estimateTariffCost(censusData.medianIncome) : 0
+  // ── Footnotes (one shared zone above the footer, only when needed) ──
+  const rentOutlier = !!rent && card('rent')?.outlier === true
+  const seasonalMark = rentOutlier ? '‡' : '†'
+  const rentSeasonal = rent ? shareSeasonalNote(rent.saCaveat, rent, seasonalMark) : null
+  const rentUncertain = !!rent && hasSeasonalCaveat(rent.saCaveat) && seasonalDirectionUncertain(rent.saCaveat, rent.pct)
+  const gasStandIn = ok('gas') && isGasStandIn(gasData)
+  const footnotes = [
+    gasStandIn ? shareGasStandInNote(location) : null,
+    rentOutlier ? SHARE_OUTLIER_NOTE : null,
+    rentSeasonal,
+  ].filter((n): n is string => !!n)
+  const footH = footnoteZoneHeight(footnotes)
+  const rowH = rowHeight(footH)
+  const chartH = chartHeight(footH)
 
-  // ── National Comparison ─────────────────────────────────────────
-  const natCpi = cpiData?.nationalSeries
-  const natBaseline = natCpi?.find((p) => p.date === '2025-01')
-  const natLatest = natCpi?.length ? natCpi[natCpi.length - 1] : undefined
+  const sourceOf = (id: string) => shortSourceDate(card(id)?.sourceLine ?? '')
+  const unavailable = () => chartUnavailable(chartH, 'Data unavailable')
 
-  let natGroceriesChange: number | undefined
-  let natShelterChange: number | undefined
-  if (natBaseline && natLatest) {
-    const g0 = natBaseline.groceries
-    const g1 = natLatest.groceries
-    if (g0 && g1 && g0 !== 0) natGroceriesChange = ((g1 - g0) / g0) * 100
-    const s0 = natBaseline.shelter
-    const s1 = natLatest.shelter
-    if (s0 && s1 && s0 !== 0) natShelterChange = ((s1 - s0) / s0) * 100
+  // ── Gas: $/gal change; chart = price from the baseline week/month ──
+  const gasAll = gasData?.series ?? []
+  const gasSeries = gasAll.slice(Math.max(0, gasBaselineIndex(gasAll)))
+  const gasQ: QuadrantModel = ok('gas') && gasData
+    ? {
+        id: 'gas', accent: GAS,
+        big: fmtSignedDollars(gasData.change), unit: '/gal',
+        // Same level wording as the card: "now" only for a weekly reading; a monthly average / survey says its month on
+        // the pill's second line ("$4.78" over "Aug avg"), so the row still fits beside a 3-digit change
+        pill: sharePillForGas(gasData),
+        chart: buildShareChart(gasSeries.map((p) => p.price), GAS, 'grad-gas', {
+          height: chartH,
+          xFractions: dateFractions(gasSeries.map((p) => p.date)),
+          fmtTick: (v) => `$${v.toFixed(2)}`,
+          xLeft: fmtMonthShort(gasSeries[0]?.date),
+          xRight: fmtMonthShort(gasSeries[gasSeries.length - 1]?.date),
+        }),
+        source: sourceOf('gas'),
+      }
+    : { id: 'gas', accent: GAS, big: 'N/A', chart: null, source: sourceOf('gas') }
+
+  // ── Groceries: CPI food at home % since the series' baseline month ──
+  const cpiAll = cpiData?.series ?? []
+  const grocerySeries = cpiAll
+    .slice(Math.max(0, monthlyBaselineIndex(cpiAll, (p) => p.groceries)))
+    .filter((p): p is typeof p & { groceries: number } => typeof p.groceries === 'number')
+  const groceryAxis = monthlyAxis(grocerySeries)
+  const groceriesDollars = ok('groceries') ? snapshot.dollarImpact?.groceries ?? null : null
+  const groceriesQ: QuadrantModel = ok('groceries') && cpiData
+    ? {
+        id: 'groceries', accent: GROCERIES,
+        big: fmtSignedPct(cpiData.groceriesChange),
+        pill: groceriesDollars != null ? { text: `≈ ${fmtSignedDollars(groceriesDollars, 0)}/yr` } : undefined,
+        chart: buildShareChart(pctFromFirst(grocerySeries.map((p) => p.groceries)), GROCERIES, 'grad-groceries', {
+          height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...groceryAxis,
+          xLeft: fmtMonthShort(grocerySeries[0]?.date), xRight: fmtMonthShort(grocerySeries[grocerySeries.length - 1]?.date),
+        }),
+        source: sourceOf('groceries'),
+      }
+    : { id: 'groceries', accent: GROCERIES, big: 'N/A', chart: null, source: sourceOf('groceries') }
+
+  // ── Rent (Zillow, county or metro) or the CPI shelter fallback ──
+  let housingQ: QuadrantModel
+  if (rent) {
+    const series = rentChartSeries(rent)
+    const axis = series ? monthlyAxis(series) : null
+    const rc = card('rent')!
+    // Metro: the card's tag, or just its first city when the full title would need "…" ("Des Moines metro")
+    const metroTag = rc.geoTag ?? rent.geoName
+    const metroShort = `${metroTag.replace(/ metro$/, '').split(/-+|\//)[0]} metro`
+    const area = rent.level !== 'metro'
+      ? imageCountyName(rent.geoName)
+      : fitSourceLine(`${metroTag} · Zillow · ${fmtMonthShort(rent.asOf)}`).text.includes('…') ? metroShort : metroTag
+    housingQ = {
+      id: 'rent', accent: BLUE, tag: RENT_ADJUSTMENT_TAG,
+      big: fmtSignedPct(rent.pct),
+      mark: `${rentOutlier ? OUTLIER_MARK : ''}${rentSeasonal ? seasonalMark : ''}` || undefined,
+      // No dollar pill for a flagged (†) value, or when the seasonal caveat leaves even the direction uncertain (a
+      // signed $ would read as certain): the % with its caveat only
+      pill: rentOutlier || rentUncertain ? undefined : { text: `≈ ${fmtSignedDollars(rent.monthlyChange, 0)}/mo` },
+      chart: series && axis
+        ? buildShareChart(pctFromFirst(series.map((p) => p.value)), BLUE, 'grad-rent', {
+            height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...axis,
+            xLeft: fmtMonthShort(series[0].date), xRight: fmtMonthShort(series[series.length - 1].date),
+          })
+        : null,
+      source: `${area} · Zillow · ${fmtMonthShort(rent.asOf)}`,
+    }
+  } else {
+    const shelterFrom = cpiAll[Math.max(0, monthlyBaselineIndex(cpiAll, (p) => p.shelter))]?.date ?? ''
+    const shelterPairs = cpiAll
+      .filter((p) => p.date >= shelterFrom && typeof p.shelter === 'number')
+      .map((p) => ({ date: p.date, value: p.shelter as number }))
+    const shelterOk = ok('shelter') && !!cpiData && typeof cpiData.shelterChange === 'number'
+    const medianRent = snapshot.census.data?.medianRent ?? 0
+    // Same rule as the page: a $ only when the card shows one (local rent × the area's rent-of-primary-residence %)
+    const shelterDollars = shelterOk && card('shelter')?.inline && medianRent > 0 ? snapshot.dollarImpact?.shelter ?? null : null
+    housingQ = shelterOk
+      ? {
+          id: 'shelter', accent: BLUE,
+          big: fmtSignedPct(cpiData!.shelterChange!),
+          pill: shelterDollars != null
+            ? { text: `≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, sub: shelterPillSub(snapshot.census.data, shelterDollars) }
+            : undefined,
+          chart: buildShareChart(pctFromFirst(shelterPairs.map((p) => p.value)), BLUE, 'grad-shelter', {
+            height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...monthlyAxis(shelterPairs),
+            xLeft: fmtMonthShort(shelterPairs[0]?.date), xRight: fmtMonthShort(shelterPairs[shelterPairs.length - 1]?.date),
+          }),
+          source: sourceOf('shelter'),
+        }
+      : { id: card('rent') ? 'rent' : 'shelter', accent: BLUE, big: 'N/A', chart: null, source: sourceOf(card('rent') ? 'rent' : 'shelter') }
   }
 
-  const natGas = gasData?.nationalSeries
-  const natGasPrice = natGas?.length ? natGas[natGas.length - 1].price : undefined
+  // ── Electricity: % change of the 12-month average price; the chart plots each average at its window's center
+  //    month, so the line starts at Jan 2025 = the baseline (12 months centered on Jan 2025). The end ticks name the
+  //    12-month windows they plot ("12 mo to Jul '26"), never the center month next to a "Jul '26" source line ──
+  const elecAll = elecData?.series ?? []
+  const elecFrom = elecData ? elecAll.findIndex((p) => p.date === electricityCenterOf(elecData.baselinePeriod)) : -1
+  const elecPairs = (elecFrom >= 0 ? elecAll.slice(elecFrom) : [])
+    .filter((p): p is typeof p & { avg12: number } => typeof p.avg12 === 'number')
+  const elecDollars = elecData ? snapshot.dollarImpact?.electricity ?? null : null
+  const elecQ: QuadrantModel = elecData
+    ? {
+        id: 'electricity', accent: GREEN,
+        big: fmtSignedPct(elecData.change),
+        pill: elecDollars != null ? { text: `≈ ${fmtSignedDollars(elecDollars, 0)}/mo` } : undefined,
+        chart: buildShareChart(pctFromFirst(elecPairs.map((p) => p.avg12)), GREEN, 'grad-electricity', {
+          height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...monthlyAxis(elecPairs),
+          xLeft: elecWindowTick(elecPairs[0]?.date), xRight: elecWindowTick(elecPairs[elecPairs.length - 1]?.date),
+        }),
+        source: sourceOf('electricity'),
+      }
+    : { id: 'electricity', accent: GREEN, big: 'N/A', chart: null, source: sourceOf('electricity') }
 
-  // ── Gas Sparkline Data ───────────────────────────────────────────
-  // Filter to Jan 2025+ for sparkline to match hero number baseline
-  const gasSeries = (gasData?.series ?? []).filter((p) => p.date >= '2025-01')
-  const gasValues = gasSeries.map((p) => p.price)
-  const gasMin = gasValues.length ? Math.min(...gasValues) : 0
-  const gasMax = gasValues.length ? Math.max(...gasValues) : 0
-  const gasMid = (gasMin + gasMax) / 2
-  const gasXLeft = getMonthLabel(gasSeries, 0)
-  const gasXMid = getMonthLabel(gasSeries, Math.floor(gasSeries.length / 2))
-  const gasXRight = getMonthLabel(gasSeries, gasSeries.length - 1)
+  // ── Header: Jan 20, 2025 → the most recent data month shown (from the cards, never today's date); with no dated
+  //    card, just "SINCE JAN 20, 2025" ──
+  const end = dataRangeEnd(cards)
+  const latest = latestDataLabel(cards)
+  const boxW = dateBoxWidth(end, latest)
+  const cityW = CARD_SIZE - 2 * SIDE_PAD - boxW - 24
+  const cityFs = cityFontSize(place, cityW)
 
-  // ── Grocery Sparkline Data ───────────────────────────────────────
-  // Filter to Jan 2025+ for sparkline (series may start from 2020)
-  const grocerySeries = (cpiData?.series ?? []).filter((p) => p.date >= '2025-01')
-  const groceryRaw = grocerySeries.map((p) => p.groceries)
-  const groceryBase = groceryRaw[0] !== undefined && groceryRaw[0] !== 0 ? groceryRaw[0] : 1
-  const groceryValues = groceryRaw.map((v) => ((v - groceryBase) / groceryBase) * 100)
-  const groceryMin = groceryValues.length ? Math.min(...groceryValues) : 0
-  const groceryMax = groceryValues.length ? Math.max(...groceryValues) : 0
-  const groceryMid = (groceryMin + groceryMax) / 2
-  // Use the filtered series for x-axis labels
-  const cpiXLeft = getMonthLabel(grocerySeries, 0)
-  const cpiXMid = getMonthLabel(grocerySeries, Math.floor(grocerySeries.length / 2))
-  const cpiXRight = getMonthLabel(grocerySeries, grocerySeries.length - 1)
-
-  // ── Shelter Sparkline Data (filtered for null, date-aligned) ─────
-  // Filter to Jan 2025+ AND non-null shelter values for sparkline
-  const shelterPairs = (cpiData?.series ?? [])
-    .filter((p) => p.date >= '2025-01' && p.shelter !== null)
-    .map((p) => ({ date: p.date, value: p.shelter as number }))
-  const shelterBase =
-    shelterPairs[0]?.value !== undefined && shelterPairs[0].value !== 0 ? shelterPairs[0].value : 1
-  const shelterValues = shelterPairs.map((p) => ((p.value - shelterBase) / shelterBase) * 100)
-  const shelterMin = shelterValues.length ? Math.min(...shelterValues) : 0
-  const shelterMax = shelterValues.length ? Math.max(...shelterValues) : 0
-  const shelterMid = (shelterMin + shelterMax) / 2
-  const shelterXLeft = getMonthLabel(shelterPairs, 0)
-  const shelterXMid = getMonthLabel(shelterPairs, Math.floor(shelterPairs.length / 2))
-  const shelterXRight = getMonthLabel(shelterPairs, shelterPairs.length - 1)
-
-  // ── Build Sparklines ─────────────────────────────────────────────
-  const gasSparkline =
-    gasValues.length >= 2
-      ? buildLineSparklineV3(gasValues, RED, 'grad-gas', {
-          yMin: `$${gasMin.toFixed(2)}`,
-          yMid: `$${gasMid.toFixed(2)}`,
-          yMax: `$${gasMax.toFixed(2)}`,
-          xLeft: gasXLeft,
-          xMid: gasXMid,
-          xRight: gasXRight,
-        })
-      : null
-
-  const groceryRange = groceryValues.length >= 2 ? Math.abs(groceryMax - groceryMin) : 0
-  const groceryPadded =
-    groceryValues.length >= 2
-      ? { min: Math.min(0, groceryMin), max: Math.max(0, groceryMax) + groceryRange * 0.05 }
-      : undefined
-
-  const groceryBoundsMin = groceryPadded ? groceryPadded.min : groceryMin
-  const groceryBoundsMax = groceryPadded ? groceryPadded.max : groceryMax
-  const groceryBoundsMid = (groceryBoundsMin + groceryBoundsMax) / 2
-
-  const grocerySparkline =
-    groceryValues.length >= 2
-      ? buildLineSparklineV3(groceryValues, AMBER, 'grad-groceries', {
-          yMin: `${groceryBoundsMin.toFixed(1)}%`,
-          yMid: `${groceryBoundsMid.toFixed(1)}%`,
-          yMax: `${groceryBoundsMax.toFixed(1)}%`,
-          xLeft: cpiXLeft,
-          xMid: cpiXMid,
-          xRight: cpiXRight,
-          bounds: groceryPadded,
-        })
-      : null
-
-  const shelterRange = shelterValues.length >= 2 ? Math.abs(shelterMax - shelterMin) : 0
-  const shelterPadded =
-    shelterValues.length >= 2
-      ? { min: Math.min(0, shelterMin), max: Math.max(0, shelterMax) + shelterRange * 0.05 }
-      : undefined
-
-  const shelterBoundsMin = shelterPadded ? shelterPadded.min : shelterMin
-  const shelterBoundsMax = shelterPadded ? shelterPadded.max : shelterMax
-  const shelterBoundsMid = (shelterBoundsMin + shelterBoundsMax) / 2
-
-  const shelterSparkline =
-    shelterValues.length >= 2
-      ? buildLineSparklineV3(shelterValues, BLUE, 'grad-shelter', {
-          yMin: `${shelterBoundsMin.toFixed(1)}%`,
-          yMid: `${shelterBoundsMid.toFixed(1)}%`,
-          yMax: `${shelterBoundsMax.toFixed(1)}%`,
-          xLeft: shelterXLeft,
-          xMid: shelterXMid,
-          xRight: shelterXRight,
-          bounds: shelterPadded,
-        })
-      : null
-
-  const medianIncome = censusData?.medianIncome ?? 0
-
-  // ── Inline cell helpers (avoid named components in Satori render tree) ──
-  const accentStrip = (accent: string) => (
-    <div
-      style={{
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 3,
-        backgroundColor: accent,
-        display: 'flex',
-      }}
-    />
-  )
-
-  const sectionLabel = (label: string, sublabel: string) => (
-    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 12 }}>
-      <span
-        style={{
-          fontFamily: 'Barlow Condensed',
-          fontWeight: 600,
-          fontSize: 40,
-          color: TEXT_SECONDARY,
-          display: 'flex',
-          letterSpacing: '0.10em',
-        }}
-      >
-        {label}
-      </span>
-      <span style={{ fontFamily: 'DM Mono', fontSize: 24, color: TEXT_TERTIARY, display: 'flex' }}>
-        {sublabel}
-      </span>
-    </div>
-  )
-
-  const bigNumber = (value: string, accent: string) => (
-    <span
-      style={{
-        fontFamily: 'Bebas Neue',
-        fontSize: 96,
-        color: accent,
-        lineHeight: 1,
-        display: 'flex',
-      }}
-    >
-      {value}
-    </span>
-  )
-
-  const changePill = (text: string, accent: string) => {
-    const rgb = ACCENT_RGB[accent] ?? '255,255,255'
+  // ── Quadrant renderer (inline, no named components in the Satori tree) ──
+  const quadrant = (q: QuadrantModel, borderRight: boolean) => {
+    const src = fitSourceLine(q.source)
     return (
       <div
+        key={q.id}
         style={{
-          display: 'flex',
-          backgroundColor: `rgba(${rgb}, 0.22)`,
-          borderWidth: 1.5,
-          borderStyle: 'solid',
-          borderColor: `rgba(${rgb}, 0.55)`,
-          borderRadius: 4,
-          padding: '9px 20px',
-          alignSelf: 'flex-end',
-          marginLeft: 12,
-          marginBottom: 16,
-          flexShrink: 0,
+          display: 'flex', flexDirection: 'column', width: CARD_SIZE / 2, height: rowH - 1, position: 'relative',
+          padding: CELL_PADDING, overflow: 'hidden', ...(borderRight ? { borderRight: `1px solid ${BORDER}` } : {}),
         }}
       >
-        <span
-          style={{
-            fontFamily: 'Barlow Condensed',
-            fontWeight: 600,
-            fontSize: 40,
-            color: accent,
-            display: 'flex',
-          }}
-        >
-          {text}
-        </span>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: q.accent, display: 'flex' }} />
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', height: SLOT.title, marginBottom: SLOT.titleGap }}>
+          <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: FS.title, color: TEXT_SECONDARY, letterSpacing: '0.10em', lineHeight: 1, display: 'flex' }}>
+            {QUADRANT_TITLES[q.id]}
+          </span>
+          {q.tag ? (
+            <span style={{ fontFamily: 'DM Mono', fontSize: FS.titleTag, color: TEXT_TERTIARY, marginLeft: TITLE_TAG_GAP, lineHeight: 1, display: 'flex' }}>
+              {q.tag}
+            </span>
+          ) : null}
+        </div>
+        {/* Big change number + one pill */}
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', height: SLOT.big, marginBottom: SLOT.bigGap }}>
+          <span style={{ fontFamily: 'Bebas Neue', fontSize: FS.big, color: q.big === 'N/A' ? TEXT_TERTIARY : TEXT_PRIMARY, lineHeight: 1, display: 'flex' }}>
+            {q.big}
+          </span>
+          {q.mark ? (
+            <div style={{ display: 'flex', alignSelf: 'flex-start', marginTop: 4, marginLeft: 2 }}>
+              <span style={{ fontFamily: 'Bebas Neue', fontSize: Math.round(FS.big * MARK_SCALE), color: TEXT_SECONDARY, lineHeight: 1, display: 'flex' }}>
+                {q.mark}
+              </span>
+            </div>
+          ) : null}
+          {q.unit && q.big !== 'N/A' ? (
+            <div style={{ display: 'flex', marginBottom: 6 }}>
+              <span style={{ fontFamily: 'Bebas Neue', fontSize: Math.round(FS.big * BIG_UNIT_SCALE), color: TEXT_SECONDARY, lineHeight: 1, display: 'flex' }}>
+                {q.unit}
+              </span>
+            </div>
+          ) : null}
+          {q.pill ? (
+            <div
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'rgba(241,239,234,0.08)', border: '1.5px solid rgba(241,239,234,0.30)', borderRadius: 4,
+                padding: q.pill.sub ? '4px 14px' : '6px 14px', marginLeft: 14, marginBottom: 12, flexShrink: 0,
+              }}
+            >
+              <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: FS.pill, color: TEXT_PRIMARY, lineHeight: 1.1, display: 'flex' }}>
+                {q.pill.text}
+              </span>
+              {q.pill.sub ? (
+                <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: FS.pillSub, color: TEXT_SECONDARY, lineHeight: 1, display: 'flex' }}>
+                  {q.pill.sub}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        {/* Chart (same height in every quadrant) */}
+        <div style={{ display: 'flex', width: '100%', height: chartH }}>{q.chart ?? (q.big === 'N/A' ? unavailable() : chartUnavailable(chartH, 'Chart unavailable'))}</div>
+        {/* Source line */}
+        <div style={{ display: 'flex', alignItems: 'center', height: SLOT.source, marginTop: SLOT.sourceGap }}>
+          <span style={{ fontFamily: 'DM Mono', fontSize: src.fontSize, color: TEXT_TERTIARY, whiteSpace: 'nowrap', display: 'flex' }}>
+            {src.text}
+          </span>
+        </div>
       </div>
     )
   }
 
-  const metaRow = (left: string, right: string | null) => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 6,
-      }}
-    >
-      <span style={{ fontFamily: 'DM Mono', fontSize: 26, color: TEXT_SECONDARY, display: 'flex' }}>
-        {left}
-      </span>
-      {right && (
-        <span
-          style={{
-            fontFamily: 'DM Mono',
-            fontSize: 26,
-            color: TEXT_SECONDARY,
-            display: 'flex',
-            fontStyle: 'italic',
-          }}
-        >
-          {right}
-        </span>
-      )}
-    </div>
+  const monoText = (text: string, fontSize: number, color: string, extra: React.CSSProperties = {}) => (
+    <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize, color, ...extra }}>{text}</span>
   )
 
   // ── JSX ──────────────────────────────────────────────────────────
   const jsx = (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: BG,
-        color: TEXT_PRIMARY,
-        position: 'relative',
-      }}
-    >
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: BG, color: TEXT_PRIMARY, position: 'relative' }}>
       {/* Top accent line */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 4,
-          zIndex: 10,
-          background: `linear-gradient(90deg, ${AMBER} 0%, ${BLUE} 60%, transparent 100%)`,
-        }}
-      />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${AMBER} 0%, ${BLUE} 60%, transparent 100%)` }} />
 
-      {/* HEADER — 140px */}
+      {/* HEADER */}
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          height: 160,
-          padding: '16px 40px 0 40px',
-          borderBottom: `1px solid ${BORDER}`,
+          display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+          height: HEADER_H, padding: `8px ${SIDE_PAD}px 0 ${SIDE_PAD}px`, borderBottom: `1px solid ${BORDER}`,
         }}
       >
-        {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: cityW, overflow: 'hidden' }}>
+          {monoText('WHATCHANGED.US · DATA REPORT', 24, AMBER, { letterSpacing: '0.14em' })}
           <span
             style={{
-              display: 'flex',
-              fontFamily: 'DM Mono',
-              fontSize: 24,
-              color: AMBER,
-              letterSpacing: '0.14em',
+              display: 'flex', fontFamily: 'Bebas Neue', fontSize: cityFs ?? 52, color: TEXT_PRIMARY, lineHeight: 1, marginTop: 6,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: cityW,
             }}
           >
-            WHATCHANGED.US · DATA REPORT
+            {place}
           </span>
-          <span
-            style={{
-              display: 'flex',
-              fontFamily: 'Bebas Neue',
-              fontSize: 76,
-              color: TEXT_PRIMARY,
-              lineHeight: 1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {cityName.toUpperCase()}, {stateAbbr}
-          </span>
-          {cpiData?.metro && (
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'DM Mono',
-                fontSize: 20,
-                color: TEXT_TERTIARY,
-                marginTop: 2,
-              }}
-            >
-              CPI source: {cpiData.metro}
-            </span>
+        </div>
+        <div
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', width: boxW, flexShrink: 0,
+            border: '1px solid rgba(242,169,59,0.35)', borderRadius: 4, padding: `8px ${DATE_BOX_PAD_X}px`,
+          }}
+        >
+          {end ? (
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              {monoText(RANGE_START, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
+              {/* Drawn arrow: none of the bundled fonts has "→" */}
+              <svg width={DATE_ARROW_W} height="14" viewBox="0 0 30 14" style={{ display: 'flex' }}>
+                <line x1="6" y1="7" x2="23" y2="7" stroke={AMBER} strokeWidth="2" />
+                <polyline points="18,2 24,7 18,12" fill="none" stroke={AMBER} strokeWidth="2" />
+              </svg>
+              {monoText(end, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
+            </div>
+          ) : (
+            monoText(RANGE_NONE, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })
           )}
-        </div>
-
-        {/* Right column */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            paddingTop: 4,
-            gap: 6,
-            flexShrink: 0,
-          }}
-        >
-          {/* Date range badge */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              border: `1px solid rgba(240,165,0,0.30)`,
-              borderRadius: 4,
-              padding: '6px 16px',
-              gap: 2,
-            }}
-          >
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'DM Mono',
-                fontSize: 22,
-                fontWeight: 700,
-                color: AMBER,
-                letterSpacing: '0.06em',
-              }}
-            >
-              JAN. 20, 2025
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'DM Mono',
-                fontSize: 56,
-                color: 'rgba(240,165,0,0.45)',
-                lineHeight: 1,
-              }}
-            >
-              ↓
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'DM Mono',
-                fontSize: 22,
-                fontWeight: 700,
-                color: AMBER,
-                letterSpacing: '0.06em',
-              }}
-            >
-              {monthYear}
-            </span>
-          </div>
+          {latest ? monoText(latest, DATE_SUB_FS, TEXT_TERTIARY, { marginTop: 4 }) : null}
         </div>
       </div>
 
-      {/* GRID — flex:1 — two rows × two cells */}
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
-        {/* Row 1 */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            flexDirection: 'row',
-            borderBottom: `1px solid ${BORDER}`,
-          }}
-        >
-          {/* Cell: Gas Prices */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              position: 'relative',
-              padding: '16px 28px 24px 36px',
-              overflow: 'hidden',
-              borderRight: `1px solid ${BORDER}`,
-            }}
-          >
-            {accentStrip(RED)}
-            {sectionLabel('GAS PRICES', '(regular unleaded, $/gal)')}
-            {gasSparkline && (
-              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>{gasSparkline}</div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(gasData ? `$${gasData.current.toFixed(2)}/gal` : 'N/A', RED)}
-              {changePill(
-                gasData ? `${gasData.change >= 0 ? '+' : ''}$${gasData.change.toFixed(2)}` : '—',
-                RED
-              )}
-            </div>
-            {metaRow(
-              'since Jan 2025',
-              natGasPrice != null ? `Natl: $${natGasPrice.toFixed(2)}` : null
-            )}
-          </div>
-
-          {/* Cell: Groceries */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              position: 'relative',
-              padding: '16px 28px 24px 36px',
-              overflow: 'hidden',
-            }}
-          >
-            {accentStrip(AMBER)}
-            {sectionLabel('GROCERIES', '(CPI: food at home)')}
-            {grocerySparkline && (
-              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
-                {grocerySparkline}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(cpiData ? `${formatSigned(cpiData.groceriesChange)}%` : 'N/A', AMBER)}
-              {changePill(
-                cpiData ? (cpiData.groceriesChange >= 0 ? 'rising' : 'falling') : '—',
-                AMBER
-              )}
-            </div>
-            {metaRow(
-              'since Jan 2025',
-              natGroceriesChange !== undefined ? `Natl: ${formatSigned(natGroceriesChange)}%` : null
-            )}
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            flexDirection: 'row',
-          }}
-        >
-          {/* Cell: Shelter */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              position: 'relative',
-              padding: '16px 28px 24px 36px',
-              overflow: 'hidden',
-              borderRight: `1px solid ${BORDER}`,
-            }}
-          >
-            {accentStrip(BLUE)}
-            {sectionLabel('SHELTER', "(rent & owners' equiv.)")}
-            {shelterSparkline && (
-              <div style={{ display: 'flex', width: '100%', marginBottom: 8 }}>
-                {shelterSparkline}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(
-                cpiData?.shelterChange !== undefined
-                  ? `${formatSigned(cpiData.shelterChange)}%`
-                  : 'N/A',
-                BLUE
-              )}
-              {changePill(
-                cpiData?.shelterChange !== undefined
-                  ? cpiData.shelterChange >= 0
-                    ? 'rising'
-                    : 'falling'
-                  : '—',
-                BLUE
-              )}
-            </div>
-            {metaRow(
-              'since Jan 2025',
-              natShelterChange !== undefined ? `Natl: ${formatSigned(natShelterChange)}%` : null
-            )}
-          </div>
-
-          {/* Cell: Tariffs */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              position: 'relative',
-              padding: '16px 28px 24px 36px',
-              overflow: 'hidden',
-            }}
-          >
-            {accentStrip(PURPLE)}
-            {sectionLabel('TARIFFS', '(est. annual cost to household)')}
-            {/* Centered number block — fills the chart zone */}
-            <div
-              style={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {bigNumber(tariffCost > 0 ? `~${formatDollars(tariffCost)}/yr` : 'N/A', PURPLE)}
-              {tariffCost > 0 && (
-                <span
-                  style={{
-                    fontFamily: 'Bebas Neue',
-                    fontSize: 64,
-                    color: PURPLE,
-                    lineHeight: 1,
-                    display: 'flex',
-                    marginTop: 4,
-                  }}
-                >
-                  ~{formatDollars(Math.round(tariffCost / 12))}/mo
-                </span>
-              )}
-              {censusData && (
-                <span
-                  style={{
-                    fontFamily: 'DM Mono',
-                    fontSize: 20,
-                    color: TEXT_TERTIARY,
-                    display: 'flex',
-                    marginTop: 16,
-                    textAlign: 'center',
-                  }}
-                >
-                  based on median income of{' '}
-                  {medianIncome >= 1000
-                    ? `$${(medianIncome / 1000).toFixed(0)}k`
-                    : `$${Math.round(medianIncome)}`}
-                </span>
-              )}
-              <span
-                style={{
-                  fontFamily: 'DM Mono',
-                  fontSize: 20,
-                  color: TEXT_TERTIARY,
-                  display: 'flex',
-                  marginTop: 4,
-                }}
-              >
-                Yale Budget Lab
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* GRID — two rows × two quadrants, every chart the same height */}
+      <div style={{ display: 'flex', flexDirection: 'row', height: rowH, borderBottom: `1px solid ${BORDER}` }}>
+        {quadrant(gasQ, true)}
+        {quadrant(groceriesQ, false)}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'row', height: rowH }}>
+        {quadrant(housingQ, true)}
+        {quadrant(elecQ, false)}
       </div>
 
-      {/* FOOTER — 60px */}
+      {/* FOOTNOTES — only when needed */}
+      {footnotes.length > 0 ? (
+        <div
+          style={{
+            display: 'flex', flexDirection: 'column', height: footH, padding: `${FOOTNOTE_PAD_Y}px ${SIDE_PAD}px`,
+            borderTop: `1px solid ${BORDER}`,
+          }}
+        >
+          {footnotes.map((n) => (
+            <span key={n} style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: FS.footnote, color: AMBER }}>{n}</span>
+          ))}
+        </div>
+      ) : null}
+
+      {/* FOOTER */}
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 60,
-          padding: '0 40px',
-          borderTop: `1px solid ${BORDER}`,
+          display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+          height: FOOTER_H, marginTop: 'auto', padding: `0 ${SIDE_PAD}px`, borderTop: `1px solid ${BORDER}`,
         }}
       >
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'DM Mono',
-            fontSize: 22,
-            color: TEXT_TERTIARY,
-          }}
-        >
-          BLS · EIA · Census · Yale Budget Lab
-        </span>
-        <span
-          style={{
-            display: 'flex',
-            fontFamily: 'Bebas Neue',
-            fontSize: 32,
-            color: AMBER,
-            letterSpacing: '0.08em',
-          }}
-        >
+        {monoText(imageSourcesLine(snapshot, cards), 22, TEXT_TERTIARY)}
+        <span style={{ display: 'flex', fontFamily: 'Bebas Neue', fontSize: 32, color: AMBER, letterSpacing: '0.08em' }}>
           WHATCHANGED.US
         </span>
       </div>
@@ -679,9 +499,9 @@ export async function generateShareCard(zip: string, city?: string, state?: stri
   )
 
   return new ImageResponse(jsx, {
-    width: 1080,
-    height: 1080,
+    width: CARD_SIZE,
+    height: CARD_SIZE,
     fonts: await loadShareFonts(),
-    headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' },
+    headers: { 'Cache-Control': degraded ? SHARE_CACHE_DEGRADED : SHARE_CACHE_OK },
   })
 }

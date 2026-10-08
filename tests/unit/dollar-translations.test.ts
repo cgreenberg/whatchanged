@@ -1,75 +1,95 @@
-import { computeGroceryImpact, computeShelterImpact, computeDollarImpact } from '@/lib/compute/dollar-translations'
+import {
+  computeGroceryImpact,
+  computeShelterImpact,
+  computeDollarImpact,
+  computeElectricityImpact,
+  ANNUAL_GROCERY_BASE,
+} from '@/lib/compute/dollar-translations'
 
-describe('computeGroceryImpact', () => {
-  test('NYC income (~$75k) with +2.6% change', () => {
-    // 6000 * (75000/74580) * 2.6 / 100 = 156.98 → 157
-    expect(computeGroceryImpact(2.6, 75000)).toBe(157)
-  })
-
-  test('uses fallback income (74580) when not provided', () => {
-    // 6000 * (74580/74580) * 2.6 / 100 = 156 exactly
+describe('computeGroceryImpact = $6,000/yr × % change (signed)', () => {
+  test('+2.6% → +$156', () => {
+    expect(ANNUAL_GROCERY_BASE).toBe(6000)
     expect(computeGroceryImpact(2.6)).toBe(156)
   })
 
-  test('returns 0 when CPI change is 0', () => {
-    expect(computeGroceryImpact(0, 75000)).toBe(0)
+  test('-1% → -$60 (sign preserved, not +$60)', () => {
+    expect(computeGroceryImpact(-1)).toBe(-60)
   })
 
-  test('uses absolute value for negative change', () => {
-    expect(computeGroceryImpact(-2.6, 75000)).toBe(157)
+  test('0% → $0', () => {
+    expect(computeGroceryImpact(0)).toBe(0)
+  })
+
+  test('missing / non-finite change → null', () => {
+    expect(computeGroceryImpact(null)).toBeNull()
+    expect(computeGroceryImpact(undefined)).toBeNull()
+    expect(computeGroceryImpact(NaN)).toBeNull()
   })
 })
 
-describe('computeShelterImpact', () => {
-  test('Vancouver WA (rent ~$1400) with +3.5% change', () => {
-    // 1400 * 12 * 3.5 / 100 = 588
+describe('computeShelterImpact = local median rent × 12 × rent-of-primary-residence % change (signed)', () => {
+  test('rent $1,400, +3.5% → +$588', () => {
     expect(computeShelterImpact(3.5, 1400)).toBe(588)
   })
 
-  test('uses fallback rent (1271) when not provided', () => {
-    // 1271 * 12 * 3.5 / 100 = 533.82 → 534
-    expect(computeShelterImpact(3.5)).toBe(534)
+  test('rent $1,400, -3.5% → -$588', () => {
+    expect(computeShelterImpact(-3.5, 1400)).toBe(-588)
   })
 
-  test('uses absolute value for negative change', () => {
-    expect(computeShelterImpact(-3.5, 1400)).toBe(588)
+  test('missing local rent → null (no national fallback)', () => {
+    expect(computeShelterImpact(3.5, null)).toBeNull()
+    expect(computeShelterImpact(3.5, undefined)).toBeNull()
+    expect(computeShelterImpact(3.5, 0)).toBeNull()
+  })
+
+  test('missing rent index change → null (never falls back to the CPI shelter %)', () => {
+    expect(computeShelterImpact(undefined, 1400)).toBeNull()
+    expect(computeShelterImpact(NaN, 1400)).toBeNull()
+  })
+
+  test('computeDollarImpact ignores any shelter % — only the rent index drives the shelter $', () => {
+    const opts = { rentIndexChangePct: undefined, medianRent: 1400, shelterChangePct: 5 } as Parameters<typeof computeDollarImpact>[0]
+    expect(computeDollarImpact(opts).shelter).toBeNull()
   })
 })
 
 describe('computeDollarImpact', () => {
-  test('gas preserves negative sign', () => {
-    const result = computeDollarImpact({ gasChange: -0.52 })
-    expect(result.gas).toBe(-0.52)
+  test('gas preserves sign', () => {
+    expect(computeDollarImpact({ gasChange: -0.52 }).gas).toBe(-0.52)
+    expect(computeDollarImpact({ gasChange: 1.04 }).gas).toBe(1.04)
   })
 
-  test('gas preserves positive sign', () => {
-    const result = computeDollarImpact({ gasChange: 1.04 })
-    expect(result.gas).toBe(1.04)
+  test('all impacts are null (not 0) when no data provided', () => {
+    expect(computeDollarImpact({})).toEqual({ groceries: null, shelter: null, gas: null, electricity: null })
   })
 
-  test('tariff reuses pre-computed value', () => {
-    const result = computeDollarImpact({ tariffEstimatedCost: 1278 })
-    expect(result.tariff).toBe(1278)
-  })
-
-  test('all impacts are 0 when no data provided', () => {
-    const result = computeDollarImpact({})
-    expect(result).toEqual({ groceries: 0, shelter: 0, gas: 0, tariff: 0 })
-  })
-
-  test('frontend fallback equals API value (same function)', () => {
-    const apiResult = computeDollarImpact({
-      groceriesChangePct: 2.6,
-      shelterChangePct: 3.5,
+  test('combines the individual functions', () => {
+    const r = computeDollarImpact({
+      groceriesChangePct: -2.6,
+      rentIndexChangePct: 3.5,
       gasChange: -0.52,
-      tariffEstimatedCost: 1278,
-      localIncome: 75000,
       medianRent: 1400,
+      electricityPriceChangeCents: 6.13,
+      electricityUsageKwh: 532,
     })
-    // Calling individual functions with the same inputs produces the same result
-    expect(apiResult.groceries).toBe(computeGroceryImpact(2.6, 75000))
-    expect(apiResult.shelter).toBe(computeShelterImpact(3.5, 1400))
-    expect(apiResult.gas).toBe(-0.52)
-    expect(apiResult.tariff).toBe(1278)
+    expect(r).toEqual({ groceries: -156, shelter: 588, gas: -0.52, electricity: 33 })
+  })
+})
+
+describe('computeElectricityImpact = price change (¢/kWh) × monthly use (kWh) ÷ 100, $/mo (signed)', () => {
+  test('+6.13¢/kWh × 532 kWh → +$33/mo; −6.13¢ → −$33', () => {
+    expect(computeElectricityImpact(6.13, 532)).toBe(33)
+    expect(computeElectricityImpact(-6.13, 532)).toBe(-33)
+  })
+
+  test('a tiny change rounds to $0, never −$0', () => {
+    expect(Object.is(computeElectricityImpact(-0.01, 500), 0)).toBe(true)
+  })
+
+  test('missing price change or usage → null', () => {
+    expect(computeElectricityImpact(null, 500)).toBeNull()
+    expect(computeElectricityImpact(1, null)).toBeNull()
+    expect(computeElectricityImpact(1, 0)).toBeNull()
+    expect(computeElectricityImpact(NaN, 500)).toBeNull()
   })
 })

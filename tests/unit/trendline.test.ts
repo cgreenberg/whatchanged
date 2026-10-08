@@ -126,4 +126,17 @@ describe('computeTrendline', () => {
     const avg = (10 + 12 + 11 + 13 + 12) / 5
     expect(midTrend).toBeCloseTo(avg, 0)
   })
+
+  test('skips null / missing values instead of treating them as 0', () => {
+    const data = [
+      { date: '2024-01', value: 10 },
+      { date: '2024-02', value: null },
+      { date: '2024-03', value: 12 },
+      { date: '2024-04' },
+      { date: '2024-05', value: 14 },
+    ]
+    const result = computeTrendline(data, 'value')
+    // Fit on x=0,2,4 → y=10,12,14: slope 1, intercept 10
+    expect(result.map(r => r.trend)).toEqual([10, 11, 12, 13, 14].map(v => expect.closeTo(v, 5)))
+  })
 })

@@ -2,177 +2,129 @@
 /**
  * build-census-acs.ts
  *
- * Fetches all ZCTA (zip code tabulation area) data from the Census ACS 2023
- * 5-year estimates and writes it to src/lib/data/census-acs.json.
+ * Builds src/lib/data/census-acs.json — Census ACS 2023 5-year estimates by ZCTA (zip code
+ * tabulation area) — from the Census Bureau's table-based summary files (keyless bulk download):
  *
- * Fields fetched:
- *   B19013_001E — Median household income
- *   B25064_001E — Median gross rent
+ *   B19013_E001 — Median household income  (acsdt5y2023-b19013.dat)
+ *   B25064_E001 — Median gross rent         (acsdt5y2023-b25064.dat)
  *
- * Run with: npx tsx scripts/build-census-acs.ts
+ * Suppressed estimates (Census annotation values such as -666666666, "too few sample
+ * observations") are stored as null. NEVER substitute a national or other synthetic value here:
+ * the app uses medianRent as a zip's own local rent (the base of the Shelter card's $ figure), so a
+ * placeholder would be shown as if it were local data. A zip is written when at least one of the
+ * two figures is published.
+ *
+ * Top-coded values pass through as published (rent "3,500+" is reported as 3501, income
+ * "250,000+" as 250001). A rent median that falls in the open-ended top or bottom interval of the
+ * distribution (Census MOE annotation -333333333: "3,500+" / "100-") is marked rentCoded 'top' / 'bottom'
+ * so the site can say so ("$3,500+", top-coded) and never lends it to another zip as a donor.
+ *
+ * Run with: npx tsx scripts/build-census-acs.ts [--raw <dir for the .dat files>]
+ * (files missing from --raw are downloaded into it; default dir: $TMPDIR/census-acs-raw)
  */
 
-import { readFileSync, writeFileSync } from 'fs'
-import { resolve } from 'path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join, resolve } from 'path'
 
-// ---------------------------------------------------------------------------
-// Env loader — reads .env.local manually so we don't need dotenv installed
-// ---------------------------------------------------------------------------
-
-function loadEnv() {
-  try {
-    const envFile = readFileSync(resolve(process.cwd(), '.env.local'), 'utf8')
-    for (const line of envFile.split('\n')) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
-      const eqIndex = trimmed.indexOf('=')
-      if (eqIndex === -1) continue
-      const key = trimmed.slice(0, eqIndex)
-      let value = trimmed.slice(eqIndex + 1)
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1)
-      }
-      process.env[key] = value
-    }
-  } catch {
-    // .env.local not found — env vars should already be set externally
-  }
-}
-
-loadEnv()
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const CENSUS_API_KEY = process.env.CENSUS_API_KEY
-const NATIONAL_RENT_FALLBACK = 1271
-const CENSUS_SENTINEL = -666666666
+const YEAR = 2023
+const SF_BASE = `https://www2.census.gov/programs-surveys/acs/summary_file/${YEAR}/table-based-SF/data/5YRData`
+const FILES = {
+  income: { file: `acsdt5y${YEAR}-b19013.dat`, col: 'B19013_E001' },
+  rent: { file: `acsdt5y${YEAR}-b25064.dat`, col: 'B25064_E001', moe: 'B25064_M001' },
+} as const
+/** Summary-file GEO_ID prefix for ZCTAs (summary level 860). */
+const ZCTA_PREFIX = '860Z200US'
 
 const OUTPUT_PATH = resolve(process.cwd(), 'src/lib/data/census-acs.json')
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface AcsEntry {
-  medianIncome: number
-  medianRent: number
+  medianIncome: number | null
+  medianRent: number | null
+  /** The median falls in the open-ended top ("3,500+") or bottom ("100-") interval of B25064. */
+  rentCoded?: 'top' | 'bottom'
   year: number
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+/** Census MOE annotation: the median falls in the lowest or highest interval of an open-ended distribution. */
+const OPEN_INTERVAL = '-333333333'
+
+/** Published estimate, or null for a Census annotation (negative sentinel) / blank / non-number. */
+function parseEstimate(raw: string | undefined): number | null {
+  if (raw === undefined || raw.trim() === '') return null
+  const v = Number(raw)
+  if (!Number.isFinite(v) || v <= 0) return null
+  return Math.round(v)
+}
+
+async function ensureFile(dir: string, file: string): Promise<string> {
+  const path = join(dir, file)
+  if (existsSync(path)) return path
+  const url = `${SF_BASE}/${file}`
+  console.log(`Downloading ${url}`)
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Census summary file download failed: ${res.status} ${res.statusText} (${url})`)
+  writeFileSync(path, Buffer.from(await res.arrayBuffer()))
+  return path
+}
+
+/** ZCTA → raw estimate string for one column of a pipe-delimited summary file. */
+function readZctaColumn(path: string, col: string): Map<string, string> {
+  const lines = readFileSync(path, 'utf8').split('\n')
+  const header = lines[0].split('|')
+  const idx = header.indexOf(col)
+  const geo = header.indexOf('GEO_ID')
+  if (idx < 0 || geo < 0) throw new Error(`${path}: missing ${col} or GEO_ID column`)
+  const out = new Map<string, string>()
+  for (const line of lines.slice(1)) {
+    const p = line.split('|')
+    if (p[geo]?.startsWith(ZCTA_PREFIX)) out.set(p[geo].slice(ZCTA_PREFIX.length), p[idx])
+  }
+  if (out.size < 30000) throw new Error(`${path}: only ${out.size} ZCTA rows`)
+  return out
+}
 
 async function main() {
-  const variables = 'B19013_001E,B25064_001E'
-  const forClause = 'zip%20code%20tabulation%20area:*'
-  let url = `https://api.census.gov/data/2023/acs/acs5?get=${variables}&for=${forClause}`
-  if (CENSUS_API_KEY) {
-    url += `&key=${CENSUS_API_KEY}`
-    console.log('Using CENSUS_API_KEY from environment.')
-  } else {
-    console.log('No CENSUS_API_KEY found — proceeding without key (may be rate-limited).')
-  }
-
-  console.log('Fetching Census ACS 2023 5-year estimates for all ZCTAs...')
-  console.log(`URL: ${url.replace(CENSUS_API_KEY ?? '', '[REDACTED]')}`)
-
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Census API request failed: ${response.status} ${response.statusText}`)
-  }
-
-  // Census returns a 2D array: first row is headers, rest are data rows
-  const raw: string[][] = await response.json()
-
-  const headers = raw[0]
-  const rows = raw.slice(1)
-
-  const incomeIdx = headers.indexOf('B19013_001E')
-  const rentIdx = headers.indexOf('B25064_001E')
-  const zipIdx = headers.indexOf('zip code tabulation area')
-
-  if (incomeIdx === -1 || rentIdx === -1 || zipIdx === -1) {
-    throw new Error(
-      `Unexpected Census API response headers: ${JSON.stringify(headers)}`
-    )
-  }
-
-  console.log(`Total rows returned from Census API: ${rows.length}`)
-
-  let validIncome = 0
-  let validRent = 0
-  let skippedNoIncome = 0
-  let rentFallbackUsed = 0
+  const ai = process.argv.indexOf('--raw')
+  const dir = ai > 0 ? process.argv[ai + 1] : join(tmpdir(), 'census-acs-raw')
+  mkdirSync(dir, { recursive: true })
+  const income = readZctaColumn(await ensureFile(dir, FILES.income.file), FILES.income.col)
+  const rentPath = await ensureFile(dir, FILES.rent.file)
+  const rent = readZctaColumn(rentPath, FILES.rent.col)
+  const rentMoe = readZctaColumn(rentPath, FILES.rent.moe)
+  let top = 0
+  let bottom = 0
 
   const result: Record<string, AcsEntry> = {}
-
-  for (const row of rows) {
-    const zip = row[zipIdx]
-    const incomeRaw = row[incomeIdx]
-    const rentRaw = row[rentIdx]
-
-    const income = incomeRaw === null ? null : Number(incomeRaw)
-    const rent = rentRaw === null ? null : Number(rentRaw)
-
-    // Skip entries where income is null or the Census suppression sentinel
-    if (income === null || income === CENSUS_SENTINEL || isNaN(income)) {
-      skippedNoIncome++
+  let both = 0
+  let rentOnly = 0
+  let incomeOnly = 0
+  let neither = 0
+  for (const zip of [...new Set([...income.keys(), ...rent.keys()])].sort()) {
+    const medianIncome = parseEstimate(income.get(zip))
+    const medianRent = parseEstimate(rent.get(zip))
+    if (medianIncome === null && medianRent === null) {
+      neither++
       continue
     }
-
-    validIncome++
-
-    let finalRent: number
-    if (rent === null || rent === CENSUS_SENTINEL || isNaN(rent)) {
-      finalRent = NATIONAL_RENT_FALLBACK
-      rentFallbackUsed++
-    } else {
-      finalRent = rent
-      validRent++
-    }
-
-    result[zip] = {
-      medianIncome: income,
-      medianRent: finalRent,
-      year: 2023,
-    }
+    if (medianIncome !== null && medianRent !== null) both++
+    else if (medianRent !== null) rentOnly++
+    else incomeOnly++
+    const coded = medianRent !== null && rentMoe.get(zip)?.trim() === OPEN_INTERVAL
+      ? (medianRent >= 3500 ? 'top' : 'bottom')
+      : undefined
+    if (coded === 'top') top++
+    if (coded === 'bottom') bottom++
+    result[zip] = { medianIncome, medianRent, ...(coded ? { rentCoded: coded } : {}), year: YEAR }
   }
 
-  // Sort keys for clean diffs
-  const sorted: Record<string, AcsEntry> = {}
-  for (const key of Object.keys(result).sort()) {
-    sorted[key] = result[key]
-  }
-
-  writeFileSync(OUTPUT_PATH, JSON.stringify(sorted, null, 2) + '\n')
-
-  console.log('\n--- Stats ---')
-  console.log(`Total Census rows:          ${rows.length}`)
-  console.log(`Entries with valid income:  ${validIncome}`)
-  console.log(`Entries with valid rent:    ${validRent}`)
-  console.log(`Entries using rent fallback:${rentFallbackUsed}`)
-  console.log(`Entries skipped (no income):${skippedNoIncome}`)
-  console.log(`Written to:                 ${OUTPUT_PATH}`)
-
-  // Sample spot-checks
-  const spotChecks = ['98683', '10001', '60601', '90210', '78701']
-  console.log('\n--- Spot Checks ---')
-  for (const zip of spotChecks) {
-    const entry = sorted[zip]
-    if (entry) {
-      console.log(
-        `  ${zip}: income=$${entry.medianIncome.toLocaleString()}  rent=$${entry.medianRent.toLocaleString()}`
-      )
-    } else {
-      console.log(`  ${zip}: NOT FOUND`)
-    }
-  }
+  writeFileSync(OUTPUT_PATH, JSON.stringify(result, null, 2) + '\n')
+  console.log(`Rent medians in an open-ended interval: ${top} top-coded (3,500+), ${bottom} bottom-coded (100-)`)
+  console.log(
+    `ZCTAs: ${income.size} | written ${Object.keys(result).length} (income+rent ${both}, rent only ${rentOnly}, ` +
+      `income only, rent suppressed → null ${incomeOnly}) | skipped, both suppressed ${neither}`
+  )
+  console.log(`Written to ${OUTPUT_PATH}`)
 }
 
 main().catch((err) => {

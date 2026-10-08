@@ -1,0 +1,616 @@
+[
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "County home value % and level (every county, independent recompute from raw ZHVI)",
+  "status": "PASS",
+  "detail": "all match raw ZHVI within 0.06 pts (level within $50, built rounds to $100)",
+  "metrics": {}
+ },
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "Rent seasonal adjustment size (built SA \u2212 raw NSA, all counties)",
+  "status": "PASS",
+  "detail": "median |adj| 1.46 pts, mean -1.47, p95 |adj| 2.36",
+  "metrics": {
+   "n": 877,
+   "median_abs": 1.46,
+   "mean": -1.47
+  }
+ },
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "County rent level = observed (unadjusted) latest ZORI",
+  "status": "PASS",
+  "detail": "all match raw",
+  "metrics": {}
+ },
+ {
+  "section": "1. Built JSON matches raw source",
+  "check": "County jobs (QCEW latest quarter, movers-list eligibility) vs independent re-read",
+  "status": "PASS",
+  "detail": "5 large counties match",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Site zips whose county has published rent (SA since Jan 2025)",
+  "status": "INFO",
+  "detail": "23427/41195 (57%)",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Counties with data but no map shape",
+  "status": "WARN",
+  "detail": "83: ['02063', '02066', '72001', '72003', '72005', '72007', '72009', '72011', '72013', '72015', '72017', '72019'] (new AK census areas; CT planning regions are folded into legacy counties)",
+  "metrics": {}
+ },
+ {
+  "section": "2. Coverage and geography",
+  "check": "Map shapes with no data",
+  "status": "INFO",
+  "detail": "1: ['15005']",
+  "metrics": {}
+ },
+ {
+  "section": "3. Home values \u2014 independent source (FHFA HPI)",
+  "check": "County (all): ZHVI annual-avg change 2025 vs FHFA HPI 2025",
+  "status": "INFO",
+  "detail": "{'n': 2600, 'pearson': 0.165, 'spearman': 0.258, 'mae': 4.13, 'bias': -1.83, 'sign_agree': 0.756} \u2014 small counties have few repeat sales; both indexes are noisy there",
+  "metrics": {
+   "n": 2600,
+   "pearson": 0.165,
+   "spearman": 0.258,
+   "mae": 4.13,
+   "bias": -1.83,
+   "sign_agree": 0.756
+  }
+ },
+ {
+  "section": "3. Home values \u2014 independent source (FHFA HPI)",
+  "check": "County (\u226550k jobs): ZHVI annual-avg change 2025 vs FHFA HPI 2025",
+  "status": "PASS",
+  "detail": "{'n': 492, 'pearson': 0.805, 'spearman': 0.796, 'mae': 1.77, 'bias': -1.45, 'sign_agree': 0.823}",
+  "metrics": {
+   "n": 492,
+   "pearson": 0.805,
+   "spearman": 0.796,
+   "mae": 1.77,
+   "bias": -1.45,
+   "sign_agree": 0.823
+  }
+ },
+ {
+  "section": "4. Rent \u2014 independent source (Apartment List)",
+  "check": "County: Zillow ZORI (SA) since Jan 2025 vs Apartment List since Jan 2025 (to 2026_09)",
+  "status": "PASS",
+  "detail": "{'n': 370, 'pearson': 0.86, 'spearman': 0.777, 'mae': 2.24, 'bias': 0.7, 'sign_agree': 0.83}",
+  "metrics": {
+   "n": 370,
+   "pearson": 0.86,
+   "spearman": 0.777,
+   "mae": 2.24,
+   "bias": 0.7,
+   "sign_agree": 0.83
+  }
+ },
+ {
+  "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "home value %",
+  "status": "PASS",
+  "detail": "0 flagged: ",
+  "metrics": {
+   "flagged": []
+  }
+ },
+ {
+  "section": "5. Outlier scan (robust z > 5, counties with \u226520k jobs)",
+  "check": "rent %",
+  "status": "WARN",
+  "detail": "4 flagged: Taylor County, TX +48.1, San Francisco County, CA +34.2, Ouachita Parish, LA +25.7, Calcasieu Parish, LA +23.2",
+  "metrics": {
+   "flagged": [
+    [
+     "48441",
+     "Taylor County, TX",
+     48.1
+    ],
+    [
+     "06075",
+     "San Francisco County, CA",
+     34.2
+    ],
+    [
+     "22073",
+     "Ouachita Parish, LA",
+     25.7
+    ],
+    [
+     "22019",
+     "Calcasieu Parish, LA",
+     23.2
+    ]
+   ]
+  }
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "No county name equals its FIPS or is empty",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "No CT planning-region (091x0) or statewide rows",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County metrics within sanity ranges",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "No percentile-rank fields shipped",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County records carry only fields the site reads",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every crosswalk zip resolves to a county record",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every county with a rent figure (Rent card) is a county in county-geo.json (the live site's geography)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Counties with a home-value figure but not in county-geo.json",
+  "status": "INFO",
+  "detail": "3: ['51580', '51595', '51678'] (VA independent cities merged in the live geography)",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "county-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "county-rent.json: pct in [-20, 50], levels positive, matches counties.json",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every county with a current (2026-08) Zillow ZORI row is in exactly one of counties/tooNew/noBaseline/outOfRange",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "county-rent.json lists only counties with a current Zillow row (no stale classification)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "outOfRange counties show no rent % anywhere (counties.json rent, timeline, shard rentS/rentMS)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "outOfRange counties: raw ZORI change is beyond the range (within 5 pts of an edge at most)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Counties withheld for an implausible rent change (outside the range)",
+  "status": "INFO",
+  "detail": "0: ",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County rentS series reproduce county-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County hvS series reproduce the county home-value % (Home prices tab = map)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "counties.json carries no monthly series (kept in the per-state shards)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Shard records carry only fields the site reads",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every county rent row names the state / U.S. seasonal pattern it is blended with and its own weight (0..1)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Rent meta labels the seasonal method (county pattern blended with the state (or U.S.) pattern)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every rent seasonal-pattern caveat is {gap, month} with |gap| > 1.5 points and month = the row's as-of month (Feb..Dec)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "The map file and county shards carry the same seasonal caveat as county-rent.json (rentSaCav) and metro-rent.json (rentM.cav)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Rent rows with a seasonal-pattern caveat (own recent swing vs blended, > 1.5 points)",
+  "status": "INFO",
+  "detail": "79 counties, 16 metros",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "County rent own-pattern weight in the seasonal blend (0 = state pattern only; 0.5 = full 2016-2024 history)",
+  "status": "INFO",
+  "detail": "{0.0: 129, 0.11: 114, 0.2: 66, 0.27: 19, 0.33: 17, 0.38: 26, 0.43: 44, 0.47: 58, 0.5: 404}",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: pct in [-20, 50], levels positive",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: an outOfRange metro is never used, and outOfRangeCounties point only at outOfRange metros",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: each county is classified once (own county row / outOfRange county / metro / metro outOfRange)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: no county with its own county rent row is mapped to a metro",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "metro-rent.json: every mapped metro has a row",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "No metro-mapped county has its own county rent series in the shards (rentS)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every metro-mapped county is in that CBSA in the OMB March 2020 delineation",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro names are the OMB 2020 CBSA titles",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zillow's own county->metro labels agree with the mapping (same 2020 CBSA title)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zillow county->metro labels vs OMB March 2020 CBSA titles (all Zillow counties; vintage check)",
+  "status": "PASS",
+  "detail": "all 1831 agree",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rent levels = observed Zillow metro ZORI (Jan 2025 and latest), via Zillow's RegionID<->CBSA link",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rent seasonal adjustment size (built SA - raw NSA)",
+  "status": "PASS",
+  "detail": "median |adj| 1.43 pts over 205 metros",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Metro rentMS series reproduce metro-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zips that get metro rent (no county series)",
+  "status": "INFO",
+  "detail": "3477 zips, 461 counties, 205 metros",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: pct in [-20, 50], levels positive, not flagged",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: a city stands in only where there is no county rent row and no usable metro",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: every mapped city has a row, and the row's county is that county",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rent levels = observed Zillow city ZORI (Jan 2025 and latest, data by Jan 2024)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Each city lies in its county per the Census 2020 place / county-subdivision files",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rung: cities whose Zillow CountyName differs from the Census county used",
+  "status": "INFO",
+  "detail": "0: []",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rent seasonal adjustment size (built SA - raw NSA)",
+  "status": "PASS",
+  "detail": "median |adj| 1.50 pts over 1 cities",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rentCS series reproduce city-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rung: more populous cities passed over (outlier or out of range after adjustment)",
+  "status": "INFO",
+  "detail": "0: []",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zips that get city rent (no county or metro series)",
+  "status": "INFO",
+  "detail": "4 zips, 1 counties: Murrells Inlet, SC +5.4",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH: pct in [-20, 50], levels positive, pct = levels",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH only for counties with no Zillow county, usable metro or city rent (the map's last tier)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "meta.json hudFmr: base FY2025 (in force on Jan 20 2025) and the latest fiscal year in HUD's history file",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH levels = HUD's 2-bedroom FMRs for the county (New England: the pair covering most towns)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD FY2025 county workbook (2-BR) vs FMR history file",
+  "status": "WARN",
+  "detail": "1 of 4764 rows differ [('2301742835', '1096', None)]",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD FY2027 county workbook (2-BR) vs FMR history file",
+  "status": "PASS",
+  "detail": "all 4764 rows agree",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Counties drawn with HUD Fair Market Rents on the map (no Zillow rent)",
+  "status": "INFO",
+  "detail": "1889 counties (14284 zips); median +9.3% vs county Zillow median +4.5%; outside the range (not drawn): ['08057']",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: CC BY 4.0 attribution present",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: every community/region has the Jan 2025 and latest surveys, prices $1-$20",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: every AK zip outside the Anchorage CBSA maps to a community or region",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json: nearest-community matches are in the zip's own borough and within 100 km",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "ak-gas.json community prices match the raw DCRA survey (Jan 2025 and latest)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "AK zips by match (c = own community, n = nearest surveyed community, r = DCRA region average)",
+  "status": "INFO",
+  "detail": {
+   "n": 88,
+   "r": 39,
+   "c": 103
+  },
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json matches the raw DACO workbook (regular, cents -> $/gal) month by month",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: Jan 2025 baseline present and $1-$10/gal (meta.baseMonth = 2025-01)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: Jan 2025 baseline equals the raw DACO workbook's January 2025 regular price",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "7. Static gas sources",
+  "check": "pr-gas.json: latest present, every value $1-$10/gal",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ }
+]

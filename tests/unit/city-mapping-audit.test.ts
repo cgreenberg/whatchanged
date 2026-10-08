@@ -1,28 +1,28 @@
 /**
- * Comprehensive mapping audit: top 5 cities in every US state.
- * Tests the full mapping chain for ALL tracked data sources across 250+ cities.
- *
- * Data sources and their geographic resolution:
- * - Gas prices:    EIA 3-tier (county override → CPI→city → state → PAD)
- * - Groceries:     BLS CPI metro area → series CUUR{area}SAF11
- * - Shelter:       BLS CPI metro area → series CUUR{area}SAH1
- * - Energy:        BLS CPI metro area → series CUUR{area}SA0E
- * - Unemployment:  County FIPS directly → series LAUCN{fips}0000000003
- * - Tariff:        ZIP-level income × 0.0205 (no geo mapping beyond ZIP)
+ * Mapping audit: top 5 cities in every US state.
+ * Asserts the CPI area (groceries/shelter both use it) and the EIA gas
+ * series + tier for each city's county. Expected values are hand-maintained:
+ *   - CPI: S-codes = BLS CPI metro (county in the OMB 2013 CBSA BLS samples),
+ *     01x0–04x0 = Census division.
+ *   - Gas: county override → CPI metro → EIA city (weekly); else BLS monthly
+ *     average price for a CPI metro without an EIA city ("BLS:S12B", incl. Honolulu
+ *     S49F / Anchorage S49G); rest of HI/AK → that series as a labeled stand-in (tier 2);
+ *     else the state's EIA series (9 states); else PADD / sub-PADD (non-CA PADD 5 → R5XCA).
+ * Zip-level checks (incl. LAUS areas) live in golden-zips.test.ts.
  */
 
 import { getGasLookup } from '@/lib/api/eia'
 import { getMetroCpiAreaForCounty } from '@/lib/mappings/county-metro-cpi'
 
-// [city, state, countyFIPS, expectedCPI, expectedGasDuoarea, expectedGasTier]
+// [city, state, countyFIPS, expectedCPI, expectedGas (EIA duoarea, or "BLS:{area}"), expectedGasTier]
 // CPI codes: S-prefixed = metro CPI area (CBSA match), 0110-0490 = division, 0100-0400 = regional fallback
 const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === MAINE ===
-  ['Portland', 'ME', '23005', '0110', 'R1X', 1],   // Portland-South Portland CBSA not primary → NE regional
-  ['Lewiston', 'ME', '23001', '0110', 'R1X', 1],   // No CBSA match → Northeast regional
-  ['Bangor', 'ME', '23019', '0110', 'R1X', 1],
-  ['South Portland', 'ME', '23005', '0110', 'R1X', 1],
-  ['Auburn', 'ME', '23001', '0110', 'R1X', 1],
+  ['Portland', 'ME', '23005', '0110', 'R1X', 3],   // Portland-South Portland CBSA not primary → NE regional
+  ['Lewiston', 'ME', '23001', '0110', 'R1X', 3],   // No CBSA match → Northeast regional
+  ['Bangor', 'ME', '23019', '0110', 'R1X', 3],
+  ['South Portland', 'ME', '23005', '0110', 'R1X', 3],
+  ['Auburn', 'ME', '23001', '0110', 'R1X', 3],
 
   // === NEW HAMPSHIRE ===
   ['Manchester', 'NH', '33011', '0110', 'R1X', 3],  // Manchester-Nashua CBSA not primary → NE regional
@@ -32,11 +32,11 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Dover', 'NH', '33017', 'S11A', 'YBOS', 1],
 
   // === VERMONT ===
-  ['Burlington', 'VT', '50007', '0110', 'R1X', 1],  // No CBSA match → Northeast regional
-  ['South Burlington', 'VT', '50007', '0110', 'R1X', 1],
-  ['Rutland', 'VT', '50021', '0110', 'R1X', 1],
-  ['Barre', 'VT', '50023', '0110', 'R1X', 1],
-  ['Montpelier', 'VT', '50023', '0110', 'R1X', 1],
+  ['Burlington', 'VT', '50007', '0110', 'R1X', 3],  // No CBSA match → Northeast regional
+  ['South Burlington', 'VT', '50007', '0110', 'R1X', 3],
+  ['Rutland', 'VT', '50021', '0110', 'R1X', 3],
+  ['Barre', 'VT', '50023', '0110', 'R1X', 3],
+  ['Montpelier', 'VT', '50023', '0110', 'R1X', 3],
 
   // === MASSACHUSETTS ===
   ['Boston', 'MA', '25025', 'S11A', 'YBOS', 1],
@@ -61,41 +61,41 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === NEW YORK ===
   ['New York City', 'NY', '36061', 'S12A', 'Y35NY', 1],
-  ['Buffalo', 'NY', '36029', '0120', 'SNY', 1],     // Buffalo CBSA not primary → NE regional, county gas override → NY state
-  ['Rochester', 'NY', '36055', '0120', 'SNY', 1],
+  ['Buffalo', 'NY', '36029', '0120', 'SNY', 2],     // Buffalo CBSA not primary → NE regional, county gas override → NY state
+  ['Rochester', 'NY', '36055', '0120', 'SNY', 2],
   ['Yonkers', 'NY', '36119', 'S12A', 'Y35NY', 1],
-  ['Syracuse', 'NY', '36067', '0120', 'SNY', 1],
+  ['Syracuse', 'NY', '36067', '0120', 'SNY', 2],
 
   // === NEW JERSEY ===
   ['Newark', 'NJ', '34013', 'S12A', 'Y35NY', 1],
   ['Jersey City', 'NJ', '34017', 'S12A', 'Y35NY', 1],
   ['Paterson', 'NJ', '34031', 'S12A', 'Y35NY', 1],
   ['Elizabeth', 'NJ', '34039', 'S12A', 'Y35NY', 1],
-  ['Camden', 'NJ', '34007', 'S12B', 'R1Y', 3],
+  ['Camden', 'NJ', '34007', 'S12B', 'BLS:S12B', 1],
 
   // === PENNSYLVANIA ===
-  ['Philadelphia', 'PA', '42101', 'S12B', 'R1Y', 3],
+  ['Philadelphia', 'PA', '42101', 'S12B', 'BLS:S12B', 1],
   ['Pittsburgh', 'PA', '42003', '0120', 'R1Y', 3],  // Pittsburgh CBSA not primary → NE regional
   ['Allentown', 'PA', '42077', '0120', 'R1Y', 3],   // Allentown CBSA not primary → NE regional
   ['Reading', 'PA', '42011', '0120', 'R1Y', 3],     // Reading CBSA not primary → NE regional
   ['Erie', 'PA', '42049', '0120', 'R1Y', 3],
 
   // === DELAWARE ===
-  ['Wilmington', 'DE', '10003', 'S12B', 'R1Y', 3],
+  ['Wilmington', 'DE', '10003', 'S12B', 'BLS:S12B', 1],
   ['Dover', 'DE', '10001', '0350', 'R1Y', 3],       // No CBSA match → South regional
-  ['Newark', 'DE', '10003', 'S12B', 'R1Y', 3],
-  ['Middletown', 'DE', '10003', 'S12B', 'R1Y', 3],
-  ['Bear', 'DE', '10003', 'S12B', 'R1Y', 3],
+  ['Newark', 'DE', '10003', 'S12B', 'BLS:S12B', 1],
+  ['Middletown', 'DE', '10003', 'S12B', 'BLS:S12B', 1],
+  ['Bear', 'DE', '10003', 'S12B', 'BLS:S12B', 1],
 
   // === MARYLAND ===
-  ['Baltimore', 'MD', '24510', 'S35E', 'R1Y', 3],
-  ['Columbia', 'MD', '24027', 'S35E', 'R1Y', 3],
-  ['Germantown', 'MD', '24031', 'S35A', 'R1Y', 3],
-  ['Silver Spring', 'MD', '24031', 'S35A', 'R1Y', 3],
-  ['Waldorf', 'MD', '24017', 'S35A', 'R1Y', 3],
+  ['Baltimore', 'MD', '24510', 'S35E', 'BLS:S35E', 1],
+  ['Columbia', 'MD', '24027', 'S35E', 'BLS:S35E', 1],
+  ['Germantown', 'MD', '24031', 'S35A', 'BLS:S35A', 1],
+  ['Silver Spring', 'MD', '24031', 'S35A', 'BLS:S35A', 1],
+  ['Waldorf', 'MD', '24017', 'S35A', 'BLS:S35A', 1],
 
   // === WASHINGTON DC ===
-  ['Washington', 'DC', '11001', 'S35A', 'R1Y', 3],
+  ['Washington', 'DC', '11001', 'S35A', 'BLS:S35A', 1],
 
   // === VIRGINIA ===
   ['Virginia Beach', 'VA', '51810', '0350', 'R1Z', 3], // No CBSA match → South regional
@@ -126,18 +126,18 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Greenville', 'SC', '45045', '0350', 'R1Z', 3],  // Greenville CBSA not primary → South regional
 
   // === GEORGIA ===
-  ['Atlanta', 'GA', '13121', 'S35C', 'R1Z', 3],
+  ['Atlanta', 'GA', '13121', 'S35C', 'BLS:S35C', 1],
   ['Augusta', 'GA', '13073', '0350', 'R1Z', 3],     // No CBSA match → South regional
   ['Columbus', 'GA', '13215', '0350', 'R1Z', 3],
   ['Savannah', 'GA', '13051', '0350', 'R1Z', 3],
   ['Athens', 'GA', '13059', '0350', 'R1Z', 3],
 
   // === FLORIDA ===
-  ['Jacksonville', 'FL', '12031', '0350', 'SFL', 1], // Jacksonville CBSA not primary → South regional, county gas override → FL state
+  ['Jacksonville', 'FL', '12031', '0350', 'SFL', 2], // Jacksonville CBSA not primary → South regional, county gas override → FL state
   ['Miami', 'FL', '12086', 'S35B', 'YMIA', 1],
-  ['Tampa', 'FL', '12057', 'S35D', 'SFL', 2],
-  ['Orlando', 'FL', '12095', '0350', 'SFL', 1],     // Orlando CBSA not primary → South regional, county gas override → FL state
-  ['St. Petersburg', 'FL', '12103', 'S35D', 'SFL', 2],
+  ['Tampa', 'FL', '12057', 'S35D', 'SFL', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
+  ['Orlando', 'FL', '12095', '0350', 'SFL', 2],     // Orlando CBSA not primary → South regional, county gas override → FL state
+  ['St. Petersburg', 'FL', '12103', 'S35D', 'SFL', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
 
   // === ALABAMA ===
   ['Birmingham', 'AL', '01073', '0360', 'R30', 3],  // No CBSA match → South regional
@@ -147,7 +147,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Tuscaloosa', 'AL', '01125', '0360', 'R30', 3],
 
   // === MISSISSIPPI ===
-  ['Jackson', 'MS', '28049', '0360', 'R30', 1],     // No CBSA match → South regional, county gas override
+  ['Jackson', 'MS', '28049', '0360', 'R30', 3],     // No CBSA match → South regional, county gas override
   ['Gulfport', 'MS', '28047', '0360', 'R30', 3],
   ['Southaven', 'MS', '28033', '0360', 'R30', 3],   // Memphis CBSA not primary → South regional
   ['Hattiesburg', 'MS', '28035', '0360', 'R30', 3],
@@ -168,11 +168,11 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Covington', 'KY', '21117', '0360', 'R20', 3],   // Cincinnati CBSA not primary → South regional
 
   // === LOUISIANA ===
-  ['New Orleans', 'LA', '22071', '0370', 'R30', 1], // No CBSA match → South regional, county gas override
-  ['Baton Rouge', 'LA', '22033', '0370', 'R30', 1],
-  ['Shreveport', 'LA', '22017', '0370', 'R30', 1],
-  ['Metairie', 'LA', '22051', '0370', 'R30', 1],
-  ['Lafayette', 'LA', '22055', '0370', 'R30', 1],
+  ['New Orleans', 'LA', '22071', '0370', 'R30', 3], // No CBSA match → South regional, county gas override
+  ['Baton Rouge', 'LA', '22033', '0370', 'R30', 3],
+  ['Shreveport', 'LA', '22017', '0370', 'R30', 3],
+  ['Metairie', 'LA', '22051', '0370', 'R30', 3],
+  ['Lafayette', 'LA', '22055', '0370', 'R30', 3],
 
   // === ARKANSAS ===
   ['Little Rock', 'AR', '05119', '0370', 'R30', 3],
@@ -189,18 +189,18 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Akron', 'OH', '39153', '0230', 'SOH', 2],
 
   // === MICHIGAN ===
-  ['Detroit', 'MI', '26163', 'S23B', 'R20', 3],     // CBSA → Detroit-Warren-Dearborn
-  ['Grand Rapids', 'MI', '26081', '0230', 'R20', 1], // Grand Rapids CBSA not primary → Midwest regional
-  ['Warren', 'MI', '26099', 'S23B', 'R20', 3],
-  ['Sterling Heights', 'MI', '26099', 'S23B', 'R20', 3],
+  ['Detroit', 'MI', '26163', 'S23B', 'BLS:S23B', 1],     // CBSA → Detroit-Warren-Dearborn
+  ['Grand Rapids', 'MI', '26081', '0230', 'R20', 3], // Grand Rapids CBSA not primary → Midwest regional
+  ['Warren', 'MI', '26099', 'S23B', 'BLS:S23B', 1],
+  ['Sterling Heights', 'MI', '26099', 'S23B', 'BLS:S23B', 1],
   ['Ann Arbor', 'MI', '26161', '0230', 'R20', 3],   // Ann Arbor CBSA not primary → Midwest regional
 
   // === INDIANA ===
-  ['Indianapolis', 'IN', '18097', '0230', 'R20', 1], // Indianapolis CBSA not primary → Midwest regional
+  ['Indianapolis', 'IN', '18097', '0230', 'R20', 3], // Indianapolis CBSA not primary → Midwest regional
   ['Fort Wayne', 'IN', '18003', '0230', 'R20', 3],
   ['Evansville', 'IN', '18163', '0230', 'R20', 3],
   ['South Bend', 'IN', '18141', '0230', 'R20', 3],
-  ['Carmel', 'IN', '18057', '0230', 'R20', 1],      // Indianapolis CBSA not primary → Midwest regional
+  ['Carmel', 'IN', '18057', '0230', 'R20', 3],      // Indianapolis CBSA not primary → Midwest regional
 
   // === ILLINOIS ===
   ['Chicago', 'IL', '17031', 'S23A', 'YORD', 1],
@@ -211,28 +211,28 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === WISCONSIN ===
   ['Milwaukee', 'WI', '55079', '0230', 'R20', 3],   // Milwaukee CBSA not primary → Midwest regional
-  ['Madison', 'WI', '55025', '0230', 'R20', 1],
-  ['Green Bay', 'WI', '55009', '0230', 'R20', 1],
-  ['Kenosha', 'WI', '55059', '0230', 'R20', 3],     // Kenosha CBSA not primary → Midwest regional
+  ['Madison', 'WI', '55025', '0230', 'R20', 3],
+  ['Green Bay', 'WI', '55009', '0230', 'R20', 3],
+  ['Kenosha', 'WI', '55059', 'S23A', 'YORD', 1],    // Kenosha County is in the 2013 Chicago CBSA (16980) that BLS CPI uses
   ['Racine', 'WI', '55101', '0230', 'R20', 3],
 
   // === MINNESOTA ===
-  ['Minneapolis', 'MN', '27053', 'S24A', 'SMN', 2],
-  ['St. Paul', 'MN', '27123', 'S24A', 'SMN', 2],
+  ['Minneapolis', 'MN', '27053', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
+  ['St. Paul', 'MN', '27123', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Rochester', 'MN', '27109', '0240', 'SMN', 2],   // No CBSA match → Midwest regional
-  ['Bloomington', 'MN', '27053', 'S24A', 'SMN', 2],
+  ['Bloomington', 'MN', '27053', 'S24A', 'SMN', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['Duluth', 'MN', '27137', '0240', 'SMN', 2],
 
   // === IOWA ===
   ['Des Moines', 'IA', '19153', '0240', 'R20', 3],  // Des Moines CBSA not primary → Midwest regional
-  ['Cedar Rapids', 'IA', '19113', '0240', 'R20', 1], // Cedar Rapids CBSA not primary → Midwest regional
-  ['Davenport', 'IA', '19163', '0240', 'R20', 1],   // Davenport CBSA not primary → Midwest regional
+  ['Cedar Rapids', 'IA', '19113', '0240', 'R20', 3], // Cedar Rapids CBSA not primary → Midwest regional
+  ['Davenport', 'IA', '19163', '0240', 'R20', 3],   // Davenport CBSA not primary → Midwest regional
   ['Sioux City', 'IA', '19193', '0240', 'R20', 3],
-  ['Iowa City', 'IA', '19103', '0240', 'R20', 1],
+  ['Iowa City', 'IA', '19103', '0240', 'R20', 3],
 
   // === MISSOURI ===
   ['Kansas City', 'MO', '29095', '0240', 'R20', 3], // Kansas City CBSA not primary → Midwest regional
-  ['St. Louis', 'MO', '29510', 'S24B', 'R20', 3],
+  ['St. Louis', 'MO', '29510', 'S24B', 'BLS:S24B', 1],
   ['Springfield', 'MO', '29077', '0240', 'R20', 3], // No CBSA match → Midwest regional
   ['Columbia', 'MO', '29019', '0240', 'R20', 3],    // Columbia CBSA not primary → Midwest regional
   ['Independence', 'MO', '29095', '0240', 'R20', 3], // Kansas City CBSA not primary → Midwest regional
@@ -246,7 +246,7 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === SOUTH DAKOTA ===
   ['Sioux Falls', 'SD', '46099', '0240', 'R20', 3], // Sioux Falls CBSA not primary → Midwest regional
-  ['Rapid City', 'SD', '46103', '0240', 'R20', 1],  // No CBSA match → Midwest regional
+  ['Rapid City', 'SD', '46103', '0240', 'R20', 3],  // No CBSA match → Midwest regional
   ['Aberdeen', 'SD', '46013', '0240', 'R20', 3],
   ['Brookings', 'SD', '46011', '0240', 'R20', 3],
   ['Watertown', 'SD', '46029', '0240', 'R20', 3],
@@ -255,8 +255,8 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Omaha', 'NE', '31055', '0240', 'R20', 3],       // Omaha CBSA not primary → Midwest regional
   ['Lincoln', 'NE', '31109', '0240', 'R20', 3],
   ['Bellevue', 'NE', '31153', '0240', 'R20', 3],    // Omaha CBSA not primary → Midwest regional
-  ['Grand Island', 'NE', '31079', '0240', 'R20', 1],
-  ['Kearney', 'NE', '31019', '0240', 'R20', 1],
+  ['Grand Island', 'NE', '31079', '0240', 'R20', 3],
+  ['Kearney', 'NE', '31019', '0240', 'R20', 3],
 
   // === KANSAS ===
   ['Wichita', 'KS', '20173', '0240', 'R20', 3],     // No CBSA match → Midwest regional
@@ -267,10 +267,10 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
 
   // === TEXAS ===
   ['Houston', 'TX', '48201', 'S37B', 'Y44HO', 1],
-  ['San Antonio', 'TX', '48029', '0370', 'STX', 1], // San Antonio CBSA not primary → South regional
-  ['Dallas', 'TX', '48113', 'S37A', 'STX', 2],
-  ['Austin', 'TX', '48453', '0370', 'STX', 1],      // Austin CBSA not primary → South regional
-  ['Fort Worth', 'TX', '48439', 'S37A', 'STX', 2],
+  ['San Antonio', 'TX', '48029', '0370', 'STX', 2], // San Antonio CBSA not primary → South regional
+  ['Dallas', 'TX', '48113', 'S37A', 'STX', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
+  ['Austin', 'TX', '48453', '0370', 'STX', 2],      // Austin CBSA not primary → South regional
+  ['Fort Worth', 'TX', '48439', 'S37A', 'STX', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
 
   // === OKLAHOMA ===
   ['Oklahoma City', 'OK', '40109', '0370', 'R20', 3], // No CBSA match → South regional
@@ -282,72 +282,72 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   // === NEW MEXICO ===
   ['Albuquerque', 'NM', '35001', '0480', 'R30', 3], // No CBSA match → West regional
   ['Las Cruces', 'NM', '35013', '0480', 'R30', 3],
-  ['Rio Rancho', 'NM', '35043', '0480', 'R30', 1],
-  ['Santa Fe', 'NM', '35049', '0480', 'R30', 1],
+  ['Rio Rancho', 'NM', '35043', '0480', 'R30', 3],
+  ['Santa Fe', 'NM', '35049', '0480', 'R30', 3],
   ['Roswell', 'NM', '35005', '0480', 'R30', 3],
 
   // === WASHINGTON ===
   ['Seattle', 'WA', '53033', 'S49D', 'Y48SE', 1],
-  ['Spokane', 'WA', '53063', '0490', 'SWA', 1],     // No CBSA match → West regional
+  ['Spokane', 'WA', '53063', '0490', 'SWA', 2],     // No CBSA match → West regional
   ['Tacoma', 'WA', '53053', 'S49D', 'Y48SE', 1],
-  ['Vancouver', 'WA', '53011', '0490', 'SWA', 1],   // Portland CBSA not primary → West regional, county gas override → WA state
+  ['Vancouver', 'WA', '53011', '0490', 'SWA', 2],   // Portland CBSA not primary → West regional, county gas override → WA state
   ['Bellevue', 'WA', '53033', 'S49D', 'Y48SE', 1],
 
   // === OREGON ===
-  ['Portland', 'OR', '41051', '0490', 'R50', 1],    // Portland CBSA not primary → West regional
-  ['Salem', 'OR', '41047', '0490', 'R50', 1],       // No CBSA match → West regional
-  ['Eugene', 'OR', '41039', '0490', 'R50', 1],
-  ['Gresham', 'OR', '41051', '0490', 'R50', 1],
-  ['Hillsboro', 'OR', '41067', '0490', 'R50', 1],
+  ['Portland', 'OR', '41051', '0490', 'R5XCA', 3],    // Portland CBSA not primary → West regional
+  ['Salem', 'OR', '41047', '0490', 'R5XCA', 3],       // No CBSA match → West regional
+  ['Eugene', 'OR', '41039', '0490', 'R5XCA', 3],
+  ['Gresham', 'OR', '41051', '0490', 'R5XCA', 3],
+  ['Hillsboro', 'OR', '41067', '0490', 'R5XCA', 3],
 
   // === CALIFORNIA ===
   ['Los Angeles', 'CA', '06037', 'S49A', 'Y05LA', 1],
-  ['San Diego', 'CA', '06073', 'S49E', 'SCA', 2],
+  ['San Diego', 'CA', '06073', 'S49E', 'SCA', 2],  // weekly EIA state preferred over BLS monthly metro (round 11)
   ['San Jose', 'CA', '06085', '0490', 'SCA', 2],    // San Jose CBSA not primary → West regional
   ['San Francisco', 'CA', '06075', 'S49B', 'Y05SF', 1],
-  ['Fresno', 'CA', '06019', '0490', 'SCA', 1],      // No CBSA match → West regional
+  ['Fresno', 'CA', '06019', '0490', 'SCA', 2],      // No CBSA match → West regional
 
   // === NEVADA ===
-  ['Las Vegas', 'NV', '32003', '0480', 'R50', 3],   // Las Vegas CBSA not primary → West regional
-  ['Henderson', 'NV', '32003', '0480', 'R50', 3],
-  ['Reno', 'NV', '32031', '0480', 'R50', 1],        // No CBSA match → West regional
-  ['North Las Vegas', 'NV', '32003', '0480', 'R50', 3],
-  ['Sparks', 'NV', '32031', '0480', 'R50', 1],
+  ['Las Vegas', 'NV', '32003', '0480', 'R5XCA', 3],   // Las Vegas CBSA not primary → West regional
+  ['Henderson', 'NV', '32003', '0480', 'R5XCA', 3],
+  ['Reno', 'NV', '32031', '0480', 'R5XCA', 3],        // No CBSA match → West regional
+  ['North Las Vegas', 'NV', '32003', '0480', 'R5XCA', 3],
+  ['Sparks', 'NV', '32031', '0480', 'R5XCA', 3],
 
   // === ARIZONA ===
-  ['Phoenix', 'AZ', '04013', 'S48A', 'R50', 3],
-  ['Tucson', 'AZ', '04019', '0480', 'R50', 3],      // Tucson CBSA not primary → West regional
-  ['Mesa', 'AZ', '04013', 'S48A', 'R50', 3],
-  ['Chandler', 'AZ', '04013', 'S48A', 'R50', 3],
-  ['Scottsdale', 'AZ', '04013', 'S48A', 'R50', 3],
+  ['Phoenix', 'AZ', '04013', 'S48A', 'BLS:S48A', 1],
+  ['Tucson', 'AZ', '04019', '0480', 'R5XCA', 3],      // Tucson CBSA not primary → West regional
+  ['Mesa', 'AZ', '04013', 'S48A', 'BLS:S48A', 1],
+  ['Chandler', 'AZ', '04013', 'S48A', 'BLS:S48A', 1],
+  ['Scottsdale', 'AZ', '04013', 'S48A', 'BLS:S48A', 1],
 
   // === IDAHO ===
-  ['Boise', 'ID', '16001', '0480', 'R40', 1],       // No CBSA match → West regional
-  ['Meridian', 'ID', '16001', '0480', 'R40', 1],
-  ['Nampa', 'ID', '16027', '0480', 'R40', 1],
-  ['Idaho Falls', 'ID', '16019', '0480', 'R40', 1],
-  ['Pocatello', 'ID', '16005', '0480', 'R40', 1],
+  ['Boise', 'ID', '16001', '0480', 'R40', 3],       // No CBSA match → West regional
+  ['Meridian', 'ID', '16001', '0480', 'R40', 3],
+  ['Nampa', 'ID', '16027', '0480', 'R40', 3],
+  ['Idaho Falls', 'ID', '16019', '0480', 'R40', 3],
+  ['Pocatello', 'ID', '16005', '0480', 'R40', 3],
 
   // === MONTANA ===
-  ['Billings', 'MT', '30111', '0480', 'R40', 1],    // No CBSA match → West regional
-  ['Missoula', 'MT', '30063', '0480', 'R40', 1],
-  ['Great Falls', 'MT', '30013', '0480', 'R40', 1],
-  ['Bozeman', 'MT', '30031', '0480', 'R40', 1],
-  ['Helena', 'MT', '30043', '0480', 'R40', 1],
+  ['Billings', 'MT', '30111', '0480', 'R40', 3],    // No CBSA match → West regional
+  ['Missoula', 'MT', '30063', '0480', 'R40', 3],
+  ['Great Falls', 'MT', '30013', '0480', 'R40', 3],
+  ['Bozeman', 'MT', '30031', '0480', 'R40', 3],
+  ['Helena', 'MT', '30043', '0480', 'R40', 3],
 
   // === WYOMING ===
-  ['Cheyenne', 'WY', '56021', '0480', 'R40', 1],    // No CBSA match → West regional
-  ['Casper', 'WY', '56025', '0480', 'R40', 1],
-  ['Laramie', 'WY', '56001', '0480', 'R40', 1],
-  ['Gillette', 'WY', '56005', '0480', 'R40', 1],
-  ['Rock Springs', 'WY', '56037', '0480', 'R40', 1],
+  ['Cheyenne', 'WY', '56021', '0480', 'R40', 3],    // No CBSA match → West regional
+  ['Casper', 'WY', '56025', '0480', 'R40', 3],
+  ['Laramie', 'WY', '56001', '0480', 'R40', 3],
+  ['Gillette', 'WY', '56005', '0480', 'R40', 3],
+  ['Rock Springs', 'WY', '56037', '0480', 'R40', 3],
 
   // === UTAH ===
-  ['Salt Lake City', 'UT', '49035', '0480', 'R40', 1], // Salt Lake CBSA not primary → West regional
-  ['West Valley City', 'UT', '49035', '0480', 'R40', 1],
-  ['Provo', 'UT', '49049', '0480', 'R40', 1],       // Provo CBSA not primary → West regional
-  ['West Jordan', 'UT', '49035', '0480', 'R40', 1],
-  ['Orem', 'UT', '49049', '0480', 'R40', 1],        // Provo CBSA not primary → West regional
+  ['Salt Lake City', 'UT', '49035', '0480', 'R40', 3], // Salt Lake CBSA not primary → West regional
+  ['West Valley City', 'UT', '49035', '0480', 'R40', 3],
+  ['Provo', 'UT', '49049', '0480', 'R40', 3],       // Provo CBSA not primary → West regional
+  ['West Jordan', 'UT', '49035', '0480', 'R40', 3],
+  ['Orem', 'UT', '49049', '0480', 'R40', 3],        // Provo CBSA not primary → West regional
 
   // === COLORADO ===
   ['Denver', 'CO', '08031', 'S48B', 'YDEN', 1],
@@ -357,18 +357,18 @@ const CITY_MAPPINGS: Array<[string, string, string, string, string, number]> = [
   ['Lakewood', 'CO', '08059', 'S48B', 'YDEN', 1],
 
   // === HAWAII ===
-  ['Honolulu', 'HI', '15003', 'S49F', 'R50', 3],
-  ['East Honolulu', 'HI', '15003', 'S49F', 'R50', 3],
-  ['Pearl City', 'HI', '15003', 'S49F', 'R50', 3],
-  ['Hilo', 'HI', '15001', '0490', 'R50', 3],        // No CBSA match → West regional
-  ['Kailua', 'HI', '15003', 'S49F', 'R50', 3],
+  ['Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['East Honolulu', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['Pearl City', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
+  ['Hilo', 'HI', '15001', '0490', 'BLS:S49F', 2],        // Outside the Honolulu CBSA → labeled Honolulu stand-in
+  ['Kailua', 'HI', '15003', 'S49F', 'BLS:S49F', 1],
 
   // === ALASKA ===
-  ['Anchorage', 'AK', '02020', 'S49G', 'R50', 3],
-  ['Fairbanks', 'AK', '02090', '0490', 'R50', 3],   // No CBSA match → West regional
-  ['Juneau', 'AK', '02110', '0490', 'R50', 3],
-  ['Sitka', 'AK', '02220', '0490', 'R50', 3],
-  ['Ketchikan', 'AK', '02130', '0490', 'R50', 1],
+  ['Anchorage', 'AK', '02020', 'S49G', 'BLS:S49G', 1],
+  ['Fairbanks', 'AK', '02090', '0490', 'BLS:S49G', 2],   // Outside the Anchorage CBSA → labeled Anchorage stand-in
+  ['Juneau', 'AK', '02110', '0490', 'BLS:S49G', 2],
+  ['Sitka', 'AK', '02220', '0490', 'BLS:S49G', 2],
+  ['Ketchikan', 'AK', '02130', '0490', 'BLS:S49G', 2],
 ]
 
 describe('City mapping audit — CPI areas', () => {
@@ -383,70 +383,12 @@ describe('City mapping audit — CPI areas', () => {
 
 describe('City mapping audit — Gas regions', () => {
   test.each(CITY_MAPPINGS)(
-    '%s, %s (FIPS %s) → gas duoarea %s (tier %s)',
+    '%s, %s (FIPS %s) → gas %s (tier %s)',
     (city, state, countyFips, expectedCpi, expectedGas, expectedTier) => {
       const cpi = getMetroCpiAreaForCounty(countyFips, state)
       const gas = getGasLookup(state, cpi.areaCode, countyFips)
-      expect(gas.duoarea).toBe(expectedGas)
+      expect(gas.source === 'bls' ? `BLS:${gas.areaCode}` : gas.duoarea).toBe(expectedGas)
       expect(gas.tier).toBe(expectedTier)
-    }
-  )
-})
-
-describe('City mapping audit — BLS CPI series (groceries, shelter, energy)', () => {
-  test.each(CITY_MAPPINGS)(
-    '%s, %s (FIPS %s) → CPI series use area code %s',
-    (city, state, countyFips, expectedCpi) => {
-      const cpi = getMetroCpiAreaForCounty(countyFips, state)
-      // Groceries, shelter, and energy all derive from the same CPI area code
-      const groceriesSeries = `CUUR${cpi.areaCode}SAF11`
-      const shelterSeries = `CUUR${cpi.areaCode}SAH1`
-      const energySeries = `CUUR${cpi.areaCode}SA0E`
-
-      // Verify series IDs use the expected area code
-      expect(groceriesSeries).toBe(`CUUR${expectedCpi}SAF11`)
-      expect(shelterSeries).toBe(`CUUR${expectedCpi}SAH1`)
-      expect(energySeries).toBe(`CUUR${expectedCpi}SA0E`)
-
-      // Verify series IDs are well-formed BLS CPI format
-      expect(groceriesSeries).toMatch(/^CUUR[A-Z0-9]{4}SAF11$/)
-      expect(shelterSeries).toMatch(/^CUUR[A-Z0-9]{4}SAH1$/)
-      expect(energySeries).toMatch(/^CUUR[A-Z0-9]{4}SA0E$/)
-    }
-  )
-})
-
-describe('City mapping audit — Unemployment (LAUS) series', () => {
-  test.each(CITY_MAPPINGS)(
-    '%s, %s (FIPS %s) → LAUS series LAUCN%s0000000003',
-    (city, state, countyFips) => {
-      // Unemployment uses county FIPS directly — no metro/state mapping
-      const padded = countyFips.padStart(5, '0')
-      const seriesId = `LAUCN${padded}0000000003`
-
-      // Verify FIPS produces a well-formed LAUS series ID
-      expect(seriesId).toMatch(/^LAUCN\d{5}0000000003$/)
-      // Verify the FIPS is 5 digits (not padded from something shorter)
-      expect(countyFips).toMatch(/^\d{5}$/)
-    }
-  )
-})
-
-describe('City mapping audit — cross-source consistency', () => {
-  test.each(CITY_MAPPINGS)(
-    '%s, %s — gas and CPI use compatible geographic regions',
-    (city, state, countyFips, expectedCpi, expectedGas, expectedTier) => {
-      const cpi = getMetroCpiAreaForCounty(countyFips, state)
-      const gas = getGasLookup(state, cpi.areaCode, countyFips)
-
-      // Gas and CPI should never map to completely incompatible regions.
-      // E.g., a PAD 4 (Rocky Mountain) state should not get a PAD 5 (West Coast) gas city.
-      // Idaho was the canonical bug: CPI→Seattle dragged gas to Seattle (PAD 5) for a PAD 4 state.
-
-      // Verify gas label is not empty
-      expect(gas.geoLevel).toBeTruthy()
-      // Verify CPI area name is not empty
-      expect(cpi.areaName).toBeTruthy()
     }
   )
 })

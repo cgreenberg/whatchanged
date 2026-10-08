@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "source": "U.S. Census Bureau, American Community Survey",
+    "table": "B25040",
+    "dataset": "acs/acs1",
+    "vintage": 2024,
+    "url": "https://data.census.gov/table/ACSDT1Y2024.B25040"
+  },
+  "states": {
+    "AK": {
+      "oil": 27.5,
+      "propane": 2.1,
+      "name": "Alaska"
+    },
+    "AL": {
+      "oil": 0.1,
+      "propane": 4.9,
+      "name": "Alabama"
+    },
+    "AR": {
+      "oil": 0.1,
+      "propane": 5.9,
+      "name": "Arkansas"
+    },
+    "AZ": {
+      "oil": 0.1,
+      "propane": 2.6,
+      "name": "Arizona"
+    },
+    "CA": {
+      "oil": 0.2,
+      "propane": 2.9,
+      "name": "California"
+    },
+    "CO": {
+      "oil": 0.2,
+      "propane": 4.5,
+      "name": "Colorado"
+    },
+    "CT": {
+      "oil": 35,
+      "propane": 5.7,
+      "name": "Connecticut"
+    },
+    "DC": {
+      "oil": 0.8,
+      "propane": 1,
+      "name": "District of Columbia"
+    },
+    "DE": {
+      "oil": 6.8,
+      "propane": 10.4,
+      "name": "Delaware"
+    },
+    "FL": {
+      "oil": 0.2,
+      "propane": 0.9,
+      "name": "Florida"
+    },
+    "GA": {
+      "oil": 0.2,
+      "propane": 3.6,
+      "name": "Georgia"
+    },
+    "HI": {
+      "oil": 0.1,
+      "propane": 2,
+      "name": "Hawaii"
+    },
+    "IA": {
+      "oil": 0.3,
+      "propane": 12.3,
+      "name": "Iowa"
+    },
+    "ID": {
+      "oil": 0.9,
+      "propane": 5.2,
+      "name": "Idaho"
+    },
+    "IL": {
+      "oil": 0.1,
+      "propane": 3.8,
+      "name": "Illinois"
+    },
+    "IN": {
+      "oil": 0.4,
+      "propane": 6.6,
+      "name": "Indiana"
+    },
+    "KS": {
+      "oil": 0.2,
+      "propane": 7.9,
+      "name": "Kansas"
+    },
+    "KY": {
+      "oil": 0.6,
+      "propane": 6.6,
+      "name": "Kentucky"
+    },
+    "LA": {
+      "oil": 0.1,
+      "propane": 2,
+      "name": "Louisiana"
+    },
+    "MA": {
+      "oil": 20.2,
+      "propane": 4.4,
+      "name": "Massachusetts"
+    },
+    "MD": {
+      "oil": 5.8,
+      "propane": 3.7,
+      "name": "Maryland"
+    },
+    "ME": {
+      "oil": 50.3,
+      "propane": 16,
+      "name": "Maine"
+    },
+    "MI": {
+      "oil": 0.8,
+      "propane": 8.7,
+      "name": "Michigan"
+    },
+    "MN": {
+      "oil": 1.2,
+      "propane": 10.4,
+      "name": "Minnesota"
+    },
+    "MO": {
+      "oil": 0.1,
+      "propane": 8.5,
+      "name": "Missouri"
+    },
+    "MS": {
+      "oil": 0.1,
+      "propane": 9.8,
+      "name": "Mississippi"
+    },
+    "MT": {
+      "oil": 0.6,
+      "propane": 13.7,
+      "name": "Montana"
+    },
+    "NC": {
+      "oil": 1.6,
+      "propane": 5.4,
+      "name": "North Carolina"
+    },
+    "ND": {
+      "oil": 2,
+      "propane": 13.6,
+      "name": "North Dakota"
+    },
+    "NE": {
+      "oil": 0.3,
+      "propane": 7.4,
+      "name": "Nebraska"
+    },
+    "NH": {
+      "oil": 37,
+      "propane": 20.4,
+      "name": "New Hampshire"
+    },
+    "NJ": {
+      "oil": 5.6,
+      "propane": 1.9,
+      "name": "New Jersey"
+    },
+    "NM": {
+      "oil": 0.1,
+      "propane": 6.5,
+      "name": "New Mexico"
+    },
+    "NV": {
+      "oil": 0.3,
+      "propane": 2.7,
+      "name": "Nevada"
+    },
+    "NY": {
+      "oil": 14.6,
+      "propane": 4.7,
+      "name": "New York"
+    },
+    "OH": {
+      "oil": 1.5,
+      "propane": 5.4,
+      "name": "Ohio"
+    },
+    "OK": {
+      "oil": 0.2,
+      "propane": 6.2,
+      "name": "Oklahoma"
+    },
+    "OR": {
+      "oil": 1.2,
+      "propane": 1.4,
+      "name": "Oregon"
+    },
+    "PA": {
+      "oil": 12.8,
+      "propane": 5.2,
+      "name": "Pennsylvania"
+    },
+    "PR": {
+      "oil": 0,
+      "propane": 0.8,
+      "name": "Puerto Rico"
+    },
+    "RI": {
+      "oil": 25.4,
+      "propane": 4.9,
+      "name": "Rhode Island"
+    },
+    "SC": {
+      "oil": 0.4,
+      "propane": 3.2,
+      "name": "South Carolina"
+    },
+    "SD": {
+      "oil": 0.9,
+      "propane": 15.7,
+      "name": "South Dakota"
+    },
+    "TN": {
+      "oil": 0.2,
+      "propane": 3.3,
+      "name": "Tennessee"
+    },
+    "TX": {
+      "oil": 0.1,
+      "propane": 2.7,
+      "name": "Texas"
+    },
+    "UT": {
+      "oil": 0.1,
+      "propane": 2.5,
+      "name": "Utah"
+    },
+    "VA": {
+      "oil": 2.7,
+      "propane": 4.3,
+      "name": "Virginia"
+    },
+    "VT": {
+      "oil": 35.5,
+      "propane": 19.8,
+      "name": "Vermont"
+    },
+    "WA": {
+      "oil": 0.9,
+      "propane": 2.6,
+      "name": "Washington"
+    },
+    "WI": {
+      "oil": 1.1,
+      "propane": 11.7,
+      "name": "Wisconsin"
+    },
+    "WV": {
+      "oil": 1.8,
+      "propane": 5,
+      "name": "West Virginia"
+    },
+    "WY": {
+      "oil": 0.1,
+      "propane": 10.3,
+      "name": "Wyoming"
+    }
+  }
+}

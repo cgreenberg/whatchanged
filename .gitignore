@@ -55,8 +55,4 @@ skills-lock.json
 # IDE
 .vscode/
 
-# Audit system artifacts
-audit/reports/
-audit/screenshots/
-audit/.env
-audit/venv/
+__pycache__/

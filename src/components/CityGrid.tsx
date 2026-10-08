@@ -2,6 +2,8 @@
 
 interface CityGridProps {
   onCitySelect: (zip: string, city?: string, state?: string) => void
+  /** 'hero': under the search box on the homepage; 'compact': a "Try another place" row at the bottom of a results page. */
+  variant?: 'hero' | 'compact'
 }
 
 // One city per BLS CPI metro area (22 of 23 Tier 1 metros, alphabetical)
@@ -30,26 +32,27 @@ const GRID_CITIES = [
   { label: 'Washington DC', zip: '20001', city: 'washington',    state: 'dc' },
 ]
 
-export function CityGrid({ onCitySelect }: CityGridProps) {
+export function CityGrid({ onCitySelect, variant = 'hero' }: CityGridProps) {
   const cities = GRID_CITIES
+  const compact = variant === 'compact'
 
   return (
-    <div className="mt-4">
-      <p className="text-sm text-zinc-500 mb-3">Or explore a city →</p>
+    <nav aria-label={compact ? 'Try another place' : 'Explore a city'} className={compact ? 'mt-12 text-center' : 'mt-10'}>
+      <p className="kicker text-ink-3 mb-3">{compact ? 'Try another place' : 'Or explore a city'}</p>
       <div
-        data-testid="city-grid"
-        className="flex flex-wrap justify-center gap-2"
+        data-testid={compact ? 'city-grid-compact' : 'city-grid'}
+        className="flex flex-wrap justify-center gap-1.5 max-w-3xl mx-auto"
       >
         {cities.map((city) => (
             <button
               key={city.zip}
               onClick={() => onCitySelect(city.zip, city.city, city.state)}
-              className="rounded-full px-4 py-1.5 text-sm text-zinc-400 border border-zinc-700 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+              className={`rounded-sm ${compact ? 'px-2.5 py-1 text-[12px]' : 'px-3 py-1.5 text-[13px]'} text-ink-2 border border-line hover:text-ink hover:border-ink-3 hover:bg-surface transition-colors`}
             >
               {city.label}
             </button>
           ))}
       </div>
-    </div>
+    </nav>
   )
 }

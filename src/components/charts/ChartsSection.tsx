@@ -2,109 +2,43 @@
 import { motion } from 'framer-motion'
 import { chartConfigs } from '@/lib/charts/chart-config'
 import type { ChartConfig } from '@/lib/charts/chart-config'
-import { EraChart } from './EraChart'
+import { EraChart, ChartHeadline } from './EraChart'
+import { HousingChart } from './HousingChart'
+import { HeatingChart } from './HeatingChart'
+import { getChartInput } from './chart-inputs'
+import { BASELINE_DAY_LABEL } from '@/lib/baseline'
 import type { EconomicSnapshot } from '@/types'
+import type { TraceMetric } from '@/lib/resolution/types'
+
+export { getChartInput, NOT_SA, type ChartInput, type ChartProvenance } from './chart-inputs'
 
 interface ChartsSectionProps {
   snapshot: EconomicSnapshot
 }
 
-// Map chart config IDs to the right data from the snapshot
-function getChartData(
-  id: string,
-  snapshot: EconomicSnapshot
-): {
-  data: Array<{ date: string; [key: string]: unknown }>
-  nationalData: Array<{ date: string; [key: string]: unknown }>
-  configOverrides: Partial<ChartConfig>
-} {
-  switch (id) {
-    case 'unemployment': {
-      const unemploymentData = snapshot.unemployment.data
-      const seriesId = unemploymentData?.seriesId
-      const series = Array.isArray(unemploymentData?.series) ? unemploymentData.series : []
-      const nationalSeries = Array.isArray(unemploymentData?.nationalSeries) ? unemploymentData.nationalSeries : []
-      return {
-        data: series.map(p => ({
-          date: p.date,
-          rate: p.rate,
-        })),
-        nationalData: nationalSeries.map(p => ({
-          date: p.date,
-          rate: p.rate,
-        })),
-        configOverrides: seriesId
-          ? { sourceUrl: `https://data.bls.gov/timeseries/${seriesId}` }
-          : {},
-      }
-    }
-    case 'cpi-groceries':
-    case 'cpi-shelter':
-    case 'cpi-energy': {
-      const cpiData = snapshot.cpi.data
-      const metro = cpiData?.metro
-      const seriesIds = cpiData?.seriesIds
-      const isNational = metro === 'National'
-      // Each chart gets the same CPI data — the chart config's series[0].dataKey picks the right field
-      const seriesIdMap: Record<string, string | undefined> = {
-        'cpi-groceries': seriesIds?.groceries,
-        'cpi-shelter': seriesIds?.shelter,
-        'cpi-energy': seriesIds?.energy,
-      }
-      const cpiTier = cpiData?.tier ?? (
-        metro === 'National' ? 4 :
-        metro?.includes('Urban') ? 3 : 1
-      )
-      const cpiSeries = Array.isArray(cpiData?.series) ? cpiData.series : []
-      const cpiNationalSeries = Array.isArray(cpiData?.nationalSeries) ? cpiData.nationalSeries : []
-      return {
-        data: cpiSeries.map(p => ({
-          date: p.date,
-          groceries: p.groceries,
-          shelter: p.shelter,
-          energy: p.energy,
-        })),
-        nationalData: cpiNationalSeries.map(p => ({
-          date: p.date,
-          groceries: p.groceries,
-          shelter: p.shelter,
-          energy: p.energy,
-        })),
-        configOverrides: {
-          ...(metro ? {
-            sourceLabel: `BLS CPI — ${metro}`,
-            geoLevel: isNational ? 'National'
-              : cpiTier === 3 ? `Region: ${metro}`
-              : cpiTier === 2 ? `Division: ${metro}`
-              : `Metro: ${metro}`,
-          } : {}),
-          sourceUrl: seriesIdMap[id]
-            ? `https://data.bls.gov/timeseries/${seriesIdMap[id]}`
-            : 'https://data.bls.gov/cgi-bin/surveymost?cu',
-        },
-      }
-    }
-    case 'gas': {
-      const gasData = snapshot.gas.data
-      const gasSeries = Array.isArray(gasData?.series) ? gasData.series : []
-      const gasNationalSeries = Array.isArray(gasData?.nationalSeries) ? gasData.nationalSeries : []
-      return {
-        data: gasSeries.map(p => ({
-          date: p.date,
-          price: p.price,
-        })),
-        nationalData: gasNationalSeries.map(p => ({
-          date: p.date,
-          price: p.price,
-        })),
-        configOverrides: gasData?.geoLevel
-          ? { geoLevel: gasData.geoLevel }
-          : {},
-      }
-    }
-    default:
-      return { data: [], nationalData: [], configOverrides: {} }
-  }
+/** One plain (non-tabbed) chart from its config. */
+/** Ladder trace behind each plain graph. */
+const TRACE_FOR_CHART: Record<string, TraceMetric> = { gas: 'gas', 'cpi-groceries': 'groceries', electricity: 'electricity' }
+
+function PlainChart({ config, snapshot }: { config: ChartConfig; snapshot: EconomicSnapshot }) {
+  const input = getChartInput(config.id, snapshot)
+  const metric = TRACE_FOR_CHART[config.id]
+  return (
+    <EraChart
+      config={{ ...config, ...input.configOverrides }}
+      data={input.data}
+      nationalData={input.nationalData}
+      provenance={input.provenance}
+      stale={input.stale}
+      weeklyGasBaseline={input.weeklyGasBaseline}
+      nationalLabel={input.nationalLabel}
+      note={input.note}
+      info={input.info}
+      trace={metric ? snapshot.trace?.[metric] : undefined}
+      windowText={input.windowText}
+      headline={input.headline ? <ChartHeadline pct={input.headline.pct} detail={input.headline.detail} window={input.headline.window} dim={input.headline.dim} /> : undefined}
+    />
+  )
 }
 
 export function ChartsSection({ snapshot }: ChartsSectionProps) {
@@ -115,23 +49,28 @@ export function ChartsSection({ snapshot }: ChartsSectionProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="mt-12"
+      className="mt-14"
       data-testid="charts-section"
     >
-      <h2 className="text-2xl font-bebas text-white mb-6">Trends Over Time</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {sortedCharts.map(config => {
-          const { data, nationalData, configOverrides } = getChartData(config.id, snapshot)
-          const mergedConfig: ChartConfig = { ...config, ...configOverrides }
-          return (
-            <EraChart
-              key={config.id}
-              config={mergedConfig}
-              data={data}
-              nationalData={nationalData}
-            />
-          )
-        })}
+      <div className="border-t border-line pt-5 mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
+        <div>
+          <p className="kicker text-ink-3">The record</p>
+          <h2 className="mt-1 font-display font-semibold text-3xl sm:text-[34px] leading-none tracking-tight text-ink">Trends over time</h2>
+        </div>
+        <p className="text-[12px] text-ink-3 max-w-sm">
+          Gray field: since the {BASELINE_DAY_LABEL} baseline. Labels at right: latest value.
+        </p>
+      </div>
+      {/* 2 × 2 on tablet/desktop (Gas | Groceries, Housing | Electricity, by config order), then Home heating
+          where it has data; one column under 768px */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" data-testid="charts-grid">
+        {sortedCharts.map(config =>
+          config.id === 'cpi-shelter'
+            ? <HousingChart key={`housing-${snapshot.location.countyFips}`} snapshot={snapshot} shelterConfig={config} />
+            : <PlainChart key={config.id} config={config} snapshot={snapshot} />
+        )}
+        {/* 5th graph, only where a heating-fuel source publishes for the place */}
+        <HeatingChart snapshot={snapshot} />
       </div>
     </motion.section>
   )

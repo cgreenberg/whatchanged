@@ -1,0 +1,151 @@
+// Client-safe baseline rules shared by every "since Jan 20, 2025" comparison on the page.
+// The server applies the same rules (src/lib/api/eia.ts, src/lib/api/bls-common.ts);
+// tests/unit/baseline.test.ts asserts the constants stay in sync.
+
+/** Inauguration day — the site-wide baseline date. */
+export const BASELINE_DATE = '2025-01-20'
+/** Monthly sources (BLS, Zillow) use the January 2025 value. */
+export const BASELINE_MONTH = '2025-01'
+/** Human labels for the baseline (the only hard-coded dates allowed in UI copy). */
+export const BASELINE_MONTH_LABEL = 'Jan 2025'
+export const BASELINE_MONTH_LONG = 'January 2025'
+export const BASELINE_DAY_LABEL = 'Jan 20, 2025'
+
+/**
+ * Electricity (EIA monthly, compared as 12-month average prices): the baseline is the 12-month window CENTERED on
+ * Jan 2025. A 12-month window can't be centered exactly on Jan 20: Jul 2024–Jun 2025 has its midpoint at ~Jan 1,
+ * 2025 (19 days early), Aug 2024–Jul 2025 at ~Jan 30, 2025 (10 days late), so Aug 2024–Jul 2025 it is.
+ */
+export const ELECTRICITY_BASELINE_FROM = '2024-08'
+export const ELECTRICITY_BASELINE_TO = '2025-07'
+/** "the 12 months centered on Jan 2025" (ⓘ, graph headline) and the card / share / OG short form. */
+export const ELECTRICITY_BASELINE_LABEL = `the 12 months centered on ${BASELINE_MONTH_LABEL}`
+export const ELECTRICITY_BASELINE_SHORT = "yr centered on Jan '25"
+/** Months from a 12-month window's center month (where the graph plots its average) to its last month. */
+export const ELECTRICITY_CENTER_LAG = 6
+/** "YYYY-MM" shifted by `k` months. */
+export function addMonths(ym: string, k: number): string {
+  const [y, m] = ym.split('-').map(Number)
+  const t = y * 12 + (m - 1) + k
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`
+}
+/** Center month of the 12-month window ending `windowEnd` (where the graph plots that average): end − 6 months. */
+export const electricityCenterOf = (windowEnd: string): string => addMonths(windowEnd, -ELECTRICITY_CENTER_LAG)
+
+/** Weekly gas: last reading on or before Jan 20 2025, no earlier than this. */
+export const GAS_BASELINE_EARLIEST = '2025-01-06'
+/** Monthly BLS: Jan 2025, else latest month back to this one. */
+export const CPI_BASELINE_EARLIEST = '2024-11'
+
+/**
+ * Index of the gas baseline point, or -1:
+ *  - weekly EIA series (YYYY-MM-DD): last reading in [Jan 6, Jan 20] 2025
+ *  - monthly BLS average-price series (YYYY-MM): the January 2025 month itself
+ */
+export function gasBaselineIndex(series: ReadonlyArray<{ date: string }>): number {
+  let idx = -1
+  if (series.length && series[0].date.length === 7) {
+    return series.findIndex((p) => p.date === BASELINE_MONTH)
+  }
+  for (let i = 0; i < series.length; i++) {
+    const d = series[i].date
+    if (d > BASELINE_DATE) break
+    if (d >= GAS_BASELINE_EARLIEST) idx = i
+  }
+  return idx
+}
+
+/** Index of the monthly baseline point (Jan 2025, else latest month back to Nov 2024) with a finite value, or -1. */
+export function monthlyBaselineIndex<T extends { date: string }>(
+  series: ReadonlyArray<T>,
+  value: (p: T) => number | null | undefined
+): number {
+  let idx = -1
+  for (let i = 0; i < series.length; i++) {
+    const d = series[i].date
+    if (d > BASELINE_MONTH) break
+    const v = value(series[i])
+    if (d >= CPI_BASELINE_EARLIEST && typeof v === 'number' && Number.isFinite(v)) idx = i
+  }
+  return idx
+}
+
+/** Latest finite value index, or -1. */
+export function latestIndex<T>(series: ReadonlyArray<T>, value: (p: T) => number | null | undefined): number {
+  for (let i = series.length - 1; i >= 0; i--) {
+    const v = value(series[i])
+    if (typeof v === 'number' && Number.isFinite(v)) return i
+  }
+  return -1
+}
+
+/** % change (current - baseline) / baseline × 100, or null when not computable. */
+export function pctChange(current: number | null | undefined, baseline: number | null | undefined): number | null {
+  if (typeof current !== 'number' || typeof baseline !== 'number') return null
+  if (!Number.isFinite(current) || !Number.isFinite(baseline) || baseline === 0) return null
+  return ((current - baseline) / baseline) * 100
+}
+
+/**
+ * National gas change over the SAME period as the local figure (same source, so same frequency):
+ * monthly BLS → the national value at the local baseline month and at the local latest month
+ * (null when national lacks either); weekly EIA → the shared weekly baseline rule.
+ */
+export function gasNationalMatching(
+  g: { frequency?: 'weekly' | 'monthly' | 'semiannual'; baselineDate?: string; latestDate?: string; nationalSeries?: ReadonlyArray<{ date: string; price: number }> } | null | undefined
+): { current: number; baseline: number; change: number; latestDate: string; baselineDate: string } | null {
+  if (!g) return null
+  // Static sources (Alaska DCRA, Puerto Rico DACO) carry no national series: no comparison.
+  if (g.frequency === 'semiannual' || !g.nationalSeries?.length) return null
+  if (g.frequency !== 'monthly') return gasChangeSinceBaseline(g.nationalSeries)
+  const nat = g.nationalSeries ?? []
+  const b = nat.find((p) => p.date === (g.baselineDate ?? BASELINE_MONTH))
+  const l = g.latestDate ? nat.find((p) => p.date === g.latestDate) : undefined
+  if (!b || !l) return null
+  return { current: l.price, baseline: b.price, change: displayedChange(l.price, b.price), latestDate: l.date, baselineDate: b.date }
+}
+
+/** National gas change using the same baseline rule as the local series. */
+export function gasChangeSinceBaseline(
+  series: ReadonlyArray<{ date: string; price: number }> | undefined
+): { current: number; baseline: number; change: number; latestDate: string; baselineDate: string } | null {
+  if (!series?.length) return null
+  const b = gasBaselineIndex(series)
+  if (b < 0) return null
+  const latest = series[series.length - 1]
+  const base = series[b]
+  return {
+    current: latest.price,
+    baseline: base.price,
+    change: displayedChange(latest.price, base.price),
+    latestDate: latest.date,
+    baselineDate: base.date,
+  }
+}
+
+/** Monthly % change since the baseline month using the shared baseline rule. */
+export function monthlyChangeSinceBaseline<T extends { date: string }>(
+  series: ReadonlyArray<T> | undefined,
+  value: (p: T) => number | null | undefined
+): { pct: number; baselinePeriod: string; latestPeriod: string } | null {
+  if (!series?.length) return null
+  const b = monthlyBaselineIndex(series, value)
+  const l = latestIndex(series, value)
+  if (b < 0 || l < 0 || l < b) return null
+  const pct = pctChange(value(series[l]), value(series[b]))
+  if (pct == null) return null
+  return { pct, baselinePeriod: series[b].date, latestPeriod: series[l].date }
+}
+
+/**
+ * Gas $/gal change as displayed: the difference of the two prices AS SHOWN (each rounded to the cent), so
+ * "$4.49 now vs $3.12 then" always reads "+$1.37", never a 3-decimal difference that rounds to "+$1.36".
+ */
+export function displayedChange(current: number, baseline: number): number {
+  // Round each side exactly as the page prints it (toFixed(2)): Math.round(x * 100) disagrees with toFixed on
+  // binary halves (2.905 prints "$2.90" but Math.round gives 2.91), which made "$3.00 vs $2.90" read "+$0.09".
+  const shown = (x: number) => Number(x.toFixed(2))
+  const v = shown(current) - shown(baseline)
+  const r = Number(v.toFixed(2))
+  return Object.is(r, -0) ? 0 : r
+}

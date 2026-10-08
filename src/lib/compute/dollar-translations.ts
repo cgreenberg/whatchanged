@@ -1,56 +1,116 @@
 /**
  * Dollar impact calculations for hero cards.
  *
- * These formulas were previously computed inline in HomeContent.tsx.
- * They are now centralized here so both the API (snapshot.ts) and
- * the frontend (HomeContent.tsx fallback) use the same source of truth.
+ * Centralized so both the API (snapshot.ts) and the frontend use the same
+ * source of truth. Signs are preserved: a price DROP yields a negative dollar
+ * amount (money saved), never a positive one.
  */
 
-const NATIONAL_MEDIAN_INCOME = 74580
-const NATIONAL_MEDIAN_RENT = 1271
-const ANNUAL_GROCERY_BASE = 6000
+import { fmtSignedDollars, roundTo } from '@/lib/format'
+
+/** US median gross rent (Census ACS). Used only for display fallbacks, never for local dollar translations. */
+export const NATIONAL_MEDIAN_RENT = 1271
+/** Typical household annual food-at-home spend (~$6,000/yr). */
+export const ANNUAL_GROCERY_BASE = 6000
+
+/**
+ * A median gross rent as Census publishes it: a top-coded median ("3,500+", stored as 3501) is "$3,500+", a
+ * bottom-coded one ("100-", stored as 99) "under $100"; anything else "$1,234".
+ */
+export function fmtRentFigure(rent: number, coded?: 'top' | 'bottom' | null): string {
+  if (coded === 'top') return '$3,500+'
+  if (coded === 'bottom') return 'under $100'
+  return `$${Math.round(rent).toLocaleString('en-US')}`
+}
+
+/**
+ * The shelter "$/yr in rent" amount: "≈ +$1,230/yr". When the rent base is the zip's own top-coded median ($3,500+)
+ * the true amount is this big or bigger, said as a magnitude: "≈ +$1,230/yr or more" for an increase, "≈ −$420/yr or
+ * more saved" for a decrease; bottom-coded (under $100) → "or less" / "or less saved". A $0 amount stays "≈ $0/yr".
+ */
+export function fmtRentDollars(dollars: number, coded?: 'top' | 'bottom' | null): string {
+  const amount = `≈ ${fmtSignedDollars(dollars, 0)}/yr`
+  const q = rentCodedQualifier(dollars, coded)
+  return q ? `${amount} ${q}` : amount
+}
+
+/**
+ * "or more" / "or more saved" (top-coded rent) / "or less" / "or less saved" (bottom-coded); '' otherwise or for an
+ * amount that DISPLAYS as $0 (same whole-dollar rounding as fmtSignedDollars: −0.5 shows "−$1" and gets "saved").
+ */
+export function rentCodedQualifier(dollars: number, coded?: 'top' | 'bottom' | null): string {
+  if (!coded || !Number.isFinite(dollars)) return ''
+  const shown = roundTo(dollars, 0)
+  if (shown === 0) return ''
+  return `${coded === 'top' ? 'or more' : 'or less'}${shown < 0 ? ' saved' : ''}`
+}
 
 export interface DollarImpact {
-  groceries: number
-  shelter: number
-  gas: number
-  tariff: number
+  /** $/yr: ANNUAL_GROCERY_BASE × groceries % change (signed). null if CPI unavailable. */
+  groceries: number | null
+  /**
+   * $/yr in rent: local median rent × 12 × the BLS CPI "rent of primary residence" (SEHA) % change for the
+   * same CPI area (signed). Shown on the Shelter (CPI) card, whose headline % is CPI shelter. null when the
+   * rent index or local rent is unavailable — never the CPI shelter % (mostly owners' equivalent rent).
+   */
+  shelter: number | null
+  /** $/gallon change since the Jan 20 2025 baseline (signed). Per gallon, NOT annual. */
+  gas: number | null
+  /**
+   * $/mo on electricity (signed, whole dollars): change in the state's 12-month average residential price
+   * (latest 12 months − the 12 months centered on Jan 2025, ¢/kWh) × the state's average residential use
+   * (kWh per customer per month, latest 12 months) ÷ 100. null when either is unavailable.
+   */
+  electricity: number | null
 }
 
-export function computeGroceryImpact(
-  groceriesChangePct: number,
-  localIncome: number = NATIONAL_MEDIAN_INCOME
-): number {
-  if (!Number.isFinite(groceriesChangePct)) return 0
-  const grocerySpend = ANNUAL_GROCERY_BASE * (localIncome / NATIONAL_MEDIAN_INCOME)
-  return Math.round(grocerySpend * Math.abs(groceriesChangePct) / 100)
+export function computeGroceryImpact(groceriesChangePct: number | null | undefined): number | null {
+  if (typeof groceriesChangePct !== 'number' || !Number.isFinite(groceriesChangePct)) return null
+  const v = Math.round((ANNUAL_GROCERY_BASE * groceriesChangePct) / 100)
+  return Object.is(v, -0) ? 0 : v
 }
 
+/** $/yr in rent: local median rent × 12 × rent-of-primary-residence % change (signed). */
 export function computeShelterImpact(
-  shelterChangePct: number,
-  medianRent: number = NATIONAL_MEDIAN_RENT
-): number {
-  if (!Number.isFinite(shelterChangePct)) return 0
-  const annualRent = medianRent * 12
-  return Math.round(annualRent * Math.abs(shelterChangePct) / 100)
+  rentIndexChangePct: number | null | undefined,
+  medianRent: number | null | undefined
+): number | null {
+  if (typeof rentIndexChangePct !== 'number' || !Number.isFinite(rentIndexChangePct)) return null
+  if (typeof medianRent !== 'number' || !Number.isFinite(medianRent) || medianRent <= 0) return null
+  const v = Math.round((medianRent * 12 * rentIndexChangePct) / 100)
+  return Object.is(v, -0) ? 0 : v
+}
+
+const finiteOrNull = (v: number | null | undefined): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : null
+
+/** $/mo: price change (¢/kWh) × monthly use (kWh) ÷ 100, rounded to whole dollars (signed). */
+export function computeElectricityImpact(
+  priceChangeCents: number | null | undefined,
+  usageKwh: number | null | undefined
+): number | null {
+  if (typeof priceChangeCents !== 'number' || !Number.isFinite(priceChangeCents)) return null
+  if (typeof usageKwh !== 'number' || !Number.isFinite(usageKwh) || usageKwh <= 0) return null
+  const v = Math.round((priceChangeCents * usageKwh) / 100)
+  return Object.is(v, -0) ? 0 : v
 }
 
 export function computeDollarImpact(opts: {
   groceriesChangePct?: number | null
-  shelterChangePct?: number | null
+  /** BLS CPI rent of primary residence (SEHA) % change for the zip's CPI area. */
+  rentIndexChangePct?: number | null
   gasChange?: number | null
-  tariffEstimatedCost?: number | null
-  localIncome?: number
-  medianRent?: number
+  /** LOCAL median rent only — pass null/undefined when the zip has no Census rent. */
+  medianRent?: number | null
+  /** State residential 12-month average price, latest 12 months − 12 months centered on Jan 2025 (Aug 2024–Jul 2025), ¢/kWh. */
+  electricityPriceChangeCents?: number | null
+  /** State average residential use, kWh per customer per month (12-month average). */
+  electricityUsageKwh?: number | null
 }): DollarImpact {
   return {
-    groceries: Number.isFinite(opts.groceriesChangePct)
-      ? computeGroceryImpact(opts.groceriesChangePct!, opts.localIncome)
-      : 0,
-    shelter: Number.isFinite(opts.shelterChangePct)
-      ? computeShelterImpact(opts.shelterChangePct!, opts.medianRent)
-      : 0,
-    gas: Number.isFinite(opts.gasChange) ? opts.gasChange! : 0,
-    tariff: Number.isFinite(opts.tariffEstimatedCost) ? opts.tariffEstimatedCost! : 0,
+    groceries: computeGroceryImpact(opts.groceriesChangePct),
+    shelter: computeShelterImpact(opts.rentIndexChangePct, opts.medianRent),
+    gas: finiteOrNull(opts.gasChange),
+    electricity: computeElectricityImpact(opts.electricityPriceChangeCents, opts.electricityUsageKwh),
   }
 }

@@ -1,0 +1,54 @@
+{
+ "baseline": "2025-01",
+ "sources": {
+  "zhvi": {
+   "latest": "2026-08",
+   "short": "Zillow ZHVI",
+   "adjustment": "seasonally adjusted by Zillow",
+   "label": "Zillow Home Value Index (ZHVI)",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "zori": {
+   "latest": "2026-08",
+   "short": "Zillow ZORI",
+   "adjustment": "seasonally adjusted by whatchanged",
+   "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)",
+   "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
+   "label": "Zillow Observed Rent Index (ZORI), asking rents on new listings",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "zoriMetro": {
+   "latest": "2026-08",
+   "short": "Zillow ZORI (metro)",
+   "adjustment": "seasonally adjusted by whatchanged",
+   "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)",
+   "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
+   "label": "Zillow Observed Rent Index (ZORI), metro",
+   "geography": "OMB CBSA delineation, March 2020 (list 1)",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "zoriCity": {
+   "latest": "2026-08",
+   "short": "Zillow ZORI (city)",
+   "adjustment": "seasonally adjusted by whatchanged",
+   "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)",
+   "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
+   "label": "Zillow Observed Rent Index (ZORI), city",
+   "geography": "the county's most populous place (Zillow SizeRank) with a usable Zillow city series (place to county by the Census 2020 place and county-subdivision files)",
+   "url": "https://www.zillow.com/research/data/"
+  },
+  "hudFmr": {
+   "latest": "FY2027",
+   "base": "FY2025",
+   "short": "HUD FMR",
+   "label": "HUD fair market rent (yearly estimate, FY2025\u2192FY2027)",
+   "detail": "2-bedroom Fair Market Rent, % change FY2025 (effective Oct 1 2024) to FY2027 (effective Oct 1 2026); HUD's yearly estimate of gross rent (40th percentile, recent movers), not a market index; not seasonally adjusted; counties with no Zillow county, metro or city rent only (map only)",
+   "adjustment": "not seasonally adjusted (yearly)",
+   "outOfRange": [
+    "08057"
+   ],
+   "license": "Public domain (U.S. government)",
+   "url": "https://www.huduser.gov/portal/datasets/fmr.html"
+  }
+ }
+}

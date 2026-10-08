@@ -1,4 +1,4 @@
-import cbsaCrosswalk from '@/lib/data/cbsa-cpi-crosswalk.json'
+import { selectCpiArea } from '@/lib/resolution/ladders'
 
 // BLS CPI area codes — verified against https://data.bls.gov/timeseries/CUUR{code}SAF11
 // on 2026-03-22. Each code was checked by loading the series page and reading the Area field.
@@ -45,6 +45,38 @@ export const BLS_CPI_AREAS: Record<string, { code: string; name: string }> = {
   '0200': { code: '0200', name: 'Midwest Urban' },
   '0300': { code: '0300', name: 'South Urban' },
   '0400': { code: '0400', name: 'West Urban' },
+}
+
+/**
+ * Proper short names for CPI metros in short labels ("Washington DC metro", "Dallas-Fort Worth metro").
+ * Never derive these by cutting the CBSA title at the first hyphen: "Washington-Arlington-Alexandria"
+ * would read as Washington State.
+ */
+export const CPI_METRO_SHORT_NAMES: Record<string, string> = {
+  S11A: 'Boston', S12A: 'New York', S12B: 'Philadelphia',
+  S23A: 'Chicago', S23B: 'Detroit', S24A: 'Minneapolis-St. Paul', S24B: 'St. Louis',
+  S35A: 'Washington DC', S35B: 'Miami', S35C: 'Atlanta', S35D: 'Tampa', S35E: 'Baltimore',
+  S37A: 'Dallas-Fort Worth', S37B: 'Houston',
+  S48A: 'Phoenix', S48B: 'Denver', S49A: 'Los Angeles', S49B: 'San Francisco',
+  S49C: 'Riverside-San Bernardino', S49D: 'Seattle', S49E: 'San Diego',
+  S49F: 'Honolulu', S49G: 'Anchorage',
+}
+
+/**
+ * Honolulu / Anchorage: BLS titles these CPI areas "Urban Hawaii" / "Urban Alaska" (the official name,
+ * kept in provenance), but they are the Honolulu and Anchorage metros only — gas names them the same way.
+ * Returns the official BLS area name for those two areas, else undefined.
+ */
+export function hiAkCpiOfficialName(code: string | undefined, name: string): string | undefined {
+  const c = code ?? Object.values(BLS_CPI_AREAS).find((a) => a.name === name)?.code
+  return c === 'S49F' || c === 'S49G' ? BLS_CPI_AREAS[c].name : undefined
+}
+
+/** Short name for a CPI metro, by area code or (older payloads) by its full BLS name; else the full name. */
+export function cpiMetroShortName(code: string | undefined, name: string): string {
+  if (code && CPI_METRO_SHORT_NAMES[code]) return CPI_METRO_SHORT_NAMES[code]
+  const byName = Object.values(BLS_CPI_AREAS).find((a) => a.name === name)
+  return (byName && CPI_METRO_SHORT_NAMES[byName.code]) || name
 }
 
 export const STATE_TO_REGION: Record<string, string> = {
@@ -120,28 +152,13 @@ export const STATE_TO_DIVISION: Record<string, { code: string; name: string }> =
   WA: { code: '0490', name: 'Pacific' },
 }
 
+/**
+ * CPI area for a county (metro → Census division → region → national). The tiers live in the CPI
+ * ladders (src/lib/resolution/ladders.ts): this is their first applicable rung.
+ */
 export function getMetroCpiAreaForCounty(
   countyFips: string,
   stateAbbr: string
 ): { areaCode: string; areaName: string; tier: 1 | 2 | 3 | 4 } {
-  // Tier 1: CBSA-based lookup (official OMB → BLS mapping)
-  const cbsaArea = (cbsaCrosswalk as Record<string, string>)[countyFips]
-  if (cbsaArea && BLS_CPI_AREAS[cbsaArea]) {
-    return { areaCode: cbsaArea, areaName: BLS_CPI_AREAS[cbsaArea].name, tier: 1 }
-  }
-
-  // Tier 2: Census Division lookup
-  const division = STATE_TO_DIVISION[stateAbbr.toUpperCase()]
-  if (division) {
-    return { areaCode: division.code, areaName: division.name, tier: 2 }
-  }
-
-  // Tier 3: Regional CPI fallback
-  const regionCode = STATE_TO_REGION[stateAbbr.toUpperCase()]
-  if (regionCode && BLS_CPI_AREAS[regionCode]) {
-    return { areaCode: regionCode, areaName: BLS_CPI_AREAS[regionCode].name, tier: 3 }
-  }
-
-  // Tier 4: National fallback (territories)
-  return { areaCode: '0000', areaName: 'National', tier: 4 }
+  return selectCpiArea(countyFips, stateAbbr)
 }

@@ -11,7 +11,6 @@ export async function GET(request: Request) {
     return new Response('Invalid zip code', { status: 400 })
   }
 
-  const city = searchParams.get('city') ?? undefined
-  const state = searchParams.get('state') ?? undefined
-  return generateShareCard(zip, city, state)
+  // city/state in shared links are ignored: every number comes from the zip alone
+  return generateShareCard(zip)
 }

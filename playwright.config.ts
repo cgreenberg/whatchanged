@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// PW_PORT lets parallel worktrees run e2e without reusing each other's dev server
+const PORT = Number(process.env.PW_PORT ?? 3000)
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -22,8 +25,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: `npm run dev -- -p ${PORT}`,
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
   },
 })

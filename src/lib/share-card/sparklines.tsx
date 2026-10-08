@@ -1,327 +1,166 @@
-import React from 'react';
+import React from 'react'
+import { CHART_PLOT_W, CHART_X_AXIS_H, CHART_Y_AXIS_W, FS } from '@/lib/share-card/layout'
 
-// LEGACY: kept for any future callers — not currently used by v3 card
-export function buildLineSparkline(
-  values: number[],
-  accentColor: string,
-  gradientId: string,
-  labels?: { min: string; max: string }
-): React.ReactElement | null {
-  if (values.length < 2) return null;
+// ── Share-card quadrant chart ─────────────────────────────────────
+// One chart template for all four quadrants: drawn in real pixels (no non-uniform SVG scaling, so dots stay round
+// and lines keep their width), a dashed baseline reference, a dot on the baseline point and on the latest point,
+// two y ticks (the plotted range's top and bottom) and two x ticks (first and last month).
 
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
+const AXIS_TEXT = '#8C929B'
+const AXIS_TEXT_STRONG = '#B3B8C0'
+const GRID = 'rgba(255,255,255,0.10)'
+const SURFACE = '#111316'
 
-  const normalize = (v: number): number =>
-    31 - ((v - minVal) / range) * (31 - 5);
+/** Vertical inset (px) inside the plot so the dots and the line never touch its edges. */
+const INSET_Y = 10
+/** Horizontal inset (px): room for the end dots. */
+const INSET_L = 8
+const INSET_R = 10
+/** Minimum centre-to-centre gap (px) between the two y ticks; a flatter line keeps only the top tick. */
+export const MIN_TICK_GAP = 26
 
-  const points = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * 100;
-    const y = normalize(v);
-    return { x, y };
-  });
-
-  const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
-  const polygonPoints = [
-    ...points.map(p => `${p.x},${p.y}`),
-    '100,36',
-    '0,36',
-  ].join(' ');
-  const last = points[points.length - 1];
-
-  const svg = (
-    <svg viewBox="0 0 100 36" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={accentColor} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <line x1="0" y1="36" x2="100" y2="36" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
-      <line x1="0" y1="0" x2="0" y2="36" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
-      <polygon points={polygonPoints} fill={`url(#${gradientId})`} />
-      <polyline points={polylinePoints} fill="none" stroke={accentColor} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={last.x} cy={last.y} r="2" fill={accentColor} />
-    </svg>
-  );
-
-  if (!labels) {
-    return <div style={{ display: 'flex', width: '100%', height: '100px' }}>{svg}</div>;
-  }
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: 'DM Mono',
-    fontSize: 10,
-    color: 'rgba(232,228,220,0.3)',
-    position: 'absolute',
-    left: '3px',
-  };
-
-  return (
-    <div style={{ display: 'flex', position: 'relative', width: '100%', height: '100px' }}>
-      {svg}
-      <span style={{ ...labelStyle, top: '0px' }}>{labels.max}</span>
-      <span style={{ ...labelStyle, bottom: '0px' }}>{labels.min}</span>
-    </div>
-  );
+export interface ShareChartOpts {
+  /** Total height in px (plot + x-axis row). */
+  height: number
+  /** % charts always include 0 (the baseline) in the range. */
+  includeZero?: boolean
+  /** Value of the dashed reference line (the baseline: 0 for % charts, the first price for gas). */
+  baseline?: number
+  /** x position of each value as a 0..1 fraction of the time span (default: evenly spaced). */
+  xFractions?: number[]
+  /** Indices i where values[i] → values[i+1] spans missing months: drawn dashed, not as data. */
+  gapAfter?: number[]
+  /** Text for each gap in `gapAfter` (e.g. "no data Feb–Jul"). */
+  gapLabels?: string[]
+  /** Tick text for a value ("+7.0%", "$4.78"). */
+  fmtTick: (v: number) => string
+  xLeft: string
+  xRight: string
 }
 
-// ── V3 Sparklines ────────────────────────────────────────────────
+/** Pixel geometry of a quadrant chart (exported for tests). */
+export function shareChartGeometry(values: number[], opts: Pick<ShareChartOpts, 'height' | 'includeZero' | 'xFractions'>) {
+  const lo = Math.min(...values, ...(opts.includeZero ? [0] : []))
+  const hi = Math.max(...values, ...(opts.includeZero ? [0] : []))
+  const plotH = opts.height - CHART_X_AXIS_H
+  const span = plotH - 2 * INSET_Y
+  const range = hi - lo
+  // A flat line sits mid-plot
+  const toY = (v: number) => (range > 0 ? INSET_Y + ((hi - v) / range) * span : plotH / 2)
+  const toX = (f: number) => INSET_L + f * (CHART_PLOT_W - INSET_L - INSET_R)
+  const xs = values.map((_, i) => toX(opts.xFractions?.[i] ?? (values.length > 1 ? i / (values.length - 1) : 0)))
+  const ys = values.map(toY)
+  const ticks = range > 0 && toY(lo) - toY(hi) >= MIN_TICK_GAP
+    ? [{ value: hi, y: toY(hi) }, { value: lo, y: toY(lo) }]
+    : [{ value: hi, y: toY(hi) }]
+  return { lo, hi, plotH, toY, xs, ys, ticks }
+}
 
-const SECONDARY = 'rgba(168,159,147,1)'  // --text-secondary
-const TERTIARY = 'rgba(107,101,96,1)'    // --text-tertiary
+/** Line chart for a share-card quadrant (null with fewer than two points). */
+export function buildShareChart(values: number[], color: string, id: string, opts: ShareChartOpts): React.ReactElement | null {
+  if (values.length < 2 || values.some((v) => !Number.isFinite(v))) return null
+  const geo = shareChartGeometry(values, opts)
+  const { plotH, xs, ys, ticks, toY } = geo
+  const pts = xs.map((x, i) => ({ x, y: ys[i] }))
 
-/** Line sparkline with HTML div axis labels. Height ~220px. */
-export function buildLineSparklineV3(
-  values: number[],
-  accentColor: string,
-  gradientId: string,
-  opts: {
-    yMin: string   // e.g. "$1.80"
-    yMid: string   // e.g. "$2.60"
-    yMax: string   // e.g. "$3.40"
-    xLeft: string  // e.g. "Jan '25"
-    xMid: string   // e.g. "Jul '25"
-    xRight: string // e.g. "Mar '26"
-    bounds?: { min: number; max: number }
+  // Solid runs between gaps; each gap is a faint dashed connector with its label
+  const gaps = new Set(opts.gapAfter ?? [])
+  const runs: Array<typeof pts> = [[pts[0]]]
+  for (let i = 1; i < pts.length; i++) {
+    if (gaps.has(i - 1)) runs.push([])
+    runs[runs.length - 1].push(pts[i])
   }
-): React.ReactElement | null {
-  if (values.length < 2) return null;
+  const gapSegments = (opts.gapAfter ?? []).map((i, k) => ({ i, label: opts.gapLabels?.[k] }))
+    .filter(({ i }) => i >= 0 && i < pts.length - 1)
+    .map(({ i, label }) => ({ a: pts[i], b: pts[i + 1], label }))
+  const floor = plotH - INSET_Y / 2
+  const area = [...pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`), `${pts[pts.length - 1].x.toFixed(1)},${floor}`, `${pts[0].x.toFixed(1)},${floor}`].join(' ')
+  const first = pts[0]
+  const last = pts[pts.length - 1]
+  const baseY = toY(opts.baseline ?? values[0])
 
-  const dataMin = Math.min(...values);
-  const dataMax = Math.max(...values);
-  const minVal = opts.bounds ? opts.bounds.min : dataMin;
-  const maxVal = opts.bounds ? opts.bounds.max : dataMax;
-  const range = maxVal - minVal || 1;
-
-  // Map value → SVG y (inverted: higher value = lower y)
-  // Y range: 5 (top, max) to 46 (bottom, min) within viewBox 0 0 100 50
-  // 4px bottom padding so dots at min value aren't clipped
-  const toY = (v: number): number => 46 - ((v - minVal) / range) * 41;
-
-  const pts = values.map((v, i) => ({
-    x: 4 + (i / (values.length - 1)) * 90,
-    y: toY(v),
-  }));
-
-  const linePts = pts.map(p => `${p.x},${p.y}`).join(' ');
-  const areaPts = [
-    ...pts.map(p => `${p.x},${p.y}`),
-    '94,46',
-    '4,46',
-  ].join(' ');
-  const last = pts[pts.length - 1];
-
-  // Gridline y-positions for min/mid/max
-  const yMax = toY(maxVal);
-  const yMid = toY((minVal + maxVal) / 2);
-
-  const labelSz = { fontFamily: 'DM Mono', fontSize: 22, color: TERTIARY }
+  const tick = (text: string, y: number) => (
+    <span
+      key={`t${y}`}
+      style={{
+        position: 'absolute', left: 0, top: y - 12, height: 24, display: 'flex', alignItems: 'center',
+        fontFamily: 'DM Mono', fontSize: FS.axis, color: AXIS_TEXT,
+      }}
+    >
+      {text}
+    </span>
+  )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: 220 }}>
-      {/* Y-axis labels — 72px wide */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: 72, paddingRight: 6, height: '100%' }}>
-        <span style={{ ...labelSz, display: 'flex' }}>{opts.yMax}</span>
-        <span style={{ ...labelSz, display: 'flex' }}>{opts.yMid}</span>
-        <span style={{ ...labelSz, display: 'flex' }}>{opts.yMin}</span>
+    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: opts.height }}>
+      <div style={{ display: 'flex', position: 'relative', width: CHART_Y_AXIS_W, height: plotH, flexShrink: 0 }}>
+        {ticks.map((t) => tick(opts.fmtTick(t.value), t.y))}
       </div>
-
-      {/* Chart column */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        {/* SVG chart — fills available height minus x-axis row */}
-        <div style={{ display: 'flex', flex: 1, width: '100%', paddingRight: 8 }}>
-          <svg viewBox="0 0 100 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: CHART_PLOT_W }}>
+        <div style={{ display: 'flex', position: 'relative', width: CHART_PLOT_W, height: plotH }}>
+          <svg width={CHART_PLOT_W} height={plotH} viewBox={`0 0 ${CHART_PLOT_W} ${plotH}`} style={{ display: 'flex' }}>
             <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={accentColor} stopOpacity="0.30" />
-                <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
+              <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity="0.26" />
+                <stop offset="100%" stopColor={color} stopOpacity="0" />
               </linearGradient>
             </defs>
-            {/* Dashed gridlines */}
-            <line x1="0" y1={yMax} x2="100" y2={yMax} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            <line x1="0" y1={yMid} x2="100" y2={yMid} stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            {/* Zero reference line — only when range spans zero */}
-            {minVal < 0 && maxVal > 0 && (
-              <line x1="0" y1={toY(0)} x2="94" y2={toY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" strokeDasharray="2,2" />
-            )}
-            {/* Area fill */}
-            <polygon points={areaPts} fill={`url(#${gradientId})`} />
-            {/* Line */}
-            <polyline
-              points={linePts}
-              fill="none"
-              stroke={accentColor}
-              strokeWidth="2.0"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Start reference line */}
-            <line x1={pts[0].x} y1="5" x2={pts[0].x} y2="46" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6" strokeDasharray="2,2" />
-            {/* Terminal dot */}
-            <circle cx={pts[0].x} cy={pts[0].y} r="3.0" fill={accentColor} />
-            <circle cx={last.x} cy={last.y} r="3.0" fill={accentColor} />
-          </svg>
-        </div>
-
-        {/* X-axis labels */}
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', height: 28, paddingTop: 4 }}>
-          <span style={{ ...labelSz, display: 'flex', fontWeight: 700, color: SECONDARY }}>{opts.xLeft}</span>
-          <span style={{ ...labelSz, display: 'flex' }}>{opts.xMid}</span>
-          <span style={{ ...labelSz, display: 'flex' }}>{opts.xRight}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** Horizontal progress bar showing tariff cost as a fraction of median income.
- *  Renders at 220px height to match line sparklines.
- */
-export function buildTariffProgressBar(
-  tariffCost: number,
-  medianIncome: number,
-  accentColor: string,
-): React.ReactElement | null {
-  if (tariffCost <= 0 || medianIncome <= 0) return null
-
-  const fraction = tariffCost / medianIncome
-  const pct = (fraction * 100).toFixed(1)
-
-  const incomeLabel = medianIncome >= 1000
-    ? `$${(medianIncome / 1000).toFixed(0)}k`
-    : `$${Math.round(medianIncome)}`
-
-  const TERTIARY = 'rgba(107,101,96,1)'
-
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      width: '100%',
-      height: 220,
-      justifyContent: 'center',
-      gap: 12,
-    }}>
-      {/* Label above bar */}
-      <span style={{
-        fontFamily: 'DM Mono',
-        fontSize: 24,
-        color: 'rgba(240,235,225,0.9)',
-        display: 'flex',
-        letterSpacing: '0.02em',
-      }}>
-        {pct}% of income
-      </span>
-
-      {/* Progress bar */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        width: '70%',
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: 'rgba(255,255,255,0.10)',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          display: 'flex',
-          width: `${Math.max(fraction * 100, 2)}%`,
-          height: '100%',
-          backgroundColor: accentColor,
-          borderRadius: 9,
-        }} />
-      </div>
-
-      {/* Label below bar */}
-      <span style={{
-        fontFamily: 'DM Mono',
-        fontSize: 20,
-        color: TERTIARY,
-        display: 'flex',
-      }}>
-        median household income: {incomeLabel}
-      </span>
-    </div>
-  )
-}
-
-/** Bar chart for tariff cell — shows escalating tariff costs since Jan 2025.
- *  Returns null if annualCost is 0 (consistent with buildLineSparklineV3).
- */
-export function buildTariffBarChart(
-  annualCost: number,
-  accentColor: string,
-  gradientId: string,
-): React.ReactElement | null {
-  if (annualCost <= 0) return null
-
-  // 8 bars representing monthly tariff escalation Jan 2025 → Aug 2025+
-  const weights = [0.05, 0.12, 0.30, 0.65, 0.85, 0.95, 0.98, 1.0]
-
-  const barW = 9
-  const gap = 3.4
-  const bars = weights.map((w, i) => {
-    const x = i * (barW + gap) + 1
-    const h = w * 40
-    const y = 45 - h
-    const opacity = 0.35 + (i / (weights.length - 1)) * 0.65
-    return { x, y, h, opacity }
-  })
-
-  const yMaxLabel = annualCost >= 1000
-    ? `$${(annualCost / 1000).toFixed(1)}k`
-    : `$${Math.round(annualCost)}`
-  const yMidLabel = annualCost >= 1000
-    ? `$${(annualCost / 2000).toFixed(1)}k`
-    : `$${Math.round(annualCost / 2)}`
-
-  const labelSz = { fontFamily: 'DM Mono', fontSize: 22, color: TERTIARY }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: 220 }}>
-      {/* Y-axis labels */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: 72, paddingRight: 6, height: '100%' }}>
-        <span style={{ ...labelSz, display: 'flex' }}>{yMaxLabel}</span>
-        <span style={{ ...labelSz, display: 'flex' }}>{yMidLabel}</span>
-        <span style={{ ...labelSz, display: 'flex' }}>$0</span>
-      </div>
-
-      {/* Chart column */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <div style={{ display: 'flex', flex: 1, width: '100%' }}>
-          <svg viewBox="0 0 100 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={accentColor} stopOpacity="1" />
-                <stop offset="100%" stopColor={accentColor} stopOpacity="0.4" />
-              </linearGradient>
-            </defs>
-            {/* Midline gridline */}
-            <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" strokeDasharray="2,2" />
-            {/* Bars */}
-            {bars.map((b, i) => (
-              <rect
-                key={i}
-                x={b.x}
-                y={b.y}
-                width={barW}
-                height={b.h}
-                fill={`url(#${gradientId})`}
-                opacity={b.opacity}
-                rx="0.5"
+            {/* Tick gridlines, then the dashed baseline reference */}
+            {ticks.map((t) => (
+              <line key={`g${t.y}`} x1="0" y1={t.y} x2={CHART_PLOT_W} y2={t.y} stroke={GRID} strokeWidth="1" />
+            ))}
+            <line x1="0" y1={baseY} x2={CHART_PLOT_W} y2={baseY} stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" strokeDasharray="5,5" />
+            <polygon points={area} fill={`url(#${id})`} />
+            {runs.filter((r) => r.length >= 2).map((r, i) => (
+              <polyline
+                key={`r${i}`}
+                points={r.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
+                fill="none"
+                stroke={color}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             ))}
+            {gapSegments.map(({ a, b }, i) => (
+              <line key={`gap${i}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeOpacity="0.45" strokeWidth="2" strokeDasharray="4,4" />
+            ))}
+            {/* Baseline and latest points, each with a surface ring */}
+            <circle cx={first.x} cy={first.y} r="6" fill={color} stroke={SURFACE} strokeWidth="2" />
+            <circle cx={last.x} cy={last.y} r="7" fill={color} stroke={SURFACE} strokeWidth="2" />
           </svg>
+          {gapSegments.filter((g) => g.label).map(({ a, b, label }, i) => (
+            <span
+              key={`gl${i}`}
+              style={{
+                position: 'absolute', display: 'flex', justifyContent: 'center',
+                left: a.x - 30, width: b.x - a.x + 60, top: Math.max(0, Math.min(a.y, b.y) - 24),
+                fontFamily: 'DM Mono', fontSize: 15, color: AXIS_TEXT, whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </span>
+          ))}
         </div>
-        {/* X-axis labels */}
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', height: 28, paddingTop: 4 }}>
-          <span style={{ ...labelSz, display: 'flex' }}>Jan &apos;25</span>
-          <span style={{ ...labelSz, display: 'flex' }}>May &apos;25</span>
-          <span style={{ ...labelSz, display: 'flex' }}>now</span>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', height: CHART_X_AXIS_H, paddingTop: 4 }}>
+          <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: FS.axis, color: AXIS_TEXT_STRONG }}>{opts.xLeft}</span>
+          <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: FS.axis, color: AXIS_TEXT }}>{opts.xRight}</span>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Same footprint as a chart when a quadrant has no series to plot. */
+export function chartUnavailable(height: number, text = 'Chart unavailable'): React.ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height,
+        border: `1px dashed ${GRID}`, borderRadius: 4,
+      }}
+    >
+      <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: FS.axis, color: AXIS_TEXT }}>{text}</span>
     </div>
   )
 }

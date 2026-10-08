@@ -1,18 +1,27 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, Inter } from 'next/font/google'
+import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 
-const bebasNeue = Bebas_Neue({
-  weight: '400',
-  variable: '--font-bebas',
+// Display: a condensed grotesk for headlines and big figures (tabular figures via font-variant-numeric)
+const display = IBM_Plex_Sans_Condensed({
+  weight: ['500', '600', '700'],
+  variable: '--nf-display',
   subsets: ['latin'],
   display: 'swap',
 })
 
-const inter = Inter({
+const sans = IBM_Plex_Sans({
   weight: ['400', '500', '600'],
-  variable: '--font-inter',
+  variable: '--nf-sans',
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+// Mono for quiet metadata: kickers, sources, dates
+const mono = IBM_Plex_Mono({
+  weight: ['400', '500'],
+  variable: '--nf-mono',
   subsets: ['latin'],
   display: 'swap',
 })
@@ -20,7 +29,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://whatchanged.us'),
   title: 'What Changed | See how your town has changed since January 2025',
-  description: 'Enter your zip code to see local unemployment, prices, and federal funding changes since January 20, 2025.',
+  description: 'Enter your zip code to see how local gas, rent, home and grocery prices changed since January 20, 2025, and how electricity prices compare with the year centered on January 2025.',
   openGraph: {
     title: 'What Changed In Your Town?',
     description: 'Enter your zip code. See what changed since January 2025.',
@@ -50,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bebasNeue.variable} ${inter.variable}`}>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="antialiased">
         {children}
         <Analytics />
