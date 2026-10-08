@@ -13,7 +13,7 @@ import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-me
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { buildLineSparklineV3 } from '@/lib/share-card/sparklines'
-import { CELL_PADDING, FS, GAP, monoLines, sparklineBudget } from '@/lib/share-card/layout'
+import { BIG_UNIT_SCALE, CELL_PADDING, FS, GAP, monoLines, sparklineBudget } from '@/lib/share-card/layout'
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const BG = '#111316' // data-desk charcoal (src/lib/theme.ts)
@@ -481,6 +481,26 @@ export async function generateShareCard(zip: string): Promise<Response> {
       {value}
     </span>
   )
+  /** Big number with a smaller unit on the same line ("+$0.87" + "/gal"), so the gas change and its pill fit one row. */
+  const bigNumberWithUnit = (value: string, unit: string) => (
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
+      {bigNumber(value)}
+      {/* Own box (not a bare span) so the row reads as one big-number line, never as a wrapping text row */}
+      <div style={{ display: 'flex', marginBottom: 6 }}>
+        <span
+          style={{
+            fontFamily: 'Bebas Neue',
+            fontSize: Math.round(FS.big * BIG_UNIT_SCALE),
+            color: TEXT_SECONDARY,
+            lineHeight: 1,
+            display: 'flex',
+          }}
+        >
+          {unit}
+        </span>
+      </div>
+    </div>
+  )
 
   /** `sub` is a smaller second line inside the pill (e.g. "in rent"), so a long label never crowds the big number. */
   const changePill = (text: string, _accent: string, sub?: string) => {
@@ -734,8 +754,10 @@ export async function generateShareCard(zip: string): Promise<Response> {
               <div style={{ display: 'flex', width: '100%', marginBottom: GAP.sparkBottom }}>{gasSparkline}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-              {bigNumber(gasOk ? `$${gasData!.current.toFixed(2)}/gal` : 'N/A')}
-              {changePill(gasOk ? fmtSignedDollars(gasData!.change) : '—', GAS)}
+              {/* Change first, like the gas card: the $/gal change is the big number, today's price in a two-line
+                  "$3.83 / now" pill (one line would not fit beside "+$4.44/gal") */}
+              {gasOk ? bigNumberWithUnit(fmtSignedDollars(gasData!.change), '/gal') : bigNumber('N/A')}
+              {gasOk ? changePill(`$${gasData!.current.toFixed(2)}`, GAS, 'now') : changePill('—', GAS)}
             </div>
             {metaRow(gasSince, null)}
             {/* Like-for-like with the pill: same source, same baseline rule, same months (BLS); own row so the

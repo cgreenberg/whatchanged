@@ -35,7 +35,7 @@ import { ELECTRICITY_STATES } from '@/lib/api/eia-electricity'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import { electricityPlace } from '@/lib/hero-cards'
 import {
-  monoLines, monoLineHeight, monoCharsPerLine, sparklineBudget, CELL_CONTENT_H, CELL_TEXT_WIDTH, CARD_SIZE, ROW_H, FS,
+  monoLines, monoLineHeight, monoCharsPerLine, sparklineBudget, CELL_CONTENT_H, CELL_TEXT_WIDTH, CARD_SIZE, ROW_H, FS, BIG_UNIT_SCALE,
 } from '@/lib/share-card/layout'
 import { sparklineGeometry } from '@/lib/share-card/sparklines'
 import { fmtSignedDollars, fmtSignedPct } from '@/lib/format'
@@ -237,14 +237,14 @@ describe('share-card text slots stay within their line budgets', () => {
     expect(fmtRentDollars(1234)).toBe('≈ +$1,234/yr')
   })
 
-  test('gas big number + change pill fit one row at the widest realistic values', () => {
+  test('gas big number (the $ change, smaller "/gal") + two-line "$ / now" pill fit one row at the widest realistic values', () => {
     const bebas = ttfMeasure('BebasNeue-Regular.ttf')
     const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
-    const big = bebas('$9.99/gal', FS.big)
-    for (const pill of [fmtSignedDollars(4.44), fmtSignedDollars(-4.44)]) {
-      // pill: Barlow 40 text + 2×20 padding + 2×1.5 border + 12 margin
-      const row = big + barlow(pill, 40) + 2 * 20 + 2 * 1.5 + 12
-      expect([pill, row <= CELL_TEXT_WIDTH]).toEqual([pill, true])
+    for (const change of [4.44, -4.44]) {
+      const big = bebas(fmtSignedDollars(change), FS.big) + bebas('/gal', Math.round(FS.big * BIG_UNIT_SCALE))
+      // two-line pill ("$9.99" over "now"): wider of Barlow 40 / Barlow 24 + 2×18 padding + 2×1.5 border + 12 margin
+      const row = big + Math.max(barlow('$9.99', 40), barlow('now', 24)) + 2 * 18 + 2 * 1.5 + 12
+      expect([change, row <= CELL_TEXT_WIDTH]).toEqual([change, true])
     }
   })
 

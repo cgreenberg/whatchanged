@@ -219,12 +219,14 @@ describe('snapshot + card', () => {
     const e = s.electricity.data!
     const card = buildElectricityCard(s)
     expect(card.status).toBe('ok')
-    expect(card.value).toBe(`${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh`)
-    expect(card.valueNote).toBe('12-mo avg')
+    // Change first: the % change of the 12-month average price is the big number, the level is on the secondary line
+    expect(card.value).toBe(`+${e.change.toFixed(1)}%`)
+    expect(card.valueNote).toBeUndefined()
     const expected = Math.round(((mean12('ME', '2025-08', '2026-07') - mean12('ME', '2024-08', '2025-07')) * e.usageKwh!) / 100)
     expect(s.dollarImpact!.electricity).toBe(expected)
     expect(card.inline).toBe(`≈ +$${expected}/mo`)
-    expect(card.secondary).toBe(`+${e.change.toFixed(1)}% vs yr centered on Jan '25 · U.S. +${e.nationalChange!.toFixed(1)}%`)
+    expect(card.secondary).toBe(`vs yr centered on Jan '25 · now ${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh (12-mo avg)`)
+    expect(card.info.join(' ')).toContain(`National: +${e.nationalChange!.toFixed(1)}%`)
     expect(card.sourceLine).toBe('Maine · EIA · Jul 2026')
     expect(card.info.join(' ')).toContain("average Maine home's monthly use (532 kWh, 12-mo avg Aug 2025–Jul 2026)")
     expect(card.info.join(' ')).toContain('Latest month as published: 32.4¢/kWh in Jul 2026')

@@ -295,7 +295,7 @@ describe('hero-card geography tags and caveats', () => {
     s.rent = null
     s.cpi.data = { ...s.cpi.data!, tier: 4, metro: 'National', areaCode: '0000' }
     const card = buildShelterCard(s)
-    expect(card.change).toBeUndefined()
+    expect(card.inline).toBeUndefined()
     expect(card.detail).toMatch(/national figure/)
     expect(card.detail).not.toMatch(/No local rent figure/)
     s.cpi.data = { ...s.cpi.data!, tier: 2, metro: 'West South Central', areaCode: '0370', fallback: 'national' }

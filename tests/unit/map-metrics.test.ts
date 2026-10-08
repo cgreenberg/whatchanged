@@ -208,3 +208,25 @@ describe('client metric definitions', () => {
     expect(liveFooter('gas', null)).toMatch(/not seasonally adjusted$/)
   })
 })
+
+test('the refresh plan writes every cache key the map reads (no key mismatch between county-geo.json and the plan)', async () => {
+  const { planRefresh } = await import('@/lib/api/refresh')
+  const { describeDuoarea } = await import('@/lib/api/eia')
+  const { describeBlsGasArea } = await import('@/lib/api/bls-gas')
+  const { ELECTRICITY_STATES } = await import('@/lib/api/eia-electricity')
+  const plan = planRefresh()
+  const planKeys = new Set([...plan.cpiAreas.map((a) => cpiCacheKey(a.areaCode)), ...plan.gasLookups.map((l) => l.cacheKey)])
+  const unplanned = new Set<string>()
+  for (const g of Object.values(countyGeo as Record<string, { state: string; cpiArea: string; gasSource: string; gasDuoarea: string; gasTier: number }>)) {
+    if (!planKeys.has(cpiCacheKey(g.cpiArea))) unplanned.add(cpiCacheKey(g.cpiArea))
+    // Puerto Rico's gas is the bundled DACO series (never cached)
+    if (g.state === 'PR') continue
+    const gasKey = g.gasSource === 'bls'
+      ? describeBlsGasArea(g.gasDuoarea, { standIn: g.gasTier === 2 }).cacheKey
+      : describeDuoarea(g.gasDuoarea).cacheKey
+    if (!planKeys.has(gasKey)) unplanned.add(gasKey)
+  }
+  expect([...unplanned]).toEqual([])
+  const elecPlanned = new Set(plan.electricityStates ?? [])
+  expect(ELECTRICITY_STATES.filter((st) => !elecPlanned.has(st)).map(electricityCacheKey)).toEqual([])
+})

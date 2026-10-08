@@ -161,3 +161,92 @@ test.describe('National county map', () => {
     await expect(page.getByTestId('housing-chart').getByTestId('provenance').last()).toContainText('Maricopa County, AZ', { timeout: 15000 })
   })
 })
+
+/** Move the mouse over a county's center (a real hover: the browser hit-tests the point). */
+async function hoverCounty(page: Page, fips: string) {
+  const path = page.locator(`[data-testid="national-map"] svg path[data-fips="${fips}"]`)
+  await path.scrollIntoViewIfNeeded()
+  const box = (await path.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+}
+
+/** The tooltip lies entirely inside the map box. */
+async function expectTooltipInsideMap(page: Page) {
+  const tip = (await page.getByTestId('map-tooltip').boundingBox())!
+  const map = (await page.getByTestId('map-box').boundingBox())!
+  expect(tip.x).toBeGreaterThanOrEqual(map.x - 0.5)
+  expect(tip.y).toBeGreaterThanOrEqual(map.y - 0.5)
+  expect(tip.x + tip.width).toBeLessThanOrEqual(map.x + map.width + 0.5)
+  expect(tip.y + tip.height).toBeLessThanOrEqual(map.y + map.height + 0.5)
+}
+
+test.describe('County map: hover tooltips, keyboard browsing, metro rent', () => {
+  test('hover shows county + state, the signed value and its geography/source; "No data" when missing; stays inside the map', async ({ page }) => {
+    await mockMapMetrics(page)
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Electricity', exact: true }).click()
+    // Aroostook ME: top-right corner, so the tooltip has to flip left/down to stay inside
+    await hoverCounty(page, '23003')
+    const tip = map.getByTestId('map-tooltip')
+    await expect(tip).toBeVisible()
+    await expect(tip).toHaveAttribute('data-fips', '23003')
+    await expect(tip).toContainText('Aroostook County, ME')
+    await expect(tip).toContainText(/Electricity [+−]?\d+\.\d%/)
+    await expect(tip).toContainText('Maine statewide (EIA)')
+    await expectTooltipInsideMap(page)
+    // not in the fixture → "No data"
+    await hoverCounty(page, '39035')
+    await expect(tip).toContainText('Cuyahoga County, OH')
+    await expect(tip).toContainText('Electricity: No data')
+    // gas: $/gal with its sign, area and publisher
+    await map.getByRole('button', { name: 'Gas', exact: true }).click()
+    await hoverCounty(page, '23003')
+    await expect(tip).toContainText(/Gas [+−]\$\d\.\d{2}\/gal/)
+    await expect(tip).toContainText('(EIA)')
+    // leaving the map hides it; hovering never selects a county
+    await page.mouse.move(2, 2)
+    await expect(tip).toHaveCount(0)
+    await expect(map.getByTestId('map-selection')).toHaveCount(0)
+  })
+
+  test('keyboard: focusing the map shows a tooltip, arrow keys move between counties, Enter selects', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    const box = map.getByTestId('map-box')
+    await box.focus()
+    const tip = map.getByTestId('map-tooltip')
+    await expect(tip).toBeVisible()
+    const first = await tip.getAttribute('data-fips')
+    await page.keyboard.press('ArrowRight')
+    await expect(tip).not.toHaveAttribute('data-fips', first!)
+    const second = (await tip.getAttribute('data-fips'))!
+    await expect(map.getByTestId('map-kbd-status')).toContainText(/Home prices/)
+    await page.keyboard.press('Enter')
+    await expect(map.getByTestId('map-selection')).toHaveAttribute('data-fips', second)
+    await expectTooltipInsideMap(page)
+  })
+
+  test('Rent layer: a county with no Zillow county series takes its metro rent, hatched and labeled', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Rent', exact: true }).click()
+    // Park County, CO: no Zillow county rent; Denver metro stands in (as on the Rent card)
+    const park = map.locator('svg path[data-fips="08093"]')
+    await expect(park).toHaveAttribute('fill', /^rgb\(/)
+    await expect(map.locator('[data-testid="map-metro-hatch"] path[data-metro-fips="08093"]')).toBeAttached()
+    await expect(map.getByTestId('map-legend-metro')).toContainText('metro rent')
+    await expect(map.getByTestId('map-source')).toContainText('light stripes = metro rent')
+    await hoverCounty(page, '08093')
+    const tip = map.getByTestId('map-tooltip')
+    await expect(tip).toContainText('Park County, CO')
+    await expect(tip).toContainText(/Rent [+−]?\d+\.\d%/)
+    await expect(tip).toContainText('Denver-Aurora-Lakewood, CO metro rent')
+    await clickCounty(page, '08093')
+    await expect(map.getByTestId('map-value-rent')).toContainText('metro rent: Denver-Aurora-Lakewood, CO metro')
+    // other layers: no metro hatch
+    await map.getByRole('button', { name: 'Home prices', exact: true }).click()
+    await expect(map.getByTestId('map-metro-hatch')).toHaveCount(0)
+    await expect(map.getByTestId('map-legend-metro')).toHaveCount(0)
+  })
+})

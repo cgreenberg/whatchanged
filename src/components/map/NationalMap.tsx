@@ -1,14 +1,70 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent } from 'react'
 import { geoPath } from 'd3-geo'
 import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, divergingColor, NO_DATA_COLOR,
-  NO_DATA_PATTERN_ID, type ZipPanelOverrides, fmtMonth, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
+  NO_DATA_PATTERN_ID, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
+import { mapMetroRent } from '@/lib/map-metro-rent'
+import { mapTooltip } from '@/lib/map-tooltip'
+
+/** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
+const METRO_HATCH_ID = 'map-metro-hatch'
+const METRO_HATCH_CSS = 'repeating-linear-gradient(45deg, rgba(241,239,234,0.5) 0 1.2px, transparent 1.2px 4px)'
+const VIEW_W = 975
+const VIEW_H = 610
+
+/**
+ * The county shapes, memoized so hover / focus changes (tooltip only) never re-render 3,000+ paths.
+ * Clicks are delegated: the county's FIPS is on its path.
+ */
+const CountyLayer = memo(function CountyLayer({ shapes, fills, onPick }: {
+  shapes: Shape[]
+  fills: Map<string, string>
+  onPick: (fips: string) => void
+}) {
+  return (
+    <g onClick={(e) => {
+      const f = (e.target as Element).getAttribute?.('data-fips')
+      if (f) onPick(f)
+    }}>
+      {shapes.map(s => (
+        <path
+          key={s.id}
+          d={s.d}
+          data-fips={s.id}
+          fill={fills.get(s.id) ?? `url(#${NO_DATA_PATTERN_ID})`}
+          stroke="#111316"
+          strokeWidth={0.3}
+          style={{ transition: 'fill 300ms linear', cursor: 'pointer' }}
+        />
+      ))}
+    </g>
+  )
+})
+
+/** Nearest county centroid from `from` in an arrow-key direction (within a ±60° cone), for keyboard browsing. */
+function neighborInDirection(shapes: Shape[], from: Shape, dir: 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown'): Shape | null {
+  const [ux, uy] = dir === 'ArrowLeft' ? [-1, 0] : dir === 'ArrowRight' ? [1, 0] : dir === 'ArrowUp' ? [0, -1] : [0, 1]
+  let best: Shape | null = null
+  let bestScore = Infinity
+  for (const s of shapes) {
+    if (s.id === from.id || !Number.isFinite(s.c[0])) continue
+    const dx = s.c[0] - from.c[0]
+    const dy = s.c[1] - from.c[1]
+    const along = dx * ux + dy * uy
+    if (along <= 0.5) continue
+    const across = Math.abs(dx * uy - dy * ux)
+    if (across > along * 1.75) continue
+    const score = along + across * 2
+    if (score < bestScore) { bestScore = score; best = s }
+  }
+  return best
+}
 
 type AnyDef = (MetricDef & { scope: 'county' }) | (LiveMetricDef & { scope: 'live' })
 const DEFS: AnyDef[] = MAP_METRIC_ORDER.map(k => {
@@ -40,6 +96,11 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const mapBoxRef = useRef<HTMLDivElement>(null)
+  // Mouse hover (container px) and keyboard focus (a county browsed with the arrow keys): tooltip only
+  const [hover, setHover] = useState<{ fips: string; x: number; y: number; w: number; h: number } | null>(null)
+  const [kbdAt, setKbdAt] = useState<{ fips: string; x: number; y: number; w: number; h: number } | null>(null)
+  const kbd = kbdAt?.fips ?? null
   const [visible, setVisible] = useState(false)
   const [shapes, setShapes] = useState<{ counties: Shape[]; states: string } | null>(null)
   const [data, setData] = useState<CountyMap>({})
@@ -53,8 +114,9 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   // User's tap selection is scoped to the current county; a new zip resets it.
   const [picked, setPicked] = useState<{ base?: string; id?: string; reveal?: number }>({})
   const selected = picked.base === countyFips && picked.id ? picked.id : countyFips
-  const setSelected = (id: string, reveal = false) =>
-    setPicked(p => ({ base: countyFips, id, reveal: reveal ? (p.reveal ?? 0) + 1 : p.reveal }))
+  const setSelected = useCallback((id: string, reveal = false) =>
+    setPicked(p => ({ base: countyFips, id, reveal: reveal ? (p.reveal ?? 0) + 1 : p.reveal })), [countyFips])
+  const pick = useCallback((id: string) => setSelected(id), [setSelected])
   const [timeline, setTimeline] = useState<Timeline | null>(null)
   const [timelineError, setTimelineError] = useState(false)
   const [frame, setFrame] = useState<number | null>(null)
@@ -120,10 +182,78 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
 
   const def = DEFS.find(m => m.key === metric)!
   const countyKey: CountyMetricKey | null = isCountyMetric(metric) ? metric : null
-  const value = (fips: string): number | undefined => {
+  const playing = frame != null && !!timeline && !!countyKey
+  const value = useCallback((fips: string): number | undefined => {
     if (!countyKey) return liveValue(liveData, fips, metric as Exclude<MetricKey, CountyMetricKey>)?.value
     if (frame != null && timeline) return timeline[countyKey][fips]?.[frame]
     return data[fips]?.[countyKey]
+  }, [countyKey, liveData, metric, frame, timeline, data])
+  // Rent: a county with no Zillow county series takes its metro's rent (the Rent card's metro rung), drawn hatched.
+  // Not during the time-lapse (it plays the county series only).
+  const metroRent = useMemo(() => {
+    const out = new Map<string, number>()
+    if (metric !== 'rent' || playing || !shapes) return out
+    for (const s of shapes.counties) {
+      if (data[s.id]?.rent != null) continue
+      const m = mapMetroRent(s.id)
+      if (m) out.set(s.id, m.pct)
+    }
+    return out
+  }, [metric, playing, shapes, data])
+  const fills = useMemo(() => {
+    const out = new Map<string, string>()
+    if (!shapes) return out
+    for (const s of shapes.counties) {
+      const v = value(s.id) ?? metroRent.get(s.id)
+      if (Number.isFinite(v)) out.set(s.id, divergingColor(v, def.clamp))
+    }
+    return out
+  }, [shapes, value, metroRent, def.clamp])
+  const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => metroRent.has(s.id)) : []), [shapes, metroRent])
+  const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
+  /** Keyboard browsing starts at the selected county, else the one nearest the map's center. */
+  const centerFips = useMemo(() => {
+    let best: string | null = null
+    let d = Infinity
+    for (const s of shapes?.counties ?? []) {
+      const dd = (s.c[0] - VIEW_W / 2) ** 2 + (s.c[1] - VIEW_H / 2) ** 2
+      if (dd < d) { d = dd; best = s.id }
+    }
+    return best
+  }, [shapes])
+  const tipId = 'map-kbd-tooltip'
+  /** Keyboard focus on a county: its tooltip sits at the county's centroid (container px). */
+  const focusCounty = (fips: string | null) => {
+    const sh = fips ? shapeById.get(fips) : undefined
+    const r = mapBoxRef.current?.getBoundingClientRect()
+    if (!sh || !r) { setKbdAt(null); return }
+    const k = r.width / VIEW_W
+    setKbdAt({ fips: sh.id, x: sh.c[0] * k, y: sh.c[1] * k, w: r.width, h: r.height })
+  }
+  // Tooltip: the hovered county (mouse), else the keyboard-focused one
+  const tipFips = hover?.fips ?? kbd
+  const tipFor = (fips: string | null) => (fips
+    ? mapTooltip({
+        fips, metric, county: data[fips], liveData,
+        ...(playing && countyKey ? { frame: { value: value(fips), month: timelineMonths(timeline!, countyKey)[frame!] } } : {}),
+      })
+    : null)
+  const tip = tipFor(tipFips)
+  const kbdTip = !hover && kbd ? tip : null
+  const tipShape = tipFips ? shapeById.get(tipFips) : undefined
+  // Position (container px): beside the pointer / county centroid, flipped toward the map's center so it stays inside
+  let tipPos: CSSProperties | null = null
+  let tipMaxW = 260
+  {
+    const box = hover ?? kbdAt
+    if (box && box.w > 0) {
+      const gap = 14
+      tipMaxW = Math.max(140, Math.min(260, box.w / 2 - gap - 4))
+      tipPos = {
+        ...(box.x > box.w / 2 ? { right: Math.max(4, box.w - box.x + gap) } : { left: Math.max(4, box.x + gap) }),
+        ...(box.y > box.h / 2 ? { bottom: Math.max(4, box.h - box.y + gap) } : { top: Math.max(4, box.y + gap) }),
+      }
+    }
   }
 
   const movers = useMemo(() => (countyKey ? moversFor(data, countyKey) : { top: [], bottom: [] }), [data, countyKey])
@@ -145,6 +275,15 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           const text = d.describe(sel)
           if (!text && d.key === 'rent' && own?.rent) {
             return { key: d.key, short: d.short, text: own.rent.text, area: own.rent.area, caveat: null }
+          }
+          const m = !text && d.key === 'rent' ? mapMetroRent(selected) : null
+          if (m) {
+            return {
+              key: d.key, short: d.short,
+              text: `${fmtPct(m.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(m.cur)}/mo`,
+              area: `metro rent: ${m.name} metro (no Zillow county series)`,
+              caveat: null,
+            }
           }
           return {
             key: d.key, short: d.short,
@@ -206,7 +345,34 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         )}
       </div>
 
-      <div className="relative bg-desk border border-line rounded-md overflow-hidden">
+      <div
+        ref={mapBoxRef}
+        className="relative bg-desk border border-line rounded-md overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-2"
+        data-testid="map-box"
+        {...(shapes && !error ? {
+          tabIndex: 0,
+          role: 'group',
+          'aria-label': `US county map of ${def.label}. Arrow keys move between counties; Enter selects one.`,
+          'aria-describedby': kbdTip ? tipId : undefined,
+          onFocus: (e: FocusEvent) => {
+            if (e.target !== e.currentTarget || kbd) return
+            focusCounty(selected && shapeById.has(selected) ? selected : centerFips)
+          },
+          onBlur: () => setKbdAt(null),
+          onKeyDown: (e: KeyboardEvent) => {
+            if (!shapes) return
+            if (e.key === 'Escape') { setKbdAt(null); return }
+            const cur = shapeById.get(kbd ?? selected ?? centerFips ?? '')
+            if (!cur) return
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(cur.id); focusCounty(cur.id); return }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault()
+              setHover(null)
+              focusCounty((kbd ? neighborInDirection(shapes.counties, cur, e.key) : null)?.id ?? cur.id)
+            }
+          },
+        } : {})}
+      >
         {error ? (
           <div className="aspect-[975/610] flex flex-col gap-2 items-center justify-center text-ink-3 text-sm" data-testid="map-error">
             <p>{error}</p>
@@ -215,28 +381,38 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         ) : !shapes ? (
           <div className="aspect-[975/610] flex items-center justify-center text-ink-3 text-sm">Loading map…</div>
         ) : (
-          <svg viewBox="0 0 975 610" className="w-full h-auto block" role="img" aria-label={`US county map of ${def.label}`}>
+          <svg
+            viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+            className="w-full h-auto block"
+            role="img"
+            aria-label={`US county map of ${def.label}`}
+            // Hover tooltip for a mouse / pen only: touch keeps tap-to-select (no hover state to show)
+            onPointerMove={(e) => {
+              if (e.pointerType === 'touch') return
+              const f = (e.target as Element).getAttribute?.('data-fips')
+              const box = mapBoxRef.current?.getBoundingClientRect()
+              if (!f || !box) { setHover(null); return }
+              setHover({ fips: f, x: e.clientX - box.left, y: e.clientY - box.top, w: box.width, h: box.height })
+            }}
+            onPointerLeave={() => setHover(null)}
+          >
             <defs>
               <pattern id={NO_DATA_PATTERN_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                 <rect width={4} height={4} fill="#171A1E" />
                 <rect width={1.6} height={4} fill={NO_DATA_COLOR} />
               </pattern>
+              {/* Metro rent: light stripes over the county's color (lighter + hatched, unlike the gray no-data hatch) */}
+              <pattern id={METRO_HATCH_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width={1.2} height={4} fill="rgba(241,239,234,0.5)" />
+              </pattern>
             </defs>
-            <g>
-              {shapes.counties.map(s => (
-                <path
-                  key={s.id}
-                  d={s.d}
-                  data-fips={s.id}
-                  fill={Number.isFinite(value(s.id)) ? divergingColor(value(s.id), def.clamp) : `url(#${NO_DATA_PATTERN_ID})`}
-                  stroke="#111316"
-                  strokeWidth={0.3}
-                  onClick={() => setSelected(s.id)}
-                  style={{ transition: 'fill 300ms linear', cursor: 'pointer' }}
-                />
-              ))}
-            </g>
+            <CountyLayer shapes={shapes.counties} fills={fills} onPick={pick} />
             {/* Decorations never take clicks: they must not shadow the counties under them */}
+            {metroShapes.length > 0 && (
+              <g pointerEvents="none" data-testid="map-metro-hatch">
+                {metroShapes.map(s => <path key={s.id} d={s.d} data-metro-fips={s.id} fill={`url(#${METRO_HATCH_ID})`} />)}
+              </g>
+            )}
             <path d={shapes.states} fill="none" stroke="#111316" strokeWidth={1.3} strokeLinejoin="round" pointerEvents="none" />
             {selShape && (
               <g pointerEvents="none" data-testid="map-highlight">
@@ -246,6 +422,9 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
                 <circle cx={selShape.c[0]} cy={selShape.c[1] - 28} r={2} fill="#F1EFEA" />
               </g>
             )}
+            {tipShape && tipShape.id !== selShape?.id && (
+              <path d={tipShape.d} fill="none" stroke="#F1EFEA" strokeWidth={1.1} strokeLinejoin="round" pointerEvents="none" data-testid="map-hover-outline" />
+            )}
           </svg>
         )}
         {frame != null && timeline && countyKey && (
@@ -253,6 +432,25 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             {fmtMonth(timelineMonths(timeline, countyKey)[frame])}
           </div>
         )}
+        {tip && tipPos && (
+          <div
+            className="pointer-events-none absolute z-10 rounded-sm border border-line bg-raised/95 px-2.5 py-1.5 shadow-lg text-[12px] leading-snug"
+            style={{ ...tipPos, maxWidth: tipMaxW }}
+            data-testid="map-tooltip"
+            data-fips={tipFips}
+            aria-hidden="true"
+          >
+            <p className="font-semibold text-ink">{tip.name}</p>
+            <p className={`tnum ${tip.noData ? 'text-ink-3' : 'text-ink'}`}>
+              {tip.value}{tip.note && <span className="text-caution/90"> · {tip.note}</span>}
+            </p>
+            {tip.geo && <p className="text-ink-3 text-[11px]">{tip.geo}</p>}
+          </div>
+        )}
+        {/* Screen readers: the keyboard-focused county's tooltip, announced as it changes */}
+        <p id={tipId} className="sr-only" aria-live="polite" data-testid="map-kbd-status">
+          {kbdTip ? [kbdTip.name, kbdTip.value, kbdTip.geo, kbdTip.note].filter(Boolean).join(' · ') : ''}
+        </p>
       </div>
 
       {/* Legend: a stepped diverging key with its end values, plus the no-data swatch */}
@@ -278,9 +476,19 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           />
           <span>no data</span>
         </div>
+        {metroShapes.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-metro">
+            <span
+              className="inline-block w-3 h-3 rounded-[1px] border border-line"
+              style={{ background: `${METRO_HATCH_CSS}, ${divergingColor(def.clamp * 0.6, def.clamp)}` }}
+              aria-hidden
+            />
+            <span>metro rent (no Zillow county series)</span>
+          </div>
+        )}
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
-        Scale {scale} · {footer} · gray hatching = no data
+        Scale {scale} · {footer}{metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''} · gray hatching = no data
       </p>
       {def.scope === 'live' && (
         <p className="text-[12px] text-ink-2 mt-1" data-testid="map-scope-note">

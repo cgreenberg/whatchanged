@@ -33,10 +33,11 @@ describe.each([
     expect(screen.queryByTestId('stat-card-shelter')).toBeNull()
   })
 
-  test('gas: price and signed $ change from the API, window on the card', () => {
+  test('gas: the signed $ change is the big number; window + today\'s price on the secondary line', () => {
     const g = snap.gas.data!
-    expect(text(card('gas'), 'stat-value')).toBe(`$${g.current.toFixed(2)}/gal`)
-    expect(text(card('gas'), 'stat-change')).toBe(`${fmtSignedDollars(g.change)} since Jan 2025`)
+    expect(text(card('gas'), 'stat-value')).toBe(`${fmtSignedDollars(g.change)}/gal`)
+    expect(text(card('gas'), 'stat-secondary')).toBe(`since Jan 2025 · now $${g.current.toFixed(2)}`)
+    expect(within(card('gas')).queryByTestId('stat-change')).toBeNull()
     // the full $/gal wording is one tap away
     expect(text(card('gas'), 'stat-info')).toContain(`${fmtSignedDollars(g.change)}/gal since`)
   })
@@ -65,15 +66,17 @@ describe.each([
     expect(info).toContain(`Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`)
   })
 
-  test('electricity: 12-month average ¢/kWh; $/mo = (change in 12-mo avg price ¢) × state monthly kWh ÷ 100', () => {
+  test('electricity: % change is the big number; $/mo = (change in 12-mo avg price ¢) × state monthly kWh ÷ 100', () => {
     const e = snap.electricity.data!
     const expected = Math.round(((e.current - e.baseline) * e.usageKwh!) / 100)
     expect(snap.dollarImpact!.electricity).toBe(expected)
-    expect(text(card('electricity'), 'stat-value')).toBe(`${e.current.toFixed(1)}¢/kWh`)
-    expect(text(card('electricity'), 'stat-value-note')).toBe('12-mo avg')
+    expect(text(card('electricity'), 'stat-value')).toBe(fmtSignedPct(e.change))
+    expect(within(card('electricity')).queryByTestId('stat-value-note')).toBeNull()
     expect(text(card('electricity'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
     expect(text(card('electricity'), 'stat-secondary')).toBe(
-      `${fmtSignedPct(e.change)} vs yr centered on Jan '25 · U.S. ${fmtSignedPct(e.nationalChange!)}`)
+      `vs yr centered on Jan '25 · now ${e.current.toFixed(1)}¢/kWh (12-mo avg)`)
+    // the U.S. comparison is one tap away
+    expect(text(card('electricity'), 'stat-info')).toContain(`National: ${fmtSignedPct(e.nationalChange!)}`)
     expect(text(card('electricity'), 'stat-source')).toBe(`${e.stateName} · EIA · ${fmtMonthYear(e.latestPeriod)}`)
     // ⓘ: the dollar basis, both 12-month windows, the latest single month and why full years are compared
     const info = text(card('electricity'), 'stat-info')
@@ -200,7 +203,7 @@ describe('missing or out-of-range sources render "Data unavailable"', () => {
     snap.electricity.data!.change = -3.2
     snap.dollarImpact!.electricity = null
     render(<HeroCards snapshot={snap} />)
-    expect(text(card('electricity'), 'stat-secondary')).toMatch(/^−3\.2% vs yr centered on Jan '25/)
+    expect(text(card('electricity'), 'stat-value')).toBe('−3.2%')
     expect(card('electricity')).toHaveAttribute('data-direction', 'down')
     expect(within(card('electricity')).queryByTestId('stat-inline')).toBeNull()
   })
@@ -211,8 +214,8 @@ describe('signs and direction', () => {
     const snap = clone(austin)
     snap.gas.data!.change = -0.12
     render(<HeroCards snapshot={snap} />)
-    const t = text(card('gas'), 'stat-change')
-    expect(t).toBe('−$0.12 since Jan 2025')
+    const t = text(card('gas'), 'stat-value')
+    expect(t).toBe('−$0.12/gal')
     expect(t).not.toContain('$-')
     expect(card('gas')).toHaveAttribute('data-direction', 'down')
   })

@@ -197,8 +197,9 @@ test('OG + share card: BLS monthly gas tier (Honolulu metro) — geography, as-o
   await generateShareCard('78701')
   const share = textOf(mockRendered[mockRendered.length - 1])
   expect(share).toContain("Honolulu metro · thru Aug '26")
-  expect(share).toContain('$5.40/gal')
-  expect(share).toContain('+$0.99 since Jan 2025') // monthly: Jan 2025, not Jan 20
+  expect(share).toMatch(/\+\$0\.99\s*\/gal/) // change first, like the card
+  expect(share).toMatch(/\$5\.40\s*now/) // two-line pill: "$5.40" over "now"
+  expect(share).toContain('since Jan 2025') // monthly: Jan 2025, not Jan 20
   expect(share).toContain("Natl (BLS Aug '26): +$0.99") // BLS U.S. avg 4.200 − 3.211, same months
   expect(share).not.toContain('Urban Hawaii')
   expect(share).not.toContain('No gas series')

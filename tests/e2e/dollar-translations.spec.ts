@@ -18,10 +18,10 @@ test.describe('Dollar translation accuracy (98683 fixture)', () => {
     await enterZip(page, '98683')
   })
 
-  test('gas: price and signed $ change since Jan 2025', async ({ page }) => {
+  test('gas: signed $ change since Jan 2025 is the big number; today\'s price on the secondary line', async ({ page }) => {
     const card = page.getByTestId('stat-card-gas')
-    await expect(card.getByTestId('stat-value')).toHaveText(`$${fx.gas.data.current.toFixed(2)}/gal`)
-    await expect(card.getByTestId('stat-change')).toHaveText(`${usd(fx.gas.data.change, 2)} since Jan 2025`)
+    await expect(card.getByTestId('stat-value')).toHaveText(`${usd(fx.gas.data.change, 2)}/gal`)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(`since Jan 2025 · now $${fx.gas.data.current.toFixed(2)}`)
     await card.getByTestId('stat-info-toggle').click()
     await expect(card.getByTestId('stat-info')).toContainText(`${usd(fx.gas.data.change, 2)}/gal since`)
   })
@@ -44,12 +44,12 @@ test.describe('Dollar translation accuracy (98683 fixture)', () => {
     await expect(info.getByTestId('stat-info-line').nth(1)).toHaveText(/^Typical asking rent: \$[\d,]+\/mo \([A-Z][a-z]{2} \d{4}\)$/)
   })
 
-  test('electricity: 12-month average ¢/kWh; $/mo = change in 12-mo avg ¢ × state kWh/month ÷ 100', async ({ page }) => {
+  test('electricity: % change of the 12-month average price; $/mo = change in 12-mo avg ¢ × state kWh/month ÷ 100', async ({ page }) => {
     const e = fx.electricity.data
     const expected = Math.round(((e.current - e.baseline) * e.usageKwh) / 100)
     const card = page.getByTestId('stat-card-electricity')
-    await expect(card.getByTestId('stat-value')).toHaveText(`${e.current.toFixed(1)}¢/kWh`)
-    await expect(card.getByTestId('stat-value-note')).toHaveText('12-mo avg')
+    await expect(card.getByTestId('stat-value')).toHaveText(`${e.change > 0 ? '+' : e.change < 0 ? '−' : ''}${Math.abs(e.change).toFixed(1)}%`)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(`vs yr centered on Jan '25 · now ${e.current.toFixed(1)}¢/kWh (12-mo avg)`)
     await expect(card.getByTestId('stat-inline')).toHaveText(`≈ ${usd(expected)}/mo`)
     await expect(card.getByTestId('stat-source')).toHaveText(/^Washington · EIA · [A-Z][a-z]{2} \d{4}$/)
     await card.getByTestId('stat-info-toggle').click()

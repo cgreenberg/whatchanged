@@ -76,9 +76,9 @@ test.describe('Charts section', () => {
 
   test('Electricity graph: statewide ¢/kWh, headline = the card %, 12-month average + monthly lines, U.S. line', async ({ page }) => {
     const chart = page.getByTestId('chart-electricity')
-    const cardSecondary = (await page.getByTestId('stat-card-electricity').getByTestId('stat-secondary').textContent())!
+    const cardValue = (await page.getByTestId('stat-card-electricity').getByTestId('stat-value').textContent())!.trim()
     const pct = (await chart.getByTestId('chart-headline-pct').textContent())!.trim()
-    expect(cardSecondary.startsWith(`${pct} vs yr centered on Jan '25`)).toBe(true)
+    expect(cardValue).toBe(pct)
     await expect(chart.getByTestId('chart-headline-window')).toHaveText('latest 12-month average vs the 12 months centered on Jan 2025')
     // both lines carry their latest value at the right edge
     await expect(chart.getByTestId('end-label-local')).toBeVisible()

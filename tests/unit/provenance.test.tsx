@@ -176,7 +176,9 @@ describe('compact hero cards: visible text budget', () => {
     const s = clone(austin)
     render(<HeroCards snapshot={s} />)
     for (const id of ['gas', 'rent', 'groceries']) expect(visibleText(screen.getByTestId(`stat-card-${id}`))).toMatch(/since (Jan 2025|Dec 2024)/)
-    expect(visibleText(screen.getByTestId('stat-card-gas'))).toMatch(/U\.S\. [+−]\$\d\.\d{2}/)
+    // Gas and electricity lead with the change; the level follows ("now $3.95"), the U.S. comparison is in the ⓘ
+    expect(visibleText(screen.getByTestId('stat-card-gas'))).toMatch(/since Jan 2025 · now \$\d\.\d{2}/)
+    expect(screen.getByTestId('stat-card-gas').querySelector('[data-testid="stat-info"]')!.textContent).toMatch(/National: \$\d\.\d{2}\/gal/)
     expect(visibleText(screen.getByTestId('stat-card-groceries'))).toMatch(/U\.S\. [+−]?\d+\.\d%/)
   })
 

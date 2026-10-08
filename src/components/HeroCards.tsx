@@ -33,7 +33,6 @@ export function HeroCards({ snapshot }: { snapshot: EconomicSnapshot }) {
             value={c.value}
             valueNote={c.valueNote}
             inline={c.inline}
-            change={c.change}
             direction={c.direction}
             secondary={c.secondary}
             sourceLine={c.sourceLine}

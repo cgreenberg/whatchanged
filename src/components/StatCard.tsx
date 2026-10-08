@@ -16,8 +16,6 @@ export interface StatCardProps {
   valueNote?: string
   /** Short dollar translation beside the big number, e.g. "≈ +$87/mo". */
   inline?: string
-  /** Gas: the $ change since the baseline, under the big number. */
-  change?: string
   direction?: 'up' | 'down' | 'neutral'
   /** The one short secondary line (window / national comparison / basis). */
   secondary?: string
@@ -42,7 +40,7 @@ export interface StatCardProps {
  * ⓘ disclosure: a real button with aria-expanded / aria-controls, keyboard and touch friendly; Escape closes it.
  */
 export function StatCard({
-  testId, label, value, valueNote, inline, change, direction = 'neutral', secondary, sourceLine, tags, info = [],
+  testId, label, value, valueNote, inline, direction = 'neutral', secondary, sourceLine, tags, info = [],
   provenance, moreProvenance = [], accentColor, stale, unavailable, trace,
 }: StatCardProps) {
   const [open, setOpen] = useState(false)
@@ -113,11 +111,6 @@ export function StatCard({
               </p>
             )}
           </div>
-          {change && (
-            <p className="tnum text-[13px] sm:text-[15px] font-semibold text-ink" data-testid="stat-change">
-              {change}
-            </p>
-          )}
           {(secondary || !!tags?.length) && (
             <p className="tnum text-xs sm:text-[13px] leading-snug text-ink-2" data-testid="stat-secondary">
               {secondary}

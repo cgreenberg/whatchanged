@@ -57,8 +57,6 @@ export interface HeroCardModel {
   valueNote?: string
   /** Short dollar translation shown beside the big number: "≈ +$87/mo", "≈ +$252/yr", "≈ +$900/yr in rent", "≈ +$33/mo". */
   inline?: string
-  /** Gas only: its signed $ change since the baseline, shown under the big number ("+$0.87 since Jan 2025"). */
-  change?: string
   direction?: 'up' | 'down' | 'neutral'
   /** The one short secondary line on the card: the window and/or the national comparison, or the basis. */
   secondary?: string
@@ -456,10 +454,15 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     status: 'ok',
     geoTag: gasShortGeo(g, s.location?.stateAbbr),
     caveat,
-    value: `$${g.current.toFixed(2)}/gal`,
-    change: `${fmtSignedDollars(g.change)} since ${BASELINE_MONTH_LABEL}`,
+    // Change first (like Rent / Groceries): the $/gal change is the big number, today's price is the secondary line.
+    // Monthly BLS figures name their month on the card ("since Jan 2025 · Aug 2026 · now $3.83").
+    value: `${fmtSignedDollars(g.change)}/gal`,
     direction: directionOf(g.change, 2),
-    secondary: natOk ? `U.S. ${fmtSignedDollars(nat!.change)}` : undefined,
+    secondary: sourceLineOf(
+      `since ${monthly && baselineDate ? fmtMonthYear(baselineDate.slice(0, 7)) : BASELINE_MONTH_LABEL}`,
+      monthly && latestDate ? fmtMonthYear(latestDate.slice(0, 7)) : undefined,
+      `now $${g.current.toFixed(2)}`,
+    ),
     detail,
     nationalValue,
     dollarNote,
@@ -521,10 +524,13 @@ function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel
     status: 'ok',
     geoTag: gasShortGeo(g, s.location?.stateAbbr),
     caveat,
-    value: `$${g.current.toFixed(2)}/gal`,
-    change: `${fmtSignedDollars(g.change)} since ${dcra ? `${fmtMonthYear(baseline)} survey` : BASELINE_MONTH_LABEL}`,
+    value: `${fmtSignedDollars(g.change)}/gal`,
     direction: directionOf(g.change, 2),
-    secondary: dcra ? 'twice-yearly survey' : 'island-wide, monthly',
+    secondary: sourceLineOf(
+      `since ${dcra ? `${fmtMonthYear(baseline)} survey` : BASELINE_MONTH_LABEL}`,
+      dcra ? undefined : 'island-wide',
+      `now $${g.current.toFixed(2)}`,
+    ),
     detail,
     dollarNote,
     info: compact([
@@ -804,10 +810,6 @@ export const ELECTRICITY_METHOD_NOTE =
   `(${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}; a year can't be centered exactly on ` +
   'Jan 20, and this window\'s midpoint, about Jan 30, is the closest). A year ending January 2025 would be centered on ' +
   'mid-2024 and count months of change from before January 2025.'
-/** "+7.4% vs yr centered on Jan '25" (the card face; the ⓘ spells out both 12-month windows). */
-export function electricityChangePhrase(e: Pick<ElectricityData, 'change'>): string {
-  return `${fmtSignedPct(e.change)} vs ${ELECTRICITY_BASELINE_SHORT}`
-}
 /** "Aug 2025–Jul 2026". */
 export const fmtWindow = (from: string | undefined, to: string) => (from ? `${fmtMonthYear(from)}–${fmtMonthYear(to)}` : fmtMonthYear(to))
 /** Territories: EIA publishes no residential retail price. */
@@ -871,11 +873,11 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     ...base,
     status: 'ok',
     geoTag: electricityPlace(e, 'short'),
-    value: fmtCents(e.current),
-    valueNote: ELECTRICITY_VALUE_NOTE,
+    // Change first (like Rent / Groceries): % change of the 12-month average price; the level is the secondary line.
+    value: fmtSignedPct(e.change),
     inline: hasDollars ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo` : undefined,
     direction: directionOf(e.change),
-    secondary: sourceLineOf(electricityChangePhrase(e), natOk ? `U.S. ${fmtSignedPct(e.nationalChange!)}` : undefined),
+    secondary: sourceLineOf(`vs ${ELECTRICITY_BASELINE_SHORT}`, `now ${fmtCents(e.current)} (${ELECTRICITY_VALUE_NOTE})`),
     dollarNote,
     detail,
     nationalValue,

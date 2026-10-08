@@ -269,6 +269,10 @@ export interface LiveCountyValue {
   /** Extra detail: level, source, adjustment, as-of. */
   detail: string
   asOf: string | null
+  /** Short publisher for hover tooltips: "EIA", "BLS", "BLS CPI", "Alaska DCRA", "PR DACO". */
+  source: string
+  /** Served from the last-good copy. */
+  stale?: true
 }
 
 /** Appended when the map served a cache entry's last-good copy (the fresh one expired). */
@@ -284,6 +288,7 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     return {
       value: e.pct, text: `${fmtPct(e.pct)} vs ${ELECTRICITY_BASELINE_SHORT}`, area: `${e.label} statewide`,
       detail: `${e.cents.toFixed(1)}¢/kWh avg, 12 months to ${fmtMonthYear(e.asOf)} · EIA${e.stale ? STALE_COPY : ''}`, asOf: e.asOf,
+      source: 'EIA', ...(e.stale ? { stale: true as const } : {}),
     }
   }
   const row = m.counties?.[fips]
@@ -300,6 +305,8 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
       area: g.standIn ? `${g.label} (no series for this county)` : g.label,
       detail: `$${g.current.toFixed(2)}/gal · ${how}${when ? `, ${when}` : ''}${g.stale ? STALE_COPY : ''}`,
       asOf: g.asOf,
+      source: g.source === 'dcra' ? 'Alaska DCRA' : g.source === 'daco' ? 'PR DACO' : g.source === 'bls' ? 'BLS' : 'EIA',
+      ...(g.stale ? { stale: true as const } : {}),
     }
   }
   const c = m.groceries?.[row[1]]
@@ -307,6 +314,7 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
   return {
     value: c.pct, text: `${fmtPct(c.pct)} ${sinceBaseline(null)}`, area: c.label,
     detail: `BLS CPI food at home${c.asOf ? `, ${fmtMonthYear(c.asOf)}` : ''}${c.stale ? STALE_COPY : ''}`, asOf: c.asOf,
+    source: 'BLS CPI', ...(c.stale ? { stale: true as const } : {}),
   }
 }
 

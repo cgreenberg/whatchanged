@@ -24,6 +24,8 @@ export const CELL_CONTENT_H = ROW_H - 1 - CELL_PAD.top - CELL_PAD.bottom
 
 /** Font sizes / spacing used by the quadrant blocks in generate.tsx. */
 export const FS = { label: 40, sublabel: 24, extra: 20, meta: 26, note: 17, big: 96 } as const
+/** A unit after a big number ("/gal") is drawn at this fraction of FS.big. */
+export const BIG_UNIT_SCALE = 0.55
 export const GAP = { labelBottom: 12, sparkBottom: 8, metaTop: 6, noteTop: 4 } as const
 
 const MONO_ADVANCE = 0.6

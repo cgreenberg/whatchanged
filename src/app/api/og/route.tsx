@@ -517,7 +517,8 @@ export async function GET(req: NextRequest) {
                     display: 'flex',
                   }}
                 >
-                  {elec ? `${elec.current.toFixed(1)}¢/kWh` : 'N/A'}
+                  {/* Change first, like the electricity card; the level follows in the small text */}
+                  {elec ? fmtSignedPct(elec.change) : 'N/A'}
                 </span>
                 <span
                   style={{
@@ -528,7 +529,7 @@ export async function GET(req: NextRequest) {
                   }}
                 >
                   {elec
-                    ? `· 12-mo avg · ${fmtSignedPct(elec.change)} vs ${ELECTRICITY_BASELINE_SHORT} · EIA, ${fmtMonthYear(elec.latestPeriod)}`
+                    ? `· 12-mo avg vs ${ELECTRICITY_BASELINE_SHORT} · now ${elec.current.toFixed(1)}¢/kWh · EIA, ${fmtMonthYear(elec.latestPeriod)}`
                     : '· EIA residential price unavailable right now'}
                 </span>
               </div>
