@@ -331,7 +331,7 @@ as `dollarImpact`) and `src/lib/rent.ts`. All values keep their sign: a drop is 
 | Card | Formula |
 |---|---|
 | Groceries | `round(6000 × groceriesChangePct / 100)` $/yr |
-| Rent (Zillow ZORI, new leases) | `round(curRent − curRent / (1 + pct/100))` $/mo, `pct` SA by whatchanged, `curRent` observed |
+| Rent (Zillow ZORI, new listings) | `round(curRent − curRent / (1 + pct/100))` $/mo, `pct` SA by whatchanged, `curRent` observed |
 | Shelter fallback (CPI) | `round(localAcsRent × 12 × rentIndexChangePct / 100)` $/yr (BLS rent of primary residence %), or null without local rent |
 | Gas | `current − baseline` $/gal (not annualized) |
 | Electricity | `round((avg12Current − avg12Baseline) ¢/kWh × stateKwhPerMonth / 100)` $/mo (12-month average prices: latest 12 months vs the 12 centered on Jan 2025, Aug 2024–Jul 2025) |

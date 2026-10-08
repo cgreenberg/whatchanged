@@ -9,7 +9,7 @@ test.describe('Geography and concept labels', () => {
   test('78701: rent and shelter cards carry distinct concept labels', async ({ page }) => {
     await enterZip(page, '78701')
     const rent = page.getByTestId('stat-card-rent')
-    await expect(rent).toContainText('Rent (new leases)')
+    await expect(rent).toContainText('Rent (new listings)')
     await expect(rent.getByTestId('stat-source')).toHaveText('Travis County · Zillow · Aug 2026')
     // full provenance is one tap away
     await expect(rent.getByTestId('provenance')).toBeHidden()
@@ -94,6 +94,6 @@ test.describe('Data notes and explanations', () => {
     await expect(housing.getByTestId('housing-missing-note')).toContainText('No Zillow rent data for Sibley County, MN', { timeout: 15000 })
     await expect(housing).toHaveAttribute('data-tab', 'shelter')
     await expect(housing.getByTestId('housing-tab-rent')).toBeDisabled()
-    await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')
+    await expect(housing.getByTestId('chart-note')).toContainText('trails new-listing rents by about a year')
   })
 })

@@ -88,7 +88,7 @@ export const chartConfigs: ChartConfig[] = [
   {
     id: 'cpi-shelter',
     title: 'Housing costs',
-    description: 'BLS CPI shelter: rent paid by all tenants (including existing leases) plus homeowners\' equivalent rent. It trails new-lease asking rents by about a year.',
+    description: 'BLS CPI shelter: rent paid by all tenants (including existing leases) plus homeowners\' equivalent rent. It trails asking rents on new listings by about a year.',
     chartType: 'line',
     series: [
       { dataKey: 'shelter', label: 'Shelter', color: METRIC_COLORS.shelter, type: 'monotone' },
@@ -131,9 +131,9 @@ export const housingTabConfigs: Record<'rent' | 'homePrices', ChartConfig> = {
   rent: {
     id: 'housing-rent',
     title: 'Housing costs',
-    description: 'Zillow Observed Rent Index (ZORI): typical asking rent on new leases in your county, seasonally adjusted by whatchanged. Same series as the Rent card.',
+    description: 'Zillow Observed Rent Index (ZORI): typical asking rent on new listings in your county, seasonally adjusted by whatchanged. Same series as the Rent card.',
     chartType: 'line',
-    series: [{ dataKey: 'rent', label: 'Rent (new leases)', color: METRIC_COLORS.rent, type: 'monotone' }],
+    series: [{ dataKey: 'rent', label: 'Rent (new listings)', color: METRIC_COLORS.rent, type: 'monotone' }],
     size: 'medium',
     order: 3,
     defaultTimeframe: 'Jan 2025',

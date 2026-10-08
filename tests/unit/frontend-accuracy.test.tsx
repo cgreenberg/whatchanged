@@ -150,7 +150,7 @@ describe('CPI shelter vs Zillow rent explanation', () => {
     expect(input.note).toBe(SHELTER_SHORT_NOTE)
     expect(input.info).toEqual([HOUSING_NOTE])
     render(<EraChart config={shelterConfig} data={input.data} nationalData={input.nationalData} provenance={input.provenance} note={input.note} info={input.info} />)
-    expect(screen.getByTestId('chart-note')).toHaveTextContent('trails new-lease rents by about a year')
+    expect(screen.getByTestId('chart-note')).toHaveTextContent('trails new-listing rents by about a year')
     expect(screen.getByTestId('chart-note').textContent!.length).toBeLessThanOrEqual(100)
     const btn = screen.getByTestId('chart-info-toggle')
     const panel = screen.getByTestId('chart-info')

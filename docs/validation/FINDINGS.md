@@ -21,7 +21,7 @@ fields, unresolved crosswalk counties, rent counties missing from `county-geo.js
 
 ## What we cannot claim
 
-- **BLS CPI shelter and Zillow rent measure different things.** CPI covers all tenants, including existing leases; Zillow covers new leases. CPI trails market rents by about a year, which is why a metro's CPI shelter can rise while its Zillow rent falls. Both are correct; the cards say which one they show.
+- **BLS CPI shelter and Zillow rent measure different things.** CPI covers all tenants, including existing leases; Zillow covers new listings. CPI trails market rents by about a year, which is why a metro's CPI shelter can rise while its Zillow rent falls. Both are correct; the cards say which one they show.
 
 ## Coverage
 

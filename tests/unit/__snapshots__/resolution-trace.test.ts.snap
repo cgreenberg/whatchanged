@@ -729,7 +729,7 @@ exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no
     "not-applicable | propane.eia-shopp-state | Hawaii [state] |  |  | EIA's heating-season survey has no residential propane price for Hawaii.",
   ],
   "rent": [
-    "used | rent.zillow-county | Hawaii County, HI [county] | 2026-08 |  | This August reading (+7.9%) may be about 2 percentage points too low (≈ $41/mo): the county’s recent seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +10.1%.",
+    "used | rent.zillow-county | Hawaii County, HI [county] | 2026-08 |  | This August reading (+7.9%) may be about 2.2 percentage points too low (≈ $45/mo): the county’s recent seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +10.1%.",
     "not-needed | rent.zillow-metro | Hawaii County, HI’s metro area [metro]",
     "not-needed | rent.zillow-city | a city in Hawaii County, HI [city]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",

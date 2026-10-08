@@ -176,7 +176,7 @@ export interface ElectricityData extends ElectricitySeriesData {
 }
 
 /**
- * Asking rent on new leases (Zillow ZORI): the county (src/lib/data/county-rent.json) or, where Zillow has no
+ * Asking rent on new listings (Zillow ZORI): the county (src/lib/data/county-rent.json) or, where Zillow has no
  * county series, the county's metro (src/lib/data/metro-rent.json; OMB March 2020 CBSA, as Zillow uses).
  */
 export interface RentData {
@@ -217,7 +217,7 @@ export interface RentData {
   baseRent: number
   /** Observed typical asking rent in the latest month, $/mo. */
   curRent: number
-  /** Signed $/mo change on a typical new lease consistent with `pct`: curRent − curRent / (1 + pct/100). */
+  /** Signed $/mo change on a typical new listing consistent with `pct`: curRent − curRent / (1 + pct/100). */
   monthlyChange: number
   baseMonth: string // YYYY-MM
   asOf: string // YYYY-MM of curRent

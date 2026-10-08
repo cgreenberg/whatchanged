@@ -130,7 +130,7 @@ describe('seasonal caveat sized by its effect on the shown %', () => {
     // r16 review: actual effects 8.4 and 5.5 points (the old factor gaps, 7.3 / 4.7, understated them)
     expect(rows['27013'].saCaveat).toEqual({ gap: -8.4, month: 8 })
     expect(rows['27169'].saCaveat).toEqual({ gap: -5.5, month: 8 })
-    expect(seasonalCaveatPoints(rows['27013'].saCaveat!)).toBe(8.5)
+    expect(seasonalCaveatPoints(rows['27013'].saCaveat!)).toBe(8.4) // one decimal (round 18), like the shown %
     expect(rentSeasonalCaveat(rows['27169'].saCaveat, 'county')).toMatch(/^This August reading may be about 5\.5 percentage points too low/)
   })
 

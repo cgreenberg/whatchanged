@@ -39,7 +39,7 @@ workbooks), xlrd 2.0.2 (the OMB 2020 delineation `.xls`).
 | Metric | Source | Geo | Cadence | Bulk URL | Terms |
 |---|---|---|---|---|---|
 | Home values | Zillow ZHVI (SA by Zillow) | 3.1k counties, U.S. | Monthly (~mid-month) | `files.zillowstatic.com/research/public_csvs/zhvi/…` | Free; attribution to Zillow required |
-| Rent (asking rents on new leases) | Zillow ZORI (we seasonally adjust) | ~900 counties, U.S. | Monthly | `…/public_csvs/zori/County_…` | Same |
+| Rent (asking rents on new listings) | Zillow ZORI (we seasonally adjust) | ~900 counties, U.S. | Monthly | `…/public_csvs/zori/County_…` | Same |
 | Metro rent (counties without a county series) | Zillow ZORI metro (we seasonally adjust) | ~200 metros used | Monthly | `…/public_csvs/zori/Metro_…` | Same |
 | City rent (counties without a county or usable metro series) | Zillow ZORI city (we seasonally adjust) | 1 county (2026-10) | Monthly | `…/public_csvs/zori/City_zori_uc_sfrcondomfr_sm_month.csv` | Same |
 | City → county | Census 2020 place-by-county and county-subdivision files (`national_place_by_county2020.txt`, `national_cousub2020.txt`); Zillow's own `CountyName` only breaks ties for a name Census puts in several counties (Zillow puts Fernley NV in Churchill County; Census: Lyon) | Place | Static | `www2.census.gov/geo/docs/reference/codes2020/` | Public domain |
@@ -122,7 +122,7 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
   month; also `rentSaCav` in `counties.json` and the county shards, `rentM.cav` for a metro stand-in) and every place
   the rent number appears says so: the card ⓘ, the trace (appended to a stale reason, never replaced), the Rent graph ⓘ,
   the county map panel ("This August reading may overstate the change by about 2.5 percentage points (≈ $Y/mo): the
-  county's recent seasonal swing differs from the pattern used to adjust it", X = |gap| rounded to 0.5, $Y = the
+  county's recent seasonal swing differs from the pattern used to adjust it", X = |gap| to one decimal, $Y = the
   card's $/mo at the shown % minus at the % less X) and the map tooltip / share image (short "†seasonal pattern
   uncertain" marker; the share image adds the footnote where it fits). The caveat never changes a number. 2026-10
   build (as of Aug 2026): 86 counties (41 overstate, 45 understate; New York County +2.7, Kings County +2.1, Oswego

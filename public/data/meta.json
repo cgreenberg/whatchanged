@@ -14,7 +14,7 @@
    "adjustment": "seasonally adjusted by whatchanged",
    "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)",
    "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
-   "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases",
+   "label": "Zillow Observed Rent Index (ZORI), asking rents on new listings",
    "url": "https://www.zillow.com/research/data/"
   },
   "zoriMetro": {
@@ -34,7 +34,7 @@
    "seasonalMethod": "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)",
    "seasonalDetail": "log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + 8), n = fewest leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with >= 6 ratios per month; saPool = pool used, saW = w",
    "label": "Zillow Observed Rent Index (ZORI), city",
-   "geography": "the county's most populous city with a usable Zillow series (city to county by the Census 2020 place and county-subdivision files)",
+   "geography": "the county's most populous place (Zillow SizeRank) with a usable Zillow city series (place to county by the Census 2020 place and county-subdivision files)",
    "url": "https://www.zillow.com/research/data/"
   },
   "hudFmr": {

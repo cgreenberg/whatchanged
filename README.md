@@ -24,7 +24,7 @@ Every number shows its source, geography, time window, as-of date and whether it
 
 | Metric | Source | Geography |
 |---|---|---|
-| Rent on new leases | [Zillow ZORI](https://www.zillow.com/research/data/), seasonally adjusted by whatchanged | County |
+| Rent on new listings | [Zillow ZORI](https://www.zillow.com/research/data/), seasonally adjusted by whatchanged | County |
 | Home prices | [Zillow ZHVI](https://www.zillow.com/research/data/) (smoothed, seasonally adjusted by Zillow) | County |
 | Median rent (base of the CPI shelter card's dollar figure) | [Census ACS](https://www.census.gov/programs-surveys/acs) 5-year | ZIP (ZCTA) |
 | Zip → county | Census 2020 ZCTA/block relationship files (housing-unit weighted) + GeoNames for PO-box zips | ZIP |

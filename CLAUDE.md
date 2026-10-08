@@ -190,7 +190,7 @@ closes). Keep each card face ≤ 120 characters (`tests/unit/provenance.test.tsx
 | Card | Number | Dollar line (formula source) |
 |---|---|---|
 | Gas | EIA weekly $/gal: latest vs last weekly reading in [Jan 6, Jan 20] 2025; BLS tiers: latest month vs Jan 2025 ("since Jan 2025", provenance "BLS CPI average price, regular gasoline · {area} · monthly · …") | signed `current − baseline` $/gal (`eia.ts` / `bls-gas.ts`) |
-| Rent (new leases) | Zillow ZORI county (else metro; a flagged-outlier metro never stands in) % since Jan 2025, SA by whatchanged; range −20…+50 shared by build and runtime (`src/lib/rent-range.ts` = `meta.pctRange`) | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
+| Rent (new listings) | Zillow ZORI county (else metro; a flagged-outlier metro never stands in) % since Jan 2025, SA by whatchanged; range −20…+50 shared by build and runtime (`src/lib/rent-range.ts` = `meta.pctRange`) | `curRent − curRent/(1+pct/100)` $/mo on observed rent (`rentMonthlyChange`, `src/lib/rent.ts`) |
 | ↳ fallback, county has no rent | "Shelter (CPI)", CPI SAH1 % | "≈ +$X/yr in rent" = `round(localAcsRent × 12 × rentIndexPct/100)` where `rentIndexPct` is the same area's CPI **rent of primary residence** (`SEHA`) % — never the shelter % (≈2/3 owners' equivalent rent); **null** without SEHA (validated on its own: `isValidRentIndexChange`) or when CPI is national. Rent base (`rentBase` ladder, `getCensusData`): zip ACS → PO-box donor → nearest zip in the county with a Census rent (≤ 100 mi) → county median → state median, always labeled; never a national constant (`computeShelterImpact`) |
 | Groceries | CPI food at home (SAF11) % | `round(6000 × pct/100)` $/yr, signed (`computeGroceryImpact`); **null** when CPI is national (fallback or territories) |
 | Electricity | EIA average residential price for the zip's **state**, ¢/kWh: big number = **average of the latest 12 published monthly prices** ("avg, last 12 mo"); "+x% vs yr centered on Jan '25" = that average vs the average of Aug 2024–Jul 2025 (the 12 months centered on Jan 2025); card "U.S. +y%" = EIA U.S. average, same windows | `round((current − baseline) × usageKwh / 100)` $/mo (change in the 12-month average price), `usageKwh` = state residential sales ÷ customers averaged over the latest 12 complete months (`computeElectricityImpact`); null without usage |
@@ -218,10 +218,13 @@ whose only CPI is national): a U.S. % is never presented as a local cost; the ca
 from the cards' as-of periods — weekly gas into early Oct → "OCT 2026", all monthly through Aug → "AUG 2026"; never the
 month the image is made), then "latest data {span}". Each share quadrant names its own month on its source line ("· Aug
 '26") and each OG stat on a third line ("latest Aug '26", `cardMonthLabel`), so an older box never reads as current.
-Rent's title is "RENT (NEW LEASES)" with a small "seas. adj." tag (share title row / OG window line). A number whose
+Rent's title is "RENT (NEW LISTINGS)" with a small "seas. adj." tag (share title row / OG window line). A number whose
 chart series is missing shows "Chart unavailable" under it ("Data unavailable" only for N/A). The rent seasonal-pattern
-caveat is signed ("may be about 2 percentage points too low"; "under its own recent pattern ≈ +0.7%"; "even its
-direction is uncertain" when |gap| ≥ |shown| or the sign flips — `rent-range.ts`), never "overstate/understate".
+caveat is signed ("may be about 2.2 percentage points too low"; "under its own recent pattern ≈ +0.7%": points and
+own-pattern % both one decimal, so they add up; "even its direction is uncertain" only when the own-pattern % has the
+other sign or rounds to 0 — `rent-range.ts`), never "overstate/understate". When the direction is uncertain the rent
+card shows no signed $/mo (tag "⚠ direction uncertain") and the share image drops the "≈ $/mo" pill, as for an
+unusual (†) value. With no dated card the image header reads "SINCE JAN 20, 2025" (no arrow).
 Share card, OG image and `og:description` tag every number with a short geography (`geoTag`: "Buncombe Co.",
 "South Atlantic region", "Lower Atlantic avg", "U.S. avg; local n/a"); flagged county rent (outliers, bundled as
 `flagged`/`note` in `county-rent.json`) gets "†" plus an "unusual value" footnote. BLS gas tiers are tagged
@@ -315,7 +318,7 @@ Jan 6. A missing baseline is null, never 0. BLS `"-"` values (e.g. the Oct 2025 
    (`tests/unit/no-hardcoded-dates.test.ts` enforces this).
 3. County figures lead (zip-vs-zip differences inside a county are not corroborated). No percentile ranks.
 4. Approximations (Valdez-Cordova, national fallbacks) carry an `approx` flag or note in the UI.
-5. Zillow rent (asking rent on new leases) and CPI shelter (all tenants + owners' equivalent rent, trails the market
+5. Zillow rent (asking rent on new listings) and CPI shelter (all tenants + owners' equivalent rent, trails the market
    by ~1 yr) measure different things. Always label which one is shown; never pair one's % with the other's $ base.
 6. When the hero cards' as-of months differ by more than one month, show the page-level range (`asOfRange`).
 7. Signs are preserved everywhere: a price drop is a negative dollar amount.

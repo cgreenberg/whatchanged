@@ -20,15 +20,15 @@ const metros = (metroRent as unknown as { metros: Record<string, Row> }).metros
 const metroCounties = (metroRent as unknown as { counties: Record<string, string> }).counties
 
 describe('seasonal-pattern caveat (round 15: measured at the displayed month)', () => {
-  test('wording: month of the reading, direction, gap rounded to 0.5, $/mo bias', () => {
+  test('wording: month of the reading, direction, gap to one decimal, $/mo bias', () => {
     // Manhattan-like: +12.6% on $4,818/mo, Aug reading 2.5 points high → $/mo at 12.6% minus at 10.1%
     const usd = Math.round(Math.abs((4818 - 4818 / 1.126) - (4818 - 4818 / 1.101)))
     expect(rentSeasonalCaveat({ gap: 2.5, month: 8 }, 'county', { pct: 12.6, curRent: 4818 })).toBe(
       `This August reading (+12.6%) may be about 2.5 percentage points too high (≈ $${usd}/mo): the county’s recent seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +10.1%.`)
     expect(rentSeasonalCaveat({ gap: -2.2, month: 8 }, 'metro')).toBe(
-      'This August reading may be about 2 percentage points too low: the metro’s recent seasonal swing differs from the pattern used to adjust it.')
-    expect(rentSeasonalCaveat({ gap: 1.8, month: 3 })).toMatch(/^This March reading may be about 2 percentage points too high:/)
-    expect(rentSeasonalCaveat({ gap: -1.7, month: 8 })).toMatch(/may be about 1\.5 percentage points too low/)
+      'This August reading may be about 2.2 percentage points too low: the metro’s recent seasonal swing differs from the pattern used to adjust it.')
+    expect(rentSeasonalCaveat({ gap: 1.8, month: 3 })).toMatch(/^This March reading may be about 1\.8 percentage points too high:/)
+    expect(rentSeasonalCaveat({ gap: -1.7, month: 8 })).toMatch(/may be about 1\.7 percentage points too low/)
     // At or under the 1.5-point threshold, malformed, or absent → no caveat
     expect(rentSeasonalCaveat({ gap: 1.5, month: 8 })).toBeUndefined()
     expect(rentSeasonalCaveat({ gap: Number.NaN, month: 8 })).toBeUndefined()

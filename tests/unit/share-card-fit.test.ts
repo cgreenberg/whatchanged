@@ -31,7 +31,7 @@ import {
   generateShareCard, shareGasStandInNote, shareSeasonalNote, sharePillForGas, shelterPillSub, cityFontSize, dateBoxWidth, pctTick,
   SHARE_OUTLIER_NOTE, MARK_SCALE, QUADRANT_TITLES,
 } from '@/lib/share-card/generate'
-import { latestDataLabel, dataRangeEnd, cardMonthLabel, RANGE_END_NONE, RENT_ADJUSTMENT_TAG, shortSourceDate } from '@/lib/share-card/labels'
+import { latestDataLabel, dataRangeEnd, cardMonthLabel, RANGE_NONE, RENT_ADJUSTMENT_TAG, shortSourceDate } from '@/lib/share-card/labels'
 import { rentChartSeries, expandSeries } from '@/lib/share-card/rent-series'
 import { ttfMeasure } from '@/lib/share-card/measure'
 import { shareChartGeometry, MIN_TICK_GAP } from '@/lib/share-card/sparklines'
@@ -97,8 +97,8 @@ describe('monoLines', () => {
 })
 
 describe('share-card text slots fit the template', () => {
-  test('quadrant titles name the metric (rent: new leases) and fit one line, rent with its "seas. adj." tag', () => {
-    expect(Object.values(QUADRANT_TITLES)).toEqual(['GAS', 'GROCERIES', 'RENT (NEW LEASES)', 'SHELTER (CPI)', 'ELECTRICITY'])
+  test('quadrant titles name the metric (rent: new listings) and fit one line, rent with its "seas. adj." tag', () => {
+    expect(Object.values(QUADRANT_TITLES)).toEqual(['GAS', 'GROCERIES', 'RENT (NEW LISTINGS)', 'SHELTER (CPI)', 'ELECTRICITY'])
     for (const t of Object.values(QUADRANT_TITLES)) {
       expect([t, barlow(t, FS.title, 0.1 * FS.title) <= CELL_TEXT_WIDTH]).toEqual([t, true])
     }
@@ -127,7 +127,10 @@ describe('share-card text slots fit the template', () => {
     // a card without a number never moves the end; across a year end
     expect(dataRangeEnd([card('2026-12'), card('2027-01-04'), card('2027-03', 'unavailable')])).toBe('JAN 2027')
     expect(dataRangeEnd([card('2026-09', 'unavailable')])).toBeNull()
-    expect(RANGE_END_NONE).toBe('LATEST')
+    expect(RANGE_NONE).toBe('SINCE JAN 20, 2025')
+    // no dated card: one line, no arrow, still inside the date box
+    expect(dateBoxWidth(null, null)).toBeGreaterThan(0)
+    expect(dateBoxWidth(null, null)).toBeLessThan(dateBoxWidth('SEP 2026', null))
     // each quadrant's own month (OG stat line)
     expect(cardMonthLabel(card('2026-10-05'))).toBe("latest Oct '26")
     expect(cardMonthLabel(card('2026-07'))).toBe("latest Jul '26")
@@ -246,9 +249,9 @@ describe('share-card text slots fit the template', () => {
     expect(monoLines(worstSeasonalNoteUncertain, FS.footnote, FOOTNOTE_W)).toBeLessThanOrEqual(2)
     expect(shareSeasonalNote({ gap: 2.5, month: 8 }, { pct: 7, curRent: 1800, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may be ~2\.5 pts too high \(≈ \$\d+\/mo\); own pattern \+4\.5%\.$/)
     // signed for falls (round-17 cases): Collier FL −1.5% (gap −2.2) reads "too low", own +0.7%, direction uncertain
-    expect(shareSeasonalNote({ gap: -2.2, month: 8 }, { pct: -1.5, curRent: 2567, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may be ~2 pts too low \(≈ \$\d+\/mo\); own pattern \+0\.7%, direction uncertain\.$/)
+    expect(shareSeasonalNote({ gap: -2.2, month: 8 }, { pct: -1.5, curRent: 2567, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may be ~2\.2 pts too low \(≈ \$\d+\/mo\); own pattern \+0\.7%, direction uncertain\.$/)
     // Sweetwater WY −4.8% (gap +2.1): "too high", own −6.9%, direction clear
-    expect(shareSeasonalNote({ gap: 2.1, month: 8 }, { pct: -4.8, curRent: 1141, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may be ~2 pts too high \(≈ \$\d+\/mo\); own pattern −6\.9%\.$/)
+    expect(shareSeasonalNote({ gap: 2.1, month: 8 }, { pct: -4.8, curRent: 1141, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may be ~2\.1 pts too high \(≈ \$\d+\/mo\); own pattern −6\.9%\.$/)
     expect(shareSeasonalNote(undefined, { pct: 7, curRent: 1800, asOf: '2026-08' })).toBeNull()
   })
 
@@ -368,7 +371,7 @@ describe('share-card quadrants: one template, same chart height, fits', () => {
       .filter((d): d is string => !!d).map((d) => d.slice(0, 7)).sort().pop()!
     const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
     expect(text).toContain(`${MON[Number(newest.slice(5)) - 1]} ${newest.slice(0, 4)}`)
-    expect(text).toContain('RENT (NEW LEASES)')
+    expect(text).toContain('RENT (NEW LISTINGS)')
     expect(text).toContain('seas. adj.')
     expect(text).toMatch(/latest data [A-Z][a-z]{2}(–[A-Z][a-z]{2})? '26/)
     for (const t of ['GAS', 'GROCERIES', 'RENT', 'ELECTRICITY']) expect(text).toContain(t)
@@ -400,7 +403,7 @@ describe('share-card quadrants: one template, same chart height, fits', () => {
     s.rent = { ...s.rent!, countyFips: '99999' } // no county shard → no chart series
     const r = await render(s)
     expectTemplate(r.qs)
-    const rentQ = r.qs.find((q) => textOf(q).includes('RENT (NEW LEASES)'))!
+    const rentQ = r.qs.find((q) => textOf(q).includes('RENT (NEW LISTINGS)'))!
     expect(textOf(rentQ)).toContain('Chart unavailable')
     expect(textOf(rentQ)).not.toContain('Data unavailable')
   })

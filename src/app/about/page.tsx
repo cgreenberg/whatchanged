@@ -63,8 +63,8 @@ export default function AboutPage() {
         <p>
           Enter a zip code to see how local prices changed since January 20, 2025. Four summary cards
           come first: <strong>Gas</strong> (regular gasoline, $/gal),{' '}
-          <strong>Rent</strong> (asking rents on new leases, Zillow: your county&apos;s series, else your
-          metro area&apos;s, else your county&apos;s most populous city with a Zillow series; where Zillow has none of
+          <strong>Rent</strong> (asking rents on new listings, Zillow: your county&apos;s series, else your
+          metro area&apos;s, else your county&apos;s most populous place with a Zillow series; where Zillow has none of
           these, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
           <strong>Groceries</strong> (CPI food at home) and{' '}
           <strong>Electricity</strong> (your state&apos;s average residential price per kWh over the last 12
