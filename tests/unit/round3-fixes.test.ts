@@ -4,7 +4,7 @@ import React from 'react'
 import * as kv from '@/lib/cache/kv'
 import { runRefresh, parseRefreshArgs, shouldSkipRecentRun, REFRESH_ATTEMPT_INTERVAL_MS, defaultRefreshDeps } from '@/lib/api/refresh'
 import { parseCpiResponse, cpiSeriesIds, cpiCacheKey } from '@/lib/api/bls-cpi'
-import { sparklineGeometry, buildLineSparklineV3 } from '@/lib/share-card/sparklines'
+import { shareChartGeometry, buildShareChart } from '@/lib/share-card/sparklines'
 import {
   gasShortGeo,
   cpiShortGeo,
@@ -252,44 +252,27 @@ test('CPI points are the union of months: a groceries gap keeps the shelter mont
 
 // ---------------------------------------------------------------- MED1 sparkline label geometry
 
-describe('share-card sparkline: y labels sit on the plotted values', () => {
+describe('share-card chart: y ticks sit on the plotted values', () => {
   type El = React.ReactElement<{ style?: React.CSSProperties; children?: React.ReactNode }>
   const kids = (el: El) => React.Children.toArray(el.props.children) as El[]
 
-  function renderedLabelCenters(values: number[], opts: { height?: number; bounds?: { min: number; max: number } }) {
-    const el = buildLineSparklineV3(values, '#fff', 'g', { yMin: 'min', yMid: 'mid', yMax: 'max', xLeft: 'a', xMid: 'b', xRight: 'c', ...opts }) as El
-    const [labelCol, chartCol] = kids(el)
-    const [plotBox] = kids(chartCol)
-    const centers = Object.fromEntries(
-      kids(labelCol).map((s) => [String(s.props.children), Number(s.props.style!.top) + Number(s.props.style!.height) / 2])
-    )
-    return { centers, labelColHeight: labelCol.props.style!.height, plotHeight: plotBox.props.style!.height }
-  }
-
   test.each([
-    ['gas $/gal, no bounds', [3.1, 3.4, 2.9, 3.05, 3.3], { height: 146 }],
-    ['groceries %, padded bounds', [0, 0.7, 1.2, 2.4, 3.1], { height: 170, bounds: { min: 0, max: 3.1 * 1.05 } }],
-    ['shelter %, range spanning 0', [0, -0.3, 0.8, 1.9], { height: 170, bounds: { min: -0.3, max: 1.9 + 2.2 * 0.05 } }],
+    ['gas $/gal', [3.1, 3.4, 2.9, 3.05, 3.3], { height: 200 }],
+    ['groceries %, includes 0', [0, 0.7, 1.2, 2.4, 3.1], { height: 200, includeZero: true }],
+    ['shelter %, range spanning 0', [0, -0.3, 0.8, 1.9], { height: 180, includeZero: true }],
   ] as const)('%s', (_name, values, opts) => {
     const v: number[] = [...values]
-    const geo = sparklineGeometry(v, opts)
-    const { centers, labelColHeight, plotHeight } = renderedLabelCenters(v, opts)
+    const geo = shareChartGeometry(v, opts)
+    const el = buildShareChart(v, '#fff', 'g', { ...opts, fmtTick: (x) => x.toFixed(2), xLeft: 'a', xRight: 'b' }) as El
+    const [labelCol] = kids(el)
     // label column is exactly as tall as the plot (excludes the x-axis row)
-    expect(labelColHeight).toBe(geo.plotHeight)
-    expect(plotHeight).toBe(geo.plotHeight)
-    // each label's centre equals the plotted y of the value it names
-    const yOf = (val: number) => (geo.toY(val) / 50) * geo.plotHeight
-    expect(centers.max).toBeCloseTo(yOf(geo.maxVal), 6)
-    expect(centers.mid).toBeCloseTo(yOf((geo.minVal + geo.maxVal) / 2), 6)
-    expect(centers.min).toBeCloseTo(yOf(geo.minVal), 6)
-    if (!('bounds' in opts)) {
-      // no padding: max/min labels are level with the highest/lowest plotted points
-      expect(centers.max).toBeCloseTo(geo.pointYs[v.indexOf(Math.max(...v))], 6)
-      expect(centers.min).toBeCloseTo(geo.pointYs[v.indexOf(Math.min(...v))], 6)
-    } else {
-      // the baseline 0% point sits on the 0 label when the lower bound is 0
-      if (opts.bounds.min === 0) expect(geo.pointYs[0]).toBeCloseTo(centers.min, 6)
-    }
+    expect(labelCol.props.style!.height).toBe(geo.plotH)
+    const centers = Object.fromEntries(kids(labelCol).map((s) => [String(s.props.children), Number(s.props.style!.top) + 12]))
+    // top tick on the highest plotted point, bottom tick on the lowest (0 when the range includes it)
+    expect(centers[geo.hi.toFixed(2)]).toBeCloseTo(geo.toY(geo.hi), 6)
+    expect(centers[geo.lo.toFixed(2)]).toBeCloseTo(geo.toY(geo.lo), 6)
+    expect(geo.ys[v.indexOf(Math.max(...v))]).toBeCloseTo(geo.toY(geo.hi), 6)
+    if (opts.height && 'includeZero' in opts && v[0] === 0 && Math.min(...v) === 0) expect(geo.ys[0]).toBeCloseTo(centers[geo.lo.toFixed(2)], 6)
   })
 })
 
@@ -350,6 +333,5 @@ test('monthly sparkline axis is time-based: a Feb–Jul publication gap is a gap
   expect(a.xFractions[4]).toBe(1)
   expect(a.xFractions[3]).toBeCloseTo(12 / 19, 9)
   expect(a.gapAfter).toEqual([2, 3])
-  expect(a.xMid).toBe("Nov '25")
   expect(monthlyAxis(['2025-01', '2025-03', '2025-05'].map((date) => ({ date }))).gapAfter).toEqual([])
 })

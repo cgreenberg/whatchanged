@@ -1,15 +1,16 @@
 /**
  * @jest-environment node
  */
-// Share card (1080×1080) text fit: every text slot stays within its line budget for the worst cases,
-// and every quadrant's rendered content (estimated from the actual element tree, DM Mono being
-// monospaced) fits inside the quadrant — so a long footnote or sublabel shrinks the sparkline
-// instead of overlapping the heading or slipping under the footer.
-import fs from 'fs'
-import path from 'path'
-import type { EconomicSnapshot } from '@/types'
+// Share card (1080×1080) text fit: one quadrant template for Gas, Groceries, Rent/Shelter and Electricity —
+// title, big number + one pill, chart, source line — with fixed slot heights, so all four charts are the same
+// height. Every text slot is checked against the worst real strings (DM Mono is monospaced; Bebas / Barlow are
+// measured from the bundled TTFs), and the shared footnote zone can never squeeze the charts below MIN_CHART_H.
+import type { EconomicSnapshot, RentData } from '@/types'
 import austin from '../fixtures/snapshots/78701.json'
 import zipCounty from '@/lib/data/zip-county.json'
+import countyRent from '@/lib/data/county-rent.json'
+import metroRent from '@/lib/data/metro-rent.json'
+import akGas from '@/lib/data/ak-gas.json'
 import { blsGasData } from '../mocks/bls-gas-data'
 
 jest.mock('@/lib/api/snapshot', () => ({ fetchSnapshot: jest.fn() }))
@@ -27,30 +28,35 @@ jest.mock('next/og', () => ({
 
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import {
-  generateShareCard, shareGasStandInNote, electricityVsLabel, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
-  electricityGeoLine, electricityBasisNote, shelterPillSub,
-  GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, ELECTRICITY_SUBLABEL,
-  shareSeasonalNote,
+  generateShareCard, shareGasStandInNote, shareSeasonalNote, shelterPillSub, cityFontSize, dateBoxWidth, pctTick,
+  SHARE_OUTLIER_NOTE, MARK_SCALE, QUADRANT_TITLES,
 } from '@/lib/share-card/generate'
+import { latestDataLabel, rangeEnd, shortSourceDate } from '@/lib/share-card/labels'
+import { rentChartSeries, expandSeries } from '@/lib/share-card/rent-series'
+import { ttfMeasure } from '@/lib/share-card/measure'
+import { shareChartGeometry, MIN_TICK_GAP } from '@/lib/share-card/sparklines'
 import { ELECTRICITY_STATES } from '@/lib/api/eia-electricity'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
-import { electricityPlace } from '@/lib/hero-cards'
 import {
-  monoLines, monoLineHeight, monoCharsPerLine, sparklineBudget, CELL_CONTENT_H, CELL_TEXT_WIDTH, CARD_SIZE, ROW_H, FS, BIG_UNIT_SCALE,
+  electricityPlace, imageCountyName, buildRentCard, gasCardArea, cpiCardArea, type HeroCardModel,
+} from '@/lib/hero-cards'
+import {
+  monoLines, monoCharsPerLine, fitSourceLine, footnoteZoneHeight, chartHeight, rowHeight, CELL_TEXT_WIDTH, CARD_SIZE,
+  HEADER_H, FOOTER_H, SIDE_PAD, FS, BIG_UNIT_SCALE, MIN_CHART_H, FOOTNOTE_W, CELL_PAD, QUADRANT_TEXT_H,
 } from '@/lib/share-card/layout'
-import { sparklineGeometry } from '@/lib/share-card/sparklines'
 import { fmtSignedDollars, fmtSignedPct } from '@/lib/format'
-import { fmtRentDollars } from '@/lib/compute/dollar-translations'
+import { lookupCountyRent, lookupMetroRent } from '@/lib/rent'
 import { BLS_CPI_AREAS } from '@/lib/mappings/county-metro-cpi'
 import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES, STATE_LEVEL_CODES, PAD_DUOAREA } from '@/lib/mappings/eia-gas'
 import { describeDuoarea, toGasPriceData, type GasSeriesData } from '@/lib/api/eia'
-import { gasShortGeo, dataThroughLabel, type HeroCardModel } from '@/lib/hero-cards'
 import { BLS_GAS_PUBLISHED_AREAS } from '@/lib/mappings/bls-gas'
 import { describeBlsGasArea } from '@/lib/api/bls-gas'
 import type { CpiData } from '@/types'
 
 const mockFetch = fetchSnapshot as jest.MockedFunction<typeof fetchSnapshot>
 const snap = (): EconomicSnapshot => JSON.parse(JSON.stringify(austin))
+const bebas = ttfMeasure('BebasNeue-Regular.ttf')
+const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
 
 type Loc = { countyFips: string; countyName: string; stateAbbr: string; cityName?: string }
 const hiAkCounties: Loc[] = [
@@ -60,39 +66,18 @@ const hiAkCounties: Loc[] = [
       .map((v) => [v.countyFips, v] as const),
   ).values(),
 ]
+const worstStandInNote = hiAkCounties.map((c) => shareGasStandInNote(c))
+  .reduce((a, b) => (monoLines(b, FS.footnote, FOOTNOTE_W) > monoLines(a, FS.footnote, FOOTNOTE_W) || b.length > a.length ? b : a))
+// Widest seasonal footnote: 4-digit $/mo bias, two-digit points, ‡ (with the outlier)
+const worstSeasonalNote = shareSeasonalNote({ gap: -12.5, month: 12 }, { pct: 22.2, curRent: 14561, asOf: '2026-12' }, '‡')!
 
-/** Advance width (px) of `text` in a bundled TTF (cmap format 4 + hmtx; no kerning). */
-function ttfMeasure(file: string) {
-  const b = fs.readFileSync(path.join(process.cwd(), 'public', 'fonts', file))
-  const tables: Record<string, number> = {}
-  for (let i = 0; i < b.readUInt16BE(4); i++) tables[b.toString('latin1', 12 + 16 * i, 16 + 16 * i)] = b.readUInt32BE(20 + 16 * i)
-  const upm = b.readUInt16BE(tables.head + 18)
-  const nHMetrics = b.readUInt16BE(tables.hhea + 34)
-  const cmap = tables.cmap
-  let sub = -1
-  for (let i = 0; i < b.readUInt16BE(cmap + 2) && sub < 0; i++) {
-    const off = cmap + b.readUInt32BE(cmap + 8 + 8 * i)
-    if (b.readUInt16BE(off) === 4) sub = off
-  }
-  const segX2 = b.readUInt16BE(sub + 6)
-  const ends = sub + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2
-  const glyph = (cp: number): number => {
-    for (let i = 0; i < segX2 / 2; i++) {
-      if (cp > b.readUInt16BE(ends + 2 * i)) continue
-      const start = b.readUInt16BE(starts + 2 * i)
-      if (cp < start) return 0
-      const delta = b.readInt16BE(deltas + 2 * i), ro = b.readUInt16BE(ranges + 2 * i)
-      if (!ro) return (cp + delta) & 0xffff
-      const g = b.readUInt16BE(ranges + 2 * i + ro + 2 * (cp - start))
-      return g ? (g + delta) & 0xffff : 0
-    }
-    return 0
-  }
-  return (text: string, size: number, letterSpacing = 0) => [...text].reduce((w, ch) => {
-    const g = glyph(ch.codePointAt(0)!)
-    if (!g) throw new Error(`${file} has no glyph for "${ch}"`)
-    return w + (b.readUInt16BE(tables.hmtx + 4 * Math.min(g, nHMetrics - 1)) / upm) * size + letterSpacing
-  }, 0)
+/** Width of a big-number row: Bebas number (+ small marks / unit) + the pill (Barlow, padding, border, margin). */
+function bigRowWidth(big: string, opts: { mark?: string; unit?: string; pill?: string; sub?: string | null } = {}): number {
+  let w = bebas(big, FS.big)
+  if (opts.mark) w += 2 + bebas(opts.mark, Math.round(FS.big * MARK_SCALE))
+  if (opts.unit) w += bebas(opts.unit, Math.round(FS.big * BIG_UNIT_SCALE))
+  if (opts.pill) w += Math.max(barlow(opts.pill, FS.pill), opts.sub ? barlow(opts.sub, FS.pillSub) : 0) + 2 * 14 + 2 * 1.5 + 14
+  return w
 }
 
 // ── Text-slot budgets ────────────────────────────────────────────────────────────
@@ -102,199 +87,195 @@ describe('monoLines', () => {
     // 475px / (24 × 0.6) = 32 chars per line
     expect(monoLines('x'.repeat(32), 24)).toBe(1)
     expect(monoLines('x'.repeat(33), 24)).toBe(2)
-    expect(monoLines("(CPI: rents + owners' equiv. rent)", 24)).toBe(2) // the old sublabel wrapped
     expect(monoLines('aaaa bbbb', 10, 10 * 0.6 * 5)).toBe(2)
     expect(monoLines('', 24)).toBe(0)
     expect(monoLines(null, 24)).toBe(0)
   })
 })
 
-describe('share-card text slots stay within their line budgets', () => {
-  test('quadrant sublabels fit one line', () => {
-    for (const s of [GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, ELECTRICITY_SUBLABEL]) {
-      expect([s, monoLines(s, FS.sublabel)]).toEqual([s, 1])
+describe('share-card text slots fit the template', () => {
+  test('quadrant titles are the metric name only and fit one line', () => {
+    expect(Object.values(QUADRANT_TITLES)).toEqual(['GAS', 'GROCERIES', 'RENT', 'SHELTER (CPI)', 'ELECTRICITY'])
+    for (const t of Object.values(QUADRANT_TITLES)) {
+      expect([t, barlow(t, FS.title, 0.1 * FS.title) <= CELL_TEXT_WIDTH]).toEqual([t, true])
     }
   })
 
-  test('HI/AK gas stand-in footnote fits two lines for every HI/AK county', () => {
-    expect(hiAkCounties.length).toBeGreaterThan(30)
-    const notes = hiAkCounties.map((c) => shareGasStandInNote(c))
-    const worst = notes.reduce((a, b) => (b.length > a.length ? b : a))
-    expect(worst).toContain('Prince of Wales-Hyder area')
-    for (const n of notes) {
-      expect([n, monoLines(n, FS.note) <= 2]).toEqual([n, true])
-      expect(n).not.toContain('C.A.') // reads as California
-      expect(n).not.toMatch(/\.[;,]/) // no "Bor.;" punctuation stacking
-      expect(n).toContain('trend may differ') // same change caveat as the website / OG
-    }
+  test('every place name fits the header beside the widest date box (Bebas 76 → 52)', () => {
+    const box = dateBoxWidth('SEP 2026', "latest data Dec '26–Jan '27")
+    expect(box).toBeLessThan(360)
+    const w = CARD_SIZE - 2 * SIDE_PAD - box - 24
+    const places = [...new Set(Object.values(zipCounty as Record<string, Loc>).map((v) => `${(v.cityName || v.countyName).toUpperCase()}, ${v.stateAbbr}`))]
+    expect(places).toContain('KING AND QUEEN COURT HOUSE, VA')
+    expect(places.filter((p) => cityFontSize(p, w) === null)).toEqual([])
+    expect(cityFontSize('ANCHORAGE, AK', w)).toBe(76)
+    expect(cityFontSize('KING AND QUEEN COURT HOUSE, VA', w)).toBeLessThan(76)
   })
 
-  test('gas geography line (+ BLS "thru" month) fits one line for every gas tier', () => {
-    const thru = " · thru Sep '26"
-    const eia = [
-      'NUS', 'R5XCA', ...Object.values(PAD_DUOAREA),
-      ...Object.values(STATE_LEVEL_CODES).map((c) => c.duoarea),
-    ].map((d) => describeDuoarea(d).geoLevel!)
-    const cities = [...Object.values(CPI_TO_EIA_CITY), ...Object.values(COUNTY_EIA_CITY_OVERRIDES)].map((c) => c.label)
-    const geos = [...eia, ...cities].map((g) => g.replace('excl. California', 'excl. CA'))
-    geos.push('National avg (local data unavailable)')
-    // BLS monthly tiers use the card's short geo tag + the month the figure runs through
-    const dummy = { current: 3, baseline: 3, change: 0, baselineDate: '2025-01', latestDate: '2026-09', regionName: '', series: [] } as unknown as GasSeriesData
-    const bls = [...BLS_GAS_PUBLISHED_AREAS].filter((a) => /^S/.test(a)).flatMap((a) =>
-      (a === 'S49F' || a === 'S49G' ? [false, true] : [false]).map((standIn) => `${gasShortGeo(toGasPriceData(describeBlsGasArea(a, { standIn }), dummy))}${thru}`),
-    )
-    expect(bls).toContain("Honolulu-area price* · thru Sep '26")
-    expect([...geos, ...bls].filter((g) => monoLines(g, FS.extra) > 1)).toEqual([
-      // too long with the month: the card moves "thru Sep '26" to the baseline row (see test below)
-      "Minneapolis-St. Paul metro · thru Sep '26",
-      "Riverside-San Bernardino metro · thru Sep '26",
-    ])
-    expect(bls.map((g) => g.replace(thru, '')).filter((g) => monoLines(g, FS.extra) > 1)).toEqual([])
-    expect(monoLines("since Jan 2025, thru Sep '26", FS.meta)).toBe(1)
-  })
-
-  // Every state EIA publishes (50 + DC), at the widest realistic price (59.9¢) and a 4-digit kWh
-  const elecStates = ELECTRICITY_STATES.map((st) => ({
-    state: st, stateName: Object.values(STATE_FIPS_MAP).find((v) => v.abbr === st)!.name, current: 59.9, latestPeriod: '2026-12',
-  }))
-
-  test('electricity geography line ("Maine · 29.3¢/kWh (12 mo to Jul \'26)") fits one line for every state', () => {
-    const lines = elecStates.map((e) => electricityGeoLine(e))
-    expect(lines).toContain("DC · 59.9¢/kWh (12 mo to Dec '26)")
-    expect(lines).toContain("Maine · 59.9¢/kWh (12 mo to Dec '26)")
-    expect(lines).toContain("MA · 59.9¢/kWh (12 mo to Dec '26)")
-    for (const l of lines) expect([l, monoLines(l, FS.extra)]).toEqual([l, 1])
-  })
-
-  test('electricity $/mo basis fits one line for every state (4-digit kWh)', () => {
-    for (const e of elecStates) {
-      const n = electricityBasisNote(1999.6, electricityPlace(e, 'short'))
-      expect([n, monoLines(n, FS.note)]).toEqual([n, 1])
-    }
-  })
-
-  test('electricity big number (% change) + $/mo pill fit one row at the widest values', () => {
-    const bebas = ttfMeasure('BebasNeue-Regular.ttf')
-    const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
-    for (const pct of [fmtSignedPct(99.9), fmtSignedPct(-49.9)]) {
-      for (const pill of [`≈ ${fmtSignedDollars(999, 0)}/mo`, `≈ ${fmtSignedDollars(-999, 0)}/mo`]) {
-        const row = bebas(pct, FS.big) + barlow(pill, 40) + 2 * 20 + 2 * 1.5 + 12
-        expect([pct, pill, row <= CELL_TEXT_WIDTH]).toEqual([pct, pill, true])
-      }
-    }
-  })
-
-  test('header CPI label fits one line beside the date badge for every CPI area and tier', () => {
-    // Widest data-through badge: a span across a year end ("DEC 2026–JAN 2027")
+  test('header date labels: generated range end and the data months', () => {
+    expect(rangeEnd(new Date(Date.UTC(2026, 9, 7)))).toBe('OCT 2026')
+    expect(rangeEnd(new Date(Date.UTC(2027, 0, 1)))).toBe('JAN 2027')
     const card = (asOfPeriod: string) => ({ status: 'ok', asOfPeriod }) as HeroCardModel
-    const months = Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`)
-    const badges = [...months.map((lo) => dataThroughLabel([card(lo), card('2027-01')])!), ...months.map((hi) => dataThroughLabel([card(hi)])!)]
-    expect(badges).toContain('DEC 2026–JAN 2027')
-    // DM Mono 22px + 0.06em letter spacing, 2×16 padding + 2×1 border; the badge is as wide as its widest line
-    const mono = ttfMeasure('DMMono-Regular.ttf')
-    const badgeW = Math.max(...[...badges, 'JAN 20, 2025'].map((t) => mono(t, 22, 0.06 * 22))) + 2 * 16 + 2
-    expect(badgeW).toBeGreaterThan(270)
-    const headerWidth = CARD_SIZE - 80 - Math.ceil(badgeW)
-    const base = snap().cpi.data!
-    // Each area at its own tier (S… metro = 1, 0110–0490 division = 2, 0100–0400 region = 3, 0000 = 4)
-    const tierOf = (code: string) => (/^S/.test(code) ? 1 : code === '0000' ? 4 : /^0[1-4]00$/.test(code) ? 3 : 2)
-    const labels = Object.values(BLS_CPI_AREAS).map((a) =>
-      cpiShareLabel({ ...base, areaCode: a.code, metro: a.name, tier: tierOf(a.code) } as CpiData)!,
-    )
-    expect(labels).toContain('CPI: Miami-Fort Lauderdale-West Palm Beach (metro)')
-    expect(labels).toContain('CPI: East South Central (Census division)')
-    labels.push(cpiShareLabel({ ...base, fallback: 'national' } as CpiData)!)
-    for (const l of labels) expect([l, monoLines(l, 20, headerWidth)]).toEqual([l, 1])
+    expect(latestDataLabel([card('2026-07'), card('2026-08'), card('2026-08')])).toBe("latest data Jul–Aug '26")
+    expect(latestDataLabel([card('2026-08')])).toBe("latest data Aug '26")
+    expect(latestDataLabel([card('2026-12'), card('2027-01')])).toBe("latest data Dec '26–Jan '27")
+    expect(latestDataLabel([{ status: 'unavailable', asOfPeriod: '2026-01' } as HeroCardModel])).toBeNull()
+    expect(shortSourceDate('Anchorage metro · BLS · Aug 2026')).toBe("Anchorage metro · BLS · Aug '26")
+    expect(shortSourceDate('Texas state avg · EIA · Sep 29, 2026')).toBe("Texas state avg · EIA · Sep '26")
+    expect(shortSourceDate('Puerto Rico · EIA')).toBe('Puerto Rico · EIA')
   })
 
-  test('shelter big number + "$/yr" pill fit one row; a coded rent qualifies the amount on the pill\'s second line', () => {
-    const bebas = ttfMeasure('BebasNeue-Regular.ttf')
-    const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
-    // Widest realistic: shelter ±19.9%, a top-coded $3,500+ rent × 12 × a ±19.9% rent index ≈ ±$8,358/yr
-    for (const pct of [fmtSignedPct(19.9), fmtSignedPct(-19.9)]) {
-      for (const coded of [undefined, 'top', 'bottom'] as const) {
-        for (const d of [8358, -8358]) {
-          const pill = `≈ ${fmtSignedDollars(d, 0)}/yr`
-          const sub = shelterPillSub({ basis: 'zip', rentCoded: coded }, d)
-          // two-line pill: the wider of Barlow 40 text / Barlow 24 sub + 2×18 padding + 2×1.5 border + 12 margin
-          const row = bebas(pct, FS.big) + Math.max(barlow(pill, 40), barlow(sub, 24)) + 2 * 18 + 2 * 1.5 + 12
-          expect([pct, pill, sub, row <= CELL_TEXT_WIDTH]).toEqual([pct, pill, sub, true])
-        }
-      }
+  // Every state EIA publishes (50 + DC)
+  const elecStates = ELECTRICITY_STATES.map((st) => ({ state: st, stateName: Object.values(STATE_FIPS_MAP).find((v) => v.abbr === st)!.name }))
+
+  test('source lines ("{area} · {source} · {Mon \'YY}") fit one line for every real area', () => {
+    const date = " · Sep '26"
+    const dummy = { current: 3, baseline: 3, change: 0, baselineDate: '2025-01', latestDate: '2026-09', regionName: '', series: [] } as unknown as GasSeriesData
+    const eia = ['NUS', 'R5XCA', ...Object.values(PAD_DUOAREA), ...Object.values(STATE_LEVEL_CODES).map((c) => c.duoarea)]
+      .map((d) => `${gasCardArea(toGasPriceData(describeDuoarea(d), dummy), 'TX')} · EIA${date}`)
+    const cities = [...Object.values(CPI_TO_EIA_CITY), ...Object.values(COUNTY_EIA_CITY_OVERRIDES)].map((c) => `${c.label} · EIA${date}`)
+    const bls = [...BLS_GAS_PUBLISHED_AREAS].filter((a) => /^S/.test(a)).flatMap((a) =>
+      (a === 'S49F' || a === 'S49G' ? [false, true] : [false]).map((standIn) =>
+        `${gasCardArea(toGasPriceData(describeBlsGasArea(a, { standIn }), dummy))} · BLS${date}`),
+    )
+    expect(bls).toContain("Honolulu-area* · BLS · Sep '26")
+    const ak = akGas as unknown as { communities: Record<string, { stations?: number }>; regions: Record<string, unknown> }
+    const dcra = [
+      ...Object.entries(ak.communities).map(([p, c]) => `${p} survey (nearest) · DCRA${c.stations === 1 ? ', 1 station' : ''}${date}`),
+      ...Object.keys(ak.regions).map((r) => `${r} AK region avg · DCRA${date}`),
+    ]
+    const tierOf = (code: string) => (/^S/.test(code) ? 1 : code === '0000' ? 4 : /^0[1-4]00$/.test(code) ? 3 : 2)
+    const base = snap().cpi.data!
+    const cpi = [
+      ...Object.values(BLS_CPI_AREAS).map((a) => cpiCardArea({ ...base, areaCode: a.code, metro: a.name, tier: tierOf(a.code) } as CpiData)),
+      cpiCardArea({ ...base, fallback: 'national' } as CpiData),
+    ].map((a) => `${a} · BLS · Aug '26`)
+    expect(cpi).toContain("U.S. avg (local n/a) · BLS · Aug '26")
+    const rentCounties = Object.values((countyRent as unknown as { counties: Record<string, { name: string }> }).counties)
+      .map((r) => `${imageCountyName(r.name)} · Zillow · Aug '26`)
+    const metroCounties = Object.keys((metroRent as unknown as { counties: Record<string, string> }).counties)
+    const rentMetros = [...new Set(metroCounties.map((f) => {
+      const r = lookupMetroRent(f).data
+      if (!r) return null
+      // same choice as the share card: the card's tag, or its first city when the tag would need "…"
+      const tag = buildRentCard({ rent: r } as EconomicSnapshot)!.geoTag!
+      const full = `${tag} · Zillow · Aug '26`
+      return fitSourceLine(full).text.includes('…') ? `${tag.replace(/ metro$/, '').split(/-+|\//)[0]} metro · Zillow · Aug '26` : full
+    }).filter((x): x is string => !!x))]
+    expect(rentMetros.length).toBeGreaterThan(50)
+    const elec = elecStates.map((e) => `${electricityPlace(e, 'short')} · EIA · Jul '26`)
+    const all = [...eia, ...cities, ...bls, ...dcra, ...cpi, ...rentCounties, ...rentMetros, ...elec]
+    for (const line of all) {
+      const f = fitSourceLine(line)
+      expect([line, monoLines(f.text, f.fontSize)]).toEqual([line, 1])
+      // the source and month always survive
+      expect([line, f.text.endsWith(line.split(' · ').slice(1).join(' · '))]).toEqual([line, true])
     }
-    // Magnitude wording, sign-aware: a coded base bounds the SIZE of the amount (a decrease is money saved)
+    // Only Alaska survey places ever need the "…" (everything else fits at 20/18/16px)
+    expect(all.filter((l) => fitSourceLine(l).text.includes('…') && !/DCRA/.test(l))).toEqual([])
+    const long = fitSourceLine('A Very Long Imaginary Place Name That Never Fits Anywhere · Zillow · Aug \'26')
+    expect(long.fontSize).toBe(16)
+    expect(long.text).toMatch(/…· Zillow · Aug '26$|… · Zillow · Aug '26$/)
+    expect([...long.text].length).toBeLessThanOrEqual(monoCharsPerLine(16))
+  })
+
+  test('big number + pill fit one row at the widest realistic values', () => {
+    const rows: Array<[string, number]> = []
+    for (const s of [1, -1]) {
+      // gas: change "+$4.44" + small "/gal" + "now $9.99"
+      rows.push(['gas', bigRowWidth(fmtSignedDollars(4.44 * s), { unit: '/gal', pill: 'now $9.99' })])
+      // groceries ±49.9% on $6,000/yr
+      rows.push(['groceries', bigRowWidth(fmtSignedPct(49.9 * s), { pill: `≈ ${fmtSignedDollars(2994 * s, 0)}/yr` })])
+      // rent: seasonal † on the %, 4-digit $/mo; outlier † + seasonal ‡ (no pill)
+      rows.push(['rent', bigRowWidth(fmtSignedPct(49.9 * s), { mark: '†', pill: `≈ ${fmtSignedDollars(4999 * s, 0)}/mo` })])
+      rows.push(['rent outlier', bigRowWidth(fmtSignedPct(49.9 * s), { mark: '†‡' })])
+      // shelter ±19.9% with a top-coded rent ($8,358/yr, "or more saved in rent")
+      rows.push(['shelter', bigRowWidth(fmtSignedPct(19.9 * s), { pill: `≈ ${fmtSignedDollars(8358 * s, 0)}/yr`, sub: shelterPillSub({ basis: 'zip', rentCoded: 'top' }, 8358 * s) })])
+      // electricity ±99.9%, $999/mo
+      rows.push(['electricity', bigRowWidth(fmtSignedPct(99.9 * s), { pill: `≈ ${fmtSignedDollars(999 * s, 0)}/mo` })])
+    }
+    for (const [k, w] of rows) expect([k, Math.round(w), w <= CELL_TEXT_WIDTH]).toEqual([k, Math.round(w), true])
+  })
+
+  test('shelter pill qualifier: only for a coded rent, sign-aware', () => {
     expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' }, 1234)).toBe('or more in rent')
     expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' }, -420)).toBe('or more saved in rent')
     expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' }, 12)).toBe('or less in rent')
-    expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' }, -12)).toBe('or less saved in rent')
-    expect(shelterPillSub({ basis: 'county' }, -420)).toBe('in rent')
-    expect(shelterPillSub({ basis: 'county', rentCoded: 'top' }, 1234)).toBe('in rent')
-    // Website card face: the same qualifier after the amount
-    expect(fmtRentDollars(1234, 'top')).toBe('≈ +$1,234/yr or more')
-    expect(fmtRentDollars(-420, 'top')).toBe('≈ −$420/yr or more saved')
-    expect(fmtRentDollars(12, 'bottom')).toBe('≈ +$12/yr or less')
-    expect(fmtRentDollars(-12, 'bottom')).toBe('≈ −$12/yr or less saved')
-    expect(fmtRentDollars(0, 'top')).toBe('≈ $0/yr')
-    expect(fmtRentDollars(1234)).toBe('≈ +$1,234/yr')
+    expect(shelterPillSub({ basis: 'county', rentCoded: 'top' }, 1234)).toBeNull()
+    expect(shelterPillSub({ basis: 'zip' }, 1234)).toBeNull()
   })
 
-  test('gas big number (the $ change, smaller "/gal") + two-line "$ / now" pill fit one row at the widest realistic values', () => {
-    const bebas = ttfMeasure('BebasNeue-Regular.ttf')
-    const barlow = ttfMeasure('BarlowCondensed-SemiBold.ttf')
-    for (const change of [4.44, -4.44]) {
-      const big = bebas(fmtSignedDollars(change), FS.big) + bebas('/gal', Math.round(FS.big * BIG_UNIT_SCALE))
-      // two-line pill ("$9.99" over "now"): wider of Barlow 40 / Barlow 24 + 2×18 padding + 2×1.5 border + 12 margin
-      const row = big + Math.max(barlow('$9.99', 40), barlow('now', 24)) + 2 * 18 + 2 * 1.5 + 12
-      expect([change, row <= CELL_TEXT_WIDTH]).toEqual([change, true])
+  test('footnotes: HI/AK stand-in, outlier and seasonal caveat — wording and line counts', () => {
+    expect(hiAkCounties.length).toBeGreaterThan(30)
+    for (const c of hiAkCounties) {
+      const n = shareGasStandInNote(c)
+      expect([n, monoLines(n, FS.footnote, FOOTNOTE_W) <= 2]).toEqual([n, true])
+      expect(n).not.toContain('C.A.') // reads as California
+      expect(n).not.toMatch(/\.[;,]/)
+      expect(n).toContain('trend may differ')
     }
+    expect(monoLines(SHARE_OUTLIER_NOTE, FS.footnote, FOOTNOTE_W)).toBe(1)
+    expect(worstSeasonalNote).toMatch(/^‡ Seasonal pattern uncertain: Dec rent may understate the change by ~12\.5 pts \(≈ \$[\d,]+\/mo\)\.$/)
+    expect(monoLines(worstSeasonalNote, FS.footnote, FOOTNOTE_W)).toBe(1)
+    expect(shareSeasonalNote({ gap: 2.5, month: 8 }, { pct: 7, curRent: 1800, asOf: '2026-08' })).toMatch(/^† Seasonal pattern uncertain: Aug rent may overstate/)
+    expect(shareSeasonalNote(undefined, { pct: 7, curRent: 1800, asOf: '2026-08' })).toBeNull()
   })
 
-  test('no real string combination reaches the 60px sparkline floor', () => {
-    const oneLineGeo = 'x'.repeat(monoCharsPerLine(FS.extra)) // any gas geography (each fits one line, above)
-    const gasRows: Array<[string, (string | null)?]> = [["since Jan 2025, thru Sep '26"], [`Natl (BLS Sep '26): ${fmtSignedDollars(-4.44)}`]]
-    const worstNote = hiAkCounties.map((c) => shareGasStandInNote(c)).reduce((a, b) => (monoLines(b, FS.note) > monoLines(a, FS.note) ? b : a))
-    const budgets = {
-      gas: sparklineBudget({ sublabel: GAS_SUBLABEL, extra: oneLineGeo, metaRows: gasRows }, 0),
-      // a stand-in gives the sublabel's line to its footnote
-      gasStandIn: sparklineBudget({ sublabel: '', extra: oneLineGeo, metaRows: gasRows, note: worstNote }, 0),
-      groceries: sparklineBudget({ sublabel: GROCERIES_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: groceriesBasisNote() }, 0),
-      shelter: sparklineBudget({ sublabel: SHELTER_SUBLABEL, metaRows: [['since Dec 2024', 'Natl: +10.0%']], note: shelterBasisNote(12345) }, 0),
-      electricity: sparklineBudget({
-        sublabel: ELECTRICITY_SUBLABEL, extra: electricityGeoLine(elecStates.find((e) => e.state === 'MA')!),
-        metaRows: [[electricityVsLabel(), 'Natl: +10.0%']], note: electricityBasisNote(1999, 'Massachusetts'),
-      }, 0),
-    }
-    for (const [k, h] of Object.entries(budgets)) expect([k, h > 60]).toEqual([k, true])
-    expect(monoLines(shelterBasisNote(12345), FS.meta)).toBeGreaterThan(0)
-    expect(monoLines(shelterBasisNote(12345), FS.note)).toBe(1)
-    // The electricity meta row ("vs Aug'24–Jul'25" + "Natl: −10.0%") leaves at least a 2-character gap
-    expect(`${electricityVsLabel()}  Natl: −10.0%`.length).toBeLessThanOrEqual(monoCharsPerLine(FS.meta))
-    // Borrowed rent bases name their source and still fit one line
-    for (const c of [{ basis: 'nearest-zip', donorZip: '35464' }, { basis: 'po-donor', donorZip: '10025' }, { basis: 'county' }, { basis: 'state' }]) {
-      expect([c.basis, monoLines(shelterBasisNote(12345, c), FS.note)]).toEqual([c.basis, 1])
-    }
-    expect(monoLines(groceriesBasisNote(), FS.note)).toBe(1)
-    // the short stand-in gas plot drops the mid y-label so max/mid/min never touch; taller plots keep it
-    expect(sparklineGeometry([1, 2], { height: budgets.gasStandIn }).showMid).toBe(false)
-    expect(sparklineGeometry([1, 2], { height: budgets.gas }).showMid).toBe(true)
+  test('the footnote zone never squeezes the charts below the minimum (all footnotes at once, worst wording)', () => {
+    expect(chartHeight(0)).toBeGreaterThanOrEqual(210)
+    const worst = footnoteZoneHeight([worstStandInNote, SHARE_OUTLIER_NOTE, worstSeasonalNote])
+    expect(chartHeight(worst)).toBeGreaterThanOrEqual(MIN_CHART_H)
+    // layout adds up: header + two rows + footnotes + footer ≤ the card
+    for (const f of [0, worst]) expect(HEADER_H + 2 * rowHeight(f) + f + FOOTER_H).toBeLessThanOrEqual(CARD_SIZE)
+    expect(rowHeight(0) - 1 - CELL_PAD.top - CELL_PAD.bottom - QUADRANT_TEXT_H).toBe(chartHeight(0))
   })
 
-  test('sparkline keeps a usable height in the worst case (HI/AK stand-in, wrapped geography)', () => {
-    const worst = sparklineBudget({
-      sublabel: '',
-      extra: "Anchorage-area price* · thru Sep '26",
-      metaRows: [['since Jan 2025'], ["Natl (BLS Sep '26): +$0.99"]],
-      note: shareGasStandInNote({ countyFips: '02198', countyName: 'Prince of Wales-Hyder Census Area' }),
-    })
-    expect(worst).toBeGreaterThanOrEqual(80)
-    // a longer footnote shrinks the sparkline by exactly its extra line
-    const three = sparklineBudget({ sublabel: '', metaRows: [['a']], note: 'x '.repeat(60) })
-    const two = sparklineBudget({ sublabel: '', metaRows: [['a']], note: 'x '.repeat(30) })
-    expect(two - three).toBeGreaterThanOrEqual(Math.floor(monoLineHeight(FS.note)) - 1)
+  test('chart axis: two y ticks (top and bottom of the range) unless the line is flat; % ticks read "0%"/"+7.0%"', () => {
+    const g = shareChartGeometry([0, 2, 7], { height: 200, includeZero: true })
+    expect(g.ticks.map((t) => t.value)).toEqual([7, 0])
+    expect(g.ticks[1].y - g.ticks[0].y).toBeGreaterThanOrEqual(MIN_TICK_GAP)
+    // baseline (first) and end points sit on the plotted values; the 0 tick is the baseline point
+    expect(g.ys[0]).toBeCloseTo(g.ticks[1].y, 6)
+    expect(shareChartGeometry([3, 3], { height: 200 }).ticks).toHaveLength(1)
+    expect(pctTick(0)).toBe('0%')
+    expect(pctTick(7)).toBe('+7.0%')
+    expect(pctTick(-1.84)).toBe('−1.8%')
   })
 })
 
-// ── Rendered tree: quadrant content never exceeds the quadrant ────────────────────
+// ── Rent chart series ─────────────────────────────────────────────────────────────
+
+describe('rent chart: the Rent card\'s own Zillow series', () => {
+  test('county series runs Jan 2025 → as-of and ends on the card\'s %', () => {
+    const r = lookupCountyRent('02020').data!
+    const s = rentChartSeries(r)!
+    expect(s[0].date).toBe(r.baseMonth)
+    expect(s[s.length - 1].date).toBe(r.asOf)
+    expect(Math.abs((s[s.length - 1].value / s[0].value - 1) * 100 - r.pct)).toBeLessThanOrEqual(0.15)
+  })
+
+  test('metro rung uses the metro series', () => {
+    const fips = Object.keys((metroRent as unknown as { counties: Record<string, string> }).counties).find((f) => lookupMetroRent(f).data)!
+    const r = lookupMetroRent(fips).data!
+    expect(r.level).toBe('metro')
+    const s = rentChartSeries(r)!
+    expect(s).not.toBeNull()
+    expect(Math.abs((s[s.length - 1].value / s[0].value - 1) * 100 - r.pct)).toBeLessThanOrEqual(0.15)
+  })
+
+  test('no chart when the series disagrees with the card or is missing', () => {
+    const r = lookupCountyRent('02020').data!
+    expect(rentChartSeries({ ...r, pct: r.pct + 3 })).toBeNull()
+    expect(rentChartSeries({ ...r, asOf: '2031-01' })).toBeNull()
+    expect(rentChartSeries({ ...r, countyFips: '99999' } as RentData)).toBeNull()
+    expect(rentChartSeries(null)).toBeNull()
+    expect(expandSeries({ start: '2025-01', v: [100, null, 102] }, '2025-01', '2025-03')).toEqual([
+      { date: '2025-01', value: 100 }, { date: '2025-03', value: 102 },
+    ])
+  })
+})
+
+// ── Rendered tree: every quadrant uses the template and fits ───────────────────────
 
 type El = { type: unknown; props: { style?: Record<string, unknown>; children?: unknown } }
 const isEl = (n: unknown): n is El => !!n && typeof n === 'object' && 'props' in (n as object)
@@ -306,44 +287,6 @@ function textOf(n: unknown): string {
   return isEl(n) ? textOf(n.props.children) : ''
 }
 const num = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) || 0 : 0)
-function padding(style: Record<string, unknown>) {
-  const p = typeof style.padding === 'string' ? style.padding.split(/\s+/).map(num) : [num(style.padding)]
-  const [t, r = t, b = t, l = r] = p
-  return { t: num(style.paddingTop) || t, r: num(style.paddingRight) || r, b: num(style.paddingBottom) || b, l: num(style.paddingLeft) || l }
-}
-function lineHeight(style: Record<string, unknown>): number {
-  const fs = num(style.fontSize) || 16
-  if (typeof style.lineHeight === 'number') return style.lineHeight * fs
-  return style.fontFamily === 'DM Mono' ? monoLineHeight(fs) : 1.2 * fs // Barlow / Bebas: (asc − desc) = 1.2em
-}
-/** Outer height (incl. vertical margins) of an element laid out at this width. */
-function boxHeight(n: unknown, width: number): number {
-  if (!isEl(n)) return 0
-  const style = n.props.style ?? {}
-  if (style.position === 'absolute') return 0
-  const m = num(style.marginTop) + num(style.marginBottom)
-  if (typeof style.height === 'number') return style.height + m
-  if (n.type === 'span') {
-    const fs = num(style.fontSize) || 16
-    const lines = style.fontFamily === 'DM Mono' ? monoLines(textOf(n), fs, width) : 1
-    return lines * lineHeight(style) + m
-  }
-  const p = padding(style)
-  const inner = width - p.l - p.r
-  const children = kids(n).filter(isEl)
-  let h: number
-  if (style.flexDirection === 'column') {
-    h = children.reduce((s, c) => s + boxHeight(c, inner), 0)
-  } else if (children.length > 1 && children.every((c) => c.type === 'span')) {
-    // a row of text spans (meta row): they share the line, so wrap the joined text
-    const st = children[0].props.style ?? {}
-    h = monoLines(children.map(textOf).join(' '), num(st.fontSize), inner) * lineHeight(st)
-  } else {
-    h = Math.max(0, ...children.map((c) => boxHeight(c, inner)))
-  }
-  return h + p.t + p.b + m
-}
-/** The four quadrants: relative, overflow-hidden cells. */
 function quadrants(n: unknown, out: El[] = []): El[] {
   if (!isEl(n)) return out
   const s = n.props.style ?? {}
@@ -351,94 +294,106 @@ function quadrants(n: unknown, out: El[] = []): El[] {
   else kids(n).forEach((c) => quadrants(c, out))
   return out
 }
-function quadrantOverflow(q: El): { label: string; content: number; available: number } {
-  const s = q.props.style ?? {}
-  const p = padding(s)
-  const width = CARD_SIZE / 2 - p.l - p.r - (s.borderRight ? 1 : 0)
-  const content = kids(q).reduce<number>((h, c) => h + boxHeight(c, width), 0)
-  const label = textOf(q).slice(0, 40)
-  return { label, content, available: ROW_H - 1 - p.t - p.b }
+/** In-flow slots of a quadrant (the accent strip is absolute): title, big row, chart, source. */
+function slots(q: El) {
+  return kids(q).filter(isEl).filter((c) => c.props.style?.position !== 'absolute')
 }
 
-async function renderedQuadrants(s: EconomicSnapshot) {
+async function render(s: EconomicSnapshot) {
   mockFetch.mockResolvedValue(s)
-  await generateShareCard('78701')
-  const qs = quadrants(mockRendered[mockRendered.length - 1])
+  await generateShareCard('78701', new Date(Date.UTC(2026, 9, 7)))
+  const tree = mockRendered[mockRendered.length - 1]
+  const qs = quadrants(tree)
   expect(qs).toHaveLength(4)
-  return qs.map(quadrantOverflow)
+  return { tree, qs, text: textOf(tree) }
 }
 
-describe('share-card quadrants: rendered content fits inside each quadrant', () => {
-  const expectFits = (rows: Array<{ label: string; content: number; available: number }>) => {
-    for (const r of rows) expect([r.label, r.content <= r.available + 0.5]).toEqual([r.label, true])
+function expectTemplate(qs: El[]) {
+  const chartHs = new Set<number>()
+  for (const q of qs) {
+    const st = q.props.style!
+    const sl = slots(q)
+    expect(sl).toHaveLength(4)
+    const used = sl.reduce((h, c) => h + num(c.props.style!.height) + num(c.props.style!.marginTop) + num(c.props.style!.marginBottom), 0)
+    expect([textOf(q).slice(0, 20), used + CELL_PAD.top + CELL_PAD.bottom <= num(st.height)]).toEqual([textOf(q).slice(0, 20), true])
+    chartHs.add(num(sl[2].props.style!.height))
+    // source line: one line at its font size
+    const src = kids(sl[3]).filter(isEl)[0]
+    expect(monoLines(textOf(src), num(src.props.style!.fontSize))).toBe(1)
   }
+  expect(chartHs.size).toBe(1)
+  expect([...chartHs][0]).toBeGreaterThanOrEqual(MIN_CHART_H)
+}
 
-  test('layout constants match the card', () => {
-    expect(CELL_TEXT_WIDTH).toBe(475)
-    expect(CELL_CONTENT_H).toBe(405)
+describe('share-card quadrants: one template, same chart height, fits', () => {
+  test('EIA gas + Zillow rent (Austin): header range, four titles, source lines, no old sublabels', async () => {
+    const { qs, text } = await render(snap())
+    expectTemplate(qs)
+    expect(text).toContain('JAN 20, 2025')
+    expect(text).toContain('OCT 2026')
+    expect(text).toMatch(/latest data [A-Z][a-z]{2}(–[A-Z][a-z]{2})? '26/)
+    for (const t of ['GAS', 'GROCERIES', 'RENT', 'ELECTRICITY']) expect(text).toContain(t)
+    expect(text).toMatch(/now \$\d\.\d\d/)
+    expect(text).toMatch(/· Zillow · Aug '26/)
+    expect(text).toMatch(/Texas · EIA · [A-Z][a-z]{2} '26/)
+    for (const gone of ['regular gasoline', 'Natl', '$/yr on', 'seasonally adj.', "vs Aug'24", 'CPI:', 'Asking rent']) {
+      expect([gone, text.includes(gone)]).toEqual([gone, false])
+    }
   })
 
-  test('EIA gas + Zillow rent (Austin)', async () => {
-    expectFits(await renderedQuadrants(snap()))
-  })
-
-  test('rent seasonal-pattern caveat: † on the % and a footnote, still fits (also with the outlier note, worst case)', async () => {
+  test('rent seasonal caveat + outlier: small marks on the %, footnotes above the footer, still fits', async () => {
     const s = snap()
-    // widest realistic footnote: 4-digit $/mo bias on a top rent, and the outlier note above it
-    s.rent = { ...s.rent!, pct: 22.2, curRent: 14561, monthlyChange: 2646, saCaveat: { gap: -12.5, month: 12 } }
-    const note = shareSeasonalNote(s.rent.saCaveat, s.rent, '‡')!
-    expect(note).toMatch(/^‡ Seasonal pattern uncertain: the Dec reading may understate the change by ~12\.5 pts \(≈ \$[\d,]+\/mo\)$/)
-    expect(monoLines(note, 19, CELL_TEXT_WIDTH)).toBeLessThanOrEqual(3)
-    expectFits(await renderedQuadrants(s))
-    // under the outlier note only the short form fits
-    expect(shareSeasonalNote(s.rent.saCaveat, s.rent, '‡', true)).toBe('‡ Seasonal pattern uncertain')
-    expectFits(await renderedQuadrants({ ...s, rent: { ...s.rent, flagged: true } as EconomicSnapshot['rent'] }))
-    const plain = snap()
-    plain.rent = { ...plain.rent!, saCaveat: { gap: 2.5, month: 8 } }
-    expect(shareSeasonalNote(plain.rent.saCaveat, plain.rent)).toMatch(/^† Seasonal pattern uncertain: the Aug reading may overstate the change by ~2\.5 pts/)
-    expect(shareSeasonalNote(undefined, plain.rent)).toBeNull()
+    s.rent = { ...s.rent!, pct: 22.2, curRent: 14561, monthlyChange: 2646, saCaveat: { gap: -12.5, month: 8 } }
+    let r = await render(s)
+    expectTemplate(r.qs)
+    expect(r.text).toContain('† Seasonal pattern uncertain')
+    expect(r.text).toContain('≈ +$2,646/mo')
+    r = await render({ ...s, rent: { ...s.rent, flagged: true } as EconomicSnapshot['rent'] })
+    expectTemplate(r.qs)
+    expect(r.text).toContain('†‡')
+    expect(r.text).toContain(SHARE_OUTLIER_NOTE)
+    expect(r.text).toContain('‡ Seasonal pattern uncertain')
+    expect(r.text).not.toContain('+$2,646/mo') // no $ pill on a flagged value
   })
 
-  test('electricity quadrant: statewide price, adjusted %, $/mo pill and its basis', async () => {
-    const s = snap()
-    await renderedQuadrants(s)
-    const t = textOf(mockRendered[mockRendered.length - 1])
-    const e = s.electricity.data!
-    expect(t).toContain('ELECTRICITY')
-    expect(t).toContain(electricityGeoLine(e))
-    expect(t).toContain(fmtSignedPct(e.change))
-    expect(t).toContain(`≈ ${fmtSignedDollars(s.dollarImpact!.electricity!, 0)}/mo`)
-    expect(t).toContain(electricityBasisNote(e.usageKwh!, 'Texas'))
-    expect(t).not.toMatch(/tariff|yale/i)
-  })
-
-  test('territory (no EIA electricity): N/A quadrant, still fits', async () => {
+  test('territory (no EIA electricity): N/A quadrant keeps the template', async () => {
     const s = snap()
     s.electricity = { ...s.electricity, data: null }
     s.dollarImpact = { ...s.dollarImpact!, electricity: null }
-    expectFits(await renderedQuadrants(s))
-    expect(textOf(mockRendered[mockRendered.length - 1])).toContain('N/A')
+    const r = await render(s)
+    expectTemplate(r.qs)
+    expect(r.text).toContain('N/A')
+    expect(r.text).toContain('Data unavailable')
   })
 
-  test('CPI shelter fallback (no county rent) + EIA national fallback geography', async () => {
+  test('CPI shelter fallback (no county rent) + national gas fallback', async () => {
     const s = snap()
     s.rent = null
     s.gas.data = { ...s.gas.data!, isNationalFallback: true, geoLevel: 'National avg' }
-    expectFits(await renderedQuadrants(s))
+    const r = await render(s)
+    expectTemplate(r.qs)
+    expect(r.text).toContain('SHELTER (CPI)')
+    expect(r.text).toContain('West South Central div. · BLS')
   })
 
-  test('long BLS metro name: the as-of month moves to the baseline row, geography stays one line', async () => {
+  test('national CPI fallback is labeled on the source line', async () => {
     const s = snap()
-    s.gas.data = { ...blsGasData('S49F'), blsArea: 'S49C', areaName: 'Riverside-San Bernardino', geoLevel: 'Riverside-San Bernardino metro avg' }
-    s.location = { ...s.location, stateAbbr: 'CA', countyFips: '06071', countyName: 'San Bernardino County' }
-    expectFits(await renderedQuadrants(s))
-    const t = textOf(mockRendered[mockRendered.length - 1])
-    expect(t).toContain('Riverside-San Bernardino metro')
-    expect(t).not.toContain('Riverside-San Bernardino metro · thru')
-    expect(t).toMatch(/since Jan 2025, thru [A-Z][a-z]{2} '\d{2}/)
+    s.rent = null
+    s.cpi.data = { ...s.cpi.data!, fallback: 'national', tier: 4, metro: 'National' }
+    const r = await render(s)
+    expectTemplate(r.qs)
+    expect(r.text).toContain('U.S. avg (local n/a) · BLS')
   })
 
-  test('every HI/AK county as a gas stand-in, with the CPI shelter fallback', async () => {
+  test('longest place name shrinks the header font instead of overflowing', async () => {
+    const s = snap()
+    s.location = { ...s.location, cityName: 'King And Queen Court House', stateAbbr: 'VA' }
+    const r = await render(s)
+    expectTemplate(r.qs)
+    expect(r.text).toContain('KING AND QUEEN COURT HOUSE, VA')
+  })
+
+  test('every HI/AK county as a gas stand-in (footnote), with the CPI shelter fallback', async () => {
     const hi = blsGasData('S49F', { standIn: true })
     const ak = blsGasData('S49G', { standIn: true })
     for (const c of hiAkCounties) {
@@ -446,9 +401,10 @@ describe('share-card quadrants: rendered content fits inside each quadrant', () 
       s.location = { ...s.location, stateAbbr: c.stateAbbr, countyFips: c.countyFips, countyName: c.countyName, cityName: c.cityName ?? s.location.cityName }
       s.gas.data = c.stateAbbr === 'HI' ? hi : ak
       s.rent = null
-      const rows = await renderedQuadrants(s)
-      expect(textOf(mockRendered[mockRendered.length - 1])).toContain('No gas series for')
-      expectFits(rows)
+      const r = await render(s)
+      expect(r.text).toContain('No gas series for')
+      expect(r.text).toMatch(/(Honolulu|Anchorage)-area\* · BLS/)
+      expectTemplate(r.qs)
     }
   }, 60000)
 })

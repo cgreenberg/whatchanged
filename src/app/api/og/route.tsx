@@ -2,13 +2,14 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
-import { buildHeroCards, imageSourcesLine, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, imageCountyName, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
-import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
+import { buildHeroCards, imageSourcesLine, usesNationalFallback, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, imageCountyName, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
+import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, fmtMonthYear } from '@/lib/format'
 import { BASELINE_DAY_LABEL, BASELINE_MONTH_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
 import { monoLines } from '@/lib/share-card/layout'
+import { latestDataLabel, QUADRANT_TITLES, rangeEnd } from '@/lib/share-card/labels'
 
 export const runtime = 'nodejs'
 
@@ -94,8 +95,9 @@ function ogSublines(c: HeroCardModel): [string, string] {
   const monthly = cadence.test(c.provenance.window)
   const since = c.provenance.window.replace(/^since week of /, 'since ').replace(cadence, '')
   switch (c.id) {
-    // Monthly BLS gas also names its month: weekly EIA figures elsewhere run weeks newer
-    case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : since]
+    // Same face as the card ("since Jan 2025"; the exact baseline week is in the ⓘ). Monthly BLS gas also names its
+    // month: weekly EIA figures elsewhere run weeks newer
+    case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : `since ${BASELINE_MONTH_LABEL}`]
     case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, seas. adj.`]
     // Statewide EIA price: % change of the 12-month average price (latest 12 months vs the 12 centered on Jan 2025)
     // Same face as the card ("since Jan 2025"); images have no ⓘ, so "(12-mo avg)" keeps the method visible
@@ -119,13 +121,8 @@ function nationalThroughLabel(periods: Array<string | null | undefined>): string
 const CACHE_OK = 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400'
 const CACHE_DEGRADED = 'public, max-age=60, s-maxage=300'
 
-const OG_LABELS: Record<HeroCardModel['id'], string> = {
-  gas: 'GAS (REGULAR)',
-  rent: 'RENT (NEW LEASES)',
-  shelter: 'SHELTER (CPI)',
-  groceries: 'GROCERIES',
-  electricity: 'ELECTRICITY',
-}
+/** Same titles as the share card. */
+const OG_LABELS: Record<HeroCardModel['id'], string> = QUADRANT_TITLES
 const OG_COLORS: Record<HeroCardModel['id'], string> = {
   gas: GAS, rent: BLUE, shelter: BLUE, groceries: GROCERIES, electricity: GREEN,
 }
@@ -174,7 +171,7 @@ export async function GET(req: NextRequest) {
           footnotes.push(GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, 'image')))
         }
         latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
-        throughLabel = dataThroughLabel(cards)
+        throughLabel = latestDataLabel(cards)
         degraded = cards.some(c => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)
       }
     } catch {
@@ -238,7 +235,7 @@ export async function GET(req: NextRequest) {
     const sheltGrid = gridlineYPositions(national.shelter.series, sparkH)
 
     const panels = [
-      { label: 'GAS PRICES', sublabel: '(regular gasoline, $/gal)', value: `$${national.gas.current.toFixed(2)}/gal`, pill: gasChange, color: GAS, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), firstDate: national.gas.series[0]?.date, lastMonth: lastMonthOf(national.gas.series), since: national.gas.series[0]?.date ? `since ${fmtDay(national.gas.series[0].date)}` : `since ${BASELINE_DAY_LABEL}`, yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
+      { label: 'GAS', sublabel: '(regular gasoline, $/gal)', value: gasChange, unit: '/gal', pill: `now $${national.gas.current.toFixed(2)}`, color: GAS, points: gasPoints, area: gasArea, startDotX: computeDotX(national.gas.series, 0, sparkW), startDotY: computeDotY(national.gas.series, 0, sparkH), endDotX: computeDotX(national.gas.series, -1, sparkW), endDotY: computeDotY(national.gas.series, -1, sparkH), firstDate: national.gas.series[0]?.date, lastMonth: lastMonthOf(national.gas.series), since: `since ${BASELINE_MONTH_LABEL}`, yMin: gasYLabels.yMin, yMid: gasYLabels.yMid, yMax: gasYLabels.yMax, midDate: gasMidDate, gridMinY: gasGrid.minY, gridMidY: gasGrid.midY },
       { label: 'GROCERIES', sublabel: '(CPI: food at home)', value: grocChange, pill: national.groceries.change >= 0 ? 'rising' : 'falling', color: GROCERIES, points: grocPoints, area: grocArea, startDotX: computeDotX(national.groceries.series, 0, sparkW), startDotY: computeDotY(national.groceries.series, 0, sparkH), endDotX: computeDotX(national.groceries.series, -1, sparkW), endDotY: computeDotY(national.groceries.series, -1, sparkH), firstDate: national.groceries.series[0]?.date, lastMonth: lastMonthOf(national.groceries.series), since: `since ${fmtMonthYear(national.groceries.baselinePeriod)}`, yMin: grocYLabels.yMin, yMid: grocYLabels.yMid, yMax: grocYLabels.yMax, midDate: grocMidDate, gridMinY: grocGrid.minY, gridMidY: grocGrid.midY },
       { label: 'SHELTER', sublabel: "(rent & owners' equiv.)", value: sheltChange, pill: national.shelter.change >= 0 ? 'rising' : 'falling', color: BLUE, points: sheltPoints, area: sheltArea, startDotX: computeDotX(national.shelter.series, 0, sparkW), startDotY: computeDotY(national.shelter.series, 0, sparkH), endDotX: computeDotX(national.shelter.series, -1, sparkW), endDotY: computeDotY(national.shelter.series, -1, sparkH), firstDate: national.shelter.series[0]?.date, lastMonth: lastMonthOf(national.shelter.series), since: `since ${fmtMonthYear(national.shelter.baselinePeriod)}`, yMin: sheltYLabels.yMin, yMid: sheltYLabels.yMid, yMax: sheltYLabels.yMax, midDate: sheltMidDate, gridMinY: sheltGrid.minY, gridMidY: sheltGrid.midY },
     ]
@@ -438,9 +435,15 @@ export async function GET(req: NextRequest) {
                       color: TEXT_PRIMARY,
                       lineHeight: 1,
                       display: 'flex',
+                      flexDirection: 'row',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {panel.value}
+                    {/* Unit drawn smaller on the same line so "+$1.24/gal" never wraps */}
+                    {'unit' in panel && panel.unit ? (
+                      <span style={{ fontSize: 34, fontWeight: 700, alignSelf: 'flex-end', marginBottom: 4, marginLeft: 2 }}>{panel.unit}</span>
+                    ) : null}
                   </span>
                   {panel.pill ? (
                     <div
@@ -571,7 +574,8 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const monthYear = throughLabel ?? fmtMonthYear(latestPeriod).toUpperCase()
+  // Same header range as the share card: Jan 20, 2025 → the month the image is made; then the data's months
+  const monthYear = rangeEnd()
 
   return new ImageResponse(
     (
@@ -690,6 +694,11 @@ export async function GET(req: NextRequest) {
             >
               {monthYear}
             </span>
+            {throughLabel ? (
+              <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: 13, color: TEXT_TERTIARY, marginTop: 2 }}>
+                {throughLabel}
+              </span>
+            ) : null}
           </div>
         </div>
 

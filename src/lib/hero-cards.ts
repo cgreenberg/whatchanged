@@ -614,7 +614,7 @@ export function buildRentCard(
     info: compact([`${dollarNote}.`, detail, metroNote, poolNote, seasonalCaveat, caveat, SHELTER_VS_RENT_NOTE]),
     asOfPeriod: r.asOf,
     // Long metro titles ("Nashville-Davidson--Murfreesboro--Franklin") shorten to the first city for images/meta
-    geoTag: metro ? (area.length > 32 ? `${area.split(/-+/)[0]} metro` : area) : shortCountyName(r.geoName),
+    geoTag: metro ? (area.length > 32 ? `${area.replace(/ metro$/, '').split(/-+|\//)[0]} metro` : area) : shortCountyName(r.geoName),
     ...(caveat ? { outlier: true } : {}),
   }
 }

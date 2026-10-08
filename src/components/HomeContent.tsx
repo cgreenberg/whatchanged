@@ -70,6 +70,12 @@ export default function HomeContent() {
     handleZipSubmit(zip)
   }, [handleZipSubmit])
 
+  // Bottom "Try another place" row: back to the top, where the new results load
+  const selectFromBottom = useCallback((zip: string, city?: string, stateAbbr?: string) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    handleZipSubmit(zip, city, stateAbbr)
+  }, [handleZipSubmit])
+
   useEffect(() => {
     const q = parsePlaceQuery(window.location.search)
     if (q) handleZipSubmit(q.zip, q.city ?? undefined, q.state ?? undefined)
@@ -128,7 +134,6 @@ export default function HomeContent() {
             <ChartsSection snapshot={snapshot} />
           </ErrorBoundary>
           <ShareButton snapshot={snapshot} place={place} />
-          <CityGrid onCitySelect={handleZipSubmit} />
         </>
       )}
 
@@ -150,6 +155,9 @@ export default function HomeContent() {
           <NationalMap countyFips={loaded ? snapshot.location.countyFips : undefined} onZipSelect={selectFromMap} zipOverrides={loaded ? zipPanelOverrides(snapshot) : undefined} />
         </LazyMount>
       </ErrorBoundary>
+
+      {/* Results page: other places at the very bottom, after the map */}
+      {loaded && <CityGrid onCitySelect={selectFromBottom} variant="compact" />}
 
       {/* Footer */}
       <footer className="mt-16 pt-5 border-t border-line flex flex-wrap items-center justify-center gap-x-5 gap-y-2 kicker">

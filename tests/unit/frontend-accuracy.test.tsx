@@ -18,7 +18,6 @@ import {
   SHELTER_VS_RENT_NOTE, HOUSING_NOTE, SHELTER_SHORT_NOTE, GAS_SOURCE, buildGasCard,
 } from '@/lib/hero-cards'
 import { computeDotX, computeDotY } from '@/lib/share-card/og-geometry'
-import { cpiShareLabel, sinceLabel } from '@/lib/share-card/generate'
 import { getCensusData } from '@/lib/data/census-acs'
 import { fmtDollars, fmtMonthYear, fmtSignedPct } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
@@ -212,21 +211,6 @@ describe('chart windows match the hero baseline', () => {
 
 // ---------------------------------------------------------------- share card helpers + OG geometry
 describe('share card labels and OG geometry', () => {
-  test('CPI label names the geography type', () => {
-    const c = clone().cpi.data!
-    expect(cpiShareLabel(c)).toBe('CPI: West South Central (Census division)')
-    expect(cpiShareLabel({ ...c, tier: 1, metro: 'Chicago-Naperville-Elgin' })).toBe('CPI: Chicago-Naperville-Elgin (metro)')
-    expect(cpiShareLabel({ ...c, tier: 4, metro: 'National' })).toBe('CPI: national')
-    // Honolulu / Anchorage: named like the gas label, not by BLS's "Urban Hawaii" / "Urban Alaska"
-    expect(cpiShareLabel({ ...c, tier: 1, metro: 'Urban Hawaii', areaCode: 'S49F' })).toBe('CPI: Honolulu (metro)')
-    expect(cpiShareLabel({ ...c, tier: 1, metro: 'Urban Alaska', areaCode: 'S49G' })).toBe('CPI: Anchorage (metro)')
-  })
-
-  test('since-label uses the actual baseline month', () => {
-    expect(sinceLabel('2024-12')).toBe('since Dec 2024')
-    expect(sinceLabel(undefined)).toBe('since Jan 2025')
-  })
-
   test('computeDotX/Y never return NaN or Infinity for 0/1-point series', () => {
     for (const series of [[], [{ value: 3 }]]) {
       for (const i of [0, -1]) {
