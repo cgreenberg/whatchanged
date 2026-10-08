@@ -9,7 +9,7 @@ import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
 import { monoLines } from '@/lib/share-card/layout'
-import { cardMonthLabel, dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_END_NONE, RENT_ADJUSTMENT_TAG } from '@/lib/share-card/labels'
+import { cardMonthLabel, dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_NONE, RENT_ADJUSTMENT_TAG } from '@/lib/share-card/labels'
 import { shareSeasonalNote } from '@/lib/share-card/generate'
 import { hasSeasonalCaveat } from '@/lib/rent-range'
 
@@ -585,8 +585,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Same header range as the share card: Jan 20, 2025 → the most recent data month shown (never today's date); then
-  // the span of the stats' months
-  const monthYear = rangeEndLabel ?? RANGE_END_NONE
+  // the span of the stats' months. With no dated stat, just "SINCE JAN 20, 2025" (no arrow, no end)
+  const monthYear = rangeEndLabel
 
   return new ImageResponse(
     (
@@ -670,41 +670,49 @@ export async function GET(req: NextRequest) {
               flexShrink: 0,
             }}
           >
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'monospace',
-                fontSize: 16,
-                fontWeight: 700,
-                color: AMBER,
-                letterSpacing: '0.06em',
-              }}
-            >
-              {BASELINE_DAY_LABEL.toUpperCase()}
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'monospace',
-                fontSize: 28,
-                color: 'rgba(240,165,0,0.45)',
-                lineHeight: 1,
-              }}
-            >
-              ↓
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                fontFamily: 'monospace',
-                fontSize: 16,
-                fontWeight: 700,
-                color: AMBER,
-                letterSpacing: '0.06em',
-              }}
-            >
-              {monthYear}
-            </span>
+            {monthYear ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span
+                style={{
+                  display: 'flex',
+                  fontFamily: 'monospace',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: AMBER,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {BASELINE_DAY_LABEL.toUpperCase()}
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  fontFamily: 'monospace',
+                  fontSize: 28,
+                  color: 'rgba(240,165,0,0.45)',
+                  lineHeight: 1,
+                }}
+              >
+                ↓
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  fontFamily: 'monospace',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: AMBER,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {monthYear}
+              </span>
+              </div>
+            ) : (
+              <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 16, fontWeight: 700, color: AMBER, letterSpacing: '0.06em' }}>
+                {RANGE_NONE}
+              </span>
+            )}
             {throughLabel ? (
               <span style={{ display: 'flex', fontFamily: 'DM Mono', fontSize: 13, color: TEXT_TERTIARY, marginTop: 2 }}>
                 {throughLabel}

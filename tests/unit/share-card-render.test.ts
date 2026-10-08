@@ -175,7 +175,7 @@ test('OG zip card shows gas geography and the rent adjustment', async () => {
   expect(t).toContain('ELECTRICITY')
   expect(t).toContain(`${s.electricity.data!.change > 0 ? '+' : ''}${s.electricity.data!.change.toFixed(1)}%`)
   expect(t).toContain('Texas (statewide)')
-  expect(t).toContain('RENT (NEW LEASES)')
+  expect(t).toContain('RENT (NEW LISTINGS)')
   // header ends at the newest data month shown (Sep weekly gas), each stat names its own month
   expect(t).toContain('SEP 2026')
   expect(t).not.toContain('OCT 2026')
@@ -196,7 +196,7 @@ test('OG link preview: a rent seasonal-pattern caveat gets "†" and its footnot
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   let og = textOf(mockRendered[mockRendered.length - 1])
   expect(og).toContain('+12.6%†')
-  expect(og).toMatch(/† Seasonal pattern uncertain: Aug rent may be ~2\.5 pts too high \(~\$\d+\/mo\); own pattern \+9\.9%\./)
+  expect(og).toMatch(/† Seasonal pattern uncertain: Aug rent may be ~2\.7 pts too high \(~\$\d+\/mo\); own pattern \+9\.9%\./)
   expect(og).not.toContain('≈') // no glyph in the OG font
   s.rent = { ...s.rent!, pct: 47.8, flagged: true, saCaveat: { gap: 2.7, month: 8 } }
   await GET(new NextRequest('http://x/api/og?zip=78701'))
@@ -290,6 +290,46 @@ test('share card: national CPI fallback is labeled and never applied to local re
   // national CPI is never applied to local rent
   expect(t).not.toMatch(/\+\$754\/yr/)
 }, 30000)
+
+test('share card + OG: no "≈ $/mo" rent pill when the seasonal caveat leaves the direction uncertain', async () => {
+  if (process.env.REAL_OG) return
+  const s = snap()
+  // Collier FL-like: −1.5%, own pattern +0.7% (sign flips) → no signed $ anywhere
+  s.rent = { ...s.rent!, pct: -1.5, monthlyChange: -39, saCaveat: { gap: -2.2, month: 8 } }
+  mockFetch.mockResolvedValue(s)
+  await generateShareCard('78701')
+  let t = textOf(mockRendered[mockRendered.length - 1])
+  expect(t).toContain('−1.5%')
+  expect(t).not.toMatch(/≈ [+−-]\$39\/mo/)
+  expect(t).toContain('own pattern +0.7%, direction uncertain')
+  const { GET } = await import('@/app/api/og/route')
+  const { NextRequest } = await import('next/server')
+  await GET(new NextRequest('http://x/api/og?zip=78701'))
+  const og = textOf(mockRendered[mockRendered.length - 1])
+  expect(og).toContain('−1.5%†')
+  expect(og).not.toMatch(/[+−-]\$39\/mo/)
+  // Blue Earth MN-like: +6.3%, own +14.7% (same sign) → the pill stays
+  s.rent = { ...s.rent!, pct: 6.3, monthlyChange: 64, saCaveat: { gap: -8.4, month: 8 } }
+  await generateShareCard('78701')
+  t = textOf(mockRendered[mockRendered.length - 1])
+  expect(t).toContain('≈ +$64/mo')
+  expect(t).not.toContain('direction uncertain')
+}, 30000)
+
+test('share card + OG header with no dated card: "SINCE JAN 20, 2025", never "→ LATEST"', async () => {
+  if (process.env.REAL_OG) return
+  const s = snap()
+  s.gas = { ...s.gas, data: null }
+  s.cpi = { ...s.cpi, data: null }
+  s.rent = null
+  s.electricity = { ...s.electricity, data: null }
+  mockFetch.mockResolvedValue(s)
+  await generateShareCard('78701')
+  const t = textOf(mockRendered[mockRendered.length - 1])
+  expect(t).toContain('SINCE JAN 20, 2025')
+  expect(t).not.toContain('LATEST')
+}, 30000)
+
 
 test('share routes ignore free-text city/state: the image comes from the zip alone', async () => {
   jest.resetModules()

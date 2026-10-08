@@ -27,12 +27,12 @@ const ZILLOW_URL = 'https://www.zillow.com/research/data/'
 const ZILLOW_RENT_ADJ = 'seasonally adjusted by whatchanged'
 const ZILLOW_HV_ADJ = 'smoothed and seasonally adjusted by Zillow'
 /** The one short line under each Zillow tab; the full description and the CPI-vs-Zillow note are in the graph's ⓘ. */
-export const ZORI_SHORT_NOTE = 'Asking rents on new leases (Zillow), same series as the Rent card.'
+export const ZORI_SHORT_NOTE = 'Asking rents on new listings (Zillow), same series as the Rent card.'
 export const ZHVI_SHORT_NOTE = 'Typical home value (Zillow), smoothed and seasonally adjusted.'
 /** Rent tab for a county without a Zillow county series: its metro's series. */
-export const ZORI_METRO_NOTE = (metro: string) => `No usable Zillow county series; asking rents on new leases in the ${metro} (same as the Rent card).`
+export const ZORI_METRO_NOTE = (metro: string) => `No usable Zillow county series; asking rents on new listings in the ${metro} (same as the Rent card).`
 /** Rent tab for a county without a usable Zillow county or metro series: its most populous city's series. */
-export const ZORI_CITY_NOTE = (city: string) => `No usable Zillow county or metro series; asking rents on new leases in ${city}, the county's most populous city with one (same as the Rent card).`
+export const ZORI_CITY_NOTE = (city: string) => `No usable Zillow county or metro series; asking rents on new listings in ${city}, the county's most populous place with one (same as the Rent card).`
 
 type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | null } | { status: 'error' }
 
@@ -171,7 +171,7 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
     config = active === 'rent'
       ? metroTab || cityTab
         // Metro / city stand-in: the ⓘ must not say "your county"
-        ? { ...housingTabConfigs.rent, description: `Zillow Observed Rent Index (ZORI): typical asking rent on new leases in ${metroTab ? `the ${rentGeo}` : `${rentGeo} (the county's most populous city with a Zillow series)`} (Zillow publishes no usable series for your county${cityTab ? ' or its metro area' : ''}), seasonally adjusted by whatchanged. Same series as the Rent card.` }
+        ? { ...housingTabConfigs.rent, description: `Zillow Observed Rent Index (ZORI): typical asking rent on new listings in ${metroTab ? `the ${rentGeo}` : `${rentGeo} (the county's most populous place with a Zillow series)`} (Zillow publishes no usable series for your county${cityTab ? ' or its metro area' : ''}), seasonally adjusted by whatchanged. Same series as the Rent card.` }
         : housingTabConfigs.rent
       : housingTabConfigs.homePrices
     const series = active === 'rent' ? rentSeries : c?.hvS

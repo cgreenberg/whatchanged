@@ -21,7 +21,7 @@ export const CELL_TEXT_WIDTH = CARD_SIZE / 2 - CELL_PAD.left - CELL_PAD.right - 
 
 /** Font sizes used by the quadrant slots in generate.tsx. */
 export const FS = { title: 34, titleTag: 20, big: 96, pill: 34, pillSub: 20, source: 20, footnote: 17, axis: 18 } as const
-/** Gap (px) between a quadrant title and its small tag ("RENT (NEW LEASES)  seas. adj."). */
+/** Gap (px) between a quadrant title and its small tag ("RENT (NEW LISTINGS)  seas. adj."). */
 export const TITLE_TAG_GAP = 14
 /** A unit after a big number ("/gal") is drawn at this fraction of FS.big. */
 export const BIG_UNIT_SCALE = 0.55

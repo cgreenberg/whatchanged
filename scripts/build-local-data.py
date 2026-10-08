@@ -406,7 +406,8 @@ def rent_outlier_stats(counties):
 
 
 # ---------- City rent (Zillow city ZORI) ----------
-# For counties with no usable Zillow county or metro rent: the county's most populous city (Zillow SizeRank) with a
+# For counties with no usable Zillow county or metro rent: the county's most populous place (Zillow SizeRank; Zillow's
+# "city" regions include Census places such as CDPs, e.g. Murrells Inlet SC) with a
 # usable city series. Same method as county / metro rows: seasonal factors shrunk toward the state pool, data by
 # POOL_MAX_START, Jan 2025 + the file's latest month, the RENT_HERO sanity range; a city flagged as a statistical
 # outlier (same distribution and threshold as metros) is skipped for the next city. City -> county: the Census 2020
@@ -882,7 +883,7 @@ def main():
     state_names = {v["countyFips"][:2]: v["stateName"] for v in zip_county.values()}
     pool_name = lambda key: f"{state_names.get(key, key)} counties" if key else "U.S. counties"
     meta["sources"]["zori"] = {"latest": crm[-1], "short": "Zillow ZORI", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
-                               "label": "Zillow Observed Rent Index (ZORI), asking rents on new leases", "url": "https://www.zillow.com/research/data/"}
+                               "label": "Zillow Observed Rent Index (ZORI), asking rents on new listings", "url": "https://www.zillow.com/research/data/"}
     county_rent = {}
     bi = crm.index(BASE)
     # Rent rows use ZORI's OWN month index (ZORI and ZHVI can end in different months).
@@ -997,7 +998,7 @@ def main():
         counties[f]["rentCS"] = city_series[rid]
     meta["sources"]["zoriCity"] = {"latest": city_asof, "short": "Zillow ZORI (city)", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                                    "label": "Zillow Observed Rent Index (ZORI), city",
-                                   "geography": "the county's most populous city with a usable Zillow series (city to county by the Census 2020 place and county-subdivision files)",
+                                   "geography": "the county's most populous place (Zillow SizeRank) with a usable Zillow city series (place to county by the Census 2020 place and county-subdivision files)",
                                    "url": "https://www.zillow.com/research/data/"}
     # HUD Fair Market Rents for the counties still without Zillow rent (map only; `rentH` in counties.json)
     hud_eligible = sorted(f for f in city_eligible if f not in city_counties)

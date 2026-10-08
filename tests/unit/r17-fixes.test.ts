@@ -29,7 +29,7 @@ describe('seasonal caveat: signed wording, own-pattern figure, direction note (r
     ['12021', -1.5, 'too low', 0.7, true], // Collier FL: shown fall, own pattern a rise
     ['56037', -4.8, 'too high', -6.9, false], // Sweetwater WY: the fall may be bigger
     ['53037', -0.5, 'too low', 2.5, true], // Kittitas WA
-    ['27013', 6.3, 'too low', 14.7, true], // Blue Earth MN: gap 8.4 ≥ the shown 6.3
+    ['27013', 6.3, 'too low', 14.7, false], // Blue Earth MN: gap −8.4 > the shown 6.3, but own pattern still a rise
     ['27169', 13.4, 'too low', 18.9, false], // Winona MN
     ['12119', -2.4, 'too low', 0.8, true], // Sumter FL
     ['41047', -0.7, 'too low', 1.0, true], // Marion OR
@@ -58,17 +58,53 @@ describe('seasonal caveat: signed wording, own-pattern figure, direction note (r
     expect(note.includes('direction uncertain')).toBe(uncertain)
   })
 
+  // Round 18: "direction uncertain" only when the own-pattern figure has the other sign (or rounds to 0), never just
+  // because the gap is bigger than the shown change
+  test('Blue Earth MN 27013 (+6.3%, own +14.7%): a big gap with the same sign is NOT direction-uncertain', () => {
+    const r = COUNTY['27013']
+    expect(r.pct).toBe(6.3)
+    expect(seasonalOwnPatternPct(r.saCaveat!, r.pct)).toBe(14.7)
+    expect(seasonalDirectionUncertain(r.saCaveat!, r.pct)).toBe(false)
+    const text = rentSeasonalCaveat(r.saCaveat, 'county', r)!
+    expect(text).toContain('may be about 8.4 percentage points too low')
+    expect(text).toContain('Under its own recent pattern it would be about +14.7%.')
+    expect(text).not.toContain('direction is uncertain')
+  })
+
+  test('Collier FL 12021 (−1.5%, own +0.7%): the sign flips, so direction uncertain', () => {
+    const r = COUNTY['12021']
+    expect(r.pct).toBe(-1.5)
+    expect(seasonalOwnPatternPct(r.saCaveat!, r.pct)).toBe(0.7)
+    expect(seasonalDirectionUncertain(r.saCaveat!, r.pct)).toBe(true)
+    expect(rentSeasonalCaveat(r.saCaveat, 'county', r)).toContain(
+      'may be about 2.2 percentage points too low')
+    expect(rentSeasonalCaveat(r.saCaveat, 'county', r)).toContain(
+      'Under its own recent pattern it would be about +0.7%; the possible error is as large as the change itself, so even its direction is uncertain.')
+  })
+
+  test('Mankato MN metro (+5.6%, own +11.7%): not direction-uncertain', () => {
+    const m = METRO['31860']
+    expect(seasonalDirectionUncertain(m.saCaveat!, m.pct)).toBe(false)
+  })
+
+  test('own pattern rounding to 0 is direction-uncertain; same-sign own pattern is not', () => {
+    expect(seasonalDirectionUncertain({ gap: 2.0, month: 8 }, 2.0)).toBe(true) // own 0.0%
+    expect(seasonalDirectionUncertain({ gap: -3.0, month: 8 }, 0.4)).toBe(false) // own +3.4%
+    expect(seasonalDirectionUncertain({ gap: 3.0, month: 8 }, -0.4)).toBe(false) // own −3.4%
+    expect(seasonalDirectionUncertain({ gap: 3.0, month: 8 }, 0.4)).toBe(true) // own −2.6%
+  })
+
   test('Hermiston-Pendleton OR metro (−0.9%, gap −3.1): too low, own +2.2%, direction uncertain', () => {
     const m = METRO['25840']
     expect(m.name).toBe('Hermiston-Pendleton, OR')
     const text = rentSeasonalCaveat(m.saCaveat, 'metro', m)!
-    expect(text).toMatch(/^This August reading \(−0\.9%\) may be about 3 percentage points too low \(≈ \$\d+\/mo\): the metro’s/)
+    expect(text).toMatch(/^This August reading \(−0\.9%\) may be about 3\.1 percentage points too low \(≈ \$\d+\/mo\): the metro’s/)
     expect(text).toContain('Under its own recent pattern it would be about +2.2%; the possible error is as large as the change itself, so even its direction is uncertain.')
   })
 
   test('without the shown %, no own-pattern figure and no direction claim', () => {
     expect(rentSeasonalCaveat({ gap: -2.2, month: 8 }, 'county')).toBe(
-      'This August reading may be about 2 percentage points too low: the county’s recent seasonal swing differs from the pattern used to adjust it.')
+      'This August reading may be about 2.2 percentage points too low: the county’s recent seasonal swing differs from the pattern used to adjust it.')
     expect(seasonalDirectionUncertain({ gap: 3, month: 8 }, undefined)).toBe(false)
   })
 })

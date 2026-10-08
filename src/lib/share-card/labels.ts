@@ -8,10 +8,10 @@ import type { HeroCardModel } from '@/lib/hero-cards'
 
 /**
  * Metric titles on the share card and the OG image: the metric name (details live in the site's ⓘ). Rent says what
- * it measures — Zillow asking rents on new leases — so it is never read as CPI shelter (all tenants and owners).
+ * it measures — Zillow asking rents on new listings — so it is never read as CPI shelter (all tenants and owners).
  */
 export const QUADRANT_TITLES = {
-  gas: 'GAS', groceries: 'GROCERIES', rent: 'RENT (NEW LEASES)', shelter: 'SHELTER (CPI)', electricity: 'ELECTRICITY',
+  gas: 'GAS', groceries: 'GROCERIES', rent: 'RENT (NEW LISTINGS)', shelter: 'SHELTER (CPI)', electricity: 'ELECTRICITY',
 } as const
 
 /** Adjustment tag beside a quadrant title (share card) / on its window line (OG): rent is seasonally adjusted. */
@@ -38,8 +38,8 @@ export function dataRangeEnd(cards: HeroCardModel[]): string | null {
   return months.length ? fmtMonthYear(months[months.length - 1]).toUpperCase() : null
 }
 
-/** Header range end when no card has data (nothing dated to show). */
-export const RANGE_END_NONE = 'LATEST'
+/** Header line when no card has data (nothing dated to show): no arrow and no end month. */
+export const RANGE_NONE = `SINCE ${RANGE_START}`
 
 /** "latest Aug '26": one quadrant's own data month (OG stat), from its card; null without a dated number. */
 export function cardMonthLabel(card: HeroCardModel): string | null {

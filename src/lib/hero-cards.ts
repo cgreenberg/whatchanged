@@ -10,7 +10,7 @@ import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE, fmtRentFigure, fmtRentDollars } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
-import { notCurrentText, rentSeasonalCaveat } from '@/lib/rent-range'
+import { hasSeasonalCaveat, notCurrentText, rentSeasonalCaveat, seasonalDirectionUncertain } from '@/lib/rent-range'
 import {
   DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL, dcraStationsText,
 } from '@/lib/static-gas-meta'
@@ -87,6 +87,8 @@ export interface HeroCardModel {
 
 /** Short on-card tag for a flagged (outlier) figure; the full explanation is in the ⓘ disclosure. */
 export const OUTLIER_TAG = '⚠ unusual'
+/** Short on-card tag for a rent figure whose seasonal caveat leaves even its direction uncertain (no $ shown). */
+export const DIRECTION_UNCERTAIN_TAG = '⚠ direction uncertain'
 
 /** "{short area} · {source} · {Mon YYYY}", skipping empty parts. */
 export function sourceLineOf(...parts: Array<string | null | undefined>): string {
@@ -277,14 +279,14 @@ const NOT_SA = 'not seasonally adjusted'
 
 /** Shown under the hero cards when the Zillow Rent card is shown. */
 export const SHELTER_VS_RENT_NOTE =
-  'CPI shelter (rent, plus owners\' equivalent rent for homeowners) lags market rents by about a year; the Rent card shows new-lease asking rents (Zillow).'
+  'CPI shelter (rent, plus owners\' equivalent rent for homeowners) lags market rents by about a year; the Rent card shows asking rents on new listings (Zillow).'
 /** Shown with the Housing graph (all three tabs): how the Zillow series differ from CPI shelter. */
 export const HOUSING_NOTE =
-  'Rent and Home prices are Zillow market measures for your county: asking rents on new leases and the typical home value. ' +
+  'Rent and Home prices are Zillow market measures for your county: asking rents on new listings and the typical home value. ' +
   'Shelter (CPI) is the BLS index of rent, plus owners\' equivalent rent for homeowners — not mortgage payments or home prices — ' +
-  'and includes existing leases, so it trails new-lease rents by about a year.'
+  'and includes existing leases, so it trails new-listing rents by about a year.'
 /** One short line under the Housing graph's Shelter (CPI) tab; the full HOUSING_NOTE is in its ⓘ. */
-export const SHELTER_SHORT_NOTE = 'All tenants plus homeowners (owners\' equivalent rent); trails new-lease rents by about a year.'
+export const SHELTER_SHORT_NOTE = 'All tenants plus homeowners (owners\' equivalent rent); trails new-listing rents by about a year.'
 /** EIA tiers: weekly retail regular gasoline. */
 export const GAS_SOURCE = 'EIA weekly retail regular gasoline'
 /** BLS tiers: CPI average price data, gasoline (unleaded regular), monthly. */
@@ -599,7 +601,7 @@ export function buildRentCard(
   const area = metro ? metroShortName(r.geoName) : countyOnly(r.geoName)
   const base = {
     id: 'rent' as const,
-    label: 'Rent (new leases)',
+    label: 'Rent (new listings)',
     accentColor: ACCENTS.rent,
     provenance,
     stale: monthOlderThan(r.asOf, RENT_STALE_DAYS, now),
@@ -610,7 +612,12 @@ export function buildRentCard(
   }
   // The $ figure is the seasonally adjusted change expressed in dollars, never a raw then-vs-now gap;
   // the raw level is shown only as a level, with its month.
-  const dollarNote = `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
+  // Direction uncertain (seasonal caveat: under the series' own pattern the change has the other sign, or none): no
+  // signed $ on the card, the same as the share image (the % stays, with its caveat in the ⓘ)
+  const uncertain = hasSeasonalCaveat(r.saCaveat) && seasonalDirectionUncertain(r.saCaveat, r.pct)
+  const dollarNote = uncertain
+    ? `No $/mo figure: the seasonal pattern is uncertain enough that even the direction of this change is unclear (see below)`
+    : `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
   // A city figure standing in for a county: the level is that city's, said on the line itself
   const detail = `Typical asking rent${city ? ` in ${r.cityName ?? area} (not county-wide)` : ''}: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
   const metroNote = metro ? rentMetroNote(r) : city ? rentCityNote(r) : undefined
@@ -620,10 +627,10 @@ export function buildRentCard(
     ...base,
     status: 'ok',
     value: fmtSignedPct(r.pct),
-    inline: `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo`,
+    inline: uncertain ? undefined : `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo`,
     direction: directionOf(r.pct),
     secondary: sinceMonth(r.baseMonth),
-    tags: caveat ? [OUTLIER_TAG] : undefined,
+    tags: caveat || uncertain ? compact([caveat && OUTLIER_TAG, uncertain && DIRECTION_UNCERTAIN_TAG]) : undefined,
     dollarNote,
     detail,
     caveat,
@@ -713,7 +720,7 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
     sourceLine: sourceLineOf(cpiCardArea(c), 'BLS', latest ? fmtMonthYear(latest) : undefined),
   }
   // BLS shelter also has lodging away from home and tenants'/household insurance (~5% of the index)
-  const CONCEPT = "CPI shelter is mainly rents plus owners' equivalent rent for homeowners, and covers existing leases, so new-lease rents can differ."
+  const CONCEPT = "CPI shelter is mainly rents plus owners' equivalent rent for homeowners, and covers existing leases, so asking rents on new listings can differ."
   const pct = c?.shelterChange
   if (!c || !inRange(pct, SANITY.pctChange)) return { ...base, status: 'unavailable', info: [CONCEPT] }
 

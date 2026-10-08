@@ -17,7 +17,7 @@ import { buildShareChart, chartUnavailable } from '@/lib/share-card/sparklines'
 import { rentChartSeries } from '@/lib/share-card/rent-series'
 import { fontMeasure } from '@/lib/share-card/measure'
 import {
-  dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_END_NONE, RANGE_START, RENT_ADJUSTMENT_TAG, shortSourceDate,
+  dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_NONE, RANGE_START, RENT_ADJUSTMENT_TAG, shortSourceDate,
 } from '@/lib/share-card/labels'
 export { QUADRANT_TITLES }
 import {
@@ -54,9 +54,12 @@ const DATE_BOX_PAD_X = 14
 export const MARK_SCALE = 0.45
 
 /** Width (px) of the header date box for these two lines. */
-export function dateBoxWidth(end: string, sub: string | null): number {
+export function dateBoxWidth(end: string | null, sub: string | null): number {
   const mono = fontMeasure('DMMono-Regular.ttf', 0.6)
-  const line1 = mono(RANGE_START, DATE_LINE_FS, DATE_LINE_LS) + DATE_ARROW_W + mono(end, DATE_LINE_FS, DATE_LINE_LS)
+  // No dated card: one line, "SINCE JAN 20, 2025" (no arrow, no end)
+  const line1 = end
+    ? mono(RANGE_START, DATE_LINE_FS, DATE_LINE_LS) + DATE_ARROW_W + mono(end, DATE_LINE_FS, DATE_LINE_LS)
+    : mono(RANGE_NONE, DATE_LINE_FS, DATE_LINE_LS)
   return Math.ceil(Math.max(line1, sub ? mono(sub, DATE_SUB_FS) : 0) + 2 * DATE_BOX_PAD_X + 2)
 }
 
@@ -124,7 +127,7 @@ export const pctTick = (v: number) => (Math.abs(v) < 0.05 ? '0%' : fmtSignedPct(
 
 /**
  * Footnote for the rent seasonal-pattern caveat (rent-range.ts rentSeasonalCaveat, short form), signed so it reads
- * right for a fall too: "† Seasonal pattern uncertain: Aug rent may be ~2 pts too low (≈ $50/mo); own pattern +0.7%,
+ * right for a fall too: "† Seasonal pattern uncertain: Aug rent may be ~2.2 pts too low (≈ $50/mo); own pattern +0.7%,
  * direction uncertain." `mark` is "†", or "‡" when the value also carries the outlier "†". null when there is no caveat.
  */
 export function shareSeasonalNote(
@@ -196,6 +199,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
   const rentOutlier = !!rent && card('rent')?.outlier === true
   const seasonalMark = rentOutlier ? '‡' : '†'
   const rentSeasonal = rent ? shareSeasonalNote(rent.saCaveat, rent, seasonalMark) : null
+  const rentUncertain = !!rent && hasSeasonalCaveat(rent.saCaveat) && seasonalDirectionUncertain(rent.saCaveat, rent.pct)
   const gasStandIn = ok('gas') && isGasStandIn(gasData)
   const footnotes = [
     gasStandIn ? shareGasStandInNote(location) : null,
@@ -266,8 +270,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
       id: 'rent', accent: BLUE, tag: RENT_ADJUSTMENT_TAG,
       big: fmtSignedPct(rent.pct),
       mark: `${rentOutlier ? OUTLIER_MARK : ''}${rentSeasonal ? seasonalMark : ''}` || undefined,
-      // No dollar pill for a flagged (†) value: the % with its caveat only
-      pill: rentOutlier ? undefined : { text: `≈ ${fmtSignedDollars(rent.monthlyChange, 0)}/mo` },
+      // No dollar pill for a flagged (†) value, or when the seasonal caveat leaves even the direction uncertain (a
+      // signed $ would read as certain): the % with its caveat only
+      pill: rentOutlier || rentUncertain ? undefined : { text: `≈ ${fmtSignedDollars(rent.monthlyChange, 0)}/mo` },
       chart: series && axis
         ? buildShareChart(pctFromFirst(series.map((p) => p.value)), BLUE, 'grad-rent', {
             height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...axis,
@@ -322,8 +327,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
       }
     : { id: 'electricity', accent: GREEN, big: 'N/A', chart: null, source: sourceOf('electricity') }
 
-  // ── Header: Jan 20, 2025 → the most recent data month shown (from the cards, never today's date) ──
-  const end = dataRangeEnd(cards) ?? RANGE_END_NONE
+  // ── Header: Jan 20, 2025 → the most recent data month shown (from the cards, never today's date); with no dated
+  //    card, just "SINCE JAN 20, 2025" ──
+  const end = dataRangeEnd(cards)
   const latest = latestDataLabel(cards)
   const boxW = dateBoxWidth(end, latest)
   const cityW = CARD_SIZE - 2 * SIDE_PAD - boxW - 24
@@ -436,15 +442,19 @@ export async function generateShareCard(zip: string): Promise<Response> {
             border: '1px solid rgba(242,169,59,0.35)', borderRadius: 4, padding: `8px ${DATE_BOX_PAD_X}px`,
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-            {monoText(RANGE_START, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
-            {/* Drawn arrow: none of the bundled fonts has "→" */}
-            <svg width={DATE_ARROW_W} height="14" viewBox="0 0 30 14" style={{ display: 'flex' }}>
-              <line x1="6" y1="7" x2="23" y2="7" stroke={AMBER} strokeWidth="2" />
-              <polyline points="18,2 24,7 18,12" fill="none" stroke={AMBER} strokeWidth="2" />
-            </svg>
-            {monoText(end, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
-          </div>
+          {end ? (
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              {monoText(RANGE_START, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
+              {/* Drawn arrow: none of the bundled fonts has "→" */}
+              <svg width={DATE_ARROW_W} height="14" viewBox="0 0 30 14" style={{ display: 'flex' }}>
+                <line x1="6" y1="7" x2="23" y2="7" stroke={AMBER} strokeWidth="2" />
+                <polyline points="18,2 24,7 18,12" fill="none" stroke={AMBER} strokeWidth="2" />
+              </svg>
+              {monoText(end, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })}
+            </div>
+          ) : (
+            monoText(RANGE_NONE, DATE_LINE_FS, AMBER, { letterSpacing: DATE_LINE_LS })
+          )}
           {latest ? monoText(latest, DATE_SUB_FS, TEXT_TERTIARY, { marginTop: 4 }) : null}
         </div>
       </div>

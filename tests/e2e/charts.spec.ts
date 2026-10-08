@@ -66,12 +66,12 @@ test.describe('Charts section', () => {
     await expect(housing.getByTestId('chart-info')).toBeHidden()
     await housing.getByTestId('chart-info-toggle').click()
     await expect(housing.getByTestId('chart-info')).toContainText("Zillow's smoothed, seasonally adjusted")
-    await expect(housing.getByTestId('chart-info')).toContainText('trails new-lease rents by about a year')
+    await expect(housing.getByTestId('chart-info')).toContainText('trails new-listing rents by about a year')
 
     await housing.getByTestId('housing-tab-shelter').click()
     await expect(housing).toHaveAttribute('data-tab', 'shelter')
     await expect(housing.getByTestId('provenance').last()).toContainText('BLS CPI shelter')
-    await expect(housing.getByTestId('chart-note')).toContainText('trails new-lease rents by about a year')
+    await expect(housing.getByTestId('chart-note')).toContainText('trails new-listing rents by about a year')
   })
 
   test('Electricity graph: statewide ¢/kWh, headline = the card %, 12-month average + monthly lines, U.S. line', async ({ page }) => {

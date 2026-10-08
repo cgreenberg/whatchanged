@@ -16,7 +16,7 @@ const TRACE_98683 = {
     step('gas.eia-national', 'EIA weekly U.S. average', 'not-needed', { geography: { name: 'United States', level: 'national' } }),
   ],
   rent: [
-    step('rent.zillow-county', 'Zillow county rent (new leases)', 'used', { geography: { name: 'Clark County, WA', level: 'county' }, asOf: '2026-08', citationUrl: 'https://www.zillow.com/research/data/' }),
+    step('rent.zillow-county', 'Zillow county rent (new listings)', 'used', { geography: { name: 'Clark County, WA', level: 'county' }, asOf: '2026-08', citationUrl: 'https://www.zillow.com/research/data/' }),
     step('rent.bls-cpi-shelter', 'BLS shelter (CPI)', 'not-needed', { geography: { name: 'Pacific division', level: 'division' } }),
   ],
   groceries: [
@@ -85,7 +85,7 @@ test.describe('"Where does this come from?" traceback', () => {
     await housing.scrollIntoViewIfNeeded()
     await expect(housing).toHaveAttribute('data-tab', 'rent', { timeout: 15000 })
     await housing.getByTestId('source-trace-toggle').click()
-    await expect(housing.getByTestId('source-trace-step').first()).toContainText('Zillow county rent (new leases) — Clark County, WA')
+    await expect(housing.getByTestId('source-trace-step').first()).toContainText('Zillow county rent (new listings) — Clark County, WA')
   })
 
   test('no trace in the payload (older responses): no button', async ({ page }) => {

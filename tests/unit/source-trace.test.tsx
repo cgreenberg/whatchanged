@@ -6,7 +6,7 @@ import { StatCard } from '@/components/StatCard'
 import type { TraceStep } from '@/lib/resolution/types'
 
 const STEPS: TraceStep[] = [
-  { rungId: 'rent.zillow-county', label: 'Zillow county rent (new leases)', source: 'Zillow Observed Rent Index (ZORI)', citationUrl: 'https://www.zillow.com/research/data/',
+  { rungId: 'rent.zillow-county', label: 'Zillow county rent (new listings)', source: 'Zillow Observed Rent Index (ZORI)', citationUrl: 'https://www.zillow.com/research/data/',
     geography: { name: 'Androscoggin County, ME', level: 'county' }, status: 'not-applicable',
     reason: 'Zillow has no rent series for Androscoggin County with enough history.' },
   { rungId: 'rent.bls-cpi-shelter', label: 'BLS shelter (CPI)', source: 'BLS CPI shelter', citationUrl: 'https://data.bls.gov/timeseries/CUUR0110SAH1',
@@ -30,7 +30,7 @@ describe('SourceTrace', () => {
     const rows = within(panel).getAllByTestId('source-trace-step')
     expect(rows.map((r) => r.getAttribute('data-status'))).toEqual(['not-applicable', 'used', 'not-needed'])
     expect(rows[0]).toHaveTextContent('No series here: Zillow has no rent series for Androscoggin County with enough history.')
-    expect(rows[0]).toHaveTextContent('Zillow county rent (new leases) — Androscoggin County, ME')
+    expect(rows[0]).toHaveTextContent('Zillow county rent (new listings) — Androscoggin County, ME')
     expect(within(rows[0]).queryByRole("link")).toBeNull()
     expect(rows[1]).toHaveTextContent('Used, Aug 2026')
     expect(within(rows[1]).getByRole('link', { name: 'BLS CPI shelter' })).toHaveAttribute('href', 'https://data.bls.gov/timeseries/CUUR0110SAH1')

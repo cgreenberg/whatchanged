@@ -1,4 +1,4 @@
-// Rent on new leases (Zillow ZORI, seasonally adjusted by whatchanged), bundled by
+// Rent on new listings (Zillow ZORI, seasonally adjusted by whatchanged), bundled by
 // scripts/build-local-data.py: county rows (src/lib/data/county-rent.json); for counties Zillow
 // has no county series for, the county's metro (src/lib/data/metro-rent.json; OMB March 2020 CBSAs,
 // the vintage Zillow's metros use); and where neither is usable, the county's most populous city with a

@@ -517,8 +517,8 @@ const SHELTER = {
   title: 'Shelter (CPI)',
   comparison: 'BLS U.S. city average shelter over the same months.',
   method:
-    '% change of the CPI shelter index (rents plus owners\' equivalent rent, existing leases included, so it lags new-lease ' +
-    'rents) since January 2025. Not seasonally adjusted. Its ≈ $/yr in rent = the same area\'s CPI rent of primary residence ' +
+    '% change of the CPI shelter index (rents plus owners\' equivalent rent, existing leases included, so it lags asking ' +
+    'rents on new listings) since January 2025. Not seasonally adjusted. Its ≈ $/yr in rent = the same area\'s CPI rent of primary residence ' +
     '% × the local Census ACS median gross rent × 12 (no $ where only the U.S. CPI applies, or the rent index fails its ' +
     'sanity check). Where Census suppresses a zip\'s rent, the rent base is borrowed and labeled: the nearest zip in the ' +
     'county with a Census rent, else the county median, else the state median.',
@@ -559,7 +559,7 @@ const RENT = {
   metric: 'rent',
   title: 'Rent (housing card)',
   method:
-    '% change of Zillow\'s typical asking rent on new leases since January 2025, seasonally adjusted by whatchanged ' +
+    '% change of Zillow\'s typical asking rent on new listings since January 2025, seasonally adjusted by whatchanged ' +
     '(county pattern blended with the state (or U.S.) pattern based on history length): classical decomposition whose seasonal ' +
     'factors use only months whose full 13-month window ends by December 2024, so nothing after the baseline shapes ' +
     'them; each county\'s (or metro\'s) own pattern gets weight n ÷ (n + 8), n = its fewest years of history for any ' +
@@ -567,12 +567,12 @@ const RENT = {
     'where the state has too few long series); a series with no usable history uses the state pattern. ≈ $/mo = today\'s typical rent − ' +
     'today\'s rent ÷ (1 + %). Changes outside −20% to +50% are not shown; a county\'s own unusual figure is tagged ' +
     '“⚠ unusual”, and an unusual metro or city figure never stands in for a county. Where Zillow has no usable county or ' +
-    'metro series, the county\'s most populous city with a Zillow series stands in (same method; ' +
-    'city-to-county by the Census 2020 place and county-subdivision files).',
+    'metro series, the county\'s most populous place with a Zillow city series stands in (same method; ' +
+    'place-to-county by the Census 2020 place and county-subdivision files).',
   rungs: [
     defineRung<L, string, RentData, C>({
       id: 'rent.zillow-county',
-      label: 'Zillow county rent (new leases)',
+      label: 'Zillow county rent (new listings)',
       source: 'Zillow',
       sourceName: 'Zillow Observed Rent Index (ZORI)',
       level: 'county',
@@ -609,7 +609,7 @@ const RENT = {
     }),
     defineRung<L, string, RentData, C>({
       id: 'rent.zillow-metro',
-      label: 'Zillow metro rent (new leases)',
+      label: 'Zillow metro rent (new listings)',
       source: 'Zillow',
       sourceName: 'Zillow Observed Rent Index (ZORI), metro',
       level: 'metro',
@@ -649,7 +649,7 @@ const RENT = {
     }),
     defineRung<L, string, RentData, C>({
       id: 'rent.zillow-city',
-      label: 'Zillow city rent (new leases)',
+      label: 'Zillow city rent (new listings)',
       source: 'Zillow',
       sourceName: 'Zillow Observed Rent Index (ZORI), city',
       level: 'city',
@@ -657,7 +657,7 @@ const RENT = {
       license: ZILLOW_LICENSE,
       pipeline: 'static',
       homepage: ZILLOW_HOME,
-      covers: 'Counties with no usable Zillow county or metro series: the county’s most populous city (Zillow’s size rank) whose Zillow series reaches back to January 2025, seasonally adjusted the same way (city pattern blended with the state pattern). City-to-county by the Census 2020 place and county-subdivision files (not Zillow’s own county label); the city’s typical rent level can differ from the rest of the county; a city figure that is a statistical outlier is skipped for the next city.',
+      covers: 'Counties with no usable Zillow county or metro series: the county’s most populous place (Zillow’s size rank) whose Zillow series reaches back to January 2025, seasonally adjusted the same way (city pattern blended with the state pattern). City-to-county by the Census 2020 place and county-subdivision files (not Zillow’s own county label); the city’s typical rent level can differ from the rest of the county; a city figure that is a statistical outlier is skipped for the next city.',
       applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
       target: (l) => l.countyFips!,
       // The city's name comes from the data (the used row overrides this); otherwise the county checked

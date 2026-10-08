@@ -70,9 +70,12 @@ export function hasSeasonalCaveat(c: SeasonalCaveat | null | undefined): c is Se
     Number.isInteger(c.month) && c.month >= 1 && c.month <= 12
 }
 
-/** The gap as worded: |gap| rounded to the nearest 0.5 point ("2.5", "2"). */
+/**
+ * The gap as worded: |gap| to one decimal ("2.2"), the same precision as the shown % and the own-pattern figure, so
+ * the three add up on the card (−1.5% + 2.2 points = +0.7%).
+ */
 export function seasonalCaveatPoints(c: SeasonalCaveat): number {
-  return Math.round(Math.abs(c.gap) * 2) / 2
+  return Math.round(Math.abs(c.gap) * 10) / 10
 }
 
 /**
@@ -93,31 +96,38 @@ export function seasonalCaveatDirection(c: SeasonalCaveat): 'too high' | 'too lo
 }
 
 /**
- * The % the same readings would show under the series' own recent seasonal pattern: shown − gap, one decimal
- * (Collier FL −1.5% with gap −2.2 → +0.7%). null without a usable shown %.
+ * The % the same readings would show under the series' own recent seasonal pattern: shown − the worded (one-decimal)
+ * gap, one decimal, so it matches the points in the same sentence (Collier FL −1.5% with gap −2.2 → +0.7%). null
+ * without a usable shown %.
  */
 export function seasonalOwnPatternPct(c: SeasonalCaveat, pct: number | undefined): number | null {
   if (typeof pct !== 'number' || !Number.isFinite(pct)) return null
-  const v = Math.round((pct - c.gap) * 10) / 10
+  const v = Math.round((Math.round(pct * 10) / 10 - seasonalCaveatPoints(c) * Math.sign(c.gap)) * 10) / 10
   return Number.isFinite(v) ? (Object.is(v, -0) ? 0 : v) : null
 }
 
 /**
- * The possible error is as large as the shown change itself (|gap| ≥ |shown|), or the own-pattern figure has the
- * other sign: even the direction of the change is uncertain (Kittitas WA −0.5% vs +2.5%; Blue Earth MN +6.3%, gap 8.4).
+ * Even the direction of the change is uncertain: the own-pattern figure has the other sign from the shown one, or rounds
+ * to 0 (Collier FL −1.5% vs +0.7%; Kittitas WA −0.5% vs +2.5%). A big gap with the same sign is not (Blue Earth MN
+ * +6.3%, gap −8.4 → +14.7%: the rise may be larger, not a fall). Compared at the one decimal shown.
  */
 export function seasonalDirectionUncertain(c: SeasonalCaveat, pct: number | undefined): boolean {
   if (typeof pct !== 'number' || !Number.isFinite(pct)) return false
   const own = seasonalOwnPatternPct(c, pct)
-  return Math.abs(c.gap) >= Math.abs(pct) || (own !== null && Math.sign(own) !== Math.sign(pct))
+  if (own === null) return false
+  return own === 0 || Math.sign(own) !== Math.sign(Math.round(pct * 10) / 10)
 }
 
-const signedPct = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`
+/** "+0.7%", "−1.5%", "0.0%": rounded to one decimal before the sign, so −0.04 is "0.0%", never "−0.0%". */
+const signedPct = (v: number) => {
+  const r = Math.round(v * 10) / 10
+  return `${r > 0 ? '+' : r < 0 ? '−' : ''}${Math.abs(r).toFixed(1)}%`
+}
 
 /**
  * Honest caveat when the series' own recent seasonal swing from January to the DISPLAYED month differs from the
  * blended pattern used to adjust it by more than RENT_SEASONAL_GAP_MIN points. Worded by sign, so it reads right for
- * falls too: "This August reading (−1.5%) may be about 2 percentage points too low (≈ $50/mo): the county’s recent
+ * falls too: "This August reading (−1.5%) may be about 2.2 percentage points too low (≈ $50/mo): the county’s recent
  * seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +0.7%; the
  * possible error is as large as the change itself, so even its direction is uncertain." `rent` (the shown % and
  * current rent) adds the shown %, the $/mo and the own-pattern figure.
