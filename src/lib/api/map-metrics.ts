@@ -315,7 +315,10 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
     const d = gasByKey.get(k)?.data
     return [k, d ? gasMonthlyAverages(d.series) : new Map<string, number>()] as const
   }))
-  const common = commonGasMonth([...avgByKey.values()].filter((m) => m.has(BASELINE_MONTH)).map(latestKey))
+  // A last-good (stale) copy never sets the common month: an expired series must not hold every area back
+  const common = commonGasMonth(gasKeys
+    .filter((k) => !gasByKey.get(k)?.stale && avgByKey.get(k)!.has(BASELINE_MONTH))
+    .map((k) => latestKey(avgByKey.get(k)!)))
   const gasWindow: MapGasWindow | null = common ? { from: BASELINE_MONTH, to: common } : null
 
   const gas: MapGasArea[] = gasAreas.map(({ id, lookup }) => {

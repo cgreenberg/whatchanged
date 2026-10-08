@@ -353,7 +353,10 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
         asOf: g.asOf, source, when: window, ...flags,
       }
     }
-    // Its own window (as on the card): Alaska's twice-yearly survey, or a series behind the common month
+    // Its own window (as on the card): Alaska's twice-yearly survey, or a series behind the common month. An older
+    // payload (CDN-cached before round 16) has no `window` / `gasWindow`: its values are the card's own latest
+    // figures, drawn plainly (unknown window, not patterned), never all marked "own window"
+    const legacy = g.window === undefined
     const at = (d: string | null | undefined) => (!d ? '' : g.frequency === 'weekly'
       ? `week of ${fmtDay(d)}`
       : g.frequency === 'semiannual' ? `${fmtMonthYear(d)} survey` : fmtMonthYear(d))
@@ -364,8 +367,8 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     return {
       value: g.change, text: `${fmtSignedDollars(g.change)}/gal, ${window}`, area,
       detail: `$${g.current.toFixed(2)}/gal · ${how}${g.asOf ? `, ${at(g.asOf)}` : ''}${g.stale ? STALE_COPY : ''}`,
-      asOf: g.asOf, source, ownWindow: true, ...flags,
-      when: g.source === 'dcra' ? `${window} (survey months, not monthly averages)` : `${window} (own window, not the map's common month)`,
+      asOf: g.asOf, source, ...(legacy ? {} : { ownWindow: true as const }), ...flags,
+      when: legacy ? window : g.source === 'dcra' ? `${window} (survey months, not monthly averages)` : `${window} (own window, not the map's common month)`,
     }
   }
   const c = m.groceries?.[row[1]]
@@ -449,20 +452,6 @@ const POS = [236, 146, 58]
  */
 export const NO_DATA_COLOR = '#5f6268'
 
-/**
- * Muted version of a scale color (map tier for HUD Fair Market Rents, a yearly estimate rather than a market index):
- * mostly desaturated toward its own gray and slightly darker, so the hue (rose / fell) still reads but the tier stands
- * apart from Zillow's colors.
- */
-export function mutedColor(color: string, keep = 0.25): string {
-  const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(color.replace(/\s+/g, ''))
-  if (!m) return color
-  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])]
-  const gray = 0.299 * r + 0.587 * g + 0.114 * b
-  const c = [r, g, b].map(v => Math.round((gray + (v - gray) * keep) * 0.9))
-  return `rgb(${c[0]},${c[1]},${c[2]})`
-}
-
 /** "HUD fair market rent (yearly estimate, FY2025→FY2027)" from the build's meta (fiscal years come from the data). */
 export function hudRentLabel(meta: LocalMeta | null | undefined): string {
   return meta?.sources?.hudFmr?.label ?? 'HUD fair market rent (yearly estimate)'
@@ -479,13 +468,16 @@ export function hudWindow(meta: LocalMeta | null | undefined): { window: string;
   }
 }
 
-/** The map panel's provenance for a HUD-tier county (geography, window, projection, adjustment), from meta. */
+/**
+ * The map panel's provenance for a HUD-tier county (geography, window, projection, adjustment), from meta. HUD's
+ * figure is shown here and in the tooltip only, never as a map color: it is an estimate, not actual rents.
+ */
 export function hudPanelArea(meta: LocalMeta | null | undefined): string {
   const { window, latestStarts } = hudWindow(meta)
   const latest = window.split('→')[1]
   return `${hudRentLabel(meta)} · HUD fair market rent area covering this county (its metro FMR area, or the county itself if non-metro) · ` +
     `${window}, not since ${fmtMonthYear(BASELINE_MONTH)}; both years are HUD projections from older survey data${latest && latestStarts ? ` (${latest} starts ${latestStarts})` : ''} · ` +
-    'yearly, not seasonally adjusted · no Zillow rent for this county (map only; the Rent card uses CPI shelter)'
+    'yearly, not seasonally adjusted · an estimate, not actual rents; no usable Zillow rent for this county, so it is gray on the map (the Rent card uses CPI shelter)'
 }
 export function divergingColor(v: number | undefined, clamp: number): string {
   if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
@@ -544,12 +536,24 @@ export function mapScaleFor(values: Iterable<number | undefined>, unit: 'usd' | 
   return { kind: 'diverging', clamp: niceCeil(quantile(abs, SCALE_PCTL), steps) }
 }
 
-/** Sequential scale: the distinct color for a value on the other side of zero (a fall on a "rose" scale, and vice versa). */
-export function oppositeColor(scale: MapScale): string | null {
+/**
+ * Sequential scale: the distinct hue for a value on the other side of zero (a fall on a "rose" scale, and vice versa).
+ * With `v`, its shade scales with the size of the move, like the main side (a $0.10 fall on a +$0.05…+$1.35 scale is a
+ * dim blue, not the brightest one); without `v`, the full end color (legend swatch end).
+ */
+export function oppositeColor(scale: MapScale, v?: number): string | null {
   if (scale.kind !== 'sequential') return null
   const end = scale.hi > 0 ? NEG : POS
-  return `rgb(${end[0]},${end[1]},${end[2]})`
+  if (v === undefined || !Number.isFinite(v)) return `rgb(${end[0]},${end[1]},${end[2]})`
+  const reach = Math.max(Math.abs(scale.lo), Math.abs(scale.hi)) || 1
+  const t = Math.max(0, Math.min(1, Math.abs(v) / reach))
+  // never as dim as the main side's floor: the other hue must stay readable
+  const a = OPPOSITE_MIN + (1 - OPPOSITE_MIN) * t
+  const c = MID.map((m, i) => Math.round(m + (end[i] - m) * a))
+  return `rgb(${c[0]},${c[1]},${c[2]})`
 }
+/** Dimmest opposite-side shade (fraction of the way from the charcoal midpoint to the end color). */
+export const OPPOSITE_MIN = 0.4
 
 /** Sequential scale: is `v` on the other side of zero from the scale (drawn in oppositeColor)? */
 export function isOppositeSide(v: number | undefined, scale: MapScale): boolean {
@@ -562,7 +566,7 @@ export function scaleColor(v: number | undefined, scale: MapScale): string {
   if (scale.kind === 'diverging') return divergingColor(v, scale.clamp)
   if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
   // Never clamp a fall into the dimmest "rose" color (or a rise into "fell"): its own distinct color
-  if (isOppositeSide(v, scale)) return oppositeColor(scale)!
+  if (isOppositeSide(v, scale)) return oppositeColor(scale, v)!
   const rose = scale.hi > 0
   const span = scale.hi - scale.lo || 1
   // Rising: lo dim (near the charcoal midpoint) → hi bright; falling: hi (smallest drop) dim → lo (biggest drop) bright
@@ -639,7 +643,7 @@ export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPa
   if (r && r.level === 'city' && Number.isFinite(r.pct)) {
     out.rent = {
       text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,
-      area: `${r.cityName ?? r.geoName} city rent (Zillow) · ${metroStandInWhy(r)}, and there is no usable metro series; the county’s most populous city with a Zillow series is used`,
+      area: `${r.cityName ? `${r.cityName} area` : r.geoName} rent (Zillow city series) · ${metroStandInWhy(r)}, and there is no usable metro series; the county’s most populous place with a Zillow series is used`,
     }
     const seasonal = rentSeasonalCaveat(r.saCaveat, 'city', r)
     if (seasonal) out.rent.seasonal = seasonal

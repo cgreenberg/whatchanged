@@ -166,8 +166,8 @@ used only for the shelter card's dollar figure; verified monthly with a Jan 2025
   are the difference of the two prices as displayed (each rounded to the cent: `displayedChange` in `baseline.ts`).
   Monthly BLS figures lag weekly EIA by weeks, so BLS tiers always name their month and source: card detail
   "through Aug 2026 (monthly)"; "National: $x (+$y) · U.S. city avg, BLS, Aug 2026" vs "· U.S. avg, EIA, week of
-  Sep 28" (`gasNationalSourceTag`); share card "Philadelphia metro · thru Aug '26" and "Natl (BLS): …"; OG "since Jan
-  2025, thru Aug '26"; the gas chart's dashed overlay is labeled by source (`nationalLabel`).
+  Sep 28" (`gasNationalSourceTag`); share card source line "Philadelphia metro · BLS · Aug '26"; OG "since Jan
+  2025" + "latest Aug '26"; the gas chart's dashed overlay is labeled by source (`nationalLabel`).
 - **CT planning regions** `src/lib/mappings/laus-area.ts`: Connecticut zip / legacy county → 2022 planning region
   (09110–09190), data in `ct-planning-regions.json`. Used by the static pipeline (`county-geo.json` `lausFips`).
 - **AK:** the Valdez-Cordova map shape takes Chugach values (approx). **Territories:** national CPI, national gas.
@@ -214,6 +214,14 @@ through Jul 2026): GA +2.6% / +$4 → +6.6% / +$10; ME +23.3% / +$33 → +21.2% 
 Shelter and groceries dollars are **null** whenever the CPI used is national (outage fallback, or territories like PR
 whose only CPI is national): a U.S. % is never presented as a local cost; the card says why.
 
+**Share card / OG header** (`src/lib/share-card/labels.ts`): "JAN 20, 2025 → {newest data month shown}" (`dataRangeEnd`,
+from the cards' as-of periods — weekly gas into early Oct → "OCT 2026", all monthly through Aug → "AUG 2026"; never the
+month the image is made), then "latest data {span}". Each share quadrant names its own month on its source line ("· Aug
+'26") and each OG stat on a third line ("latest Aug '26", `cardMonthLabel`), so an older box never reads as current.
+Rent's title is "RENT (NEW LEASES)" with a small "seas. adj." tag (share title row / OG window line). A number whose
+chart series is missing shows "Chart unavailable" under it ("Data unavailable" only for N/A). The rent seasonal-pattern
+caveat is signed ("may be about 2 percentage points too low"; "under its own recent pattern ≈ +0.7%"; "even its
+direction is uncertain" when |gap| ≥ |shown| or the sign flips — `rent-range.ts`), never "overstate/understate".
 Share card, OG image and `og:description` tag every number with a short geography (`geoTag`: "Buncombe Co.",
 "South Atlantic region", "Lower Atlantic avg", "U.S. avg; local n/a"); flagged county rent (outliers, bundled as
 `flagged`/`note` in `county-rent.json`) gets "†" plus an "unusual value" footnote. BLS gas tiers are tagged
@@ -271,6 +279,14 @@ Default = Rent when the county shard has `rentS`, else Shelter (CPI). Tabs witho
 ⓘ; the visible line is a short note per tab (`ZORI_SHORT_NOTE`, `ZHVI_SHORT_NOTE`, `SHELTER_SHORT_NOTE`).
 
 **County map:** chips Gas | Rent | Home prices | Groceries | Electricity (`MAP_METRIC_ORDER`, default Home prices).
+Rent layer colors Zillow county / metro (stripes) / city (dots, labeled "{place} area": Zillow city regions include
+CDPs) values only (`rentLayer` / `rentFillValue` in `map-metro-rent.ts`). A county with no usable Zillow rent is the
+no-data gray even when HUD publishes a Fair Market Rent change: HUD's figure (a yearly projected estimate whose median
+ran ~2× Zillow's) never enters the scale or a fill and appears only on hover / tap as "No usable Zillow rent here · HUD
+Fair Market Rent estimate: +x% (not actual rents)". The Rent time-lapse plays county series only and says so
+(`map-timelapse-note`). On a sequential (gas) scale the other side of zero is shaded by size (`oppositeColor(scale, v)`).
+Gas common month ignores `:lastgood` (stale) series; an old cached payload without `gasWindow` / `window` is drawn
+plainly (no "own window" grid).
 Rent and Home prices are county metrics (static pipeline): movers and time-lapse (`counties-timeline.json`). Gas ($
 change, scale ±$0.50), Groceries and Electricity (%) come from `/api/map-metrics` (metro / region / state series):
 a note says why blocks of counties share a color, and there are no movers or Play for them (`NO_MOVERS_NOTE`).

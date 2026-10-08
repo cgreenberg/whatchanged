@@ -552,7 +552,7 @@ function cityStandInReason(r: RentData, county: string): string {
     : r.metroWhy === 'out-of-range'
       ? `its metro’s figure is outside the plausible range (${rentRangeText()})`
       : 'it isn’t in a metro with a Zillow rent series back to Jan 2025'
-  return `${own}, and ${metro}; the ${r.cityName ?? 'city'} city series (the county’s most populous city with one) stands in.`
+  return `${own}, and ${metro}; the ${r.cityName ? `${r.cityName} area` : 'city'} series (Zillow’s city series for the county’s most populous place with one) stands in.`
 }
 
 const RENT = {

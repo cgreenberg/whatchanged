@@ -6,11 +6,11 @@ import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, NO_DATA_COLOR, mapScaleFor, scaleColor, scaleText, fmtScaleValue,
   oppositeColor, isOppositeSide, sequentialClaim, gasWindowText, elecWindowText, BASELINE_MONTH,
-  mutedColor, hudRentLabel, hudWindow, hudPanelArea, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
+  hudRentLabel, hudWindow, hudPanelArea, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
-import { mapRentTier, type MapRentTier } from '@/lib/map-metro-rent'
+import { mapRentTier, rentLayer, type MapRentTier } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
 import { rentSeasonalCaveat, hasSeasonalCaveat } from '@/lib/rent-range'
 
@@ -201,17 +201,30 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     return data[fips]?.[countyKey]
   }, [countyKey, liveData, metric, frame, timeline, data])
   // Rent: a county with no Zillow county series takes the Rent card's next rung — its metro's rent (light stripes),
-  // else its most populous city's (dots) — and, map only, HUD's Fair Market Rent change (muted). Not during the
-  // time-lapse (it plays the county series only).
+  // else its most populous city's (dots). Not during the time-lapse (it plays the county series only). A county with
+  // no usable Zillow rent at all stays gray; HUD's Fair Market Rent estimate (not actual rents) is only in its tooltip
+  // and panel, never a color.
   const rentTiers = useMemo(() => {
-    const out = new Map<string, Exclude<MapRentTier, { tier: 'county' }>>()
+    const out = new Map<string, Extract<MapRentTier, { tier: 'metro' | 'city' }>>()
     if (metric !== 'rent' || playing || !shapes) return out
     for (const s of shapes.counties) {
       const t = mapRentTier(s.id, data[s.id])
-      if (t && t.tier !== 'county') out.set(s.id, t)
+      if (t && (t.tier === 'metro' || t.tier === 'city')) out.set(s.id, t)
     }
     return out
   }, [metric, playing, shapes, data])
+  /** Rent layer (latest values): Zillow county / metro / city values only; HUD-tier and no-data counties are gray. */
+  const rentLatest = useMemo(
+    () => (countyKey === 'rent' && shapes ? rentLayer(shapes.counties.map(s => s.id), data, def.clamp) : null),
+    [countyKey, shapes, data, def.clamp],
+  )
+  /** Counties with no usable Zillow rent that have a HUD Fair Market Rent estimate (gray; shown on hover / tap). */
+  const hudCount = useMemo(() => {
+    if (metric !== 'rent' || !shapes) return 0
+    let n = 0
+    for (const s of shapes.counties) if (mapRentTier(s.id, data[s.id])?.tier === 'hud') n++
+    return n
+  }, [metric, shapes, data])
   // Gas: HI/AK counties with no series (the nearest metro's price: stripes) and areas on their own window (Alaska's
   // DCRA survey months, a lagging series: grid), each patterned and in the legend
   const gasTiers = useMemo(() => {
@@ -239,10 +252,11 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   }, [metric, shapes, liveData])
   // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
   // |change| (diverging), or the counties' 2nd–98th percentile range when nearly every county moved the same way (gas).
-  // Rent: Zillow values only (county, metro, city); HUD's yearly estimates are drawn on that scale, muted. Gas: the
-  // common monthly-average window only (own-window survey areas are drawn on that scale, patterned).
+  // Rent: Zillow values only (county, metro, city: rentLayer); HUD's estimates never enter the scale. Gas: the common
+  // monthly-average window only (own-window survey areas are drawn on that scale, patterned).
   const unit: 'usd' | 'pct' = def.scope === 'live' ? def.unit : 'pct'
   const scale = useMemo(() => {
+    if (rentLatest) return rentLatest.scale
     const vals: (number | undefined)[] = []
     for (const s of shapes?.counties ?? []) {
       if (!countyKey) {
@@ -250,31 +264,26 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         vals.push(v && !v.ownWindow ? v.value : undefined)
         continue
       }
-      const own = data[s.id]?.[countyKey]
-      if (own != null || countyKey !== 'rent') { vals.push(own); continue }
-      const t = mapRentTier(s.id, data[s.id])
-      vals.push(t && t.tier !== 'hud' ? t.pct : undefined)
+      vals.push(data[s.id]?.[countyKey])
     }
     return mapScaleFor(vals, unit, def.clamp, def.scope === 'live' && !!def.sequential)
-  }, [shapes, countyKey, data, liveData, metric, unit, def])
+  }, [rentLatest, shapes, countyKey, data, liveData, metric, unit, def])
   const fills = useMemo(() => {
+    if (rentLatest && !playing) return rentLatest.fills
     const out = new Map<string, string>()
     if (!shapes) return out
     for (const s of shapes.counties) {
       const v = value(s.id)
-      if (Number.isFinite(v)) { out.set(s.id, scaleColor(v, scale)); continue }
-      const t = rentTiers.get(s.id)
-      if (t) out.set(s.id, t.tier === 'hud' ? mutedColor(scaleColor(t.pct, scale)) : scaleColor(t.pct, scale))
+      if (Number.isFinite(v)) out.set(s.id, scaleColor(v, scale))
     }
     return out
-  }, [shapes, value, rentTiers, scale])
+  }, [rentLatest, playing, shapes, value, scale])
   // Sequential scale: "every county rose" only when no drawn county fell (else "nearly every"); falls get their own color
   const drawnValues = useMemo(() => (shapes?.counties ?? []).map(s => value(s.id)), [shapes, value])
   const claim = sequentialClaim(drawnValues, scale)
   const oppositeCount = useMemo(() => drawnValues.filter(v => isOppositeSide(v, scale)).length, [drawnValues, scale])
   const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'metro') : []), [shapes, rentTiers])
   const cityShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'city') : []), [shapes, rentTiers])
-  const hudCount = useMemo(() => [...rentTiers.values()].filter(t => t.tier === 'hud').length, [rentTiers])
   const hudLabel = hudRentLabel(meta)
   const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
   /** Keyboard browsing starts at the selected county, else the one nearest the map's center. */
@@ -302,7 +311,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const countyWhen = meta && countyLatest && /^\d{4}-\d{2}$/.test(countyLatest) ? `${fmtMonth(meta.baseline)} → ${fmtMonth(countyLatest)}` : undefined
   const tipFor = (fips: string | null) => (fips
     ? mapTooltip({
-        fips, metric, county: data[fips], liveData, hudLabel, countyWhen,
+        fips, metric, county: data[fips], liveData, hudWindowText: hudWindow(meta).window, countyWhen,
         ...(playing && countyKey ? { frame: { value: value(fips), month: timelineMonths(timeline!, countyKey)[frame!] } } : {}),
       })
     : null)
@@ -370,16 +379,17 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             return {
               key: d.key, short: d.short,
               text: `${fmtPct(c.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(c.cur)}/mo`,
-              area: `${c.name} city rent (Zillow): the county’s most populous city with a Zillow series (no usable county or metro series)`,
+              area: `${c.name} area rent (Zillow city series): the county’s most populous place with a Zillow series (no usable county or metro series)`,
               caveat: null,
               seasonal: rentSeasonalCaveat(c.saCaveat, 'city', { pct: c.pct, curRent: c.cur }),
             }
           }
           if (t?.tier === 'hud') {
+            // Gray on the map: HUD's yearly estimate, labeled as such, never presented as actual rents
             const h = t.hud
             return {
               key: d.key, short: d.short,
-              text: `${fmtPct(h.pct)} · 2-bedroom fair market rent ${fmtMoney(h.base)} → ${fmtMoney(h.cur)}/mo`,
+              text: `No usable Zillow rent here · HUD Fair Market Rent estimate: ${fmtPct(h.pct)} (not actual rents; 2-bedroom ${fmtMoney(h.base)} → ${fmtMoney(h.cur)}/mo)`,
               area: `${hudPanelArea(meta)}${h.from ? `; ${h.from} figure` : ''}${h.areas ? `; the HUD area covering most of its towns` : ''}`,
               caveat: null,
             }
@@ -389,7 +399,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             // The rent number carries its seasonal-pattern caveat wherever it appears (card, graph, map)
             seasonal: text && d.key === 'rent' ? rentSeasonalCaveat(sel.rentSaCav, 'county', { pct: sel.rent, curRent: sel.rentCur }) : undefined,
             text: text ?? (d.key === 'rent'
-              ? 'No rent data for this county (no Zillow county, metro or city series and no HUD fair market rent change)'
+              ? 'No rent data for this county (no usable Zillow county, metro or city series and no HUD Fair Market Rent estimate)'
               : `No Zillow ${d.short.toLowerCase()} data for this county`),
             area: text ? 'county' : null,
             caveat: flagNote(sel, d.key),
@@ -416,7 +426,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         How every county changed
       </h2>
       <p className="text-sm text-ink-2 mt-2 mb-4 max-w-2xl">
-        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}{hudCount > 0 ? `; muted counties have no Zillow rent and show HUD’s fair market rent change instead (${hudWindow(meta).window}, a different, yearly measure)` : ''}. Tap one to see all five measures.
+        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}{hudCount > 0 && !playing ? '; gray counties have no actual-rent data (hover or tap for HUD’s Fair Market Rent estimate where available)' : ''}. Tap one to see all five measures.
       </p>
 
       {/* Controls sit above the map, never on top of it, so every county stays tappable */}
@@ -554,8 +564,13 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           </svg>
         )}
         {frame != null && timeline && countyKey && (
-          <div className="pointer-events-none absolute top-2.5 left-3 tnum font-display font-semibold text-ink text-2xl tracking-tight" data-testid="map-frame">
-            {fmtMonth(timelineMonths(timeline, countyKey)[frame])}
+          <div className="pointer-events-none absolute top-2.5 left-3" data-testid="map-frame-box">
+            <p className="tnum font-display font-semibold text-ink text-2xl tracking-tight" data-testid="map-frame">
+              {fmtMonth(timelineMonths(timeline, countyKey)[frame])}
+            </p>
+            {countyKey === 'rent' && (
+              <p className="text-[11px] text-ink-2" data-testid="map-timelapse-note">Time-lapse shows Zillow county series only</p>
+            )}
           </div>
         )}
         {tip && tipPos && (
@@ -584,7 +599,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
         <div className="w-full max-w-xs">
           <p className="kicker !text-[10px] text-ink-3 mb-1" data-testid="map-legend-title">
-            {legendTitle}{hudCount > 0 ? ` · muted: HUD ${hudWindow(meta).window}` : ''}
+            {legendTitle}
             {claim && <span data-testid="map-legend-claim">{` · ${claim}`}</span>}
           </p>
           <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{ background: `linear-gradient(90deg, ${legendStops.join(',')})` }}>
@@ -607,7 +622,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         </div>
         {oppositeCount > 0 && oppositeColor(scale) && (
           <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-opposite">
-            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: oppositeColor(scale)! }} aria-hidden />
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: `linear-gradient(90deg, ${oppositeColor(scale, 0)}, ${oppositeColor(scale)})` }} aria-hidden />
             <span>{scale.kind === 'sequential' && scale.hi > 0 ? `fell (below ${unit === 'usd' ? '$0' : '0%'})` : `rose (above ${unit === 'usd' ? '$0' : '0%'})`}</span>
           </div>
         )}
@@ -653,26 +668,26 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             <span>city rent (no usable county or metro series)</span>
           </div>
         )}
-        {hudCount > 0 && (
-          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-hud">
-            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: mutedColor(legendStops[16]) }} aria-hidden />
-            <span>muted = HUD fair market rent (yearly estimate, no Zillow rent)</span>
-          </div>
-        )}
         <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-nodata">
           <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: NO_DATA_COLOR }} aria-hidden />
-          <span>{metric === 'rent' ? 'no rent data' : 'no data'}</span>
+          <span>
+            {metric !== 'rent'
+              ? 'no data'
+              : playing ? 'no Zillow county series (time-lapse)'
+                : hudCount > 0 ? 'no actual-rent data (hover for HUD estimate where available)' : 'no rent data'}
+          </span>
         </div>
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
-        Scale {scaleNote}{hudCount > 0 ? ' (Zillow figures only)' : ''} · {footer}
+        Scale {scaleNote}{metric === 'rent' ? ' (Zillow figures only)' : ''} · {footer}
         {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has no usable one for the county, as on the Rent card' : ''}
         {gasTiers.standIn.length > 0 ? ' · light stripes = a Hawaii / Alaska county with no gas series of its own, colored by the nearest metro’s price (local prices often higher)' : ''}
         {gasTiers.own.length > 0 ? ' · grid = priced on its own window, not the monthly averages: Alaska’s twice-yearly DCRA community survey (or a series behind the common month); months in the tooltip' : ''}
         {oppositeCount > 0 && scale.kind === 'sequential' ? ` · ${scale.hi > 0 ? 'blue = fell' : 'orange = rose'} (the other side of zero)` : ''}
         {cityShapes.length > 0 ? ' · dots = city rent: the county’s most populous city with a Zillow series where it has no usable county or metro series, as on the Rent card' : ''}
-        {hudCount > 0 ? ` · muted = ${hudLabel}, 2-bedroom, for counties with no Zillow rent (map only; a yearly HUD estimate, not a market index; not on the Rent card)` : ''}
-        {' · solid gray = no data'}
+        {hudCount > 0 && !playing
+          ? ` · solid gray = no actual-rent data; where HUD publishes one, the tooltip and panel show its ${hudLabel}, 2-bedroom (an estimate, not actual rents; never a map color; not on the Rent card)`
+          : ' · solid gray = no data'}
       </p>
       {def.scope === 'live' && (
         <p className="text-[12px] text-ink-2 mt-1" data-testid="map-scope-note">
@@ -737,7 +752,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           <p className="sm:col-span-2 text-[11px] text-ink-3">
             Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure and counties whose job counts are approximated (Connecticut).
             {countyKey === 'rent' && [...movers.top, ...movers.bottom].some(([, c]) => hasSeasonalCaveat(c.rentSaCav)) &&
-              ' † Seasonal pattern uncertain: the county’s recent seasonal swing differs from the pattern used to adjust it, so this reading may over- or understate the change (tap for the size).'}
+              ' † Seasonal pattern uncertain: the county’s recent seasonal swing differs from the pattern used to adjust it, so this reading may be too high or too low (tap for the size and direction).'}
           </p>
         </div>
       )}

@@ -1,13 +1,14 @@
 /**
- * County map Rent layer tiers (map-metro-rent.ts mapRentTier): county → metro → city → HUD Fair Market Rent, then a
- * quiet solid gray for no data. The Zillow tiers follow the Rent card's ladder exactly; HUD is map only.
+ * County map Rent layer tiers (map-metro-rent.ts mapRentTier): county → metro → city, colored; a HUD Fair Market Rent
+ * tier (no usable Zillow rent) and no data are both the quiet solid no-data gray. The Zillow tiers follow the Rent
+ * card's ladder exactly; HUD's estimate appears only in the tooltip / panel, labeled as not actual rents.
  */
 import fs from 'fs'
 import path from 'path'
-import { mapRentTier, mapCityRent, mapHudRent } from '@/lib/map-metro-rent'
+import { mapRentTier, mapCityRent, mapHudRent, rentFillValue, rentLayer } from '@/lib/map-metro-rent'
 import { lookupCityRent, lookupCountyRent, lookupMetroRent } from '@/lib/rent'
 import { mapTooltip } from '@/lib/map-tooltip'
-import { NO_DATA_COLOR, divergingColor, mutedColor, hudRentLabel, type CountyMap, type LocalMeta } from '@/lib/county-data'
+import { NO_DATA_COLOR, METRICS, hudRentLabel, hudWindow, hudPanelArea, mapScaleFor, type CountyMap, type LocalMeta } from '@/lib/county-data'
 
 const read = (p: string) => JSON.parse(fs.readFileSync(path.join(process.cwd(), p), 'utf8'))
 const COUNTIES = read('public/data/counties.json') as CountyMap
@@ -45,10 +46,10 @@ test('map city / HUD tiers ⇔ the Rent card ladder: city exactly where the card
   expect(city).toBeGreaterThanOrEqual(1)
 })
 
-test('Georgetown County SC takes Murrells Inlet city rent on the map and the card', () => {
+test('Georgetown County SC takes Murrells Inlet rent on the map and the card (an unincorporated place: "area", not "city")', () => {
   const t = mapRentTier('45043', COUNTIES['45043'])
   expect(t).toMatchObject({ tier: 'city', city: { name: 'Murrells Inlet', state: 'SC' } })
-  expect(lookupCityRent('45043', 'Georgetown County, SC').data).toMatchObject({ level: 'city', geoName: 'Murrells Inlet city, SC', countyName: 'Georgetown County, SC' })
+  expect(lookupCityRent('45043', 'Georgetown County, SC').data).toMatchObject({ level: 'city', geoName: 'Murrells Inlet area, SC', countyName: 'Georgetown County, SC' })
   // a county with its own series or a usable metro never gets a city
   expect(mapCityRent('17031')).toBeNull()
 })
@@ -64,28 +65,69 @@ test('HUD tier: values validated, sanity range applied, never for a county with 
   expect(COUNTIES['02261']?.rentH?.from).toBe('Chugach Census Area')
 })
 
-test('tooltips name the tier and its source; HUD label carries the fiscal years from meta', () => {
+test('tooltips name the tier and its source; a HUD-tier county says "no usable Zillow rent" and labels HUD as an estimate', () => {
   const label = hudRentLabel(META)
   expect(label).toMatch(/^HUD fair market rent \(yearly estimate, FY2025→FY20\d\d\)$/)
-  const city = mapTooltip({ fips: '45043', metric: 'rent', county: COUNTIES['45043'], liveData: null, hudLabel: label })
-  expect(city).toMatchObject({ tier: 'city', geo: 'Murrells Inlet city rent (Zillow; no usable county or metro series)', noData: false })
+  const win = hudWindow(META).window
+  expect(win).toMatch(/^FY2025→FY20\d\d$/)
+  const city = mapTooltip({ fips: '45043', metric: 'rent', county: COUNTIES['45043'], liveData: null, hudWindowText: win })
+  expect(city).toMatchObject({ tier: 'city', geo: 'Murrells Inlet area rent (Zillow city series; no usable county or metro series)', noData: false })
   const hudFips = SHAPES.find((f) => mapRentTier(f, COUNTIES[f])?.tier === 'hud')!
-  const hud = mapTooltip({ fips: hudFips, metric: 'rent', county: COUNTIES[hudFips], liveData: null, hudLabel: label })
-  expect(hud.tier).toBe('hud')
-  expect(hud.value).toMatch(/^Rent [+−]?\d+\.\d%$/)
-  expect(hud.geo).toBe(`${label}, HUD area; not since Jan 2025; no Zillow rent`)
+  const hud = mapTooltip({ fips: hudFips, metric: 'rent', county: COUNTIES[hudFips], liveData: null, hudWindowText: win })
+  const pct = (mapRentTier(hudFips, COUNTIES[hudFips]) as { pct: number }).pct
+  expect(hud).toMatchObject({ tier: 'hud', noData: true, value: 'Rent: No usable Zillow rent here' })
+  expect(hud.geo).toBe(`HUD Fair Market Rent estimate: ${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(1)}% (not actual rents) · 2-bedroom, HUD area, ${win}, not since Jan 2025`)
   // home prices never use the rent tiers
   expect(mapTooltip({ fips: hudFips, metric: 'hv', county: { n: 'x' }, liveData: null }).noData).toBe(true)
 })
 
-test('no-data fill is a quiet solid neutral gray; HUD fill is a muted version of the scale color', () => {
+test('Etowah County AL (a too-new Zillow series, HUD tier): "no usable Zillow rent", never "no Zillow rent"', () => {
+  const t = mapRentTier('01055', COUNTIES['01055'])
+  expect(t?.tier).toBe('hud')
+  const tip = mapTooltip({ fips: '01055', metric: 'rent', county: COUNTIES['01055'], liveData: null })
+  expect(tip.value).toBe('Rent: No usable Zillow rent here')
+  expect(`${tip.value} ${tip.geo}`).not.toMatch(/\bno Zillow rent\b/i)
+  expect(hudPanelArea(META)).toContain('no usable Zillow rent for this county')
+  expect(hudPanelArea(META)).toContain('an estimate, not actual rents')
+})
+
+test('no-data fill is a quiet solid neutral gray', () => {
   expect(NO_DATA_COLOR).toMatch(/^#[0-9a-f]{6}$/i)
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(NO_DATA_COLOR.slice(i, i + 2), 16))
   expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThanOrEqual(10)
-  const vivid = divergingColor(8, 10)
-  const muted = mutedColor(vivid)
-  const sat = (c: string) => { const v = c.match(/\d+/g)!.map(Number); return Math.max(...v) - Math.min(...v) }
-  expect(sat(muted)).toBeLessThan(sat(vivid) * 0.5)
-  expect(sat(muted)).toBeGreaterThan(0)
-  expect(mutedColor('#123456')).toBe('#123456')
+})
+
+describe('HUD tier is off the Rent color scale (owner decision, round 17)', () => {
+  const clamp = METRICS.find((m) => m.key === 'rent')!.clamp
+  const hudFips = SHAPES.filter((f) => mapRentTier(f, COUNTIES[f])?.tier === 'hud')
+
+  test('every HUD-tier county gets the no-data color (no fill entry, drawn NO_DATA_COLOR) and no fill value', () => {
+    expect(hudFips.length).toBeGreaterThan(1500)
+    const { fills } = rentLayer(SHAPES, COUNTIES, clamp)
+    for (const f of hudFips) {
+      expect([f, rentFillValue(f, COUNTIES[f])]).toEqual([f, undefined])
+      expect([f, fills.get(f) ?? NO_DATA_COLOR]).toEqual([f, NO_DATA_COLOR])
+    }
+    // Zillow-tier counties are colored, and never with the no-data gray
+    const zillow = SHAPES.filter((f) => ['county', 'metro', 'city'].includes(mapRentTier(f, COUNTIES[f])?.tier ?? ''))
+    expect(zillow.length).toBeGreaterThan(1200)
+    for (const f of zillow) {
+      expect(fills.get(f)).toBeDefined()
+      expect(fills.get(f)).not.toBe(NO_DATA_COLOR)
+    }
+  })
+
+  test('HUD values do not affect the scale: extreme HUD changes leave scale and Zillow fills unchanged', () => {
+    const base = rentLayer(SHAPES, COUNTIES, clamp)
+    // the scale equals the one from Zillow values alone
+    const zillowOnly = mapScaleFor(SHAPES.map((f) => rentFillValue(f, COUNTIES[f])), 'pct', clamp)
+    expect(base.scale).toEqual(zillowOnly)
+    for (const extreme of [49, -19]) {
+      const pushed: CountyMap = { ...COUNTIES }
+      for (const f of hudFips) pushed[f] = { ...COUNTIES[f], rentH: { ...COUNTIES[f].rentH!, p: extreme } }
+      const moved = rentLayer(SHAPES, pushed, clamp)
+      expect(moved.scale).toEqual(base.scale)
+      expect([...moved.fills.entries()]).toEqual([...base.fills.entries()])
+    }
+  })
 })

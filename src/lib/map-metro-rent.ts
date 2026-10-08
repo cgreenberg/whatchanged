@@ -5,14 +5,16 @@
 //   city   — no county or usable metro series: the county's most populous city with a Zillow series
 //            (src/lib/data/city-rent.json), the card's city rung (lookupCityRent), dots;
 //   hud    — none of those: HUD's 2-bedroom Fair Market Rent change between fiscal years (counties.json `rentH`),
-//            MAP ONLY (never on the card), drawn muted.
+//            MAP ONLY (never on the card) and NEVER COLORED: a yearly HUD estimate, not actual rents (its median ran
+//            about twice Zillow's), so the county is drawn in the no-data gray and HUD's figure appears only in the
+//            tooltip / panel, labeled as an estimate. HUD values never enter the color scale (rentFillValue).
 // Same rules as the card: a metro or city flagged as a statistical outlier, or outside the plausible range, never
 // stands in for a county. Client-safe: it bundles only the small metro and city files (not county-rent.json);
 // tests/unit/map-metro-rent.test.ts checks the map agrees with the card's ladder for every county.
 
 import metroRent from '@/lib/data/metro-rent.json'
 import cityRent from '@/lib/data/city-rent.json'
-import type { CountyRecord } from '@/lib/county-data'
+import { mapScaleFor, scaleColor, type CountyRecord, type CountyMap, type MapScale } from '@/lib/county-data'
 import { RENT_PCT_RANGE, hasSeasonalCaveat, type SeasonalCaveat } from '@/lib/rent-range'
 
 interface MetroRow {
@@ -148,4 +150,30 @@ export function mapRentTier(fips: string, c: CountyRecord | null | undefined): M
   const hud = mapHudRent(c)
   if (hud) return { tier: 'hud', pct: hud.pct, hud }
   return null
+}
+
+/**
+ * The value the Rent layer COLORS a county with: its own Zillow series, else its metro's or city's (the card's
+ * ladder). undefined for a HUD-tier county and for no data: both are drawn in the no-data gray, and HUD's yearly
+ * estimate never enters the color scale.
+ */
+export function rentFillValue(fips: string, c: CountyRecord | null | undefined): number | undefined {
+  const t = mapRentTier(fips, c)
+  return t && t.tier !== 'hud' ? t.pct : undefined
+}
+
+/**
+ * The Rent layer's color scale and fills for these counties (latest values, not the time-lapse): Zillow county, metro
+ * and city values only. A county with no fill entry is drawn in NO_DATA_COLOR (HUD tier included).
+ */
+export function rentLayer(fipsList: Iterable<string>, data: CountyMap, fallbackClamp: number): { scale: MapScale; fills: Map<string, string> } {
+  const values = new Map<string, number>()
+  for (const f of fipsList) {
+    const v = rentFillValue(f, data[f])
+    if (v !== undefined) values.set(f, v)
+  }
+  const scale = mapScaleFor(values.values(), 'pct', fallbackClamp)
+  const fills = new Map<string, string>()
+  for (const [f, v] of values) fills.set(f, scaleColor(v, scale))
+  return { scale, fills }
 }

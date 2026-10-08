@@ -1,7 +1,8 @@
 // Hover / keyboard-focus tooltip text for one county on the national map: county name + state, the metric's
 // value with its sign and units, and the geography + source the number covers ("Zillow county",
 // "Atlanta metro (BLS)", "Georgia statewide (EIA)"). Same values the map colors the county with (rent: county →
-// metro → city → HUD Fair Market Rent, map-metro-rent.ts mapRentTier).
+// metro → city, map-metro-rent.ts mapRentTier). A HUD-tier county is gray on the map (no usable Zillow rent); its
+// tooltip says so and adds HUD's Fair Market Rent figure, labeled as an estimate, not actual rents.
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { fmtPct, fmtMonth, flagNote, liveValue, BASELINE_MONTH, type CountyRecord, type MetricKey } from '@/lib/county-data'
@@ -30,15 +31,15 @@ export interface MapTooltipModel {
 
 const SHORT: Record<MetricKey, string> = { gas: 'Gas', rent: 'Rent', hv: 'Home prices', groceries: 'Groceries', elec: 'Electricity' }
 
-export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel, countyWhen }: {
+export function mapTooltip({ fips, metric, county, liveData, frame, hudWindowText, countyWhen }: {
   fips: string
   metric: MetricKey
   county: CountyRecord | undefined
   liveData: MapMetrics | null
   /** Time-lapse playback: the frame's value and month (county metrics only). */
   frame?: { value: number | undefined; month: string }
-  /** HUD tier's label with its fiscal years from the build's meta (county-data.ts hudRentLabel). */
-  hudLabel?: string
+  /** HUD tier's fiscal-year window from the build's meta (county-data.ts hudWindow): "FY2025→FY2027". */
+  hudWindowText?: string
   /** Zillow layers: the window the county value covers ("Jan 2025 → Aug 2026"), from the build's meta. */
   countyWhen?: string
 }): MapTooltipModel {
@@ -73,16 +74,18 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel, co
     if (t?.tier === 'city') {
       const c = t.city
       return {
-        name, value: `${short} ${fmtPct(c.pct)}`, geo: `${c.name} city rent (Zillow; no usable county or metro series)`, tier: 'city',
+        name, value: `${short} ${fmtPct(c.pct)}`, geo: `${c.name} area rent (Zillow city series; no usable county or metro series)`, tier: 'city',
         ...(countyWhen ? { when: countyWhen } : {}),
         ...(c.saCaveat ? { note: SEASONAL_CAVEAT_SHORT } : {}), noData: false,
       }
     }
     if (t?.tier === 'hud') {
+      // Gray on the map (never colored): HUD's yearly estimate is not actual rents
       const h = t.hud
       return {
-        name, value: `${short} ${fmtPct(h.pct)}`, tier: 'hud', noData: false,
-        geo: `${hudLabel ?? 'HUD fair market rent (yearly estimate)'}, HUD area; not since ${fmtMonth(BASELINE_MONTH)}; no Zillow rent${h.from ? `; ${h.from} figure` : ''}`,
+        name, value: `${short}: No usable Zillow rent here`, tier: 'hud', noData: true,
+        geo: `HUD Fair Market Rent estimate: ${fmtPct(h.pct)} (not actual rents) · 2-bedroom, HUD area, ` +
+          `${hudWindowText ?? 'between fiscal years'}, not since ${fmtMonth(BASELINE_MONTH)}${h.from ? `; ${h.from} figure` : ''}`,
       }
     }
     return noData

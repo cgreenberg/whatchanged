@@ -9,7 +9,7 @@ import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
 import { monoLines } from '@/lib/share-card/layout'
-import { latestDataLabel, QUADRANT_TITLES, rangeEnd } from '@/lib/share-card/labels'
+import { cardMonthLabel, dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_END_NONE, RENT_ADJUSTMENT_TAG } from '@/lib/share-card/labels'
 import { shareSeasonalNote } from '@/lib/share-card/generate'
 import { hasSeasonalCaveat } from '@/lib/rent-range'
 
@@ -88,19 +88,17 @@ const ogPlace = (tag: string) => imageCountyName(tag, (t) => monoLines(t, 16, OG
 
 /**
  * Context under each OG stat: line 1 = short geography (every number comes from a different
- * area: county rent, regional CPI, regional gas), line 2 = baseline window.
+ * area: county rent, regional CPI, regional gas), line 2 = baseline window, line 3 = the stat's own latest data
+ * month ("latest Aug '26", labels.ts cardMonthLabel), so a stat with older data is never implied to be current.
  */
 function ogSublines(c: HeroCardModel): [string, string] {
-  // Weekly EIA: "since Jan 13, 2025"; monthly BLS gas: "since Jan 2025"
   // Month-dated windows: "monthly · since …" (BLS, DACO) and "twice yearly (Jan & Jul) · since …" (Alaska DCRA)
   const cadence = /^(monthly|twice yearly[^·]*) · /
-  const monthly = cadence.test(c.provenance.window)
   const since = c.provenance.window.replace(/^since week of /, 'since ').replace(cadence, '')
   switch (c.id) {
-    // Same face as the card ("since Jan 2025"; the exact baseline week is in the ⓘ). Monthly BLS gas also names its
-    // month: weekly EIA figures elsewhere run weeks newer
-    case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : `since ${BASELINE_MONTH_LABEL}`]
-    case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, seas. adj.`]
+    // Same face as the card ("since Jan 2025"; the exact baseline week is in the ⓘ); its month is on line 3
+    case 'gas': return [c.geoTag ?? c.provenance.geography, `since ${BASELINE_MONTH_LABEL}`]
+    case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, ${RENT_ADJUSTMENT_TAG}`]
     // Statewide EIA price: % change of the 12-month average price (latest 12 months vs the 12 centered on Jan 2025)
     // Same face as the card ("since Jan 2025"); images have no ⓘ, so "(12-mo avg)" keeps the method visible
     case 'electricity': return [c.geoTag ? `${c.geoTag} (statewide)` : c.provenance.geography, `since ${BASELINE_MONTH_LABEL} (12-mo avg)`]
@@ -135,10 +133,11 @@ export async function GET(req: NextRequest) {
 
   // Everything drawn comes from the zip's own snapshot — no free-text query params.
   let location = ''
-  let stats: Array<{ label: string; value: string; unit?: string; color: string; sub?: string; sub2?: string }> = []
+  let stats: Array<{ label: string; value: string; unit?: string; color: string; sub?: string; sub2?: string; sub3?: string }> = []
   const footnotes: string[] = []
   let latestPeriod: string | undefined
   let throughLabel: string | null = null
+  let rangeEndLabel: string | null = null
   let degraded = false
   let sources = 'BLS · EIA · Census'
 
@@ -169,6 +168,7 @@ export async function GET(req: NextRequest) {
             color: OG_COLORS[c.id],
             sub,
             sub2,
+            sub3: cardMonthLabel(c) ?? undefined,
           }
         })
         if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
@@ -181,6 +181,7 @@ export async function GET(req: NextRequest) {
         }
         latestPeriod = cards.map(c => c.asOfPeriod).filter((p): p is string => !!p).sort().pop()
         throughLabel = latestDataLabel(cards)
+        rangeEndLabel = dataRangeEnd(cards)
         degraded = cards.some(c => c.status !== 'ok' || c.stale) || usesNationalFallback(snapshot)
       }
     } catch {
@@ -583,8 +584,9 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  // Same header range as the share card: Jan 20, 2025 → the month the image is made; then the data's months
-  const monthYear = rangeEnd()
+  // Same header range as the share card: Jan 20, 2025 → the most recent data month shown (never today's date); then
+  // the span of the stats' months
+  const monthYear = rangeEndLabel ?? RANGE_END_NONE
 
   return new ImageResponse(
     (
@@ -785,6 +787,11 @@ export async function GET(req: NextRequest) {
               {stat.sub2 && (
                 <span style={{ fontFamily: 'monospace', fontSize: 14, color: TEXT_TERTIARY, display: 'flex', marginTop: 4 }}>
                   {stat.sub2}
+                </span>
+              )}
+              {stat.sub3 && (
+                <span style={{ fontFamily: 'monospace', fontSize: 14, color: TEXT_TERTIARY, display: 'flex', marginTop: 4 }} data-testid="og-stat-month">
+                  {stat.sub3}
                 </span>
               )}
             </div>

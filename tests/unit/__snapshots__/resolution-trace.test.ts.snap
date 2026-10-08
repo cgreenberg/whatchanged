@@ -400,7 +400,7 @@ exports[`trace snapshots (golden zips) 19103 — Philadelphia: BLS metro gas 1`]
 }
 `;
 
-exports[`trace snapshots (golden zips) 29440 — Georgetown SC: no Zillow county or metro rent → Murrells Inlet city rent (the county’s most populous city with a series) 1`] = `
+exports[`trace snapshots (golden zips) 29440 — Georgetown SC: no Zillow county or metro rent → Murrells Inlet area rent (Zillow city series; the county’s most populous place with one) 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | South Carolina (statewide) [state] | 2026-07 | ELEC.PRICE.SC-RES.M",
@@ -431,7 +431,7 @@ exports[`trace snapshots (golden zips) 29440 — Georgetown SC: no Zillow county
   "rent": [
     "not-applicable | rent.zillow-county | Georgetown County, SC [county] |  |  | Zillow's series for Georgetown County is too new (it needs data from Jan 2024) to measure since Jan 2025.",
     "not-applicable | rent.zillow-metro | Georgetown County, SC’s metro area [metro] |  |  | Georgetown County isn't in a metro with a Zillow rent series back to Jan 2025.",
-    "used | rent.zillow-city | Murrells Inlet city, SC [city] | 2026-08 |  | Zillow's series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet city series (the county’s most populous city with one) stands in.",
+    "used | rent.zillow-city | Murrells Inlet area, SC [city] | 2026-08 |  | Zillow's series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet area series (Zillow’s city series for the county’s most populous place with one) stands in.",
     "not-needed | rent.bls-cpi-shelter | South Atlantic division [division]",
   ],
   "rentBase": [
@@ -450,7 +450,7 @@ exports[`trace snapshots (golden zips) 29440 — Georgetown SC: no Zillow county
 }
 `;
 
-exports[`trace snapshots (golden zips) 29585 — Pawleys Island SC: same county → the same Murrells Inlet city rent 1`] = `
+exports[`trace snapshots (golden zips) 29585 — Pawleys Island SC: same county → the same Murrells Inlet area rent 1`] = `
 {
   "electricity": [
     "used | electricity.eia-state | South Carolina (statewide) [state] | 2026-07 | ELEC.PRICE.SC-RES.M",
@@ -481,7 +481,7 @@ exports[`trace snapshots (golden zips) 29585 — Pawleys Island SC: same county 
   "rent": [
     "not-applicable | rent.zillow-county | Georgetown County, SC [county] |  |  | Zillow's series for Georgetown County is too new (it needs data from Jan 2024) to measure since Jan 2025.",
     "not-applicable | rent.zillow-metro | Georgetown County, SC’s metro area [metro] |  |  | Georgetown County isn't in a metro with a Zillow rent series back to Jan 2025.",
-    "used | rent.zillow-city | Murrells Inlet city, SC [city] | 2026-08 |  | Zillow's series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet city series (the county’s most populous city with one) stands in.",
+    "used | rent.zillow-city | Murrells Inlet area, SC [city] | 2026-08 |  | Zillow's series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet area series (Zillow’s city series for the county’s most populous place with one) stands in.",
     "not-needed | rent.bls-cpi-shelter | South Atlantic division [division]",
   ],
   "rentBase": [
@@ -729,7 +729,7 @@ exports[`trace snapshots (golden zips) 96720 — Hilo: Honolulu stand-in gas, no
     "not-applicable | propane.eia-shopp-state | Hawaii [state] |  |  | EIA's heating-season survey has no residential propane price for Hawaii.",
   ],
   "rent": [
-    "used | rent.zillow-county | Hawaii County, HI [county] | 2026-08 |  | This August reading may understate the change by about 2 percentage points (≈ $41/mo): the county’s recent seasonal swing differs from the pattern used to adjust it.",
+    "used | rent.zillow-county | Hawaii County, HI [county] | 2026-08 |  | This August reading (+7.9%) may be about 2 percentage points too low (≈ $41/mo): the county’s recent seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +10.1%.",
     "not-needed | rent.zillow-metro | Hawaii County, HI’s metro area [metro]",
     "not-needed | rent.zillow-city | a city in Hawaii County, HI [city]",
     "not-needed | rent.bls-cpi-shelter | Pacific division [division]",

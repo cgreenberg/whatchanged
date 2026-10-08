@@ -7,16 +7,21 @@ import {
   buildHeroCards, imageSourcesLine, usesNationalFallback, OUTLIER_MARK, isGasStandIn, standInPlace, GAS_STANDIN_MARK,
   imageCountyName, gasLevelText, isMonthlyGas, type HeroCardModel,
 } from '@/lib/hero-cards'
-import { hasSeasonalCaveat, seasonalCaveatPoints, seasonalCaveatDollars, type SeasonalCaveat } from '@/lib/rent-range'
+import {
+  hasSeasonalCaveat, seasonalCaveatPoints, seasonalCaveatDollars, seasonalCaveatDirection, seasonalOwnPatternPct,
+  seasonalDirectionUncertain, type SeasonalCaveat,
+} from '@/lib/rent-range'
 import { rentCodedQualifier } from '@/lib/compute/dollar-translations'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { buildShareChart, chartUnavailable } from '@/lib/share-card/sparklines'
 import { rentChartSeries } from '@/lib/share-card/rent-series'
 import { fontMeasure } from '@/lib/share-card/measure'
-import { latestDataLabel, QUADRANT_TITLES, rangeEnd, RANGE_START, shortSourceDate } from '@/lib/share-card/labels'
+import {
+  dataRangeEnd, latestDataLabel, QUADRANT_TITLES, RANGE_END_NONE, RANGE_START, RENT_ADJUSTMENT_TAG, shortSourceDate,
+} from '@/lib/share-card/labels'
 export { QUADRANT_TITLES }
 import {
-  BIG_UNIT_SCALE, CARD_SIZE, CELL_PADDING, FOOTER_H, FOOTNOTE_PAD_Y, FS, HEADER_H, SIDE_PAD, SLOT,
+  BIG_UNIT_SCALE, CARD_SIZE, CELL_PADDING, FOOTER_H, FOOTNOTE_PAD_Y, FS, HEADER_H, SIDE_PAD, SLOT, TITLE_TAG_GAP,
   chartHeight, fitSourceLine, footnoteZoneHeight, rowHeight,
 } from '@/lib/share-card/layout'
 
@@ -118,18 +123,20 @@ const pctFromFirst = (vals: number[]) => (vals[0] ? vals.map((v) => ((v - vals[0
 export const pctTick = (v: number) => (Math.abs(v) < 0.05 ? '0%' : fmtSignedPct(v))
 
 /**
- * Footnote for the rent seasonal-pattern caveat (rent-range.ts rentSeasonalCaveat, short form): "† Seasonal pattern
- * uncertain: Aug rent may overstate the change by ~2.5 pts (≈ $95/mo)". `mark` is "†", or "‡" when the
- * value also carries the outlier "†". null when there is no caveat.
+ * Footnote for the rent seasonal-pattern caveat (rent-range.ts rentSeasonalCaveat, short form), signed so it reads
+ * right for a fall too: "† Seasonal pattern uncertain: Aug rent may be ~2 pts too low (≈ $50/mo); own pattern +0.7%,
+ * direction uncertain." `mark` is "†", or "‡" when the value also carries the outlier "†". null when there is no caveat.
  */
 export function shareSeasonalNote(
   c: SeasonalCaveat | undefined, rent: { pct: number; curRent: number; asOf: string }, mark = '†',
 ): string | null {
   if (!hasSeasonalCaveat(c)) return null
   const usd = seasonalCaveatDollars(c, rent.pct, rent.curRent)
+  const own = seasonalOwnPatternPct(c, rent.pct)
   const mon = fmtMonthShort(`${rent.asOf.slice(0, 4)}-${String(c.month).padStart(2, '0')}`).split(' ')[0] // the caveat's (as-of) month
-  return `${mark} Seasonal pattern uncertain: ${mon} rent may ${c.gap > 0 ? 'overstate' : 'understate'} the change by ` +
-    `~${seasonalCaveatPoints(c)} pts${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}.`
+  return `${mark} Seasonal pattern uncertain: ${mon} rent may be ~${seasonalCaveatPoints(c)} pts ${seasonalCaveatDirection(c)}` +
+    `${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}` +
+    `${own !== null ? `; own pattern ${fmtSignedPct(own)}${seasonalDirectionUncertain(c, rent.pct) ? ', direction uncertain' : ''}` : ''}.`
 }
 
 /** Footnote for a flagged (outlier) rent figure. */
@@ -157,6 +164,8 @@ export interface QuadrantModel {
   big: string
   /** Caveat marks after the big number ("†", "†‡"), drawn small; their footnotes are above the footer. */
   mark?: string
+  /** Small tag after the title ("seas. adj." for Zillow rent). */
+  tag?: string
   unit?: string
   pill?: { text: string; sub?: string | null }
   chart: React.ReactElement | null
@@ -164,7 +173,7 @@ export interface QuadrantModel {
 }
 
 // ── Main Export ───────────────────────────────────────────────────
-export async function generateShareCard(zip: string, now: Date = new Date()): Promise<Response> {
+export async function generateShareCard(zip: string): Promise<Response> {
   const snapshot = await fetchSnapshot(zip)
   if (!snapshot) {
     return new Response('Zip code not found', { status: 404 })
@@ -254,7 +263,7 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
       ? imageCountyName(rent.geoName)
       : fitSourceLine(`${metroTag} · Zillow · ${fmtMonthShort(rent.asOf)}`).text.includes('…') ? metroShort : metroTag
     housingQ = {
-      id: 'rent', accent: BLUE,
+      id: 'rent', accent: BLUE, tag: RENT_ADJUSTMENT_TAG,
       big: fmtSignedPct(rent.pct),
       mark: `${rentOutlier ? OUTLIER_MARK : ''}${rentSeasonal ? seasonalMark : ''}` || undefined,
       // No dollar pill for a flagged (†) value: the % with its caveat only
@@ -313,8 +322,8 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
       }
     : { id: 'electricity', accent: GREEN, big: 'N/A', chart: null, source: sourceOf('electricity') }
 
-  // ── Header ──
-  const end = rangeEnd(now)
+  // ── Header: Jan 20, 2025 → the most recent data month shown (from the cards, never today's date) ──
+  const end = dataRangeEnd(cards) ?? RANGE_END_NONE
   const latest = latestDataLabel(cards)
   const boxW = dateBoxWidth(end, latest)
   const cityW = CARD_SIZE - 2 * SIDE_PAD - boxW - 24
@@ -337,6 +346,11 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
           <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: FS.title, color: TEXT_SECONDARY, letterSpacing: '0.10em', lineHeight: 1, display: 'flex' }}>
             {QUADRANT_TITLES[q.id]}
           </span>
+          {q.tag ? (
+            <span style={{ fontFamily: 'DM Mono', fontSize: FS.titleTag, color: TEXT_TERTIARY, marginLeft: TITLE_TAG_GAP, lineHeight: 1, display: 'flex' }}>
+              {q.tag}
+            </span>
+          ) : null}
         </div>
         {/* Big change number + one pill */}
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', height: SLOT.big, marginBottom: SLOT.bigGap }}>
@@ -377,7 +391,7 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
           ) : null}
         </div>
         {/* Chart (same height in every quadrant) */}
-        <div style={{ display: 'flex', width: '100%', height: chartH }}>{q.chart ?? unavailable()}</div>
+        <div style={{ display: 'flex', width: '100%', height: chartH }}>{q.chart ?? (q.big === 'N/A' ? unavailable() : chartUnavailable(chartH, 'Chart unavailable'))}</div>
         {/* Source line */}
         <div style={{ display: 'flex', alignItems: 'center', height: SLOT.source, marginTop: SLOT.sourceGap }}>
           <span style={{ fontFamily: 'DM Mono', fontSize: src.fontSize, color: TEXT_TERTIARY, whiteSpace: 'nowrap', display: 'flex' }}>

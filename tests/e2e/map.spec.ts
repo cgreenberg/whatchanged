@@ -133,6 +133,17 @@ test.describe('National county map', () => {
     await expect(map.getByTestId('map-frame')).toHaveCount(0)
   })
 
+  test('Rent time-lapse says it plays Zillow county series only (other counties go gray)', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Rent', exact: true }).click()
+    await map.getByTestId('map-play').click()
+    await expect(map.getByTestId('map-timelapse-note')).toHaveText('Time-lapse shows Zillow county series only', { timeout: 10000 })
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no Zillow county series (time-lapse)')
+    await map.getByTestId('map-play').click() // stop
+    await expect(map.getByTestId('map-timelapse-note')).toHaveCount(0)
+  })
+
   test('"See everything that changed here" loads the clicked county', async ({ page }) => {
     await mockDataApi(page)
     await enterZip(page, '98683')
@@ -250,28 +261,29 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await expect(map.getByTestId('map-legend-metro')).toHaveCount(0)
   })
 
-  test('Rent layer: city rent (dots) and HUD fair market rents (muted, map only) fill the remaining counties', async ({ page }) => {
+  test('Rent layer: city rent (dots); counties with no usable Zillow rent are gray, HUD only on hover / tap', async ({ page }) => {
     await page.goto('/')
     const map = await mapReady(page)
     await map.getByRole('button', { name: 'Rent', exact: true }).click()
-    // Georgetown County, SC: no usable Zillow county or metro series → Murrells Inlet city rent, dotted
+    // Georgetown County, SC: no usable Zillow county or metro series → Murrells Inlet area rent (Zillow city series), dotted
     await expect(map.locator('svg path[data-fips="45043"]')).toHaveAttribute('fill', /^rgb\(/)
     await expect(map.locator('[data-testid="map-city-dots"] path[data-city-fips="45043"]')).toBeAttached()
     await expect(map.getByTestId('map-legend-city')).toContainText('city rent')
     await hoverCounty(page, '45043')
-    await expect(map.getByTestId('map-tooltip')).toContainText('Murrells Inlet city rent (Zillow; no usable county or metro series)')
-    // Sibley County, MN: no Zillow rent at all → HUD 2-bedroom fair market rent change, muted, labeled with its fiscal years
-    await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', /^rgb\(/)
-    await expect(map.getByTestId('map-legend-hud')).toContainText('HUD fair market rent')
+    await expect(map.getByTestId('map-tooltip')).toContainText('Murrells Inlet area rent (Zillow city series; no usable county or metro series)')
+    // Sibley County, MN: no usable Zillow rent → the no-data gray; HUD's estimate only in the tooltip / panel
+    await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', '#5f6268')
+    await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no actual-rent data (hover for HUD estimate where available)')
     await hoverCounty(page, '27143')
-    await expect(map.getByTestId('map-tooltip')).toContainText(/HUD fair market rent \(yearly estimate, FY2025→FY20\d\d\), HUD area; not since Jan 2025; no Zillow rent/)
+    await expect(map.getByTestId('map-tooltip')).toContainText('No usable Zillow rent here')
+    await expect(map.getByTestId('map-tooltip')).toContainText(/HUD Fair Market Rent estimate: [+−]?\d+\.\d% \(not actual rents\)/)
     await clickCounty(page, '27143')
-    await expect(map.getByTestId('map-value-rent')).toContainText('map only; the Rent card uses CPI shelter')
-    await expect(map.getByTestId('map-legend-nodata')).toContainText('no rent data')
+    await expect(map.getByTestId('map-value-rent')).toContainText('No usable Zillow rent here · HUD Fair Market Rent estimate')
+    await expect(map.getByTestId('map-value-rent')).toContainText('an estimate, not actual rents')
     // other layers: no rent tiers
     await map.getByRole('button', { name: 'Home prices', exact: true }).click()
     await expect(map.getByTestId('map-city-dots')).toHaveCount(0)
-    await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
     await expect(map.getByTestId('map-legend-nodata')).toContainText('no data')
   })
 })
@@ -313,7 +325,11 @@ test.describe('Round 16: like-for-like gas layer, legend wording, click / tap fo
     // North Slope AK fell $0.10 (DCRA survey): never "every county rose", and drawn in the distinct "fell" color
     await expect(map.getByTestId('map-legend-claim')).toHaveText(' · nearly every county rose; brighter = rose more')
     await expect(map.getByTestId('map-legend-opposite')).toContainText('fell (below $0)')
-    await expect(map.locator('svg path[data-fips="02185"]')).toHaveAttribute('fill', 'rgb(74,144,217)')
+    // North Slope's small fall: blue, shaded by size (a dim blue, not the full end color used for big falls)
+    const fill = (await map.locator('svg path[data-fips="02185"]').getAttribute('fill'))!
+    const [r, , b] = fill.match(/\d+/g)!.map(Number)
+    expect(b).toBeGreaterThan(r + 30)
+    expect(fill).not.toBe('rgb(74,144,217)')
     // Alaska survey boroughs: grid pattern + chip; HI/AK counties with no series: stripes + chip
     await expect(map.locator('[data-testid="map-gas-own-window"] path[data-own-fips="02185"]')).toBeAttached()
     await expect(map.getByTestId('map-legend-gas-own')).toContainText('Alaska survey, Jan 2025 → Jul 2026 surveys (different window)')

@@ -24,11 +24,11 @@ describe('seasonal-pattern caveat (round 15: measured at the displayed month)', 
     // Manhattan-like: +12.6% on $4,818/mo, Aug reading 2.5 points high → $/mo at 12.6% minus at 10.1%
     const usd = Math.round(Math.abs((4818 - 4818 / 1.126) - (4818 - 4818 / 1.101)))
     expect(rentSeasonalCaveat({ gap: 2.5, month: 8 }, 'county', { pct: 12.6, curRent: 4818 })).toBe(
-      `This August reading may overstate the change by about 2.5 percentage points (≈ $${usd}/mo): the county’s recent seasonal swing differs from the pattern used to adjust it.`)
+      `This August reading (+12.6%) may be about 2.5 percentage points too high (≈ $${usd}/mo): the county’s recent seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +10.1%.`)
     expect(rentSeasonalCaveat({ gap: -2.2, month: 8 }, 'metro')).toBe(
-      'This August reading may understate the change by about 2 percentage points: the metro’s recent seasonal swing differs from the pattern used to adjust it.')
-    expect(rentSeasonalCaveat({ gap: 1.8, month: 3 })).toMatch(/^This March reading may overstate the change by about 2 percentage points:/)
-    expect(rentSeasonalCaveat({ gap: -1.7, month: 8 })).toMatch(/understate the change by about 1\.5 percentage points/)
+      'This August reading may be about 2 percentage points too low: the metro’s recent seasonal swing differs from the pattern used to adjust it.')
+    expect(rentSeasonalCaveat({ gap: 1.8, month: 3 })).toMatch(/^This March reading may be about 2 percentage points too high:/)
+    expect(rentSeasonalCaveat({ gap: -1.7, month: 8 })).toMatch(/may be about 1\.5 percentage points too low/)
     // At or under the 1.5-point threshold, malformed, or absent → no caveat
     expect(rentSeasonalCaveat({ gap: 1.5, month: 8 })).toBeUndefined()
     expect(rentSeasonalCaveat({ gap: Number.NaN, month: 8 })).toBeUndefined()
@@ -62,10 +62,10 @@ describe('seasonal-pattern caveat (round 15: measured at the displayed month)', 
     const s = (await fetchSnapshot('10001'))!
     expect(s.rent).toMatchObject({ level: 'county', countyFips: '36061' })
     const card = buildHeroCards(s).find((c) => c.id === 'rent')!
-    expect(card.info.join(' ')).toMatch(/This \w+ reading may overstate the change by about [\d.]+ percentage points \(≈ \$\d+\/mo\): the county’s/)
+    expect(card.info.join(' ')).toMatch(/This \w+ reading \([+−][\d.]+%\) may be about [\d.]+ percentage points too high \(≈ \$\d+\/mo\): the county’s/)
     const used = s.trace!.rent!.find((x) => x.status === 'used')!
     expect(used.rungId).toBe('rent.zillow-county')
-    expect(used.reason).toMatch(/^This \w+ reading may overstate/)
+    expect(used.reason).toMatch(/^This \w+ reading \([+−][\d.]+%\) may be about [\d.]+ percentage points too high/)
   })
 
   test('metro level: card ⓘ and trace name the metro and keep the stand-in reason', async () => {
@@ -76,7 +76,7 @@ describe('seasonal-pattern caveat (round 15: measured at the displayed month)', 
     const s = (await fetchSnapshot(zip))!
     expect(s.rent?.level).toBe('metro')
     const card = buildHeroCards(s).find((c) => c.id === 'rent')!
-    expect(card.info.join(' ')).toMatch(/reading may (over|under)state the change by about [\d.]+ percentage points.*: the metro’s recent seasonal swing/)
+    expect(card.info.join(' ')).toMatch(/reading \([+−][\d.]+%\) may be about [\d.]+ percentage points too (high|low).*: the metro’s recent seasonal swing/)
     const used = s.trace!.rent!.find((x) => x.status === 'used')!
     expect(used.rungId).toBe('rent.zillow-metro')
     expect(used.reason).toMatch(/the metro’s recent seasonal swing differs/)

@@ -222,7 +222,7 @@ export interface RentData {
   baseMonth: string // YYYY-MM
   asOf: string // YYYY-MM of curRent
   countyFips: string
-  geoName: string // e.g. "Travis County, TX", "Portland-South Portland, ME metro", or "Murrells Inlet city, SC"
+  geoName: string // e.g. "Travis County, TX", "Portland-South Portland, ME metro", or "Murrells Inlet area, SC"
   source: string
   sourceUrl: string
   adjustment: string

@@ -210,9 +210,12 @@ interface CityRentFile {
 
 const CITY = cityRent as unknown as CityRentFile
 
-/** "Murrells Inlet city, SC": the city rung's geography (Zillow's city name + state). */
+/**
+ * "Murrells Inlet area, SC": the city rung's geography (Zillow's city name + state). Zillow's "city" regions include
+ * unincorporated places (Census CDPs such as Murrells Inlet), so the label never calls the place a city.
+ */
 export function cityGeoName(name: string, state: string): string {
-  return `${name} city, ${state}`
+  return `${name} area, ${state}`
 }
 
 /** Why the county's metro doesn't stand in (the city rung's reason). */
@@ -224,7 +227,7 @@ function metroWhyForCity(countyFips: string): NonNullable<RentData['metroWhy']> 
 
 /**
  * City rent for a county with no usable county or metro series (the rent ladder's city rung): the county's most
- * populous city with a usable Zillow series. `geoName` is "{City} city, {ST}"; `countyFips` stays the zip's county.
+ * populous city with a usable Zillow series. `geoName` is "{City} area, {ST}"; `countyFips` stays the zip's county.
  */
 export function lookupCityRent(countyFips: string | null | undefined, countyName?: string): CountyRentLookup {
   if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }

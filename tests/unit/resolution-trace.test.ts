@@ -58,8 +58,8 @@ const GOLDEN = [
   ['10950', 'Monroe NY (Orange County): NYSERDA Upper Hudson heating oil, EIA NY propane'],
   ['55401', 'Minneapolis: EIA weekly Minnesota state gas preferred over the BLS monthly metro'],
   ['35460', 'Epes AL: Census suppresses the zip rent → nearest zip in the county with a reliable Census rent (labeled)'],
-  ['29440', 'Georgetown SC: no Zillow county or metro rent → Murrells Inlet city rent (the county’s most populous city with a series)'],
-  ['29585', 'Pawleys Island SC: same county → the same Murrells Inlet city rent'],
+  ['29440', 'Georgetown SC: no Zillow county or metro rent → Murrells Inlet area rent (Zillow city series; the county’s most populous place with one)'],
+  ['29585', 'Pawleys Island SC: same county → the same Murrells Inlet area rent'],
 ] as const
 
 const METRICS = ['gas', 'rent', 'groceries', 'shelter', 'electricity', 'heatingOil', 'propane', 'rentBase'] as const
@@ -145,20 +145,20 @@ describe('trace semantics', () => {
   test('rent: Zillow city rent where the county has no county or metro series (Georgetown SC → Murrells Inlet), labeled on the card', async () => {
     const g = (await fetchSnapshot('29440'))!
     expect(g.location.countyFips).toBe('45043')
-    expect(g.rent).toMatchObject({ level: 'city', cityName: 'Murrells Inlet', geoName: 'Murrells Inlet city, SC', countyFips: '45043', metroWhy: 'none', countyWhy: 'too-new' })
+    expect(g.rent).toMatchObject({ level: 'city', cityName: 'Murrells Inlet', geoName: 'Murrells Inlet area, SC', countyFips: '45043', metroWhy: 'none', countyWhy: 'too-new' })
     expect(g.trace!.rent!.map((x) => `${x.rungId}:${x.status}`)).toEqual([
       'rent.zillow-county:not-applicable', 'rent.zillow-metro:not-applicable', 'rent.zillow-city:used', 'rent.bls-cpi-shelter:not-needed',
     ])
     const step = g.trace!.rent![2]
-    expect(step.geography).toEqual({ name: 'Murrells Inlet city, SC', level: 'city' })
-    expect(step.reason).toBe('Zillow\'s series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet city series (the county’s most populous city with one) stands in.')
+    expect(step.geography).toEqual({ name: 'Murrells Inlet area, SC', level: 'city' })
+    expect(step.reason).toBe('Zillow\'s series for Georgetown County is too new to measure since Jan 2025, and it isn’t in a metro with a Zillow rent series back to Jan 2025; the Murrells Inlet area series (Zillow’s city series for the county’s most populous place with one) stands in.')
     const card = buildHeroCards(g)[1]
-    expect(card).toMatchObject({ id: 'rent', status: 'ok', geoTag: 'Murrells Inlet city' })
-    expect(card.sourceLine).toMatch(/^Murrells Inlet city · Zillow · /)
-    expect(card.info.join(' ')).toMatch(/this is the Murrells Inlet city, SC series \(the county's most populous city with a Zillow rent series\), which may differ from the rest of the county/)
+    expect(card).toMatchObject({ id: 'rent', status: 'ok', geoTag: 'Murrells Inlet area' })
+    expect(card.sourceLine).toMatch(/^Murrells Inlet area · Zillow · /)
+    expect(card.info.join(' ')).toMatch(/this is the Murrells Inlet area, SC series \(Zillow's city series for the county's most populous place with one\), which may differ from the rest of the county/)
     expect(card.info.join(' ')).toMatch(/city pattern blended with the state/)
     // the Housing graph's Rent tab cites the same city series
-    expect(card.provenance.geography).toBe('Murrells Inlet city, SC')
+    expect(card.provenance.geography).toBe('Murrells Inlet area, SC')
   })
 
   test('rent: HUD Fair Market Rents never reach the Rent card (map only)', () => {

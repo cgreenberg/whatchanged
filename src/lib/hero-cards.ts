@@ -595,7 +595,7 @@ export function buildRentCard(
   const metro = r.level === 'metro'
   const city = r.level === 'city'
   const level = metro ? 'metro' : city ? 'city' : 'county'
-  // "Murrells Inlet city" (the city rung’s geoName is "Murrells Inlet city, SC")
+  // "Murrells Inlet area" (the city rung’s geoName is "Murrells Inlet area, SC")
   const area = metro ? metroShortName(r.geoName) : countyOnly(r.geoName)
   const base = {
     id: 'rent' as const,
@@ -668,7 +668,7 @@ export function rentCityNote(r: Pick<RentData, 'geoName' | 'cityName' | 'countyN
     : r.metroWhy === 'out-of-range'
       ? 'its metro area’s figure is outside the plausible range'
       : 'it isn’t in a metro area with a Zillow rent series back to Jan 2025'
-  return `${own}, and ${metro}; this is the ${r.geoName} series (the county's most populous city with a Zillow rent series), which may differ from the rest of the county.`
+  return `${own}, and ${metro}; this is the ${r.geoName} series (Zillow's city series for the county's most populous place with one), which may differ from the rest of the county.`
 }
 
 /** How rent is seasonally adjusted (same label as the data's meta.seasonalMethod). */

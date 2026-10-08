@@ -55,8 +55,8 @@ export function notCurrentText(county: string, info: NotCurrentInfo | undefined)
  * A series' seasonal-pattern caveat (RentData.saCaveat; county-rent.json / metro-rent.json `saCaveat`, county shards
  * `rentSaCav`, metro `rentM.cav`): `month` = the calendar month of the DISPLAYED (as-of) reading, `gap` = the effect
  * on the shown % of the series' own recent seasonal swing (January → that month) differing from the blended pattern's:
- * the shown % minus the % the same readings would show under the own recent pattern (points; > 0 → the reading
- * overstates the change since Jan 2025, < 0 → understates). `low` is a legacy (round-14) field and is ignored.
+ * the shown % minus the % the same readings would show under the own recent pattern (points; > 0 → the shown % may be
+ * too high, < 0 → too low — signed, so it reads right for a fall too). `low` is a legacy (round-14) field and is ignored.
  */
 export interface SeasonalCaveat { gap: number; month: number; low?: boolean }
 
@@ -87,10 +87,40 @@ export function seasonalCaveatDollars(c: SeasonalCaveat, pct: number | undefined
   return Number.isFinite(v) ? Math.round(v) : null
 }
 
+/** Signed direction of the possible error: gap > 0 → the shown % may be too HIGH, < 0 → too LOW (sign-safe for falls). */
+export function seasonalCaveatDirection(c: SeasonalCaveat): 'too high' | 'too low' {
+  return c.gap > 0 ? 'too high' : 'too low'
+}
+
+/**
+ * The % the same readings would show under the series' own recent seasonal pattern: shown − gap, one decimal
+ * (Collier FL −1.5% with gap −2.2 → +0.7%). null without a usable shown %.
+ */
+export function seasonalOwnPatternPct(c: SeasonalCaveat, pct: number | undefined): number | null {
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return null
+  const v = Math.round((pct - c.gap) * 10) / 10
+  return Number.isFinite(v) ? (Object.is(v, -0) ? 0 : v) : null
+}
+
+/**
+ * The possible error is as large as the shown change itself (|gap| ≥ |shown|), or the own-pattern figure has the
+ * other sign: even the direction of the change is uncertain (Kittitas WA −0.5% vs +2.5%; Blue Earth MN +6.3%, gap 8.4).
+ */
+export function seasonalDirectionUncertain(c: SeasonalCaveat, pct: number | undefined): boolean {
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return false
+  const own = seasonalOwnPatternPct(c, pct)
+  return Math.abs(c.gap) >= Math.abs(pct) || (own !== null && Math.sign(own) !== Math.sign(pct))
+}
+
+const signedPct = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`
+
 /**
  * Honest caveat when the series' own recent seasonal swing from January to the DISPLAYED month differs from the
- * blended pattern used to adjust it by more than RENT_SEASONAL_GAP_MIN points: "This August reading may overstate
- * the change by about 2.5 percentage points (≈ $95/mo): …". `rent` (the shown % and current rent) adds the $/mo.
+ * blended pattern used to adjust it by more than RENT_SEASONAL_GAP_MIN points. Worded by sign, so it reads right for
+ * falls too: "This August reading (−1.5%) may be about 2 percentage points too low (≈ $50/mo): the county’s recent
+ * seasonal swing differs from the pattern used to adjust it. Under its own recent pattern it would be about +0.7%; the
+ * possible error is as large as the change itself, so even its direction is uncertain." `rent` (the shown % and
+ * current rent) adds the shown %, the $/mo and the own-pattern figure.
  */
 export function rentSeasonalCaveat(
   c: SeasonalCaveat | undefined,
@@ -99,9 +129,13 @@ export function rentSeasonalCaveat(
 ): string | undefined {
   if (!hasSeasonalCaveat(c)) return undefined
   const usd = rent ? seasonalCaveatDollars(c, rent.pct, rent.curRent) : null
-  return `This ${MONTH_NAMES[c.month - 1]} reading may ${c.gap > 0 ? 'overstate' : 'understate'} the change by about ` +
-    `${seasonalCaveatPoints(c)} percentage points${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}: ` +
-    `the ${level}’s recent seasonal swing differs from the pattern used to adjust it.`
+  const own = seasonalOwnPatternPct(c, rent?.pct)
+  const shown = own !== null ? ` (${signedPct(rent!.pct!)})` : ''
+  return `This ${MONTH_NAMES[c.month - 1]} reading${shown} may be about ${seasonalCaveatPoints(c)} percentage points ` +
+    `${seasonalCaveatDirection(c)}${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}: ` +
+    `the ${level}’s recent seasonal swing differs from the pattern used to adjust it.` +
+    (own !== null ? ` Under its own recent pattern it would be about ${signedPct(own)}` +
+      `${seasonalDirectionUncertain(c, rent!.pct) ? '; the possible error is as large as the change itself, so even its direction is uncertain' : ''}.` : '')
 }
 
 /** Short marker for tight spaces (map tooltip, share image). */

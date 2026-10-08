@@ -89,7 +89,7 @@ describe('sequential gas scale: values across zero', () => {
     expect(s.kind).toBe('sequential')
     expect(isOppositeSide(-0.1, s)).toBe(true)
     expect(isOppositeSide(0, s)).toBe(false)
-    expect(scaleColor(-0.1, s)).toBe(oppositeColor(s))
+    expect(scaleColor(-0.1, s)).toBe(oppositeColor(s, -0.1))
     expect(scaleColor(-0.1, s)).not.toBe(scaleColor(s.kind === 'sequential' ? s.lo : 0, s))
     expect(oppositeColor({ kind: 'diverging', clamp: 5 })).toBeNull()
   })
@@ -131,7 +131,7 @@ describe('seasonal caveat sized by its effect on the shown %', () => {
     expect(rows['27013'].saCaveat).toEqual({ gap: -8.4, month: 8 })
     expect(rows['27169'].saCaveat).toEqual({ gap: -5.5, month: 8 })
     expect(seasonalCaveatPoints(rows['27013'].saCaveat!)).toBe(8.5)
-    expect(rentSeasonalCaveat(rows['27169'].saCaveat, 'county')).toMatch(/^This August reading may understate the change by about 5\.5 percentage points/)
+    expect(rentSeasonalCaveat(rows['27169'].saCaveat, 'county')).toMatch(/^This August reading may be about 5\.5 percentage points too low/)
   })
 
   test('the county map shards carry the same caveat as the card data', () => {

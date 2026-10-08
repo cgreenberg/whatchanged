@@ -58,7 +58,7 @@ describe('seasonal caveat ships with the map data', () => {
     const r = await resolveLadder(LADDERS.rent as unknown as Ladder<unknown, unknown, unknown>, loc, ctx)
     const step = r.steps.find((s) => s.rungId === 'rent.zillow-county')!
     expect(step.status).toBe('stale')
-    expect(step.reason).toMatch(/hasn't updated on schedule.* This August reading may overstate the change by about/)
+    expect(step.reason).toMatch(/hasn't updated on schedule.* This August reading \([+−][\d.]+%\) may be about [\d.]+ percentage points too high/)
   })
 })
 

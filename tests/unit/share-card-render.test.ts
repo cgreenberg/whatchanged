@@ -59,9 +59,11 @@ test('share card renders a PNG with long cache when every source is present', as
     const s = snap()
     expect(t).toContain('RENT')
     expect(t).toContain(`${s.rent!.monthlyChange < 0 ? '−' : '+'}$${Math.abs(s.rent!.monthlyChange)}/mo`)
-    // header: Jan 20, 2025 → the month the image is made, then the span of the cards' latest data months
-    // (here Jul electricity, Aug CPI/rent → Sep weekly gas)
+    // header: Jan 20, 2025 → the newest data month shown (here Sep weekly gas; never the month the image is made),
+    // then the span of the cards' latest data months (Jul electricity, Aug CPI/rent → Sep weekly gas)
     expect(t).toContain('JAN 20, 2025')
+    expect(t).toContain('SEP 2026')
+    expect(t).not.toContain('OCT 2026')
     expect(t).toContain(latestDataLabel(buildHeroCards(s))!)
     expect(t).toContain("latest data Jul–Sep '26")
     expect(t).not.toContain('$-')
@@ -173,6 +175,13 @@ test('OG zip card shows gas geography and the rent adjustment', async () => {
   expect(t).toContain('ELECTRICITY')
   expect(t).toContain(`${s.electricity.data!.change > 0 ? '+' : ''}${s.electricity.data!.change.toFixed(1)}%`)
   expect(t).toContain('Texas (statewide)')
+  expect(t).toContain('RENT (NEW LEASES)')
+  // header ends at the newest data month shown (Sep weekly gas), each stat names its own month
+  expect(t).toContain('SEP 2026')
+  expect(t).not.toContain('OCT 2026')
+  expect(t).toContain("latest Sep '26")
+  expect(t).toContain("latest Aug '26")
+  expect(t).toContain("latest Jul '26")
   expect(t).not.toMatch(/tariff|income/i)
   expect(t).not.toContain('†')
 }, 30000)
@@ -187,7 +196,7 @@ test('OG link preview: a rent seasonal-pattern caveat gets "†" and its footnot
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   let og = textOf(mockRendered[mockRendered.length - 1])
   expect(og).toContain('+12.6%†')
-  expect(og).toMatch(/† Seasonal pattern uncertain: Aug rent may overstate the change by ~2\.5 pts/)
+  expect(og).toMatch(/† Seasonal pattern uncertain: Aug rent may be ~2\.5 pts too high \(~\$\d+\/mo\); own pattern \+9\.9%\./)
   expect(og).not.toContain('≈') // no glyph in the OG font
   s.rent = { ...s.rent!, pct: 47.8, flagged: true, saCaveat: { gap: 2.7, month: 8 } }
   await GET(new NextRequest('http://x/api/og?zip=78701'))
@@ -235,7 +244,8 @@ test('OG + share card: BLS monthly gas tier (Honolulu metro) — geography, as-o
   await GET(new NextRequest('http://x/api/og?zip=78701'))
   const og = textOf(mockRendered[mockRendered.length - 1])
   expect(og).toContain('Honolulu metro')
-  expect(og).toContain("since Jan 2025, thru Aug '26")
+  expect(og).toContain('since Jan 2025')
+  expect(og).toContain("latest Aug '26")
   expect(og).not.toContain('no BLS or EIA gas series')
 }, 30000)
 
