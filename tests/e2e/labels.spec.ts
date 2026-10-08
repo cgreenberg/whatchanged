@@ -72,7 +72,7 @@ test.describe('Geography and concept labels', () => {
     await expect(card.getByTestId('stat-source')).toHaveText(/^Connecticut · EIA · [A-Z][a-z]{2} \d{4}$/)
     // Change first: the % is the big number; the secondary line names the window and the 12-month average level
     await expect(card.getByTestId('stat-value')).toHaveText(/^[+−]?\d+\.\d%$/)
-    await expect(card.getByTestId('stat-secondary')).toHaveText(/^since Jan 2025 · now \d+\.\d¢\/kWh$/)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(/^since Jan 2025 · 12-mo avg \d+\.\d¢\/kWh$/)
     await card.getByTestId('stat-info-toggle').click()
     await expect(card.getByTestId('stat-info')).toContainText('Why 12-month averages')
     await expect(card.getByTestId('provenance')).toContainText('EIA average residential electricity price · Connecticut (statewide average)')

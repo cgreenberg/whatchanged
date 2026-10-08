@@ -231,7 +231,7 @@ describe('chart provenance', () => {
     // The bold line ends at its window's center (6 months back); the thin monthly line runs to the latest month
     const fmt = (ym: string) => new Date(`${ym}-15T12:00:00Z`).toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
     expect(screen.getByTestId('provenance')).toHaveTextContent(
-      `12-mo avg through ${fmt(lastAvg.date)} (centered); monthly through ${fmt(e.latestPeriod)}`,
+      `12-mo avgs plotted at each window's center (last: 12 mo to ${fmt(e.latestPeriod)}, centered on ${fmt(lastAvg.date)}); monthly through ${fmt(e.latestPeriod)}`,
     )
     expect(screen.getByTestId('chart-info')).toHaveTextContent('Why 12-month averages')
   })

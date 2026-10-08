@@ -147,7 +147,7 @@ export function getChartInput(id: string, snapshot: EconomicSnapshot): ChartInpu
         ...(e
           ? {
               windowText: (_first?: string, last?: string) =>
-                `12-mo avg through ${last ? fmtMonthYear(last.slice(0, 7)) : DATE_UNAVAILABLE} (centered); monthly through ${fmtMonthYear(e.latestPeriod)}`,
+                `12-mo avgs plotted at each window's center (last: 12 mo to ${fmtMonthYear(e.latestPeriod)}, centered on ${last ? fmtMonthYear(last.slice(0, 7)) : DATE_UNAVAILABLE}); monthly through ${fmtMonthYear(e.latestPeriod)}`,
             }
           : {}),
         provenance: {

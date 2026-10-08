@@ -28,7 +28,7 @@ jest.mock('next/og', () => ({
 
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import {
-  generateShareCard, shareGasStandInNote, shareSeasonalNote, shelterPillSub, cityFontSize, dateBoxWidth, pctTick,
+  generateShareCard, shareGasStandInNote, shareSeasonalNote, sharePillForGas, shelterPillSub, cityFontSize, dateBoxWidth, pctTick,
   SHARE_OUTLIER_NOTE, MARK_SCALE, QUADRANT_TITLES,
 } from '@/lib/share-card/generate'
 import { latestDataLabel, rangeEnd, shortSourceDate } from '@/lib/share-card/labels'
@@ -184,6 +184,12 @@ describe('share-card text slots fit the template', () => {
     for (const s of [1, -1]) {
       // gas: change "+$4.44" + small "/gal" + "now $9.99"
       rows.push(['gas', bigRowWidth(fmtSignedDollars(4.44 * s), { unit: '/gal', pill: 'now $9.99' })])
+      // monthly / survey gas: the price over its month (Alaska survey prices run to $19.99)
+      for (const g of [{ current: 9.99, latestDate: '2026-08', source: 'bls' }, { current: 19.99, latestDate: '2026-07', source: 'dcra' }]) {
+        const pill = sharePillForGas(g)
+        expect(pill.sub).toMatch(/^(Aug avg|Jul survey)$/)
+        rows.push([`gas ${g.source}`, bigRowWidth(fmtSignedDollars(4.44 * s), { unit: '/gal', pill: pill.text, sub: pill.sub })])
+      }
       // groceries ±49.9% on $6,000/yr
       rows.push(['groceries', bigRowWidth(fmtSignedPct(49.9 * s), { pill: `≈ ${fmtSignedDollars(2994 * s, 0)}/yr` })])
       // rent: seasonal † on the %, 4-digit $/mo; outlier † + seasonal ‡ (no pill)

@@ -114,7 +114,10 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
   ≤ 2024-06, but some series' seasonal swing has changed since (Manhattan's Jan → Aug swing is ≈ +4.8% in 2022–2025 vs
   +2.3% in its blended pattern). The card shows the change from Jan 2025 to the series' latest (as-of) month, so the
   bias that matters is at that calendar month: gap = the series' own recent swing (median ratios, ratio months
-  ≥ 2022-01, ≥ 3 in January and in the as-of month) from January to the as-of month minus the blended pattern's. Where
+  ≥ 2022-01, ≥ 3 in January and in the as-of month) from January to the as-of month vs the blended pattern's, measured
+  (round 16) by its effect on the shown %: gap = the shown % minus the % the same readings would show under the
+  series' own recent pattern, (1 + shown) × (1 − (1 + blended swing) / (1 + own swing)), in points (the raw swing
+  difference understated large changes: Blue Earth County MN −7.3 → −8.4, Winona County MN −4.7 → −5.5). Where
   |gap| > 1.5 points, `county-rent.json` / `metro-rent.json` rows carry `saCaveat {gap, month}` (month = the as-of
   month; also `rentSaCav` in `counties.json` and the county shards, `rentM.cav` for a metro stand-in) and every place
   the rent number appears says so: the card ⓘ, the trace (appended to a stale reason, never replaced), the Rent graph ⓘ,
@@ -122,8 +125,9 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
   county's recent seasonal swing differs from the pattern used to adjust it", X = |gap| rounded to 0.5, $Y = the
   card's $/mo at the shown % minus at the % less X) and the map tooltip / share image (short "†seasonal pattern
   uncertain" marker; the share image adds the footnote where it fits). The caveat never changes a number. 2026-10
-  build (as of Aug 2026): 79 counties (36 overstate, 43 understate; New York County +2.5, Kings County +2.0, Oswego
-  County NY −2.0, Skagit County WA −2.0, Hawaii County −2.0; Newport County RI none) and 16 metros (3 overstate).
+  build (as of Aug 2026): 86 counties (41 overstate, 45 understate; New York County +2.7, Kings County +2.1, Oswego
+  County NY −2.5, Skagit County WA −2.0, Hawaii County −2.2, Blue Earth County MN −8.4; Newport County RI none) and
+  17 metros (3 overstate).
 - `metro-rent.json` (rent ladder's metro rung): county FIPS → CBSA by the **OMB March 2020** delineation — verified
   as Zillow's vintage (all 1,831 Zillow county→metro labels agree with it; the 2023 delineation disagrees for 95
   metros) — and CBSA → Zillow metro by Zillow's own RegionID crosswalk (735 of 749 ZORI metros link; the 14 newer

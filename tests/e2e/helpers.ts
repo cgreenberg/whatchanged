@@ -41,7 +41,8 @@ export async function enterZip(page: Page, zip: string) {
 
 /**
  * Serve /api/map-metrics from tests/fixtures/map-metrics.json (built from recorded data: electricity for
- * 11 states, gas and groceries for the snapshot-fixture areas; everything else "no data").
+ * 11 states, gas and groceries for the snapshot-fixture areas, on the round-16 common gas window (Jan 2025 → Aug 2026
+ * monthly averages); the bundled Alaska DCRA survey and Puerto Rico DACO areas; everything else "no data").
  */
 export async function mockMapMetrics(page: Page) {
   const body = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'map-metrics.json'), 'utf8')

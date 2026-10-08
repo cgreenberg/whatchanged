@@ -2,10 +2,10 @@ import React from 'react'
 import { ImageResponse } from 'next/og'
 import { fetchSnapshot } from '@/lib/api/snapshot'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, monthsBetween } from '@/lib/format'
-import { electricityCenterOf, gasBaselineIndex, monthlyBaselineIndex } from '@/lib/baseline'
+import { electricityCenterOf, gasBaselineIndex, monthlyBaselineIndex, ELECTRICITY_CENTER_LAG } from '@/lib/baseline'
 import {
   buildHeroCards, imageSourcesLine, usesNationalFallback, OUTLIER_MARK, isGasStandIn, standInPlace, GAS_STANDIN_MARK,
-  imageCountyName, type HeroCardModel,
+  imageCountyName, gasLevelText, isMonthlyGas, type HeroCardModel,
 } from '@/lib/hero-cards'
 import { hasSeasonalCaveat, seasonalCaveatPoints, seasonalCaveatDollars, type SeasonalCaveat } from '@/lib/rent-range'
 import { rentCodedQualifier } from '@/lib/compute/dollar-translations'
@@ -84,6 +84,19 @@ export function monthlyAxis(series: Array<{ date: string }>): { xFractions: numb
       : `no data ${fmtMonthShort(from)}–${fmtMonthShort(to)}`
   })
   return { xFractions, gapAfter, gapLabels }
+}
+
+/** Gas pill: "now $3.21" (weekly), else the price over its month ("$4.78" / "Aug avg", "$5.10" / "Jul survey"). */
+export function sharePillForGas(g: { current: number; latestDate?: string | null; source?: string; frequency?: string }): { text: string; sub?: string } {
+  const kind = g.source === 'dcra' ? 'survey' : isMonthlyGas(g as Parameters<typeof isMonthlyGas>[0]) ? 'monthly' : 'weekly'
+  const full = gasLevelText(g.current, kind, g.latestDate)
+  const m = /^(.*) (\$\d+\.\d\d)$/.exec(full)
+  return !m || full.startsWith('now ') ? { text: full } : { text: m[2], sub: m[1] }
+}
+
+/** Electricity chart tick for an average plotted at its window's center month: "12 mo to Jul '26" (the window's end). */
+export function elecWindowTick(center: string | undefined): string {
+  return center ? `12 mo to ${fmtMonthShort(addMonths(center, ELECTRICITY_CENTER_LAG))}` : ''
 }
 
 function addMonths(d: string, n: number): string {
@@ -194,7 +207,9 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
     ? {
         id: 'gas', accent: GAS,
         big: fmtSignedDollars(gasData.change), unit: '/gal',
-        pill: { text: `now $${gasData.current.toFixed(2)}` },
+        // Same level wording as the card: "now" only for a weekly reading; a monthly average / survey says its month on
+        // the pill's second line ("$4.78" over "Aug avg"), so the row still fits beside a 3-digit change
+        pill: sharePillForGas(gasData),
         chart: buildShareChart(gasSeries.map((p) => p.price), GAS, 'grad-gas', {
           height: chartH,
           xFractions: dateFractions(gasSeries.map((p) => p.date)),
@@ -278,7 +293,8 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
   }
 
   // ── Electricity: % change of the 12-month average price; the chart plots each average at its window's center
-  //    month, so the line starts at Jan 2025 = the baseline (12 months centered on Jan 2025) ──
+  //    month, so the line starts at Jan 2025 = the baseline (12 months centered on Jan 2025). The end ticks name the
+  //    12-month windows they plot ("12 mo to Jul '26"), never the center month next to a "Jul '26" source line ──
   const elecAll = elecData?.series ?? []
   const elecFrom = elecData ? elecAll.findIndex((p) => p.date === electricityCenterOf(elecData.baselinePeriod)) : -1
   const elecPairs = (elecFrom >= 0 ? elecAll.slice(elecFrom) : [])
@@ -291,7 +307,7 @@ export async function generateShareCard(zip: string, now: Date = new Date()): Pr
         pill: elecDollars != null ? { text: `≈ ${fmtSignedDollars(elecDollars, 0)}/mo` } : undefined,
         chart: buildShareChart(pctFromFirst(elecPairs.map((p) => p.avg12)), GREEN, 'grad-electricity', {
           height: chartH, includeZero: true, baseline: 0, fmtTick: pctTick, ...monthlyAxis(elecPairs),
-          xLeft: fmtMonthShort(elecPairs[0]?.date), xRight: fmtMonthShort(elecPairs[elecPairs.length - 1]?.date),
+          xLeft: elecWindowTick(elecPairs[0]?.date), xRight: elecWindowTick(elecPairs[elecPairs.length - 1]?.date),
         }),
         source: sourceOf('electricity'),
       }

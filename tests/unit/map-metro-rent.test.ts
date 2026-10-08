@@ -50,7 +50,7 @@ test('tooltip: county rent, metro rent and no data', () => {
   const m = mapMetroRent(metroFips)!
   const mt = mapTooltip({ fips: metroFips, metric: 'rent', county: COUNTIES[metroFips], liveData: null })
   expect(mt.value).toMatch(/^Rent [+−]?\d+\.\d%$/)
-  expect(mt.geo).toBe(`${m.name} metro rent (Zillow; no county series)`)
+  expect(mt.geo).toBe(`${m.name} metro rent (Zillow; no usable county series)`)
   expect(mt.metro).toBe(true)
 
   const none = mapTooltip({ fips: '99999', metric: 'rent', county: undefined, liveData: null })

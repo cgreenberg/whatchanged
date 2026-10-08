@@ -83,8 +83,8 @@ test.describe('Charts section', () => {
     // both lines carry their latest value at the right edge
     await expect(chart.getByTestId('end-label-local')).toBeVisible()
     await expect(chart.getByTestId('end-label-local-1')).toBeVisible()
-    await expect(chart.getByTestId('provenance').last()).toContainText('EIA average residential electricity price · Washington (statewide) · 12-mo avg through ')
-    await expect(chart.getByTestId('provenance').last()).toContainText('(centered); monthly through ')
+    await expect(chart.getByTestId('provenance').last()).toContainText("EIA average residential electricity price · Washington (statewide) · 12-mo avgs plotted at each window's center (last: 12 mo to ")
+    await expect(chart.getByTestId('provenance').last()).toContainText("plotted at each window's center (last: 12 mo to ")
     await expect(chart.getByTestId('chart-note')).toHaveText('Statewide average for Washington.')
     await expect(chart.locator('.recharts-legend-item')).toHaveCount(2)
     await chart.getByLabel('Show national').check()

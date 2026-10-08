@@ -68,7 +68,7 @@ test('tooltips name the tier and its source; HUD label carries the fiscal years 
   const label = hudRentLabel(META)
   expect(label).toMatch(/^HUD fair market rent \(yearly estimate, FY2025→FY20\d\d\)$/)
   const city = mapTooltip({ fips: '45043', metric: 'rent', county: COUNTIES['45043'], liveData: null, hudLabel: label })
-  expect(city).toMatchObject({ tier: 'city', geo: 'Murrells Inlet city rent (Zillow; no county or metro series)', noData: false })
+  expect(city).toMatchObject({ tier: 'city', geo: 'Murrells Inlet city rent (Zillow; no usable county or metro series)', noData: false })
   const hudFips = SHAPES.find((f) => mapRentTier(f, COUNTIES[f])?.tier === 'hud')!
   const hud = mapTooltip({ fips: hudFips, metric: 'rent', county: COUNTIES[hudFips], liveData: null, hudLabel: label })
   expect(hud.tier).toBe('hud')

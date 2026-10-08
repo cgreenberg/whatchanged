@@ -10,6 +10,8 @@ import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
 import { monoLines } from '@/lib/share-card/layout'
 import { latestDataLabel, QUADRANT_TITLES, rangeEnd } from '@/lib/share-card/labels'
+import { shareSeasonalNote } from '@/lib/share-card/generate'
+import { hasSeasonalCaveat } from '@/lib/rent-range'
 
 export const runtime = 'nodejs'
 
@@ -156,9 +158,12 @@ export async function GET(req: NextRequest) {
           const value = c.status === 'ok'
             ? isGas ? fmtSignedDollars(snapshot.gas.data!.change) : elec ? fmtSignedPct(elec.change) : c.value ?? ''
             : ''
+          // Rent with a seasonal-pattern caveat: the same mark + footnote as the share image (‡ when † is the outlier mark)
+          const seasonal = c.status === 'ok' && c.id === 'rent' && !!snapshot.rent && hasSeasonalCaveat(snapshot.rent.saCaveat)
+          const mark = `${c.outlier ? OUTLIER_MARK : ''}${seasonal ? (c.outlier ? '‡' : '†') : ''}`
           return {
             label: OG_LABELS[c.id],
-            value: value && c.outlier ? `${value}${OUTLIER_MARK}` : value,
+            value: value && mark ? `${value}${mark}` : value,
             // Unit drawn smaller on the same line so "+$1.19/gal" never wraps
             unit: isGas ? '/gal' : undefined,
             color: OG_COLORS[c.id],
@@ -167,6 +172,10 @@ export async function GET(req: NextRequest) {
           }
         })
         if (cards.some(c => c.status === 'ok' && c.outlier)) footnotes.push(OUTLIER_FOOTNOTE)
+        const rentCard = cards.find(c => c.id === 'rent' && c.status === 'ok')
+        const seasonalNote = rentCard && snapshot.rent ? shareSeasonalNote(snapshot.rent.saCaveat, snapshot.rent, rentCard.outlier ? '‡' : '†') : null
+        // The OG font has no "≈" glyph: "~$97/mo"
+        if (seasonalNote) footnotes.push(seasonalNote.replace(/≈ /g, '~'))
         if (cards.some(c => c.id === 'gas' && c.status === 'ok') && isGasStandIn(snapshot.gas.data)) {
           footnotes.push(GAS_STANDIN_FOOTNOTE(standInPlace(snapshot.location, 'image')))
         }
@@ -533,7 +542,7 @@ export async function GET(req: NextRequest) {
                   }}
                 >
                   {elec
-                    ? `· since ${BASELINE_MONTH_LABEL} (12-mo avg) · now ${elec.current.toFixed(1)}¢/kWh · EIA, ${fmtMonthYear(elec.latestPeriod)}`
+                    ? `· since ${BASELINE_MONTH_LABEL} · 12-mo avg ${elec.current.toFixed(1)}¢/kWh · EIA, ${fmtMonthYear(elec.latestPeriod)}`
                     : '· EIA residential price unavailable right now'}
                 </span>
               </div>

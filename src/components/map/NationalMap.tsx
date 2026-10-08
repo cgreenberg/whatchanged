@@ -5,13 +5,14 @@ import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, NO_DATA_COLOR, mapScaleFor, scaleColor, scaleText, fmtScaleValue,
+  oppositeColor, isOppositeSide, sequentialClaim, gasWindowText, elecWindowText, BASELINE_MONTH,
   mutedColor, hudRentLabel, hudWindow, hudPanelArea, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { mapRentTier, type MapRentTier } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
-import { rentSeasonalCaveat } from '@/lib/rent-range'
+import { rentSeasonalCaveat, hasSeasonalCaveat } from '@/lib/rent-range'
 
 /** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
 const METRO_HATCH_ID = 'map-metro-hatch'
@@ -19,6 +20,11 @@ const METRO_HATCH_CSS = 'repeating-linear-gradient(45deg, rgba(241,239,234,0.5) 
 /** Light dots over a county colored by a city's rent (no usable Zillow county or metro series). */
 const CITY_DOTS_ID = 'map-city-dots'
 const CITY_DOTS_CSS = 'radial-gradient(circle, rgba(241,239,234,0.6) 0 0.9px, transparent 1.1px) 0 0 / 4px 4px'
+/** Gas: a light grid over a county priced on its own window (Alaska DCRA survey months), not the layer's monthly averages. */
+const SURVEY_GRID_ID = 'map-survey-grid'
+const SURVEY_GRID_CSS = 'repeating-linear-gradient(0deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px)'
+/** A tap / click focuses the map box: keyboard browsing must not start from it (ms after a pointerdown). */
+const POINTER_FOCUS_MS = 1500
 const VIEW_W = 975
 const VIEW_H = 610
 
@@ -101,6 +107,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const mapBoxRef = useRef<HTMLDivElement>(null)
+  // When the last pointerdown on the map happened: a focus that follows it is a click / tap, not keyboard navigation
+  const lastPointerDown = useRef(-Infinity)
   // Mouse hover (container px) and keyboard focus (a county browsed with the arrow keys): tooltip only
   const [hover, setHover] = useState<{ fips: string; x: number; y: number; w: number; h: number } | null>(null)
   const [kbdAt, setKbdAt] = useState<{ fips: string; x: number; y: number; w: number; h: number } | null>(null)
@@ -204,14 +212,44 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     }
     return out
   }, [metric, playing, shapes, data])
+  // Gas: HI/AK counties with no series (the nearest metro's price: stripes) and areas on their own window (Alaska's
+  // DCRA survey months, a lagging series: grid), each patterned and in the legend
+  const gasTiers = useMemo(() => {
+    const standIn: Shape[] = []
+    const own: Shape[] = []
+    let survey = 0
+    if (metric !== 'gas' || !shapes) return { standIn, own, onlySurvey: true, surveyFrom: null as string | null, surveyTo: null as string | null }
+    let surveyTo: string | null = null
+    let surveyFrom: string | null = null
+    for (const s of shapes.counties) {
+      const v = liveValue(liveData, s.id, 'gas')
+      if (!v) continue
+      if (v.standIn) standIn.push(s)
+      if (v.ownWindow) {
+        own.push(s)
+        if (v.survey) {
+          survey++
+          if (v.asOf && (!surveyTo || v.asOf > surveyTo)) surveyTo = v.asOf
+          const from = liveData?.gas[liveData.counties[s.id]?.[0] ?? -1]?.baselineAsOf
+          if (from && (!surveyFrom || from < surveyFrom)) surveyFrom = from
+        }
+      }
+    }
+    return { standIn, own, onlySurvey: survey === own.length, surveyFrom, surveyTo }
+  }, [metric, shapes, liveData])
   // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
-  // |change| (diverging), or the counties' 2nd–98th percentile range when every county moved the same way (gas).
-  // Rent: Zillow values only (county, metro, city); HUD's yearly estimates are drawn on that scale, muted.
+  // |change| (diverging), or the counties' 2nd–98th percentile range when nearly every county moved the same way (gas).
+  // Rent: Zillow values only (county, metro, city); HUD's yearly estimates are drawn on that scale, muted. Gas: the
+  // common monthly-average window only (own-window survey areas are drawn on that scale, patterned).
   const unit: 'usd' | 'pct' = def.scope === 'live' ? def.unit : 'pct'
   const scale = useMemo(() => {
     const vals: (number | undefined)[] = []
     for (const s of shapes?.counties ?? []) {
-      if (!countyKey) { vals.push(liveValue(liveData, s.id, metric as Exclude<MetricKey, CountyMetricKey>)?.value); continue }
+      if (!countyKey) {
+        const v = liveValue(liveData, s.id, metric as Exclude<MetricKey, CountyMetricKey>)
+        vals.push(v && !v.ownWindow ? v.value : undefined)
+        continue
+      }
       const own = data[s.id]?.[countyKey]
       if (own != null || countyKey !== 'rent') { vals.push(own); continue }
       const t = mapRentTier(s.id, data[s.id])
@@ -230,6 +268,10 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     }
     return out
   }, [shapes, value, rentTiers, scale])
+  // Sequential scale: "every county rose" only when no drawn county fell (else "nearly every"); falls get their own color
+  const drawnValues = useMemo(() => (shapes?.counties ?? []).map(s => value(s.id)), [shapes, value])
+  const claim = sequentialClaim(drawnValues, scale)
+  const oppositeCount = useMemo(() => drawnValues.filter(v => isOppositeSide(v, scale)).length, [drawnValues, scale])
   const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'metro') : []), [shapes, rentTiers])
   const cityShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'city') : []), [shapes, rentTiers])
   const hudCount = useMemo(() => [...rentTiers.values()].filter(t => t.tier === 'hud').length, [rentTiers])
@@ -256,9 +298,11 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   }
   // Tooltip: the hovered county (mouse), else the keyboard-focused one
   const tipFips = hover?.fips ?? kbd
+  const countyLatest = countyKey ? meta?.sources[def.scope === 'county' ? def.sourceKey : '']?.latest : undefined
+  const countyWhen = meta && countyLatest && /^\d{4}-\d{2}$/.test(countyLatest) ? `${fmtMonth(meta.baseline)} → ${fmtMonth(countyLatest)}` : undefined
   const tipFor = (fips: string | null) => (fips
     ? mapTooltip({
-        fips, metric, county: data[fips], liveData, hudLabel,
+        fips, metric, county: data[fips], liveData, hudLabel, countyWhen,
         ...(playing && countyKey ? { frame: { value: value(fips), month: timelineMonths(timeline!, countyKey)[frame!] } } : {}),
       })
     : null)
@@ -281,7 +325,17 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   }
 
   const movers = useMemo(() => (countyKey ? moversFor(data, countyKey) : { top: [], bottom: [] }), [data, countyKey])
-  const window_ = def.scope === 'county' ? def.window(meta) : sinceBaseline(meta)
+  const gasWindow = gasWindowText(liveData)
+  const elecAsOf = Object.values(liveData?.electricity ?? {}).map(e => e.asOf).sort().pop()
+  const window_ = def.scope === 'county'
+    ? def.window(meta)
+    : def.key === 'gas' && gasWindow ? `${gasWindow}, so areas compare fairly`
+      : def.key === 'elec' ? `latest 12-month average${elecAsOf ? ` (to ${fmtMonth(elecAsOf)})` : ''} vs the 12 months centered on ${fmtMonth(meta?.baseline ?? BASELINE_MONTH)}`
+        : sinceBaseline(meta)
+  /** Legend title per layer: the window the colors compare. */
+  const legendTitle = def.key === 'gas' && gasWindow
+    ? `${gasWindow}, so areas compare fairly`
+    : def.key === 'elec' ? elecWindowText(elecAsOf) : `Change since ${meta ? fmtMonth(meta.baseline) : 'baseline'}`
   const footer = def.scope === 'county' ? metricFooter(def, meta) : liveFooter(def.key, liveData)
   const scaleNote = scaleText(scale, unit)
   const legendStops = Array.from({ length: 21 }, (_, i) => scale.kind === 'diverging'
@@ -306,7 +360,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             return {
               key: d.key, short: d.short,
               text: `${fmtPct(m.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(m.cur)}/mo`,
-              area: `metro rent: ${m.name} metro (no Zillow county series)`,
+              area: `metro rent: ${m.name} metro (no usable Zillow county series)`,
               caveat: null,
               seasonal: rentSeasonalCaveat(m.saCaveat, 'metro', { pct: m.pct, curRent: m.cur }),
             }
@@ -402,8 +456,12 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           role: 'group',
           'aria-label': `US county map of ${def.label}. Arrow keys move between counties; Enter selects one.`,
           'aria-describedby': kbdTip ? tipId : undefined,
+          // A click / tap focuses the box too: keyboard browsing (tooltip at a county's centroid) starts only on a
+          // keyboard focus or the first arrow key, so a tap never leaves a stray tooltip on another county
+          onPointerDown: () => { lastPointerDown.current = performance.now(); setKbdAt(null) },
           onFocus: (e: FocusEvent) => {
             if (e.target !== e.currentTarget || kbd) return
+            if (performance.now() - lastPointerDown.current < POINTER_FOCUS_MS) return
             focusCounty(selected && shapeById.has(selected) ? selected : centerFips)
           },
           onBlur: () => setKbdAt(null),
@@ -453,12 +511,27 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               <pattern id={CITY_DOTS_ID} width={4} height={4} patternUnits="userSpaceOnUse">
                 <circle cx={2} cy={2} r={0.9} fill="rgba(241,239,234,0.6)" />
               </pattern>
+              {/* Gas on its own window (Alaska survey months): a light grid over the county's color */}
+              <pattern id={SURVEY_GRID_ID} width={4} height={4} patternUnits="userSpaceOnUse">
+                <rect width={4} height={0.9} fill="rgba(241,239,234,0.55)" />
+                <rect width={0.9} height={4} fill="rgba(241,239,234,0.55)" />
+              </pattern>
             </defs>
             <CountyLayer shapes={shapes.counties} fills={fills} onPick={pick} />
             {/* Decorations never take clicks: they must not shadow the counties under them */}
             {metroShapes.length > 0 && (
               <g pointerEvents="none" data-testid="map-metro-hatch">
                 {metroShapes.map(s => <path key={s.id} d={s.d} data-metro-fips={s.id} fill={`url(#${METRO_HATCH_ID})`} />)}
+              </g>
+            )}
+            {gasTiers.standIn.length > 0 && (
+              <g pointerEvents="none" data-testid="map-gas-standin-hatch">
+                {gasTiers.standIn.map(s => <path key={s.id} d={s.d} data-standin-fips={s.id} fill={`url(#${METRO_HATCH_ID})`} />)}
+              </g>
+            )}
+            {gasTiers.own.length > 0 && (
+              <g pointerEvents="none" data-testid="map-gas-own-window">
+                {gasTiers.own.map(s => <path key={s.id} d={s.d} data-own-fips={s.id} fill={`url(#${SURVEY_GRID_ID})`} />)}
               </g>
             )}
             {cityShapes.length > 0 && (
@@ -498,11 +571,12 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               {tip.value}{tip.note && <span className="text-caution/90"> · {tip.note}</span>}
             </p>
             {tip.geo && <p className="text-ink-3 text-[11px]">{tip.geo}</p>}
+            {tip.when && <p className="text-ink-3 text-[11px]" data-testid="map-tooltip-when">{tip.when}</p>}
           </div>
         )}
         {/* Screen readers: the keyboard-focused county's tooltip, announced as it changes */}
         <p id={tipId} className="sr-only" aria-live="polite" data-testid="map-kbd-status">
-          {kbdTip ? [kbdTip.name, kbdTip.value, kbdTip.geo, kbdTip.note].filter(Boolean).join(' · ') : ''}
+          {kbdTip ? [kbdTip.name, kbdTip.value, kbdTip.geo, kbdTip.when, kbdTip.note].filter(Boolean).join(' · ') : ''}
         </p>
       </div>
 
@@ -510,8 +584,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
         <div className="w-full max-w-xs">
           <p className="kicker !text-[10px] text-ink-3 mb-1" data-testid="map-legend-title">
-            Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}{hudCount > 0 ? ` · muted: HUD ${hudWindow(meta).window}` : ''}
-            {scale.kind === 'sequential' && ` · every county ${scale.hi > 0 ? 'rose' : 'fell'}; darker = ${scale.hi > 0 ? 'rose' : 'fell'} more`}
+            {legendTitle}{hudCount > 0 ? ` · muted: HUD ${hudWindow(meta).window}` : ''}
+            {claim && <span data-testid="map-legend-claim">{` · ${claim}`}</span>}
           </p>
           <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{ background: `linear-gradient(90deg, ${legendStops.join(',')})` }}>
             {scale.kind === 'diverging' && <span className="absolute left-1/2 -top-0.5 -bottom-0.5 w-px bg-ink-3" />}
@@ -531,6 +605,28 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             )}
           </div>
         </div>
+        {oppositeCount > 0 && oppositeColor(scale) && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-opposite">
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: oppositeColor(scale)! }} aria-hidden />
+            <span>{scale.kind === 'sequential' && scale.hi > 0 ? `fell (below ${unit === 'usd' ? '$0' : '0%'})` : `rose (above ${unit === 'usd' ? '$0' : '0%'})`}</span>
+          </div>
+        )}
+        {gasTiers.standIn.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-gas-standin">
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: `${METRO_HATCH_CSS}, ${legendStops[12]}` }} aria-hidden />
+            <span>no local series (HI/AK): nearest metro’s price</span>
+          </div>
+        )}
+        {gasTiers.own.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-gas-own">
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: `${SURVEY_GRID_CSS}, ${legendStops[12]}` }} aria-hidden />
+            <span>
+              {gasTiers.onlySurvey
+                ? `Alaska survey, ${fmtMonth((gasTiers.surveyFrom ?? BASELINE_MONTH).slice(0, 7))} → ${gasTiers.surveyTo ? fmtMonth(gasTiers.surveyTo.slice(0, 7)) : 'latest'} surveys (different window)`
+                : 'own window (see tooltip): Alaska survey or a series behind the common month'}
+            </span>
+          </div>
+        )}
         {metric === 'rent' && !playing && (
           <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-county">
             <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: legendStops[16] }} aria-hidden />
@@ -544,7 +640,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               style={{ background: `${METRO_HATCH_CSS}, ${legendStops[16]}` }}
               aria-hidden
             />
-            <span>metro rent (no Zillow county series)</span>
+            <span>metro rent (no usable Zillow county series)</span>
           </div>
         )}
         {cityShapes.length > 0 && (
@@ -554,7 +650,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               style={{ background: `${CITY_DOTS_CSS}, ${legendStops[16]}` }}
               aria-hidden
             />
-            <span>city rent (no county or metro series)</span>
+            <span>city rent (no usable county or metro series)</span>
           </div>
         )}
         {hudCount > 0 && (
@@ -570,7 +666,10 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
         Scale {scaleNote}{hudCount > 0 ? ' (Zillow figures only)' : ''} · {footer}
-        {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''}
+        {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has no usable one for the county, as on the Rent card' : ''}
+        {gasTiers.standIn.length > 0 ? ' · light stripes = a Hawaii / Alaska county with no gas series of its own, colored by the nearest metro’s price (local prices often higher)' : ''}
+        {gasTiers.own.length > 0 ? ' · grid = priced on its own window, not the monthly averages: Alaska’s twice-yearly DCRA community survey (or a series behind the common month); months in the tooltip' : ''}
+        {oppositeCount > 0 && scale.kind === 'sequential' ? ` · ${scale.hi > 0 ? 'blue = fell' : 'orange = rose'} (the other side of zero)` : ''}
         {cityShapes.length > 0 ? ' · dots = city rent: the county’s most populous city with a Zillow series where it has no usable county or metro series, as on the Rent card' : ''}
         {hudCount > 0 ? ` · muted = ${hudLabel}, 2-bedroom, for counties with no Zillow rent (map only; a yearly HUD estimate, not a market index; not on the Rent card)` : ''}
         {' · solid gray = no data'}
@@ -618,18 +717,27 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           {([['Biggest increases', movers.top], ['Biggest decreases', movers.bottom]] as const).map(([title, rows]) => (
             <div key={title} className="bg-surface border border-line rounded-md px-4 py-3">
               <p className="kicker text-ink-3 mb-1.5">{title}</p>
-              {rows.map(([f, c]) => (
-                <button key={f} onClick={() => setSelected(f, true)} className="flex justify-between w-full text-left text-[13px] py-1 gap-2 border-t border-line first-of-type:border-t-0 hover:bg-raised -mx-1 px-1 rounded-[2px]" data-testid="map-mover">
-                  <span className="text-ink-2 truncate">{c.n}</span>
-                  <span className="text-ink tabular-nums font-medium shrink-0">
-                    {(c[countyKey] as number) > 0 ? '+' : ''}{(c[countyKey] as number).toFixed(1)}%
-                  </span>
-                </button>
-              ))}
+              {rows.map(([f, c]) => {
+                // Rent: the same seasonal-pattern caveat (†) the card, tooltip and panel carry
+                const seasonal = countyKey === 'rent' && hasSeasonalCaveat(c.rentSaCav)
+                  ? rentSeasonalCaveat(c.rentSaCav, 'county', { pct: c.rent, curRent: c.rentCur })
+                  : undefined
+                return (
+                  <button key={f} onClick={() => setSelected(f, true)} className="flex justify-between w-full text-left text-[13px] py-1 gap-2 border-t border-line first-of-type:border-t-0 hover:bg-raised -mx-1 px-1 rounded-[2px]" data-testid="map-mover">
+                    <span className="text-ink-2 truncate">{c.n}</span>
+                    <span className="text-ink tabular-nums font-medium shrink-0">
+                      {(c[countyKey] as number) > 0 ? '+' : ''}{(c[countyKey] as number).toFixed(1)}%
+                      {seasonal && <span className="text-caution/90" title={seasonal} data-testid="map-mover-seasonal"> †</span>}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           ))}
           <p className="sm:col-span-2 text-[11px] text-ink-3">
             Among counties with {MOVERS_MIN_JOBS.toLocaleString('en-US')}+ jobs, excluding statistical outliers for this measure and counties whose job counts are approximated (Connecticut).
+            {countyKey === 'rent' && [...movers.top, ...movers.bottom].some(([, c]) => hasSeasonalCaveat(c.rentSaCav)) &&
+              ' † Seasonal pattern uncertain: the county’s recent seasonal swing differs from the pattern used to adjust it, so this reading may over- or understate the change (tap for the size).'}
           </p>
         </div>
       )}

@@ -74,7 +74,7 @@ test.describe('National county map', () => {
     await expect(sel).toHaveAttribute('data-fips', '53011')
     await expect(sel.getByTestId('map-value-hv')).toContainText('typical home')
     await expect(sel.getByTestId('map-value-rent')).toContainText('typical asking rent')
-    await expect(sel.getByTestId('map-value-gas')).toContainText('/gal since Jan 2025')
+    await expect(sel.getByTestId('map-value-gas')).toContainText('/gal, Jan 2025 → ')
     await expect(sel.getByTestId('map-value-gas')).toContainText('Washington state avg')
     await expect(sel.getByTestId('map-value-groceries')).toContainText('Pacific div.')
     await expect(sel.getByTestId('map-value-elec')).toContainText('Washington statewide')
@@ -259,7 +259,7 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await expect(map.locator('[data-testid="map-city-dots"] path[data-city-fips="45043"]')).toBeAttached()
     await expect(map.getByTestId('map-legend-city')).toContainText('city rent')
     await hoverCounty(page, '45043')
-    await expect(map.getByTestId('map-tooltip')).toContainText('Murrells Inlet city rent (Zillow; no county or metro series)')
+    await expect(map.getByTestId('map-tooltip')).toContainText('Murrells Inlet city rent (Zillow; no usable county or metro series)')
     // Sibley County, MN: no Zillow rent at all → HUD 2-bedroom fair market rent change, muted, labeled with its fiscal years
     await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', /^rgb\(/)
     await expect(map.getByTestId('map-legend-hud')).toContainText('HUD fair market rent')
@@ -273,5 +273,117 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await expect(map.getByTestId('map-city-dots')).toHaveCount(0)
     await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
     await expect(map.getByTestId('map-legend-nodata')).toContainText('no data')
+  })
+})
+
+/**
+ * A screen point that really hits the county (bounding-box centers of irregular counties land in a neighbor): the grid
+ * point closest to the box center where the browser's hit test returns that county's path.
+ */
+async function pointInCounty(page: Page, fips: string): Promise<{ x: number; y: number }> {
+  const path = page.locator(`[data-testid="national-map"] svg path[data-fips="${fips}"]`)
+  await path.scrollIntoViewIfNeeded()
+  const p = await path.evaluate((el, f) => {
+    const r = el.getBoundingClientRect()
+    const cx = r.x + r.width / 2
+    const cy = r.y + r.height / 2
+    let best: { x: number; y: number; d: number } | null = null
+    for (let i = 1; i < 12; i++) {
+      for (let j = 1; j < 12; j++) {
+        const x = r.x + (r.width * i) / 12
+        const y = r.y + (r.height * j) / 12
+        if (document.elementFromPoint(x, y)?.getAttribute('data-fips') !== f) continue
+        const d = (x - cx) ** 2 + (y - cy) ** 2
+        if (!best || d < best.d) best = { x, y, d }
+      }
+    }
+    return best
+  }, fips)
+  if (!p) throw new Error(`no hit-testable point in county ${fips}`)
+  return p
+}
+
+test.describe('Round 16: like-for-like gas layer, legend wording, click / tap focus', () => {
+  test('gas layer: one monthly-average window, "brighter = rose more", falls in their own color, survey + stand-in patterns', async ({ page }) => {
+    await mockMapMetrics(page)
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Gas', exact: true }).click()
+    await expect(map.getByTestId('map-legend-title')).toContainText('Jan 2025 → Aug 2026 monthly averages, so areas compare fairly')
+    // North Slope AK fell $0.10 (DCRA survey): never "every county rose", and drawn in the distinct "fell" color
+    await expect(map.getByTestId('map-legend-claim')).toHaveText(' · nearly every county rose; brighter = rose more')
+    await expect(map.getByTestId('map-legend-opposite')).toContainText('fell (below $0)')
+    await expect(map.locator('svg path[data-fips="02185"]')).toHaveAttribute('fill', 'rgb(74,144,217)')
+    // Alaska survey boroughs: grid pattern + chip; HI/AK counties with no series: stripes + chip
+    await expect(map.locator('[data-testid="map-gas-own-window"] path[data-own-fips="02185"]')).toBeAttached()
+    await expect(map.getByTestId('map-legend-gas-own')).toContainText('Alaska survey, Jan 2025 → Jul 2026 surveys (different window)')
+    await expect(map.locator('[data-testid="map-gas-standin-hatch"] path[data-standin-fips="15001"]')).toBeAttached()
+    await expect(map.getByTestId('map-legend-gas-standin')).toContainText('nearest metro')
+    await expect(map.getByTestId('map-source')).toContainText('Jan 2025 → Aug 2026 monthly averages (EIA weeklies averaged by month)')
+    // the tooltip always says the window
+    const tip = map.getByTestId('map-tooltip')
+    { const p = await pointInCounty(page, '13121'); await page.mouse.move(p.x, p.y) }
+    await expect(tip).toHaveAttribute('data-fips', '13121')
+    await expect(map.getByTestId('map-tooltip-when')).toHaveText('Jan 2025 → Aug 2026 monthly averages')
+    { const p = await pointInCounty(page, '02185'); await page.mouse.move(p.x, p.y) }
+    await expect(tip).toHaveAttribute('data-fips', '02185')
+    await expect(map.getByTestId('map-tooltip-when')).toContainText('Jan 2025 → Jul 2026 surveys')
+    // electricity: its own window in the legend title
+    await map.getByRole('button', { name: 'Electricity', exact: true }).click()
+    await expect(map.getByTestId('map-legend-title')).toContainText("12-mo avg to")
+    await expect(map.getByTestId('map-legend-title')).toContainText("vs yr centered on Jan '25")
+    await expect(map.getByTestId('map-legend-claim')).toHaveCount(0)
+  })
+
+  test('rent movers: a county with a seasonal-pattern caveat carries †', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Rent', exact: true }).click()
+    const ny = map.getByTestId('map-mover').filter({ hasText: 'New York County, NY' })
+    await expect(ny).toBeVisible()
+    await expect(ny.getByTestId('map-mover-seasonal')).toHaveText('†')
+    await expect(map.getByText('† Seasonal pattern uncertain', { exact: false })).toBeVisible()
+  })
+
+  test('mouse click on a county: the tooltip and outline follow the clicked county, no keyboard tooltip', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    { const p = await pointInCounty(page, '08031'); await page.mouse.click(p.x, p.y) } // Denver: the map box takes focus from the click
+    await expect(map.getByTestId('map-selection')).toHaveAttribute('data-fips', '08031')
+    const tip = map.getByTestId('map-tooltip')
+    await expect(tip).toHaveAttribute('data-fips', '08031')
+    await expect(map.getByTestId('map-hover-outline')).toHaveCount(0) // the hovered county is the selected one
+    await expect(map.getByTestId('map-kbd-status')).toHaveText('')
+    // moving the mouse away leaves no tooltip behind (the click's focus never started keyboard browsing)
+    await page.mouse.move(2, 2)
+    await expect(tip).toHaveCount(0)
+    await expect(map.getByTestId('map-hover-outline')).toHaveCount(0)
+    { const p = await pointInCounty(page, '13121'); await page.mouse.click(p.x, p.y) }
+    await expect(map.getByTestId('map-selection')).toHaveAttribute('data-fips', '13121')
+    await expect(tip).toHaveAttribute('data-fips', '13121')
+    await expect(map.getByTestId('map-kbd-status')).toHaveText('')
+    // keyboard browsing still starts on the first arrow key, at the selected county's neighbor
+    await page.keyboard.press('ArrowRight')
+    await page.mouse.move(2, 2)
+    await expect(map.getByTestId('map-kbd-status')).not.toHaveText('')
+  })
+})
+
+test.describe('Round 16: touch tap', () => {
+  test.use({ hasTouch: true })
+  test('tap on a county: selection, highlight and any tooltip match the tapped county; no stray keyboard tooltip', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    // Counties large enough on a phone-width map that the browser's touch adjustment can't snap to a neighbor
+    for (const fips of ['06071', '32023']) { // San Bernardino CA, Nye NV
+      const p = await pointInCounty(page, fips)
+      await page.touchscreen.tap(p.x, p.y)
+      await expect(map.getByTestId('map-selection')).toHaveAttribute('data-fips', fips)
+      await expect(map.getByTestId('map-highlight')).toBeAttached()
+      const tips = map.getByTestId('map-tooltip')
+      if (await tips.count()) await expect(tips).toHaveAttribute('data-fips', fips)
+      await expect(map.getByTestId('map-hover-outline')).toHaveCount(0)
+      await expect(map.getByTestId('map-kbd-status')).toHaveText('')
+    }
   })
 })

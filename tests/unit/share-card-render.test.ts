@@ -177,6 +177,25 @@ test('OG zip card shows gas geography and the rent adjustment', async () => {
   expect(t).not.toContain('†')
 }, 30000)
 
+test('OG link preview: a rent seasonal-pattern caveat gets "†" and its footnote (‡ beside an outlier †)', async () => {
+  if (process.env.REAL_OG) return
+  const s = snap()
+  s.rent = { ...s.rent!, pct: 12.6, saCaveat: { gap: 2.7, month: 8 } }
+  mockFetch.mockResolvedValue(s)
+  const { GET } = await import('@/app/api/og/route')
+  const { NextRequest } = await import('next/server')
+  await GET(new NextRequest('http://x/api/og?zip=78701'))
+  let og = textOf(mockRendered[mockRendered.length - 1])
+  expect(og).toContain('+12.6%†')
+  expect(og).toMatch(/† Seasonal pattern uncertain: Aug rent may overstate the change by ~2\.5 pts/)
+  expect(og).not.toContain('≈') // no glyph in the OG font
+  s.rent = { ...s.rent!, pct: 47.8, flagged: true, saCaveat: { gap: 2.7, month: 8 } }
+  await GET(new NextRequest('http://x/api/og?zip=78701'))
+  og = textOf(mockRendered[mockRendered.length - 1])
+  expect(og).toContain('+47.8%†‡')
+  expect(og).toContain('‡ Seasonal pattern uncertain')
+}, 30000)
+
 test('OG + share card: flagged county rent gets "†" and an unusual-value footnote', async () => {
   if (process.env.REAL_OG) return
   const s = snap()
@@ -204,7 +223,9 @@ test('OG + share card: BLS monthly gas tier (Honolulu metro) — geography, as-o
   const share = textOf(mockRendered[mockRendered.length - 1])
   expect(share).toContain("Honolulu metro · BLS · Aug '26")
   expect(share).toMatch(/\+\$0\.99\s*\/gal/) // change first, like the card
-  expect(share).toContain('now $5.40')
+  expect(share).toContain('$5.40') // a monthly average says its month (pill's second line), never "now"
+  expect(share).toContain('Aug avg')
+  expect(share).not.toContain('now $5.40')
   expect(share).toContain("Jan '25") // monthly chart starts at the Jan 2025 baseline month
   expect(share).not.toContain('Natl') // national comparisons live on the site
   expect(share).not.toContain('Urban Hawaii')

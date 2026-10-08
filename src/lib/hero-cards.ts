@@ -454,13 +454,14 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     status: 'ok',
     geoTag: gasShortGeo(g, s.location?.stateAbbr),
     caveat,
-    // Change first (like Rent / Groceries): the $/gal change is the big number, today's price is the secondary line
-    // ("since Jan 2025 · now $4.78"). The data's month / week is on the source line; the exact baseline week in the ⓘ.
+    // Change first (like Rent / Groceries): the $/gal change is the big number, the price level is the secondary line
+    // ("since Jan 2025 · now $3.21" weekly; "Aug avg $4.78" for a monthly average). The data's month / week is on the
+    // source line; the exact baseline week in the ⓘ.
     value: `${fmtSignedDollars(g.change)}/gal`,
     direction: directionOf(g.change, 2),
     secondary: sourceLineOf(
       `since ${monthly && baselineDate ? fmtMonthYear(baselineDate.slice(0, 7)) : BASELINE_MONTH_LABEL}`,
-      `now $${g.current.toFixed(2)}`,
+      gasLevelText(g.current, monthly ? 'monthly' : 'weekly', latestDate),
     ),
     detail,
     nationalValue,
@@ -468,6 +469,17 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     info: compact([`${dollarNote}${detail ? `, ${detail}` : ''}.`, nationalValue, caveat]),
     asOfPeriod: latestDate?.slice(0, 7),
   }
+}
+
+/**
+ * The gas card's / share pill's price level: "now $3.21" for a weekly reading; a monthly average says its month
+ * ("Aug avg $3.83") and a survey its survey month ("Jul survey $5.10"), never "now" for a figure weeks old.
+ */
+export function gasLevelText(current: number, kind: 'weekly' | 'monthly' | 'survey', latestDate: string | null | undefined): string {
+  const price = `$${current.toFixed(2)}`
+  const mon = latestDate ? fmtMonthYear(latestDate.slice(0, 7)).split(' ')[0] : null
+  if (kind === 'weekly' || !mon || mon === DATE_UNAVAILABLE) return `now ${price}`
+  return kind === 'survey' ? `${mon} survey ${price}` : `${mon} avg ${price}`
 }
 
 /** Sanity ranges for the static gas sources ($/gal; remote Alaska villages pay well over $10). */
@@ -528,7 +540,7 @@ function buildStaticGasCard(s: EconomicSnapshot, g: GasPriceData): HeroCardModel
     secondary: sourceLineOf(
       `since ${dcra ? `${fmtMonthYear(baseline)} survey` : BASELINE_MONTH_LABEL}`,
       dcra ? undefined : 'island-wide',
-      `now $${g.current.toFixed(2)}`,
+      gasLevelText(g.current, dcra ? 'survey' : 'monthly', latest),
     ),
     detail,
     dollarNote,
@@ -898,8 +910,9 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     value: fmtSignedPct(e.change),
     inline: hasDollars ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo` : undefined,
     direction: directionOf(e.change),
-    // Short face ("since Jan 2025 · now 27.0¢/kWh"); the 12-month-average windows are spelled out in the ⓘ (detail)
-    secondary: sourceLineOf(`since ${BASELINE_MONTH_LABEL}`, `now ${fmtCents(e.current)}`),
+    // Short face ("since Jan 2025 · 12-mo avg 27.0¢/kWh": the level IS the 12-month average, not a current price); the
+    // 12-month-average windows and the latest month's price are spelled out in the ⓘ (detail)
+    secondary: sourceLineOf(`since ${BASELINE_MONTH_LABEL}`, `${ELECTRICITY_VALUE_NOTE} ${fmtCents(e.current)}`),
     dollarNote,
     detail,
     nationalValue,

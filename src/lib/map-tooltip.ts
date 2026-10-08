@@ -16,6 +16,8 @@ export interface MapTooltipModel {
   value: string
   /** "Zillow county", "Atlanta metro (BLS)", "Georgia statewide (EIA)"; null when there is no data. */
   geo: string | null
+  /** The window / month the value covers ("Jan 2025 → Aug 2026 monthly averages"); null when there is no data. */
+  when?: string
   /** Short caveat: "unusual value", "last available copy", "†seasonal pattern uncertain" (rent). */
   note?: string
   /** The county is colored by its metro's rent (no Zillow county series). */
@@ -28,7 +30,7 @@ export interface MapTooltipModel {
 
 const SHORT: Record<MetricKey, string> = { gas: 'Gas', rent: 'Rent', hv: 'Home prices', groceries: 'Groceries', elec: 'Electricity' }
 
-export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel }: {
+export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel, countyWhen }: {
   fips: string
   metric: MetricKey
   county: CountyRecord | undefined
@@ -37,6 +39,8 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel }: 
   frame?: { value: number | undefined; month: string }
   /** HUD tier's label with its fiscal years from the build's meta (county-data.ts hudRentLabel). */
   hudLabel?: string
+  /** Zillow layers: the window the county value covers ("Jan 2025 → Aug 2026"), from the build's meta. */
+  countyWhen?: string
 }): MapTooltipModel {
   const name = county?.n ?? `County ${fips}`
   const short = SHORT[metric]
@@ -52,20 +56,25 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel }: 
     if (typeof v === 'number' && Number.isFinite(v)) {
       const flagged = flagNote(county, metric)
       const notes = [flagged ? 'unusual value' : '', metric === 'rent' && hasSeasonalCaveat(county?.rentSaCav) ? SEASONAL_CAVEAT_SHORT : ''].filter(Boolean)
-      return { name, value: `${short} ${fmtPct(v)}`, geo: 'Zillow county', ...(notes.length ? { note: notes.join(' · ') } : {}), noData: false }
+      return {
+        name, value: `${short} ${fmtPct(v)}`, geo: 'Zillow county', ...(countyWhen ? { when: countyWhen } : {}),
+        ...(notes.length ? { note: notes.join(' · ') } : {}), noData: false,
+      }
     }
     const t = metric === 'rent' ? mapRentTier(fips, county) : null
     if (t?.tier === 'metro') {
       const m = t.metro
       return {
-        name, value: `${short} ${fmtPct(m.pct)}`, geo: `${m.name} metro rent (Zillow; no county series)`, metro: true, tier: 'metro',
+        name, value: `${short} ${fmtPct(m.pct)}`, geo: `${m.name} metro rent (Zillow; no usable county series)`, metro: true, tier: 'metro',
+        ...(countyWhen ? { when: countyWhen } : {}),
         ...(m.saCaveat ? { note: SEASONAL_CAVEAT_SHORT } : {}), noData: false,
       }
     }
     if (t?.tier === 'city') {
       const c = t.city
       return {
-        name, value: `${short} ${fmtPct(c.pct)}`, geo: `${c.name} city rent (Zillow; no county or metro series)`, tier: 'city',
+        name, value: `${short} ${fmtPct(c.pct)}`, geo: `${c.name} city rent (Zillow; no usable county or metro series)`, tier: 'city',
+        ...(countyWhen ? { when: countyWhen } : {}),
         ...(c.saCaveat ? { note: SEASONAL_CAVEAT_SHORT } : {}), noData: false,
       }
     }
@@ -83,7 +92,9 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudLabel }: 
   return {
     name,
     value: metric === 'gas' ? `${short} ${fmtSignedDollars(lv.value)}/gal` : `${short} ${fmtPct(lv.value)}`,
-    geo: `${lv.area} (${lv.source})`,
+    // the publisher once ("… (Alaska DCRA)" labels already name it)
+    geo: lv.area.includes(`(${lv.source})`) ? lv.area : `${lv.area} (${lv.source})`,
+    when: lv.when,
     ...(lv.stale ? { note: 'last available copy' } : {}),
     noData: false,
   }

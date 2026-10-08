@@ -9,6 +9,13 @@
 // same series the gas card's ladder uses there, instead of the Anchorage stand-in; Puerto Rico takes the bundled
 // DACO island-wide series (src/lib/static-gas.ts lookupPrGas), as the card does, instead of the U.S. average.
 //
+// Gas compares like with like (round 16): weekly EIA, monthly BLS and DACO prices all on ONE window — the monthly average
+// of a common latest month (the latest month every BLS and EIA series on the map has; EIA weeklies averaged by calendar
+// month, a month counted once complete) minus the Jan 2025 monthly average — so timing gaps between sources never read as
+// local differences. Computed from the same cached series (no extra keys, nothing fetched). Areas that can't be put on
+// that window (the DCRA survey, a series lagging the rest) keep their own window, marked `window: 'own'` (patterned on
+// the map, with their months in the tooltip). The gas CARD keeps its own latest figure.
+//
 // A value read from a `:lastgood` copy (the fresh key expired) is marked `stale` and counted in `stale`, so the
 // route serves it with a short CDN lifetime. buildMapMetricsMemo keeps one in-process copy for 60 s so repeated
 // requests (CDN misses) cost ~250 Redis reads at most once a minute per instance.
@@ -25,6 +32,8 @@ import { CPI_TO_EIA_CITY, COUNTY_EIA_CITY_OVERRIDES } from '@/lib/mappings/eia-g
 import { cpiShortGeo } from '@/lib/hero-cards'
 import { akGasForCounty, lookupPrGas } from '@/lib/static-gas'
 import { staticGasStatus } from '@/lib/static-gas-meta'
+import { BASELINE_MONTH, addMonths, displayedChange } from '@/lib/baseline'
+import { GAS_PRICE_RANGE } from './validate'
 import countyCentroids from '@/lib/data/county-centroids.json'
 
 interface CountyGeo {
@@ -54,11 +63,20 @@ export interface MapGasArea {
    * month is overdue (staticGasStatus — the card marks the same value stale).
    */
   stale?: true
-  /** $/gal since the baseline (same figure as the gas card), current $/gal and the latest date; null = not cached. */
+  /**
+   * `window: 'common'`: $/gal change from the Jan 2025 monthly average to the common month's average (MapMetrics.gasWindow),
+   * `current` = that month's average and `asOf` = that month (YYYY-MM). `window: 'own'` (DCRA survey; a series that
+   * lags the common month): the series' own baseline → latest, as on the card (`baselineAsOf` → `asOf`). null = not cached.
+   */
   change: number | null
   current: number | null
   asOf: string | null
+  baselineAsOf?: string | null
+  window?: 'common' | 'own'
 }
+
+/** The gas layer's common window: Jan 2025 → `to` monthly averages (null when no BLS / EIA series is cached). */
+export interface MapGasWindow { from: string; to: string }
 
 export interface MapCpiArea {
   area: string
@@ -80,6 +98,7 @@ export interface MapElectricity {
 
 export interface MapMetrics {
   gas: MapGasArea[]
+  gasWindow: MapGasWindow | null
   groceries: MapCpiArea[]
   /** By state (USPS code); states not cached are absent. */
   electricity: Record<string, MapElectricity>
@@ -152,6 +171,61 @@ export function resetMapMetricsMemo(): void {
   inflight = null
 }
 
+/** A series lagging the newest by more than this many months doesn't hold the common gas month back (drawn on its own window). */
+export const GAS_COMMON_MAX_LAG = 2
+
+/**
+ * Monthly average $/gal by calendar month (YYYY-MM) of a gas series: monthly points as published (BLS, DACO); weekly
+ * EIA readings (YYYY-MM-DD) averaged by month, the latest month only once complete (a reading in a later month, or its
+ * last reading falls in the month's final week). Out-of-range averages are dropped.
+ */
+export function gasMonthlyAverages(series: ReadonlyArray<{ date: string; price: number }>): Map<string, number> {
+  const out = new Map<string, number>()
+  if (!series.length) return out
+  if (series[0].date.length === 7) {
+    for (const p of series) if (Number.isFinite(p.price)) out.set(p.date, p.price)
+  } else {
+    const sums = new Map<string, { s: number; n: number }>()
+    for (const p of series) {
+      if (!Number.isFinite(p.price)) continue
+      const m = p.date.slice(0, 7)
+      const a = sums.get(m) ?? { s: 0, n: 0 }
+      a.s += p.price
+      a.n++
+      sums.set(m, a)
+    }
+    const lastDate = series.reduce((d, p) => (p.date > d ? p.date : d), '')
+    const lastMonth = lastDate.slice(0, 7)
+    const t = Date.parse(`${lastDate}T00:00:00Z`) + 7 * 86_400_000
+    const lastComplete = Number.isFinite(t) && new Date(t).toISOString().slice(0, 7) !== lastMonth
+    for (const [m, a] of sums) {
+      if (m === lastMonth && !lastComplete) continue
+      out.set(m, Number((a.s / a.n).toFixed(3)))
+    }
+  }
+  for (const [m, v] of out) if (!(v >= GAS_PRICE_RANGE[0] && v <= GAS_PRICE_RANGE[1])) out.delete(m)
+  return out
+}
+
+/** The common month: the earliest of the series' latest months, ignoring series > GAS_COMMON_MAX_LAG behind the newest. */
+export function commonGasMonth(latestMonths: ReadonlyArray<string | undefined>): string | null {
+  const ms = latestMonths.filter((m): m is string => !!m).sort()
+  if (!ms.length) return null
+  const floor = addMonths(ms[ms.length - 1], -GAS_COMMON_MAX_LAG)
+  return ms.find((m) => m >= floor) ?? null
+}
+
+/** The area on the common window (Jan 2025 → `month` averages), or null when either month is missing. */
+function onCommonWindow(avg: Map<string, number> | undefined, month: string | null) {
+  const b = avg?.get(BASELINE_MONTH)
+  const c = month ? avg?.get(month) : undefined
+  if (b == null || c == null) return null
+  // Same rounding as the card (the difference of the two averages as printed, to the cent)
+  return { change: displayedChange(c, b), current: c, asOf: month, baselineAsOf: BASELINE_MONTH, window: 'common' as const }
+}
+
+const latestKey = (m: Map<string, number>) => [...m.keys()].sort().pop()
+
 /** U.S.-average series: never drawn on the map (a county with only these is no data). */
 const NATIONAL_GAS = 'NUS'
 const NATIONAL_CPI = '0000'
@@ -170,6 +244,7 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
   // Same rule as the card's ladder (staticGasStatus): an overdue DACO month / DCRA survey is still the value shown,
   // marked stale — exactly what the gas card shows for the county's zips.
   const pr = lookupPrGas().hit
+  const prAvg = pr ? gasMonthlyAverages(pr.data.series) : undefined
 
   for (const [fips, g] of Object.entries(COUNTY_GEO)) {
     // Puerto Rico: DACO's island-wide monthly price (the card's rung), not the U.S. average
@@ -180,6 +255,7 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
           id, label: pr.lookup.geoLevel, source: 'daco', frequency: 'monthly',
           ...(staticGasStatus('daco', pr.data.latestDate, now) === 'stale' ? { stale: true as const } : {}),
           change: Number(pr.data.change.toFixed(3)), current: pr.data.current, asOf: pr.data.latestDate,
+          baselineAsOf: pr.data.baselineDate, window: 'own',
         })
         gasIdx.set(id, gasAreas.length)
         gasAreas.push({ id, lookup: pr.lookup })
@@ -198,6 +274,7 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
         id, label: ak.label, source: 'dcra', frequency: 'semiannual',
         ...(staticGasStatus('dcra', ak.data.latestDate, now) === 'stale' ? { stale: true as const } : {}),
         change: Number(ak.data.change.toFixed(3)), current: ak.data.current, asOf: ak.data.latestDate,
+        baselineAsOf: ak.data.baselineDate, window: 'own',
       })
       gasIdx.set(id, gasAreas.length)
       gasAreas.push({ id, lookup: { source: 'dcra', frequency: 'semiannual', areaCode: fips, seriesId: ak.label, geoLevel: ak.label, tier: 1, cacheKey: `static:dcra:county:${fips}` } })
@@ -233,11 +310,24 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
   let missing = 0
   let stale = 0
 
+  // Like-for-like gas window: monthly averages, common latest month across every cached BLS / EIA series
+  const avgByKey = new Map(gasKeys.map((k) => {
+    const d = gasByKey.get(k)?.data
+    return [k, d ? gasMonthlyAverages(d.series) : new Map<string, number>()] as const
+  }))
+  const common = commonGasMonth([...avgByKey.values()].filter((m) => m.has(BASELINE_MONTH)).map(latestKey))
+  const gasWindow: MapGasWindow | null = common ? { from: BASELINE_MONTH, to: common } : null
+
   const gas: MapGasArea[] = gasAreas.map(({ id, lookup }) => {
     const fixed = staticGas.get(id)
-    if (fixed) return fixed
+    if (fixed) {
+      // Puerto Rico's monthly DACO series joins the common window when it has that month
+      const w = fixed.source === 'daco' ? onCommonWindow(prAvg, common) : null
+      return w ? { ...fixed, ...w } : fixed
+    }
     const hit = gasByKey.get(lookup.cacheKey) ?? null
     const d = hit?.data ?? null
+    const w = d ? onCommonWindow(avgByKey.get(lookup.cacheKey), common) : null
     return {
       id,
       label: lookup.geoLevel,
@@ -246,9 +336,14 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
       frequency: lookup.frequency as MapGasArea['frequency'],
       ...(lookup.standIn ? { standIn: true as const } : {}),
       ...(hit?.stale ? { stale: true as const } : {}),
-      change: d ? Number(d.change.toFixed(3)) : null,
-      current: d ? d.current : null,
-      asOf: d ? d.latestDate : null,
+      ...(w ?? {
+        // Lagging / incomplete series: its own latest window (as on the card), patterned on the map
+        change: d ? Number(d.change.toFixed(3)) : null,
+        current: d ? d.current : null,
+        asOf: d ? d.latestDate : null,
+        baselineAsOf: d ? d.baselineDate : null,
+        ...(d ? { window: 'own' as const } : {}),
+      }),
     }
   })
   missing += gasKeys.filter((k) => !gasByKey.get(k)).length
@@ -283,5 +378,5 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
     }
   })
 
-  return { gas, groceries, electricity, counties, missing, stale }
+  return { gas, gasWindow, groceries, electricity, counties, missing, stale }
 }

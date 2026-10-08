@@ -226,7 +226,7 @@ describe('snapshot + card', () => {
     expect(s.dollarImpact!.electricity).toBe(expected)
     expect(card.inline).toBe(`≈ +$${expected}/mo`)
     // Short face; the 12-month windows (centered on Jan 2025) are in the ⓘ detail
-    expect(card.secondary).toBe(`since Jan 2025 · now ${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh`)
+    expect(card.secondary).toBe(`since Jan 2025 · 12-mo avg ${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh`)
     expect(card.info.join(' ')).toMatch(/centered on Jan 2025/)
     expect(card.info.join(' ')).toContain(`National: +${e.nationalChange!.toFixed(1)}%`)
     expect(card.sourceLine).toBe('Maine · EIA · Jul 2026')

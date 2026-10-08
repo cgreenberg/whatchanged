@@ -135,7 +135,7 @@ describe('BLS gas card, provenance, national comparison, chart', () => {
     const c = buildGasCard(s)
     expect(c.value).toBe('+$0.95/gal')
     // Short card lines: window · the monthly figure's month · level, and "{area} · {source} · {Mon YYYY}"
-    expect(c.secondary).toBe('since Jan 2025 · now $4.08') // the month is on the source line
+    expect(c.secondary).toBe('since Jan 2025 · Aug avg $4.08') // a monthly average says its month, never "now"
     expect(c.sourceLine).toContain('Aug 2026')
     expect(c.sourceLine).toBe('Philadelphia metro · BLS · Aug 2026')
     // The full wording moves into the ⓘ disclosure

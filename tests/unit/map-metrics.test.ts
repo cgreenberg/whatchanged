@@ -14,6 +14,7 @@ import { cpiCacheKey } from '@/lib/api/bls-cpi'
 import countyGeo from '@/lib/data/county-geo.json'
 import { lookupAkGas, akGasForCounty } from '@/lib/static-gas'
 import { liveValue, liveFooter, LIVE_METRICS, MAP_METRIC_ORDER, isCountyMetric } from '@/lib/county-data'
+import { fmtMonthYear } from '@/lib/format'
 
 function countUpstream() {
   const calls = { bls: 0, eia: 0 }
@@ -64,6 +65,16 @@ test('values come from the same cache entries the cards use (warmed by real snap
   expect(liveValue(m, '13121', 'gas')!.detail).toMatch(/BLS monthly/)
   expect(liveValue(m, '13121', 'groceries')!.area).toBe('Atlanta metro')
   expect(liveValue(m, '13121', 'elec')!.area).toBe('Georgia statewide')
+  // Round 16: gas on ONE window — Jan 2025 → the common month, monthly averages (the BLS series here end Aug 2026;
+  // the recorded EIA fixture stops in Feb 2025, far behind, so it keeps its own window and is patterned)
+  expect(m.gasWindow).toEqual({ from: '2025-01', to: atl.gas.data!.latestDate!.slice(0, 7) })
+  const atlGas = liveValue(m, '13121', 'gas')!
+  expect(atlGas.ownWindow).toBeUndefined()
+  expect(atlGas.when).toBe(`Jan 2025 → ${fmtMonthYear(m.gasWindow!.to)} monthly averages`)
+  expect(atlGas.text).toContain('monthly averages')
+  const meGas = liveValue(m, '23005', 'gas')!
+  expect(meGas.ownWindow).toBe(true)
+  expect(meGas.when).toMatch(/^week of Jan 20, 2025 → week of .* \(own window, not the map's common month\)$/)
   // Not cached (e.g. Ohio) → null, shown as no data
   expect(liveValue(m, '39035', 'elec')).toBeNull()
   // Territories have no EIA electricity at all
@@ -93,6 +104,9 @@ test('Alaska outside Anchorage: the DCRA survey value the card uses, not the Anc
   expect(fbx.area).not.toMatch(/Anchorage|no series/)
   expect(fbx.detail).toMatch(/^\$\d+\.\d\d\/gal · Alaska DCRA survey \(twice yearly\), \w{3} \d{4} survey$/)
   expect(fbx.detail).toContain(`$${card.hit!.data.current.toFixed(2)}/gal`)
+  // Survey months, not the layer's monthly averages: patterned on the map, its own months in the tooltip
+  expect(fbx).toMatchObject({ ownWindow: true, survey: true })
+  expect(fbx.when).toMatch(/^Jan 2025 → \w{3} \d{4} surveys \(survey months, not monthly averages\)$/)
   // Bethel Census Area: many surveyed communities → their survey-by-survey median, labeled as such
   const bethel = akGasForCounty('02050', 'Bethel Census Area')!
   expect(bethel.match).toBe('median')
@@ -247,7 +261,12 @@ describe('round 15: per-area values, never a national stand-in', () => {
       m0.gas.filter((a) => a.source !== 'dcra' && a.source !== 'daco').forEach((g, i) => {
         const [src, code] = g.id.replace('*', '').split(':')
         const key = src === 'b' ? describeBlsGasArea(code).cacheKey : describeDuoarea(code).cacheKey
-        writes.push(writeEnvelope(key, { ...gas, change: 0.5 + i * 0.01, regionName: 'x' }, 60))
+        // The map's gas value comes from the series (monthly averages on the common window): lift each area's prices
+        // after the baseline month by its own step, so every area's change differs
+        writes.push(writeEnvelope(key, {
+          ...gas, change: 0.5 + i * 0.01, regionName: 'x',
+          series: gas.series.map((p) => (p.date.slice(0, 7) > '2025-01' ? { ...p, price: Number((p.price + i * 0.01).toFixed(3)) } : p)),
+        }, 60))
       })
     }
     if (national) {

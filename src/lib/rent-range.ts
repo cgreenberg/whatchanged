@@ -53,8 +53,9 @@ export function notCurrentText(county: string, info: NotCurrentInfo | undefined)
 
 /**
  * A series' seasonal-pattern caveat (RentData.saCaveat; county-rent.json / metro-rent.json `saCaveat`, county shards
- * `rentSaCav`, metro `rentM.cav`): `month` = the calendar month of the DISPLAYED (as-of) reading, `gap` = the series'
- * own recent seasonal swing from January to that month minus the blended pattern's (points; > 0 → the reading
+ * `rentSaCav`, metro `rentM.cav`): `month` = the calendar month of the DISPLAYED (as-of) reading, `gap` = the effect
+ * on the shown % of the series' own recent seasonal swing (January → that month) differing from the blended pattern's:
+ * the shown % minus the % the same readings would show under the own recent pattern (points; > 0 → the reading
  * overstates the change since Jan 2025, < 0 → understates). `low` is a legacy (round-14) field and is ignored.
  */
 export interface SeasonalCaveat { gap: number; month: number; low?: boolean }

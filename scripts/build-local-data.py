@@ -95,6 +95,7 @@ def seasonal_factors(mat, months, fit_end="2024-12"):
     assert months == month_range(months[0], months[-1]), "seasonal factors need contiguous months"
     n = mat.shape[0]
     ratio = seasonal_ratios(mat)
+    base_i = months.index(BASE) if BASE in months else -1
     cal = np.array([int(m[5:]) for m in months])
     ratio_end = add_months(fit_end, -6)  # full centered window ends <= fit_end
     fit = np.array([(SERIES_START <= m <= ratio_end) for m in months])
@@ -199,9 +200,10 @@ def shrink_adjust(mat, months, groups, pools=None, k=None):
 # months only (<= 2024-06), but some series' seasonal swing has grown since (Manhattan: Jan -> Aug ~ +4.8% in
 # 2022-2025 vs +2.3% in the blended pattern), so a reading in such a month can overstate the change. The card shows
 # the change from Jan 2025 to the series' latest (as-of) month, so the bias that matters is at THAT calendar month:
-# gap = the series' OWN RECENT swing from January to the as-of month (median ratios, ratio months >=
-# RECENT_SEASON_START, any data incl. 2025+, since this only words a caveat and never adjusts a number) minus the
-# blended pattern's, in points. Where |gap| > SEASON_GAP_MIN the row carries saCaveat {gap, month} (month = the as-of
+# the series' OWN RECENT swing from January to the as-of month (median ratios, ratio months >=
+# RECENT_SEASON_START, any data incl. 2025+, since this only words a caveat and never adjusts a number) vs the
+# blended pattern's. Round 16: gap = its EFFECT on the shown % (shown % minus the % under the own recent pattern),
+# in points, not the raw factor difference (which understates large changes). Where |gap| > SEASON_GAP_MIN the row carries saCaveat {gap, month} (month = the as-of
 # calendar month; gap > 0 -> the reading overstates the change, < 0 -> understates) and every place the rent number
 # appears says so. Series with < RECENT_SEASON_MIN_RATIOS recent ratios in January or the as-of month get none (no
 # recent pattern to compare); a January reading has no gap by construction.
@@ -211,9 +213,11 @@ SEASON_GAP_MIN = 1.5
 
 
 def seasonal_caveats(mat, months, blended):
-    """Per row: None, or {"gap", "month"} when the recent own Jan -> as-of-month swing differs from the blended
-    factors' by more than SEASON_GAP_MIN points (as-of month = the row's last month with a value)."""
+    """Per row: None, or {"gap", "month"} when using the series' recent own Jan -> as-of-month swing instead of the
+    blended factors would move the shown % change since BASE by more than SEASON_GAP_MIN points (as-of month = the
+    row's last month with a value; gap = shown − own-pattern %, so > 0 → the shown % overstates the change)."""
     ratio = seasonal_ratios(mat)
+    base_i = months.index(BASE) if BASE in months else -1
     cal = np.array([int(m[5:]) for m in months])
     sel = np.array([m >= RECENT_SEASON_START for m in months])
     rf = np.full((mat.shape[0], 12), np.nan)
@@ -237,7 +241,15 @@ def seasonal_caveats(mat, months, blended):
             continue
         own = rf[i, m] / rf[i, 0] - 1
         bl = blended[i, m] / blended[i, 0] - 1
-        gap = round(float((own - bl) * 100), 1)  # the shipped value is what the threshold applies to
+        # Round 16: the caveat is worded by its EFFECT on the shown % (not the factor gap, which understates it for
+        # large changes): gap = shown % − the % the same raw readings would show under the series' own recent
+        # pattern = (1 + shown) × (1 − (1 + bl) / (1 + own)), in points (> 0 → the shown % overstates the change).
+        last = fin[-1]
+        if not (base_i >= 0 and np.isfinite(mat[i, base_i]) and mat[i, base_i] > 0 and last > base_i):
+            out.append(None)
+            continue
+        shown = (mat[i, last] / blended[i, m]) / (mat[i, base_i] / blended[i, 0]) - 1
+        gap = round(float((1 + shown) * (1 - (1 + bl) / (1 + own)) * 100), 1)  # the threshold applies to this value
         out.append({"gap": gap, "month": m + 1} if abs(gap) > SEASON_GAP_MIN else None)
     return out
 

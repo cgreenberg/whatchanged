@@ -243,8 +243,9 @@ export interface LiveMetricDef {
   /** Fallback symmetric color domain ($/gal for gas, % for the others) until data loads; the map uses mapScaleFor. */
   clamp: number
   /**
-   * Sequential scale (lightest = smallest change, darkest = largest) when every county moved the same way: gas rose
-   * ~$0.9–1.3 everywhere, so a diverging scale around 0 painted the whole map one color.
+   * Sequential scale (dimmest = smallest change, brightest = largest) when nearly every county moved the same way: gas
+   * rose ~$0.9–1.3 almost everywhere, so a diverging scale around 0 painted the whole map one color. Values on the other
+   * side of zero take a distinct color (oppositeColor) with their own legend chip.
    */
   sequential?: true
   unit: 'usd' | 'pct'
@@ -293,6 +294,25 @@ export interface LiveCountyValue {
   source: string
   /** Served from the last-good copy. */
   stale?: true
+  /** The window / month the value covers, always shown with it ("Jan 2025 → Aug 2026 monthly averages"). */
+  when: string
+  /** Gas: not on the layer's common window (Alaska survey, a lagging series): patterned, its own months in `when`. */
+  ownWindow?: true
+  /** Gas: HI/AK county with no series of its own, colored by the nearest metro's (patterned). */
+  standIn?: true
+  /** Gas: Alaska DCRA community survey. */
+  survey?: true
+}
+
+/** "Jan 2025 → Aug 2026 monthly averages" — the gas layer's common window (map-metrics gasWindow). */
+export function gasWindowText(m: MapMetrics | null | undefined): string | null {
+  const w = m?.gasWindow
+  return w ? `${fmtMonthYear(w.from)} → ${fmtMonthYear(w.to)} monthly averages` : null
+}
+
+/** "12 mo to Jul 2026 vs yr centered on Jan '25" — the electricity layer's window. */
+export function elecWindowText(asOf: string | null | undefined): string {
+  return `12-mo avg${asOf ? ` to ${fmtMonthYear(asOf)}` : ''} vs ${ELECTRICITY_BASELINE_SHORT}`
 }
 
 /** Appended when the map served a cache entry's last-good copy (the fresh one expired). */
@@ -306,9 +326,9 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
     const e = st ? m.electricity?.[st] : undefined
     if (!e) return null
     return {
-      value: e.pct, text: `${fmtPct(e.pct)} vs ${ELECTRICITY_BASELINE_SHORT}`, area: `${e.label} statewide`,
-      detail: `${e.cents.toFixed(1)}¢/kWh avg, 12 months to ${fmtMonthYear(e.asOf)} · EIA${e.stale ? STALE_COPY : ''}`, asOf: e.asOf,
-      source: 'EIA', ...(e.stale ? { stale: true as const } : {}),
+      value: e.pct, text: `${fmtPct(e.pct)} 12-mo avg vs ${ELECTRICITY_BASELINE_SHORT}`, area: `${e.label} statewide`,
+      detail: `12-mo avg ${e.cents.toFixed(1)}¢/kWh, 12 months to ${fmtMonthYear(e.asOf)} · EIA${e.stale ? STALE_COPY : ''}`, asOf: e.asOf,
+      source: 'EIA', when: elecWindowText(e.asOf), ...(e.stale ? { stale: true as const } : {}),
     }
   }
   const row = m.counties?.[fips]
@@ -316,17 +336,36 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
   if (key === 'gas') {
     const g = m.gas?.[row[0]]
     if (!g || g.change == null || g.current == null) return null
-    const when = g.asOf
-      ? g.frequency === 'weekly' ? `week of ${fmtDay(g.asOf)}` : g.frequency === 'semiannual' ? `${fmtMonthYear(g.asOf)} survey` : fmtMonthYear(g.asOf)
-      : ''
+    const source = g.source === 'dcra' ? 'Alaska DCRA' : g.source === 'daco' ? 'PR DACO' : g.source === 'bls' ? 'BLS' : 'EIA'
+    const flags = {
+      ...(g.stale ? { stale: true as const } : {}),
+      ...(g.standIn ? { standIn: true as const } : {}),
+      ...(g.source === 'dcra' ? { survey: true as const } : {}),
+    }
+    const area = g.standIn ? `${g.label} (no series for this county)` : g.label
+    if (g.window !== 'own' && g.asOf && m.gasWindow) {
+      // The layer's common window: Jan 2025 → the common month, monthly averages (EIA weeklies averaged by month)
+      const how = g.source === 'eia' ? 'EIA weekly prices averaged by month' : g.source === 'bls' ? 'BLS monthly' : 'Puerto Rico DACO monthly'
+      const window = `${fmtMonthYear(g.baselineAsOf ?? m.gasWindow.from)} → ${fmtMonthYear(g.asOf)} monthly averages`
+      return {
+        value: g.change, text: `${fmtSignedDollars(g.change)}/gal, ${window}`, area,
+        detail: `${fmtMonthYear(g.asOf)} avg $${g.current.toFixed(2)}/gal · ${how}${g.stale ? STALE_COPY : ''}`,
+        asOf: g.asOf, source, when: window, ...flags,
+      }
+    }
+    // Its own window (as on the card): Alaska's twice-yearly survey, or a series behind the common month
+    const at = (d: string | null | undefined) => (!d ? '' : g.frequency === 'weekly'
+      ? `week of ${fmtDay(d)}`
+      : g.frequency === 'semiannual' ? `${fmtMonthYear(d)} survey` : fmtMonthYear(d))
+    const window = g.frequency === 'semiannual'
+      ? `${fmtMonthYear(g.baselineAsOf ?? BASELINE_MONTH)} → ${fmtMonthYear(g.asOf)} surveys`
+      : `${at(g.baselineAsOf) || fmtMonthYear(BASELINE_MONTH)} → ${at(g.asOf)}`
     const how = g.source === 'dcra' ? 'Alaska DCRA survey (twice yearly)' : g.source === 'daco' ? 'Puerto Rico DACO monthly' : g.source === 'bls' ? 'BLS monthly' : 'EIA weekly'
     return {
-      value: g.change, text: `${fmtSignedDollars(g.change)}/gal ${sinceBaseline(null)}`,
-      area: g.standIn ? `${g.label} (no series for this county)` : g.label,
-      detail: `$${g.current.toFixed(2)}/gal · ${how}${when ? `, ${when}` : ''}${g.stale ? STALE_COPY : ''}`,
-      asOf: g.asOf,
-      source: g.source === 'dcra' ? 'Alaska DCRA' : g.source === 'daco' ? 'PR DACO' : g.source === 'bls' ? 'BLS' : 'EIA',
-      ...(g.stale ? { stale: true as const } : {}),
+      value: g.change, text: `${fmtSignedDollars(g.change)}/gal, ${window}`, area,
+      detail: `$${g.current.toFixed(2)}/gal · ${how}${g.asOf ? `, ${at(g.asOf)}` : ''}${g.stale ? STALE_COPY : ''}`,
+      asOf: g.asOf, source, ownWindow: true, ...flags,
+      when: g.source === 'dcra' ? `${window} (survey months, not monthly averages)` : `${window} (own window, not the map's common month)`,
     }
   }
   const c = m.groceries?.[row[1]]
@@ -334,13 +373,14 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
   return {
     value: c.pct, text: `${fmtPct(c.pct)} ${sinceBaseline(null)}`, area: c.label,
     detail: `BLS CPI food at home${c.asOf ? `, ${fmtMonthYear(c.asOf)}` : ''}${c.stale ? STALE_COPY : ''}`, asOf: c.asOf,
-    source: 'BLS CPI', ...(c.stale ? { stale: true as const } : {}),
+    source: 'BLS CPI', when: `${fmtMonthYear(BASELINE_MONTH)} → ${fmtMonthYear(c.asOf)}`, ...(c.stale ? { stale: true as const } : {}),
   }
 }
 
 /** Latest as-of among a live metric's areas ("YYYY-MM[-DD]"), for the footer. */
 export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): string | null {
   if (!m) return null
+  if (key === 'gas' && m.gasWindow) return m.gasWindow.to
   const dates = key === 'elec'
     ? Object.values(m.electricity ?? {}).map(e => e.asOf)
     : key === 'gas' ? (m.gas ?? []).map(g => g.asOf) : (m.groceries ?? []).map(c => c.asOf)
@@ -351,7 +391,14 @@ export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): 
 export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined): string {
   const asOf = liveAsOf(m, key)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
-  if (key === 'gas') return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · $ change ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
+  if (key === 'gas') {
+    const w = gasWindowText(m)
+    const dcra = (m?.gas ?? []).filter(g => g.source === 'dcra' && g.asOf).map(g => g.asOf!).sort().pop()
+    return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · ` +
+      `$ change, ${w ? `${w} (EIA weeklies averaged by month), so areas compare fairly` : sinceBaseline(null)}` +
+      `${dcra ? `; Alaska survey ${fmtMonthYear(BASELINE_MONTH)} → ${fmtMonthYear(dcra)} surveys` : ''} · ` +
+      `${w ? 'the Gas card shows the latest week or month' : latest} · not seasonally adjusted`
+  }
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   return `EIA average residential electricity price · statewide · latest 12-month average price vs ${ELECTRICITY_BASELINE_LABEL} (${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}) · ${latest} · no seasonal adjustment needed`
 }
@@ -453,8 +500,9 @@ export function divergingColor(v: number | undefined, clamp: number): string {
  * Map color scale, derived from the counties' values so the layer never saturates for most counties:
  *   diverging  — symmetric around 0 (blue fell, orange rose), ±clamp = the SCALE_PCTL quantile of |value| rounded
  *                UP to a nice step (so ≥ 95% of counties sit inside it);
- *   sequential — every county (2nd–98th percentile) moved the same way: lo..hi rounded outward to a nice step, light
- *                = smallest change, dark = largest (gas: a diverging scale around 0 painted every county "rose").
+ *   sequential — every county (2nd–98th percentile) moved the same way: lo..hi rounded outward to a nice step, dim
+ *                = smallest change, bright = largest (gas: a diverging scale around 0 painted every county "rose");
+ *                any value on the other side of zero takes oppositeColor.
  */
 export type MapScale =
   | { kind: 'diverging'; clamp: number }
@@ -496,18 +544,45 @@ export function mapScaleFor(values: Iterable<number | undefined>, unit: 'usd' | 
   return { kind: 'diverging', clamp: niceCeil(quantile(abs, SCALE_PCTL), steps) }
 }
 
+/** Sequential scale: the distinct color for a value on the other side of zero (a fall on a "rose" scale, and vice versa). */
+export function oppositeColor(scale: MapScale): string | null {
+  if (scale.kind !== 'sequential') return null
+  const end = scale.hi > 0 ? NEG : POS
+  return `rgb(${end[0]},${end[1]},${end[2]})`
+}
+
+/** Sequential scale: is `v` on the other side of zero from the scale (drawn in oppositeColor)? */
+export function isOppositeSide(v: number | undefined, scale: MapScale): boolean {
+  if (scale.kind !== 'sequential' || v == null || !Number.isFinite(v)) return false
+  return scale.hi > 0 ? v < 0 : v > 0
+}
+
 /** Fill color for a value on a map scale. */
 export function scaleColor(v: number | undefined, scale: MapScale): string {
   if (scale.kind === 'diverging') return divergingColor(v, scale.clamp)
   if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
+  // Never clamp a fall into the dimmest "rose" color (or a rise into "fell"): its own distinct color
+  if (isOppositeSide(v, scale)) return oppositeColor(scale)!
   const rose = scale.hi > 0
   const span = scale.hi - scale.lo || 1
-  // Rising: lo light → hi dark; falling: hi (smallest drop) light → lo (biggest drop) dark
+  // Rising: lo dim (near the charcoal midpoint) → hi bright; falling: hi (smallest drop) dim → lo (biggest drop) bright
   const t = Math.max(0, Math.min(1, rose ? (v - scale.lo) / span : (scale.hi - v) / span))
   const a = 0.18 + 0.82 * t
   const end = rose ? POS : NEG
   const c = MID.map((m, i) => Math.round(m + (end[i] - m) * a))
   return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
+/**
+ * The sequential legend's claim: "every county rose" only when no drawn value is below zero (≥ 0), else "nearly every
+ * county rose" (mirror for falls); null for a diverging scale.
+ */
+export function sequentialClaim(values: Iterable<number | undefined>, scale: MapScale): string | null {
+  if (scale.kind !== 'sequential') return null
+  const rose = scale.hi > 0
+  let opposite = false
+  for (const v of values) if (isOppositeSide(v, scale)) { opposite = true; break }
+  return `${opposite ? 'nearly every' : 'every'} county ${rose ? 'rose' : 'fell'}; brighter = ${rose ? 'rose' : 'fell'} more`
 }
 
 /** "+$0.85" / "+12%" — a scale end value. */
@@ -546,7 +621,7 @@ function metroStandInWhy(r: NonNullable<EconomicSnapshot['rent']>): string {
   if (r.countyWhy === 'not-current') return notCurrentText(county, r.countyNotCurrent)
   if (r.countyWhy === 'too-new') return `Zillow's series for ${county} is too new to measure ${sinceBaseline(null)}`
   if (r.countyWhy === 'no-baseline') return `Zillow's series for ${county} has no ${fmtMonthYear(BASELINE_MONTH)} value`
-  return 'no Zillow county series'
+  return 'no usable Zillow county series'
 }
 
 export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPanelOverrides {
