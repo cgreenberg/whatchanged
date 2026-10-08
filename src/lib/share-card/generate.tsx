@@ -8,6 +8,7 @@ import {
 } from '@/lib/baseline'
 import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
+import { hasSeasonalCaveat, seasonalCaveatPoints, seasonalCaveatDollars, type SeasonalCaveat } from '@/lib/rent-range'
 import { ANNUAL_GROCERY_BASE, fmtRentFigure, rentCodedQualifier } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 import type { CpiData } from '@/types'
@@ -108,6 +109,24 @@ export function sinceLabel(period: string | null | undefined): string {
 /** Quadrant sublabels (24px DM Mono): each must fit one line of the quadrant (tests/unit/share-card-fit.test.ts). */
 export const GAS_SUBLABEL = '(regular gasoline, $/gal)'
 export const GROCERIES_SUBLABEL = '(CPI: food at home)'
+/**
+ * Share-card footnote for the rent seasonal-pattern caveat (rent-range.ts rentSeasonalCaveat, short form): "† Seasonal
+ * pattern uncertain: the Aug reading may overstate the change by ~2.5 pts (≈ $95/mo)". `mark` is "†", or "‡" when the
+ * value also carries the outlier "†". `short`: just "‡ Seasonal pattern uncertain" (used under the outlier note, where
+ * the full footnote doesn't fit). null when there is no caveat.
+ */
+export function shareSeasonalNote(
+  c: SeasonalCaveat | undefined, rent: { pct: number; curRent: number; asOf: string }, mark = '†', short = false,
+): string | null {
+  if (!hasSeasonalCaveat(c)) return null
+  // Short form where the full footnote doesn't fit (below the outlier note): the marker's meaning only
+  if (short) return `${mark} Seasonal pattern uncertain`
+  const usd = seasonalCaveatDollars(c, rent.pct, rent.curRent)
+  const mon = fmtMonthShort(`${rent.asOf.slice(0, 4)}-${String(c.month).padStart(2, '0')}`).split(' ')[0] // the caveat's (as-of) month
+  return `${mark} Seasonal pattern uncertain: the ${mon} reading may ${c.gap > 0 ? 'overstate' : 'understate'} the change by ` +
+    `~${seasonalCaveatPoints(c)} pts${usd !== null ? ` (≈ $${usd.toLocaleString('en-US')}/mo)` : ''}`
+}
+
 /** BLS shelter is mainly rents + owners' equivalent rent (plus lodging away from home, insurance). */
 export const SHELTER_SUBLABEL = '(CPI: rent + owner-equiv. rent)'
 export const RENT_SUBLABEL = '(new leases, Zillow, county)'
@@ -237,6 +256,9 @@ export async function generateShareCard(zip: string): Promise<Response> {
     : ''
   const natGasText = natGas ? `Natl (${natGasTag}): ${fmtSignedDollars(natGas.change)}` : null
   const rentOutlier = !!rent && card('rent')?.outlier === true
+  // Seasonal-pattern caveat (same as the card ⓘ): a mark on the % and a short footnote in the quadrant
+  const seasonalMark = rentOutlier ? '‡' : '†'
+  const rentSeasonal = rent ? shareSeasonalNote(rent.saCaveat, rent, seasonalMark, rentOutlier) : null
   const gasSince = gasMonthly
     ? `since ${gasData?.baselineDate ? fmtMonthYear(gasData.baselineDate) : BASELINE_MONTH_LABEL}${gasThru && !thruOnGeo ? `, ${gasThru}` : ''}`
     : gasData?.baselineDate ? `since ${fmtDay(gasData.baselineDate)}` : `since ${BASELINE_DAY_LABEL}`
@@ -830,12 +852,18 @@ export async function generateShareCard(zip: string): Promise<Response> {
                   </span>
                   {rentOutlier && (
                     <span style={{ fontFamily: 'DM Mono', fontSize: 19, color: AMBER, display: 'flex', marginTop: 8 }}>
-                      {`${OUTLIER_MARK} Unusual value: far outside most U.S. counties; treat with caution.`}
+                      {/* Both caveats: the short seasonal one shares this span (no second margin) so the quadrant fits */}
+                      {`${OUTLIER_MARK} Unusual value: far outside most U.S. counties; treat with caution.${rentSeasonal ? ` ${rentSeasonal}.` : ''}`}
+                    </span>
+                  )}
+                  {rentSeasonal && !rentOutlier && (
+                    <span style={{ fontFamily: 'DM Mono', fontSize: 19, color: AMBER, display: 'flex', marginTop: 8 }}>
+                      {rentSeasonal}
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
-                  {bigNumber(`${fmtSignedPct(rent.pct)}${rentOutlier ? OUTLIER_MARK : ''}`)}
+                  {bigNumber(`${fmtSignedPct(rent.pct)}${rentOutlier ? OUTLIER_MARK : ''}${rentSeasonal ? seasonalMark : ''}`)}
                   {/* No dollar pill for a flagged (†) value: keep the % with its caveat only. */}
                   {!rentOutlier && changePill(`≈ ${fmtSignedDollars(rent.monthlyChange, 0)}/mo`, BLUE)}
                 </div>

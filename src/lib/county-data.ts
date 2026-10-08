@@ -7,7 +7,7 @@ import type { MapMetrics } from '@/lib/api/map-metrics'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthYear, fmtDay } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
-import { notCurrentText } from '@/lib/rent-range'
+import { notCurrentText, rentSeasonalCaveat, type SeasonalCaveat } from '@/lib/rent-range'
 import { ELECTRICITY_BASELINE_FROM, ELECTRICITY_BASELINE_TO, ELECTRICITY_BASELINE_LABEL, ELECTRICITY_BASELINE_SHORT } from '@/lib/baseline'
 
 /** Site-wide baseline month (Jan 20 2025 → monthly Zillow data use the January 2025 value). */
@@ -41,11 +41,13 @@ export interface CountyRecord {
   /** Seasonal pattern the county's own is blended with (by history length), e.g. "Maine counties"; rentSaW = own weight 0..1. */
   rentSaPool?: string
   rentSaW?: number
+  /** Seasonal-pattern caveat at the displayed (as-of) month (same as county-rent.json `saCaveat`; rent-range.ts). */
+  rentSaCav?: SeasonalCaveat
   /**
    * County shards only, for counties with no Zillow county series: the county's metro (OMB 2020 CBSA) rent —
    * the Rent card's metro rung and the Rent tab — with its seasonally adjusted monthly levels in `rentMS`.
    */
-  rentM?: { n: string; cbsa: string; rent: number; cur: number; flag?: boolean; saPool?: string; saW?: number }
+  rentM?: { n: string; cbsa: string; rent: number; cur: number; flag?: boolean; saPool?: string; saW?: number; cav?: SeasonalCaveat }
   rentMS?: CompactSeries
 }
 
@@ -201,7 +203,7 @@ export interface MetricDef {
   key: CountyMetricKey
   label: string
   short: string
-  clamp: number // symmetric color domain, %
+  clamp: number // fallback symmetric color domain, % (the map derives its scale from the data: mapScaleFor)
   sourceKey: string
   /** Value text for one county; never contains dates (windows come from meta). */
   describe: (c: CountyRecord) => string | null
@@ -225,8 +227,13 @@ export interface LiveMetricDef {
   key: LiveMetricKey
   label: string
   short: string
-  /** Symmetric color domain: $/gal for gas, % for the others. */
+  /** Fallback symmetric color domain ($/gal for gas, % for the others) until data loads; the map uses mapScaleFor. */
   clamp: number
+  /**
+   * Sequential scale (lightest = smallest change, darkest = largest) when every county moved the same way: gas rose
+   * ~$0.9–1.3 everywhere, so a diverging scale around 0 painted the whole map one color.
+   */
+  sequential?: true
   unit: 'usd' | 'pct'
   /** Why blocks of counties share one color. */
   scopeNote: string
@@ -234,7 +241,7 @@ export interface LiveMetricDef {
 
 export const LIVE_METRICS: LiveMetricDef[] = [
   {
-    key: 'gas', label: 'Gas prices ($/gal change)', short: 'Gas', clamp: 0.5, unit: 'usd',
+    key: 'gas', label: 'Gas prices ($/gal change)', short: 'Gas', clamp: 0.5, unit: 'usd', sequential: true,
     scopeNote: 'Gas prices are reported by metro area, state or region, not by county, so neighboring counties share one color.',
   },
   {
@@ -392,6 +399,82 @@ export function divergingColor(v: number | undefined, clamp: number): string {
   return `rgb(${c[0]},${c[1]},${c[2]})`
 }
 
+/**
+ * Map color scale, derived from the counties' values so the layer never saturates for most counties:
+ *   diverging  — symmetric around 0 (blue fell, orange rose), ±clamp = the SCALE_PCTL quantile of |value| rounded
+ *                UP to a nice step (so ≥ 95% of counties sit inside it);
+ *   sequential — every county (2nd–98th percentile) moved the same way: lo..hi rounded outward to a nice step, light
+ *                = smallest change, dark = largest (gas: a diverging scale around 0 painted every county "rose").
+ */
+export type MapScale =
+  | { kind: 'diverging'; clamp: number }
+  | { kind: 'sequential'; lo: number; hi: number }
+
+export const SCALE_PCTL = 0.95
+const SEQ_LO_PCTL = 0.02
+const SEQ_HI_PCTL = 0.98
+const PCT_STEPS = [1, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50]
+const USD_STEPS = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
+
+function quantile(sorted: number[], q: number): number {
+  const i = (sorted.length - 1) * q
+  const lo = Math.floor(i)
+  const hi = Math.ceil(i)
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo)
+}
+const niceCeil = (v: number, steps: number[]) => steps.find((s) => s >= v - 1e-9) ?? steps[steps.length - 1]
+
+/** The map's color scale for these county values (one per county; non-finite ignored). */
+export function mapScaleFor(values: Iterable<number | undefined>, unit: 'usd' | 'pct', fallbackClamp: number, sequential = false): MapScale {
+  const v = [...values].filter((x): x is number => typeof x === 'number' && Number.isFinite(x)).sort((a, b) => a - b)
+  if (v.length < 2) return { kind: 'diverging', clamp: fallbackClamp }
+  const steps = unit === 'usd' ? USD_STEPS : PCT_STEPS
+  if (sequential) {
+    const qlo = quantile(v, SEQ_LO_PCTL)
+    const qhi = quantile(v, SEQ_HI_PCTL)
+    if (qlo >= 0 || qhi <= 0) {
+      const step = unit === 'usd' ? 0.05 : 0.5
+      let lo = Math.floor(qlo / step + 1e-9) * step
+      let hi = Math.ceil(qhi / step - 1e-9) * step
+      if (hi - lo < 2 * step) { lo -= step; hi += step }
+      if (qlo >= 0) lo = Math.max(0, lo)
+      else hi = Math.min(0, hi)
+      return { kind: 'sequential', lo: Number(lo.toFixed(2)), hi: Number(hi.toFixed(2)) }
+    }
+  }
+  const abs = v.map(Math.abs).sort((a, b) => a - b)
+  return { kind: 'diverging', clamp: niceCeil(quantile(abs, SCALE_PCTL), steps) }
+}
+
+/** Fill color for a value on a map scale. */
+export function scaleColor(v: number | undefined, scale: MapScale): string {
+  if (scale.kind === 'diverging') return divergingColor(v, scale.clamp)
+  if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
+  const rose = scale.hi > 0
+  const span = scale.hi - scale.lo || 1
+  // Rising: lo light → hi dark; falling: hi (smallest drop) light → lo (biggest drop) dark
+  const t = Math.max(0, Math.min(1, rose ? (v - scale.lo) / span : (scale.hi - v) / span))
+  const a = 0.18 + 0.82 * t
+  const end = rose ? POS : NEG
+  const c = MID.map((m, i) => Math.round(m + (end[i] - m) * a))
+  return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
+/** "+$0.85" / "+12%" — a scale end value. */
+export function fmtScaleValue(v: number, unit: 'usd' | 'pct'): string {
+  const sign = v > 0 ? '+' : v < 0 ? '−' : ''
+  return unit === 'usd' ? `${sign}$${Math.abs(v).toFixed(2)}` : `${sign}${Math.abs(v)}%`
+}
+
+/** The legend's scale text: "±10% (≥ 95% of counties inside)" / "+$0.85 to +$1.35/gal (2nd–98th percentile of counties)". */
+export function scaleText(scale: MapScale, unit: 'usd' | 'pct'): string {
+  const u = unit === 'usd' ? '/gal' : ''
+  if (scale.kind === 'diverging') {
+    return `±${unit === 'usd' ? `$${scale.clamp.toFixed(2)}` : `${scale.clamp}%`}${u}, set so 95% of counties fall inside; larger changes take the end color`
+  }
+  return `${fmtScaleValue(scale.lo, unit)} to ${fmtScaleValue(scale.hi, unit)}${u} (2nd–98th percentile of counties; changes beyond take the end color)`
+}
+
 /** Months the county time-lapse rows for `metric` are aligned to (rent may cover different months). */
 export function timelineMonths(t: { months: string[]; rentMonths?: string[] }, metric: string): string[] {
   return metric === 'rent' && t.rentMonths?.length ? t.rentMonths : t.months
@@ -404,7 +487,7 @@ export function timelineMonths(t: { months: string[]; rentMonths?: string[] }, m
  */
 export interface ZipPanelOverrides {
   gas?: { text: string; area: string; detail: string }
-  rent?: { text: string; area: string }
+  rent?: { text: string; area: string; seasonal?: string }
 }
 
 /** Why the county's own Zillow series isn't on the panel (same reasons as the card), short form. */
@@ -434,6 +517,8 @@ export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPa
       // No outer parentheses: the reason can carry its own ("… too new to use (only one month, Jul 2026)")
       area: `${r.geoName} · ${metroStandInWhy(r)}; the metro's is used`,
     }
+    const seasonal = rentSeasonalCaveat(r.saCaveat, 'metro', r)
+    if (seasonal) out.rent.seasonal = seasonal
   }
   return out
 }

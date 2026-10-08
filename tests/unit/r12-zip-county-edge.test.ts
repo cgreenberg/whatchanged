@@ -4,6 +4,8 @@
  * a zip whose town genuinely extends into the assigned county (≥ 10% of the town's housing units).
  * Round 13: a USPS-only zip takes the county holding the majority of its named Census place's population.
  * Round 14: only for places under 50,000 people; a big city's stations keep GeoNames' (USPS) county.
+ * Round 15: a big place's sliver exception needs the zip's own point to back it (generic shared point, or a point
+ * outside the GeoNames county); every remaining move away from GeoNames' county is pinned here.
  */
 import { lookupZip } from '@/lib/data/zip-lookup'
 
@@ -25,6 +27,15 @@ test.each([
   ['80163', '08035', 'Littleton CO station zip filed under Douglas County stays there, not Arapahoe'],
   ['80162', '08059', 'Littleton CO station zip filed under Jefferson County stays there'],
   ['10008', '36061', 'New York PO boxes stay in New York County: no county holds a majority of NYC'],
+  // Round 15: the complete list of USPS-only zips moved away from GeoNames' county (docs/MAPPING_STRATEGY.md)
+  ['21670', '24035', 'Templeville MD PO boxes: GeoNames Caroline → Queen Anne’s (place majority)'],
+  ['32733', '12095', 'Goldenrod FL PO boxes: GeoNames Seminole → Orange (place majority)'],
+  ['53957', '55027', 'Randolph WI PO boxes: GeoNames Columbia → Dodge (place majority)'],
+  ['55572', '27171', 'Rockford MN PO boxes: GeoNames Hennepin → Wright (place majority)'],
+  ['60011', '17031', 'Barrington IL PO boxes: GeoNames Lake → Cook (village majority; housed 60010 stays Lake)'],
+  ['62435', '17029', 'Janesville IL PO boxes: GeoNames Cumberland → Coles (place majority)'],
+  ['87174', '35043', 'Rio Rancho NM PO boxes: Bernalillo holds 6 residents and GeoNames’ point is a shared default → Sandoval'],
+  ['39298', '28121', '"Jackson" MS PO boxes: GeoNames’ own point lies east of the Pearl River in Rankin → stays Rankin'],
 ])('%s → county %s (%s)', (zip, county) => {
   expect(lookupZip(zip)?.countyFips).toBe(county)
 })

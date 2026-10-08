@@ -1,11 +1,12 @@
 /**
  * Round-14 fixes: seasonal-pattern caveat (a series' own recent seasonal swing differs from the blended pattern used
- * to adjust it by > 1.5 points), ⓘ head names the state (or U.S.) pool and the metro level, coded-rent $ wording is
+ * to adjust it by > 1.5 points; round 15: at the displayed month), ⓘ head names the state (or U.S.) pool and the metro level, coded-rent $ wording is
  * magnitude-style.
  */
 import countyRent from '@/lib/data/county-rent.json'
 import metroRent from '@/lib/data/metro-rent.json'
-import { rentSeasonalCaveat } from '@/lib/rent-range'
+import { rentSeasonalCaveat, seasonalCaveatDollars } from '@/lib/rent-range'
+import zipCounty from '@/lib/data/zip-county.json'
 import { lookupCountyRent } from '@/lib/rent'
 import { rentSeasonalNote, buildHeroCards } from '@/lib/hero-cards'
 import { fetchSnapshot } from '@/lib/api/snapshot'
@@ -13,16 +14,21 @@ import { clearMemCache } from '@/lib/cache/kv'
 
 beforeEach(() => clearMemCache())
 
-type Row = { saCaveat?: { gap: number; month: number; low?: boolean } }
+type Row = { asOf: string; saCaveat?: { gap: number; month: number; low?: boolean } }
 const counties = (countyRent as unknown as { counties: Record<string, Row> }).counties
 const metros = (metroRent as unknown as { metros: Record<string, Row> }).metros
+const metroCounties = (metroRent as unknown as { counties: Record<string, string> }).counties
 
-describe('seasonal-pattern caveat', () => {
-  test('wording: direction-aware, rounded gap, peak or low month, county or metro', () => {
-    expect(rentSeasonalCaveat({ gap: 2.5, month: 8 })).toBe(
-      'This county’s seasonal pattern is uncertain; readings near its seasonal peak (August) may overstate the change by up to ~3 points.')
-    expect(rentSeasonalCaveat({ gap: -2.2, month: 6, low: true }, 'metro')).toBe(
-      'This metro’s seasonal pattern is uncertain; readings near its seasonal low (June) may understate the change by up to ~2 points.')
+describe('seasonal-pattern caveat (round 15: measured at the displayed month)', () => {
+  test('wording: month of the reading, direction, gap rounded to 0.5, $/mo bias', () => {
+    // Manhattan-like: +12.6% on $4,818/mo, Aug reading 2.5 points high → $/mo at 12.6% minus at 10.1%
+    const usd = Math.round(Math.abs((4818 - 4818 / 1.126) - (4818 - 4818 / 1.101)))
+    expect(rentSeasonalCaveat({ gap: 2.5, month: 8 }, 'county', { pct: 12.6, curRent: 4818 })).toBe(
+      `This August reading may overstate the change by about 2.5 percentage points (≈ $${usd}/mo): the county’s recent seasonal swing differs from the pattern used to adjust it.`)
+    expect(rentSeasonalCaveat({ gap: -2.2, month: 8 }, 'metro')).toBe(
+      'This August reading may understate the change by about 2 percentage points: the metro’s recent seasonal swing differs from the pattern used to adjust it.')
+    expect(rentSeasonalCaveat({ gap: 1.8, month: 3 })).toMatch(/^This March reading may overstate the change by about 2 percentage points:/)
+    expect(rentSeasonalCaveat({ gap: -1.7, month: 8 })).toMatch(/understate the change by about 1\.5 percentage points/)
     // At or under the 1.5-point threshold, malformed, or absent → no caveat
     expect(rentSeasonalCaveat({ gap: 1.5, month: 8 })).toBeUndefined()
     expect(rentSeasonalCaveat({ gap: Number.NaN, month: 8 })).toBeUndefined()
@@ -30,28 +36,50 @@ describe('seasonal-pattern caveat', () => {
     expect(rentSeasonalCaveat(undefined)).toBeUndefined()
   })
 
-  test('data: every flagged row is above the threshold with a valid month; Manhattan and Brooklyn are flagged (overstate)', () => {
+  test('$ bias follows the sign of the gap and the shown rent', () => {
+    expect(seasonalCaveatDollars({ gap: 2, month: 8 }, 0, 2000)).toBe(Math.round(Math.abs(0 - (2000 - 2000 / 0.98))))
+    expect(seasonalCaveatDollars({ gap: -2, month: 8 }, 5, 2000)).toBe(Math.round(Math.abs((2000 - 2000 / 1.05) - (2000 - 2000 / 1.07))))
+    expect(seasonalCaveatDollars({ gap: 2, month: 8 }, 5, undefined)).toBeNull()
+  })
+
+  test('data: every caveat is at its row’s as-of month with |gap| > 1.5; the reviewed counties', () => {
     for (const r of [...Object.values(counties), ...Object.values(metros)]) {
       if (!r.saCaveat) continue
       expect(Math.abs(r.saCaveat.gap)).toBeGreaterThan(1.5)
-      expect(Number.isInteger(r.saCaveat.month) && r.saCaveat.month >= 2 && r.saCaveat.month <= 12).toBe(true)
+      expect(r.saCaveat.month).toBe(Number(r.asOf.slice(5)))
+      expect(Object.keys(r.saCaveat).sort()).toEqual(['gap', 'month'])
     }
-    for (const fips of ['36061', '36047']) {
-      expect(counties[fips].saCaveat).toMatchObject({ gap: expect.any(Number) })
-      expect(counties[fips].saCaveat!.gap).toBeGreaterThan(1.5)
-      const r = lookupCountyRent(fips)
-      expect(r.data?.saCaveat?.gap).toBe(counties[fips].saCaveat!.gap)
-    }
+    // Manhattan and Brooklyn: August readings overstate; Oswego / Skagit / Hawaii County: understate (the round-14
+    // peak-month rule pointed Oswego the wrong way); Newport RI: no August gap
+    for (const f of ['36061', '36047']) expect(counties[f].saCaveat!.gap).toBeGreaterThan(1.5)
+    for (const f of ['36075', '53057', '15001']) expect(counties[f].saCaveat!.gap).toBeLessThan(-1.5)
+    expect(counties['44005'].saCaveat).toBeUndefined()
+    const r = lookupCountyRent('36061')
+    expect(r.data?.saCaveat?.gap).toBe(counties['36061'].saCaveat!.gap)
   })
 
   test('card ⓘ and trace carry the caveat (Manhattan 10001)', async () => {
     const s = (await fetchSnapshot('10001'))!
     expect(s.rent).toMatchObject({ level: 'county', countyFips: '36061' })
     const card = buildHeroCards(s).find((c) => c.id === 'rent')!
-    expect(card.info.join(' ')).toMatch(/This county’s seasonal pattern is uncertain; readings near its seasonal peak \(\w+\) may overstate the change by up to ~\d points\./)
+    expect(card.info.join(' ')).toMatch(/This \w+ reading may overstate the change by about [\d.]+ percentage points \(≈ \$\d+\/mo\): the county’s/)
     const used = s.trace!.rent!.find((x) => x.status === 'used')!
     expect(used.rungId).toBe('rent.zillow-county')
-    expect(used.reason).toMatch(/^This county’s seasonal pattern is uncertain/)
+    expect(used.reason).toMatch(/^This \w+ reading may overstate/)
+  })
+
+  test('metro level: card ⓘ and trace name the metro and keep the stand-in reason', async () => {
+    const cb = Object.keys(metros).find((k) => metros[k].saCaveat)!
+    const fips = Object.entries(metroCounties).find(([, c]) => c === cb)?.[0]
+    expect(fips).toBeDefined()
+    const zip = Object.entries(zipCounty as Record<string, { countyFips: string }>).find(([, z]) => z.countyFips === fips)![0]
+    const s = (await fetchSnapshot(zip))!
+    expect(s.rent?.level).toBe('metro')
+    const card = buildHeroCards(s).find((c) => c.id === 'rent')!
+    expect(card.info.join(' ')).toMatch(/reading may (over|under)state the change by about [\d.]+ percentage points.*: the metro’s recent seasonal swing/)
+    const used = s.trace!.rent!.find((x) => x.status === 'used')!
+    expect(used.rungId).toBe('rent.zillow-metro')
+    expect(used.reason).toMatch(/the metro’s recent seasonal swing differs/)
   })
 })
 

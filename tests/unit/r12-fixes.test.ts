@@ -50,11 +50,12 @@ describe('Zillow county series that is not current (New Kent County VA)', () => 
   test('wording', () => {
     expect(notCurrentText('New Kent County', { n: 1, last: '2026-07' }))
       .toBe("Zillow's series for New Kent County is too new to use (only one month, Jul 2026)")
+    // Legacy data (no first month): counting back gives only the latest possible start (gaps make it earlier), so
+    // no start month is named and "too new" isn't claimed
     expect(notCurrentText('X County', { n: 3, last: '2026-07' }))
-      .toBe("Zillow's series for X County is too new to use (only three months, from May 2026)")
-    // 14 months ending Mar 2026 counts back to Feb 2025 (no first month in the data): after the baseline → too new
+      .toBe("Zillow's series for X County isn't usable (only three months of data, through Jul 2026)")
     expect(notCurrentText('X County', { n: 14, last: '2026-03' }))
-      .toBe("Zillow's series for X County is too new to use (only 14 months, from Feb 2025)")
+      .toBe("Zillow's series for X County isn't usable (only 14 months of data, through Mar 2026)")
     // A series that started before Jan 2025 and stopped isn't "too new": it isn't current
     expect(notCurrentText('X County', { n: 40, first: '2022-12', last: '2026-03' }))
       .toBe("Zillow's series for X County isn't current (through Mar 2026)")

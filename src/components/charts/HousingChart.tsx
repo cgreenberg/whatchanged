@@ -13,6 +13,7 @@ import { monthOlderThan, RENT_STALE_DAYS, HOUSING_NOTE, rentSeasonalNote } from 
 import { LADDERS } from '@/lib/resolution/ladders'
 import { resolveLadderSync } from '@/lib/resolution/resolve'
 import type { TraceStep } from '@/lib/resolution/types'
+import { rentSeasonalCaveat } from '@/lib/rent-range'
 
 export type HousingTab = 'rent' | 'homePrices' | 'shelter'
 
@@ -189,10 +190,13 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
     }
     const seasonal = active !== 'rent' ? undefined
       : metroTab ? rentSeasonalNote(c?.rentM?.saPool, c?.rentM?.saW, 'metro') : rentSeasonalNote(c?.rentSaPool, c?.rentSaW)
+    // Same seasonal-pattern caveat as the Rent card (measured at the latest month the graph ends on)
+    const seasonalCaveat = active !== 'rent' ? undefined
+      : rentSeasonalCaveat(metroTab ? c?.rentM?.cav : c?.rentSaCav, metroTab ? 'metro' : 'county', { pct: pct ?? undefined, curRent: level })
     input = {
       ...input,
       note: active === 'rent' ? (metroTab ? ZORI_METRO_NOTE(rentGeo) : ZORI_SHORT_NOTE) : ZHVI_SHORT_NOTE,
-      info: [HOUSING_NOTE, ...(seasonal ? [seasonal] : [])],
+      info: [HOUSING_NOTE, ...(seasonal ? [seasonal] : []), ...(seasonalCaveat ? [seasonalCaveat] : [])],
     }
   }
 

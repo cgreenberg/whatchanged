@@ -568,8 +568,9 @@ const RENT = {
         const r = ctx.countyRent!(fips)
         if (r.data) {
           const stale = monthOlderThan(r.data.asOf, RENT_STALE_DAYS, ctx.now)
-          const caveat = rentSeasonalCaveat(r.data.saCaveat, 'county')
-          return { status: stale ? 'stale' : 'used', value: r.data, asOf: r.data.asOf, ...(stale ? { reason: STALE_REASON } : caveat ? { reason: caveat } : {}) }
+          // The seasonal caveat goes wherever the number does: appended to the stale reason, never replaced by it
+          const reason = [stale ? STALE_REASON : undefined, rentSeasonalCaveat(r.data.saCaveat, 'county', r.data)].filter(Boolean).join(' ')
+          return { status: stale ? 'stale' : 'used', value: r.data, asOf: r.data.asOf, ...(reason ? { reason } : {}) }
         }
         return {
           status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
@@ -610,7 +611,7 @@ const RENT = {
             value: r.data,
             asOf: r.data.asOf,
             geography: { name: r.data.geoName, level: 'metro' },
-            reason: stale ? STALE_REASON : [metroStandInReason(r.data.countyWhy, countyOnly(l), r.data.countyNotCurrent), rentSeasonalCaveat(r.data.saCaveat, 'metro')].filter(Boolean).join(' '),
+            reason: [stale ? STALE_REASON : metroStandInReason(r.data.countyWhy, countyOnly(l), r.data.countyNotCurrent), rentSeasonalCaveat(r.data.saCaveat, 'metro', r.data)].filter(Boolean).join(' '),
           }
         }
         return {

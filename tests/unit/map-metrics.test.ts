@@ -230,3 +230,56 @@ test('the refresh plan writes every cache key the map reads (no key mismatch bet
   const elecPlanned = new Set(plan.electricityStates ?? [])
   expect(ELECTRICITY_STATES.filter((st) => !elecPlanned.has(st)).map(electricityCacheKey)).toEqual([])
 })
+
+describe('round 15: per-area values, never a national stand-in', () => {
+  /** Write every per-area key the map reads, each with its own value; `national` also writes the U.S. keys. */
+  async function warmDistinct(national: boolean, perArea: boolean) {
+    const m0 = await buildMapMetrics()
+    const snap = (await fetchSnapshot('04101'))!
+    const cpi = snap.cpi.data!
+    const gas = snap.gas.data!
+    const { describeDuoarea } = await import('@/lib/api/eia')
+    const { describeBlsGasArea } = await import('@/lib/api/bls-gas')
+    clearMemCache() // only what this test writes
+    const writes: Promise<unknown>[] = []
+    if (perArea) {
+      m0.groceries.forEach((c, i) => writes.push(writeEnvelope(cpiCacheKey(c.area), { ...cpi, groceriesChange: 1 + i * 0.1 }, 60)))
+      m0.gas.filter((a) => a.source !== 'dcra' && a.source !== 'daco').forEach((g, i) => {
+        const [src, code] = g.id.replace('*', '').split(':')
+        const key = src === 'b' ? describeBlsGasArea(code).cacheKey : describeDuoarea(code).cacheKey
+        writes.push(writeEnvelope(key, { ...gas, change: 0.5 + i * 0.01, regionName: 'x' }, 60))
+      })
+    }
+    if (national) {
+      writes.push(writeEnvelope(cpiCacheKey('0000'), { ...cpi, groceriesChange: 9.9 }, 60))
+      writes.push(writeEnvelope(describeDuoarea('NUS').cacheKey, { ...gas, change: 2.22, regionName: 'U.S.' }, 60))
+    }
+    await Promise.all(writes)
+    return buildMapMetrics()
+  }
+  const states = Object.keys(countyGeo).filter((f) => Number(f.slice(0, 2)) <= 56)
+
+  test('with the per-area keys cached, counties get many distinct gas and grocery values (not one for all)', async () => {
+    const m = await warmDistinct(true, true)
+    const gasVals = new Set(states.map((f) => liveValue(m, f, 'gas')?.value).filter((v) => v != null))
+    const groVals = new Set(states.map((f) => liveValue(m, f, 'groceries')?.value).filter((v) => v != null))
+    expect(gasVals.size).toBeGreaterThanOrEqual(30)
+    expect(groVals.size).toBeGreaterThanOrEqual(25)
+    // the U.S. values never appear on a county
+    expect(gasVals.has(2.22)).toBe(false)
+    expect(groVals.has(9.9)).toBe(false)
+  })
+
+  test('per-area keys missing: counties are no data even when the national keys are cached', async () => {
+    const m = await warmDistinct(true, false)
+    for (const f of states) {
+      expect([f, liveValue(m, f, 'groceries')]).toEqual([f, null])
+      const g = liveValue(m, f, 'gas')
+      if (g) expect([f, g.source]).toEqual([f, 'Alaska DCRA']) // bundled survey values only
+    }
+    // Territories with only U.S.-average series (Guam): no data, not the national figure
+    expect(liveValue(m, '66010', 'gas')).toBeNull()
+    expect(liveValue(m, '66010', 'groceries')).toBeNull()
+    expect(m.counties['66010']).toEqual([-1, -1])
+  })
+})

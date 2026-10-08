@@ -225,7 +225,9 @@ describe('snapshot + card', () => {
     const expected = Math.round(((mean12('ME', '2025-08', '2026-07') - mean12('ME', '2024-08', '2025-07')) * e.usageKwh!) / 100)
     expect(s.dollarImpact!.electricity).toBe(expected)
     expect(card.inline).toBe(`≈ +$${expected}/mo`)
-    expect(card.secondary).toBe(`vs yr centered on Jan '25 · now ${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh (12-mo avg)`)
+    // Short face; the 12-month windows (centered on Jan 2025) are in the ⓘ detail
+    expect(card.secondary).toBe(`since Jan 2025 · now ${mean12('ME', '2025-08', '2026-07').toFixed(1)}¢/kWh`)
+    expect(card.info.join(' ')).toMatch(/centered on Jan 2025/)
     expect(card.info.join(' ')).toContain(`National: +${e.nationalChange!.toFixed(1)}%`)
     expect(card.sourceLine).toBe('Maine · EIA · Jul 2026')
     expect(card.info.join(' ')).toContain("average Maine home's monthly use (532 kWh, 12-mo avg Aug 2025–Jul 2026)")

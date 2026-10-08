@@ -4,13 +4,14 @@ import { geoPath } from 'd3-geo'
 import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
-  fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, divergingColor, NO_DATA_COLOR,
+  fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, NO_DATA_COLOR, mapScaleFor, scaleColor, scaleText, fmtScaleValue,
   NO_DATA_PATTERN_ID, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { mapMetroRent } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
+import { rentSeasonalCaveat } from '@/lib/rent-range'
 
 /** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
 const METRO_HATCH_ID = 'map-metro-hatch'
@@ -200,15 +201,26 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     }
     return out
   }, [metric, playing, shapes, data])
+  // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
+  // |change| (diverging), or the counties' 2nd–98th percentile range when every county moved the same way (gas)
+  const unit: 'usd' | 'pct' = def.scope === 'live' ? def.unit : 'pct'
+  const scale = useMemo(() => {
+    const vals: (number | undefined)[] = []
+    for (const s of shapes?.counties ?? []) {
+      vals.push(countyKey ? data[s.id]?.[countyKey] ?? (countyKey === 'rent' ? mapMetroRent(s.id)?.pct : undefined)
+        : liveValue(liveData, s.id, metric as Exclude<MetricKey, CountyMetricKey>)?.value)
+    }
+    return mapScaleFor(vals, unit, def.clamp, def.scope === 'live' && !!def.sequential)
+  }, [shapes, countyKey, data, liveData, metric, unit, def])
   const fills = useMemo(() => {
     const out = new Map<string, string>()
     if (!shapes) return out
     for (const s of shapes.counties) {
       const v = value(s.id) ?? metroRent.get(s.id)
-      if (Number.isFinite(v)) out.set(s.id, divergingColor(v, def.clamp))
+      if (Number.isFinite(v)) out.set(s.id, scaleColor(v, scale))
     }
     return out
-  }, [shapes, value, metroRent, def.clamp])
+  }, [shapes, value, metroRent, scale])
   const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => metroRent.has(s.id)) : []), [shapes, metroRent])
   const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
   /** Keyboard browsing starts at the selected county, else the one nearest the map's center. */
@@ -259,10 +271,10 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const movers = useMemo(() => (countyKey ? moversFor(data, countyKey) : { top: [], bottom: [] }), [data, countyKey])
   const window_ = def.scope === 'county' ? def.window(meta) : sinceBaseline(meta)
   const footer = def.scope === 'county' ? metricFooter(def, meta) : liveFooter(def.key, liveData)
-  const scale = def.scope === 'live' && def.unit === 'usd' ? `±$${def.clamp.toFixed(2)}/gal` : `±${def.clamp}%`
-  const scaleEnd = (sign: 1 | -1) => (def.scope === 'live' && def.unit === 'usd'
-    ? `${sign < 0 ? '−' : '+'}$${def.clamp.toFixed(2)}`
-    : `${sign < 0 ? '−' : '+'}${def.clamp}%`)
+  const scaleNote = scaleText(scale, unit)
+  const legendStops = Array.from({ length: 21 }, (_, i) => scale.kind === 'diverging'
+    ? scaleColor((i / 10 - 1) * scale.clamp, scale)
+    : scaleColor(scale.lo + (i / 20) * (scale.hi - scale.lo), scale))
 
   const sel = selected ? data[selected] : undefined
   const selShape = shapes?.counties.find(s => s.id === selected)
@@ -274,7 +286,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         if (d.scope === 'county') {
           const text = d.describe(sel)
           if (!text && d.key === 'rent' && own?.rent) {
-            return { key: d.key, short: d.short, text: own.rent.text, area: own.rent.area, caveat: null }
+            return { key: d.key, short: d.short, text: own.rent.text, area: own.rent.area, caveat: null, seasonal: own.rent.seasonal }
           }
           const m = !text && d.key === 'rent' ? mapMetroRent(selected) : null
           if (m) {
@@ -283,10 +295,13 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               text: `${fmtPct(m.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(m.cur)}/mo`,
               area: `metro rent: ${m.name} metro (no Zillow county series)`,
               caveat: null,
+              seasonal: rentSeasonalCaveat(m.saCaveat, 'metro', { pct: m.pct, curRent: m.cur }),
             }
           }
           return {
             key: d.key, short: d.short,
+            // The rent number carries its seasonal-pattern caveat wherever it appears (card, graph, map)
+            seasonal: text && d.key === 'rent' ? rentSeasonalCaveat(sel.rentSaCav, 'county', { pct: sel.rent, curRent: sel.rentCur }) : undefined,
             text: text ?? (d.key === 'rent'
               ? 'No Zillow county rent series (the Rent card uses the county’s metro series where Zillow has one)'
               : `No Zillow ${d.short.toLowerCase()} data for this county`),
@@ -306,6 +321,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         }
       })
     : []
+  const rentSeasonal = rows.find(r => r.key === 'rent')?.seasonal
 
   return (
     <section ref={ref} className="mt-16 border-t border-line pt-5" data-testid="national-map">
@@ -456,16 +472,26 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       {/* Legend: a stepped diverging key with its end values, plus the no-data swatch */}
       <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
         <div className="w-full max-w-xs">
-          <p className="kicker !text-[10px] text-ink-3 mb-1">Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}</p>
-          <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{
-            background: `linear-gradient(90deg, ${Array.from({ length: 21 }, (_, i) => divergingColor((i / 10 - 1) * def.clamp, def.clamp)).join(',')})`,
-          }}>
-            <span className="absolute left-1/2 -top-0.5 -bottom-0.5 w-px bg-ink-3" />
+          <p className="kicker !text-[10px] text-ink-3 mb-1" data-testid="map-legend-title">
+            Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}
+            {scale.kind === 'sequential' && ` · every county ${scale.hi > 0 ? 'rose' : 'fell'}; darker = ${scale.hi > 0 ? 'rose' : 'fell'} more`}
+          </p>
+          <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{ background: `linear-gradient(90deg, ${legendStops.join(',')})` }}>
+            {scale.kind === 'diverging' && <span className="absolute left-1/2 -top-0.5 -bottom-0.5 w-px bg-ink-3" />}
           </div>
-          <div className="tnum flex justify-between mt-1 font-mono text-[10px] text-ink-3">
-            <span>{scaleEnd(-1)} fell</span>
-            <span>0</span>
-            <span>rose {scaleEnd(1)}</span>
+          <div className="tnum flex justify-between mt-1 font-mono text-[10px] text-ink-3" data-testid="map-legend-scale">
+            {scale.kind === 'diverging' ? (
+              <>
+                <span>{fmtScaleValue(-scale.clamp, unit)} fell</span>
+                <span>0</span>
+                <span>rose {fmtScaleValue(scale.clamp, unit)}</span>
+              </>
+            ) : (
+              <>
+                <span>{fmtScaleValue(scale.lo, unit)}{unit === 'usd' ? '/gal' : ''}</span>
+                <span>{fmtScaleValue(scale.hi, unit)}{unit === 'usd' ? '/gal' : ''}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4">
@@ -480,7 +506,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-metro">
             <span
               className="inline-block w-3 h-3 rounded-[1px] border border-line"
-              style={{ background: `${METRO_HATCH_CSS}, ${divergingColor(def.clamp * 0.6, def.clamp)}` }}
+              style={{ background: `${METRO_HATCH_CSS}, ${legendStops[16]}` }}
               aria-hidden
             />
             <span>metro rent (no Zillow county series)</span>
@@ -488,7 +514,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         )}
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
-        Scale {scale} · {footer}{metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''} · gray hatching = no data
+        Scale {scaleNote} · {footer}{metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''} · gray hatching = no data
       </p>
       {def.scope === 'live' && (
         <p className="text-[12px] text-ink-2 mt-1" data-testid="map-scope-note">
@@ -509,11 +535,13 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
                   {r.text}
                   {r.area && <span className="text-ink-3"> · {r.area}</span>}
                   {r.caveat && r.key !== metric && <span className="text-caution/90" title={r.caveat}> (unusual value)</span>}
+                  {r.seasonal && <span className="text-caution/90" title={r.seasonal}> †</span>}
                 </dd>
               </div>
             ))}
           </dl>
           {selCaveat && <p className="text-[11px] text-caution/90 mt-1.5" data-testid="map-flag-note">{selCaveat}</p>}
+          {rentSeasonal && <p className="text-[11px] text-caution/90 mt-1.5" data-testid="map-seasonal-note">† Rent: {rentSeasonal}</p>}
           {sel.z && selected !== countyFips && (
             <button onClick={() => onZipSelect(sel.z!)} className="mt-3 text-sm font-semibold text-ink underline decoration-ink-3 underline-offset-4 hover:decoration-ink" data-testid="map-see-place">
               See everything that changed here →

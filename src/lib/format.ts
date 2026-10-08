@@ -10,7 +10,8 @@ function isNum(v: unknown): v is number {
 }
 
 /** Round, then drop negative zero so "-0.00" never appears. */
-function roundTo(v: number, decimals: number): number {
+/** `v` rounded the way every display formatter here rounds it (toFixed; −0 → 0). */
+export function roundTo(v: number, decimals: number): number {
   const r = Number(v.toFixed(decimals))
   return Object.is(r, -0) ? 0 : r
 }

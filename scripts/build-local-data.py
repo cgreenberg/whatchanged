@@ -191,22 +191,24 @@ def shrink_adjust(mat, months, groups, pools=None, k=None):
     return sa, w, keys, pools, seasonal_caveats(mat, months, f)
 
 
-# Seasonal-pattern caveat (round 14). The blend above is fit on leak-free months only (<= 2024-06), but some series'
-# seasonal swing has grown since (Manhattan: Jan -> Aug ~ +4.8% in 2022-2025 vs +2.3% in the blended pattern), so a
-# reading near the seasonal peak can overstate the change. Where the series' OWN RECENT swing (median ratios, ratio
-# months >= RECENT_SEASON_START, any data incl. 2025+, since this only words a caveat and never adjusts a number)
-# from January to its peak (or low) month differs from the blended pattern's by > SEASON_GAP_MIN points, the row
-# carries saCaveat {gap: own - blended (points; > 0 -> overstates near that month), month, low} and the card ⓘ /
-# trace say so. Series with < RECENT_SEASON_MIN_RATIOS recent ratios in any calendar month get none (no recent
-# pattern to compare).
+# Seasonal-pattern caveat (round 14; round 15: measured at the DISPLAYED month). The blend above is fit on leak-free
+# months only (<= 2024-06), but some series' seasonal swing has grown since (Manhattan: Jan -> Aug ~ +4.8% in
+# 2022-2025 vs +2.3% in the blended pattern), so a reading in such a month can overstate the change. The card shows
+# the change from Jan 2025 to the series' latest (as-of) month, so the bias that matters is at THAT calendar month:
+# gap = the series' OWN RECENT swing from January to the as-of month (median ratios, ratio months >=
+# RECENT_SEASON_START, any data incl. 2025+, since this only words a caveat and never adjusts a number) minus the
+# blended pattern's, in points. Where |gap| > SEASON_GAP_MIN the row carries saCaveat {gap, month} (month = the as-of
+# calendar month; gap > 0 -> the reading overstates the change, < 0 -> understates) and every place the rent number
+# appears says so. Series with < RECENT_SEASON_MIN_RATIOS recent ratios in January or the as-of month get none (no
+# recent pattern to compare); a January reading has no gap by construction.
 RECENT_SEASON_START = "2022-01"
 RECENT_SEASON_MIN_RATIOS = 3
 SEASON_GAP_MIN = 1.5
 
 
 def seasonal_caveats(mat, months, blended):
-    """Per row: None, or {"gap", "month"[, "low"]} when the recent own Jan -> peak swing differs from the blended
-    factors' by more than SEASON_GAP_MIN points."""
+    """Per row: None, or {"gap", "month"} when the recent own Jan -> as-of-month swing differs from the blended
+    factors' by more than SEASON_GAP_MIN points (as-of month = the row's last month with a value)."""
     ratio = seasonal_ratios(mat)
     cal = np.array([int(m[5:]) for m in months])
     sel = np.array([m >= RECENT_SEASON_START for m in months])
@@ -220,20 +222,19 @@ def seasonal_caveats(mat, months, blended):
             rn[:, k - 1] = np.isfinite(ratio[:, s]).sum(axis=1)
     out = []
     for i in range(mat.shape[0]):
-        if rn[i].min() < RECENT_SEASON_MIN_RATIOS or not np.isfinite(rf[i]).all() or not np.isfinite(blended[i]).all():
+        fin = np.flatnonzero(np.isfinite(mat[i]))
+        if not len(fin):
             out.append(None)
             continue
-        own = rf[i] / rf[i, 0] - 1
-        bl = blended[i] / blended[i, 0] - 1
-        m = int(np.argmax(np.abs(own[1:]))) + 1  # the month farthest from January in the series' own recent pattern
-        gap = round(float((own[m] - bl[m]) * 100), 1)  # the shipped value is what the threshold applies to
-        if abs(gap) <= SEASON_GAP_MIN:
+        m = int(months[fin[-1]][5:]) - 1  # the displayed (as-of) calendar month, 0-based
+        if (m == 0 or min(rn[i, 0], rn[i, m]) < RECENT_SEASON_MIN_RATIOS or not np.isfinite(rf[i, [0, m]]).all()
+                or not np.isfinite(blended[i, [0, m]]).all()):
             out.append(None)
             continue
-        c = {"gap": gap, "month": m + 1}
-        if own[m] < 0:
-            c["low"] = True
-        out.append(c)
+        own = rf[i, m] / rf[i, 0] - 1
+        bl = blended[i, m] / blended[i, 0] - 1
+        gap = round(float((own - bl) * 100), 1)  # the shipped value is what the threshold applies to
+        out.append({"gap": gap, "month": m + 1} if abs(gap) > SEASON_GAP_MIN else None)
     return out
 
 
@@ -710,6 +711,8 @@ def main():
             # graph's latest % change reproduces `rent` exactly)
             counties[f]["rentS"] = compact_series(cr_sa[i], crm, 2)
             counties[f]["rentSaPool"] = pool_name(cr_pool[i]); counties[f]["rentSaW"] = round(float(cr_w[i]), 2)
+            if cr_cav[i]:
+                counties[f]["rentSaCav"] = cr_cav[i]  # seasonal-pattern caveat at the as-of month (map panel/tooltip)
             if np.isfinite(cr[i, bi]):
                 county_rent[f] = {"pct": round(float(pct[i]), 1), "baseRent": int(round(cr[i, bi])),
                                   "curRent": int(round(cr[i, -1])), "asOf": crm[-1],
@@ -778,7 +781,8 @@ def main():
     for f, cb in metro_counties.items():
         m = metro_rows[cb]
         counties[f]["rentM"] = {k: v for k, v in {"n": m["name"], "cbsa": cb, "rent": m["pct"], "cur": m["curRent"],
-                                                   "flag": m.get("flagged"), "saPool": m.get("saPool"), "saW": m.get("saW")}.items() if v is not None}
+                                                   "flag": m.get("flagged"), "saPool": m.get("saPool"), "saW": m.get("saW"),
+                                                   "cav": m.get("saCaveat")}.items() if v is not None}
         counties[f]["rentMS"] = metro_series[cb]
     meta["sources"]["zoriMetro"] = {"latest": metro_asof, "short": "Zillow ZORI (metro)", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
                                     "label": "Zillow Observed Rent Index (ZORI), metro", "geography": METRO_DELINEATION,

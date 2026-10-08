@@ -6,6 +6,7 @@ import type { MapMetrics } from '@/lib/api/map-metrics'
 import { fmtPct, fmtMonth, flagNote, liveValue, type CountyRecord, type MetricKey } from '@/lib/county-data'
 import { mapMetroRent } from '@/lib/map-metro-rent'
 import { fmtSignedDollars } from '@/lib/format'
+import { hasSeasonalCaveat, SEASONAL_CAVEAT_SHORT } from '@/lib/rent-range'
 
 export interface MapTooltipModel {
   /** "Fulton County, GA". */
@@ -14,7 +15,7 @@ export interface MapTooltipModel {
   value: string
   /** "Zillow county", "Atlanta metro (BLS)", "Georgia statewide (EIA)"; null when there is no data. */
   geo: string | null
-  /** Short caveat: "unusual value", "last available copy". */
+  /** Short caveat: "unusual value", "last available copy", "†seasonal pattern uncertain" (rent). */
   note?: string
   /** The county is colored by its metro's rent (no Zillow county series). */
   metro?: true
@@ -44,10 +45,16 @@ export function mapTooltip({ fips, metric, county, liveData, frame }: {
     const v = county?.[metric]
     if (typeof v === 'number' && Number.isFinite(v)) {
       const flagged = flagNote(county, metric)
-      return { name, value: `${short} ${fmtPct(v)}`, geo: 'Zillow county', ...(flagged ? { note: 'unusual value' } : {}), noData: false }
+      const notes = [flagged ? 'unusual value' : '', metric === 'rent' && hasSeasonalCaveat(county?.rentSaCav) ? SEASONAL_CAVEAT_SHORT : ''].filter(Boolean)
+      return { name, value: `${short} ${fmtPct(v)}`, geo: 'Zillow county', ...(notes.length ? { note: notes.join(' · ') } : {}), noData: false }
     }
     const m = metric === 'rent' ? mapMetroRent(fips) : null
-    if (m) return { name, value: `${short} ${fmtPct(m.pct)}`, geo: `${m.name} metro rent (Zillow; no county series)`, metro: true, noData: false }
+    if (m) {
+      return {
+        name, value: `${short} ${fmtPct(m.pct)}`, geo: `${m.name} metro rent (Zillow; no county series)`, metro: true,
+        ...(m.saCaveat ? { note: SEASONAL_CAVEAT_SHORT } : {}), noData: false,
+      }
+    }
     return noData
   }
   const lv = liveValue(liveData, fips, metric)

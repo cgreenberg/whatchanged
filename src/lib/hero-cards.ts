@@ -454,13 +454,12 @@ export function buildGasCard(s: EconomicSnapshot): HeroCardModel {
     status: 'ok',
     geoTag: gasShortGeo(g, s.location?.stateAbbr),
     caveat,
-    // Change first (like Rent / Groceries): the $/gal change is the big number, today's price is the secondary line.
-    // Monthly BLS figures name their month on the card ("since Jan 2025 · Aug 2026 · now $3.83").
+    // Change first (like Rent / Groceries): the $/gal change is the big number, today's price is the secondary line
+    // ("since Jan 2025 · now $4.78"). The data's month / week is on the source line; the exact baseline week in the ⓘ.
     value: `${fmtSignedDollars(g.change)}/gal`,
     direction: directionOf(g.change, 2),
     secondary: sourceLineOf(
       `since ${monthly && baselineDate ? fmtMonthYear(baselineDate.slice(0, 7)) : BASELINE_MONTH_LABEL}`,
-      monthly && latestDate ? fmtMonthYear(latestDate.slice(0, 7)) : undefined,
       `now $${g.current.toFixed(2)}`,
     ),
     detail,
@@ -600,7 +599,7 @@ export function buildRentCard(
   const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
   const metroNote = metro ? rentMetroNote(r) : undefined
   const poolNote = rentSeasonalNote(r.saPool, r.saW, metro ? 'metro' : 'county')
-  const seasonalCaveat = rentSeasonalCaveat(r.saCaveat, metro ? 'metro' : 'county')
+  const seasonalCaveat = rentSeasonalCaveat(r.saCaveat, metro ? 'metro' : 'county', r)
   return {
     ...base,
     status: 'ok',
@@ -877,7 +876,8 @@ export function buildElectricityCard(s: EconomicSnapshot): HeroCardModel {
     value: fmtSignedPct(e.change),
     inline: hasDollars ? `≈ ${fmtSignedDollars(dollars!, 0)}/mo` : undefined,
     direction: directionOf(e.change),
-    secondary: sourceLineOf(`vs ${ELECTRICITY_BASELINE_SHORT}`, `now ${fmtCents(e.current)} (${ELECTRICITY_VALUE_NOTE})`),
+    // Short face ("since Jan 2025 · now 27.0¢/kWh"); the 12-month-average windows are spelled out in the ⓘ (detail)
+    secondary: sourceLineOf(`since ${BASELINE_MONTH_LABEL}`, `now ${fmtCents(e.current)}`),
     dollarNote,
     detail,
     nationalValue,

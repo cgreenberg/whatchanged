@@ -30,6 +30,7 @@ import {
   generateShareCard, shareGasStandInNote, electricityVsLabel, cpiShareLabel, groceriesBasisNote, shelterBasisNote,
   electricityGeoLine, electricityBasisNote, shelterPillSub,
   GAS_SUBLABEL, GROCERIES_SUBLABEL, SHELTER_SUBLABEL, RENT_SUBLABEL, ELECTRICITY_SUBLABEL,
+  shareSeasonalNote,
 } from '@/lib/share-card/generate'
 import { ELECTRICITY_STATES } from '@/lib/api/eia-electricity'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
@@ -379,6 +380,23 @@ describe('share-card quadrants: rendered content fits inside each quadrant', () 
 
   test('EIA gas + Zillow rent (Austin)', async () => {
     expectFits(await renderedQuadrants(snap()))
+  })
+
+  test('rent seasonal-pattern caveat: † on the % and a footnote, still fits (also with the outlier note, worst case)', async () => {
+    const s = snap()
+    // widest realistic footnote: 4-digit $/mo bias on a top rent, and the outlier note above it
+    s.rent = { ...s.rent!, pct: 22.2, curRent: 14561, monthlyChange: 2646, saCaveat: { gap: -12.5, month: 12 } }
+    const note = shareSeasonalNote(s.rent.saCaveat, s.rent, '‡')!
+    expect(note).toMatch(/^‡ Seasonal pattern uncertain: the Dec reading may understate the change by ~12\.5 pts \(≈ \$[\d,]+\/mo\)$/)
+    expect(monoLines(note, 19, CELL_TEXT_WIDTH)).toBeLessThanOrEqual(3)
+    expectFits(await renderedQuadrants(s))
+    // under the outlier note only the short form fits
+    expect(shareSeasonalNote(s.rent.saCaveat, s.rent, '‡', true)).toBe('‡ Seasonal pattern uncertain')
+    expectFits(await renderedQuadrants({ ...s, rent: { ...s.rent, flagged: true } as EconomicSnapshot['rent'] }))
+    const plain = snap()
+    plain.rent = { ...plain.rent!, saCaveat: { gap: 2.5, month: 8 } }
+    expect(shareSeasonalNote(plain.rent.saCaveat, plain.rent)).toMatch(/^† Seasonal pattern uncertain: the Aug reading may overstate the change by ~2\.5 pts/)
+    expect(shareSeasonalNote(undefined, plain.rent)).toBeNull()
   })
 
   test('electricity quadrant: statewide price, adjusted %, $/mo pill and its basis', async () => {

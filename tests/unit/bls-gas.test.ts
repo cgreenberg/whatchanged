@@ -128,14 +128,15 @@ describe('parseBlsGasSeries (real recorded BLS response)', () => {
 })
 
 describe('BLS gas card, provenance, national comparison, chart', () => {
-  test('card: change since Jan 2025 first, then the month and today\'s $/gal; BLS provenance, BLS national over the same months', () => {
+  test('card: change since Jan 2025 first, then today\'s $/gal (the month is on the source line); BLS provenance, BLS national over the same months', () => {
     const s = snap()
     s.location = { ...s.location, stateAbbr: 'PA' }
     s.gas.data = blsGasData('S12B')
     const c = buildGasCard(s)
     expect(c.value).toBe('+$0.95/gal')
     // Short card lines: window · the monthly figure's month · level, and "{area} · {source} · {Mon YYYY}"
-    expect(c.secondary).toBe('since Jan 2025 · Aug 2026 · now $4.08')
+    expect(c.secondary).toBe('since Jan 2025 · now $4.08') // the month is on the source line
+    expect(c.sourceLine).toContain('Aug 2026')
     expect(c.sourceLine).toBe('Philadelphia metro · BLS · Aug 2026')
     // The full wording moves into the ⓘ disclosure
     expect(c.info).toContain('+$0.95/gal since Jan 2025, through Aug 2026 (monthly).')

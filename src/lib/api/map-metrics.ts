@@ -83,7 +83,11 @@ export interface MapMetrics {
   groceries: MapCpiArea[]
   /** By state (USPS code); states not cached are absent. */
   electricity: Record<string, MapElectricity>
-  /** County FIPS → [index into gas, index into groceries]. The state is the FIPS prefix. */
+  /**
+   * County FIPS → [index into gas, index into groceries]; -1 = the county has no regional series of its own (only
+   * the U.S. average: territories' national CPI / NUS gas), drawn as no data — the map never paints a national
+   * stand-in. The state is the FIPS prefix.
+   */
   counties: Record<string, [number, number]>
   /** Cache keys with no usable cached copy (the map shows those areas as no data). */
   missing: number
@@ -148,6 +152,10 @@ export function resetMapMetricsMemo(): void {
   inflight = null
 }
 
+/** U.S.-average series: never drawn on the map (a county with only these is no data). */
+const NATIONAL_GAS = 'NUS'
+const NATIONAL_CPI = '0000'
+
 export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetrics> {
   const gasIdx = new Map<string, number>()
   const gasAreas: Array<{ id: string; lookup: GasLookupResult }> = []
@@ -176,11 +184,11 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
         gasIdx.set(id, gasAreas.length)
         gasAreas.push({ id, lookup: pr.lookup })
       }
-      if (!cpiIdx.has(g.cpiArea)) {
+      if (g.cpiArea !== NATIONAL_CPI && !cpiIdx.has(g.cpiArea)) {
         cpiIdx.set(g.cpiArea, cpiAreas.length)
         cpiAreas.push(g)
       }
-      counties[fips] = [gasIdx.get(id)!, cpiIdx.get(g.cpiArea)!]
+      counties[fips] = [gasIdx.get(id)!, g.cpiArea !== NATIONAL_CPI ? cpiIdx.get(g.cpiArea)! : -1]
       continue
     }
     const ak = g.state === 'AK' && g.gasSource === 'bls' && g.gasTier === 2 ? akGasForCounty(fips, COUNTY_NAMES[fips]?.name) : null
@@ -193,23 +201,25 @@ export async function buildMapMetrics(now: Date = new Date()): Promise<MapMetric
       })
       gasIdx.set(id, gasAreas.length)
       gasAreas.push({ id, lookup: { source: 'dcra', frequency: 'semiannual', areaCode: fips, seriesId: ak.label, geoLevel: ak.label, tier: 1, cacheKey: `static:dcra:county:${fips}` } })
-      if (!cpiIdx.has(g.cpiArea)) {
+      if (g.cpiArea !== NATIONAL_CPI && !cpiIdx.has(g.cpiArea)) {
         cpiIdx.set(g.cpiArea, cpiAreas.length)
         cpiAreas.push(g)
       }
-      counties[fips] = [gasIdx.get(id)!, cpiIdx.get(g.cpiArea)!]
+      counties[fips] = [gasIdx.get(id)!, g.cpiArea !== NATIONAL_CPI ? cpiIdx.get(g.cpiArea)! : -1]
       continue
     }
-    const gas = gasLookupFor(g)
-    if (!gasIdx.has(gas.id)) {
+    // A national stand-in (NUS gas, national CPI) is a labeled card fallback, never a map color: no data
+    const gas = g.gasSource === 'eia' && g.gasDuoarea === NATIONAL_GAS ? null : gasLookupFor(g)
+    if (gas && !gasIdx.has(gas.id)) {
       gasIdx.set(gas.id, gasAreas.length)
       gasAreas.push(gas)
     }
-    if (!cpiIdx.has(g.cpiArea)) {
+    const cpiOwn = g.cpiArea !== NATIONAL_CPI
+    if (cpiOwn && !cpiIdx.has(g.cpiArea)) {
       cpiIdx.set(g.cpiArea, cpiAreas.length)
       cpiAreas.push(g)
     }
-    counties[fips] = [gasIdx.get(gas.id)!, cpiIdx.get(g.cpiArea)!]
+    counties[fips] = [gas ? gasIdx.get(gas.id)! : -1, cpiOwn ? cpiIdx.get(g.cpiArea)! : -1]
   }
 
   // One read per distinct cache key (stand-in ids share their metro's key)

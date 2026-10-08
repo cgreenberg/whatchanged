@@ -83,7 +83,7 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
   `curRent - curRent / (1 + pct/100)`; `curRent - baseRent` includes seasonality. Covers 877 counties / 56.9% of zip-county.json zips (2026-10 build; 589 / 47.8% before short series were adjusted with their state's pattern). zip-county.json is a housing-unit-weighted Census 2020 build (`scripts/build-zip-county.ts`), not the HUD crosswalk.
 - Seasonal blend (why): ZORI's Jan → Aug swing is mostly the shared spring/summer leasing season, and a county's own
   factors from a few years of ratios are noisy. Holdout test (`scripts/rent-seasonal-holdout.py`): residual seasonality
-  over Jan 2025–Aug 2026, fully out of sample (factors use ratio months ≤ 2024-06, whose windows end by Dec 2024), as the
+  over Jan 2025–Aug 2026, out of sample (factors use ratio months ≤ 2024-06; Dec 2024 enters one centred average with weight 1/24), as the
   spread across calendar months of the mean month-over-month % change (pp, mean over counties):
 
   | n (ratios/month) | counties | raw | own only | state only | blend k=8 | blend k=12 |
@@ -103,14 +103,20 @@ needed by the pipeline (the QCEW file on `data.bls.gov` downloads without a cont
   noise of k=8, so k=8 (the decided value) ships. Baseline and current still come from the county's own series.
   The previous rule (own factors with ≥2 ratios per month, state pattern only below that) left more seasonality than no
   adjustment at all for short series.
-- Seasonal-pattern caveat (round 14): the blend is fit on ratio months ≤ 2024-06, but some series' seasonal swing has
-  changed since (Manhattan's Jan → Aug swing is ≈ +4.8% in 2022–2025 vs +2.3% in its blended pattern). Where a series'
-  own recent swing (median ratios, ratio months ≥ 2022-01, ≥ 3 per calendar month) from January to its peak (or low)
-  month differs from the blended pattern's by > 1.5 points, `county-rent.json` / `metro-rent.json` rows carry
-  `saCaveat {gap, month, low?}` and the card ⓘ and the trace say: "This county's seasonal pattern is uncertain; readings
-  near its seasonal peak (August) may overstate the change by up to ~3 points" (understate when the gap is negative).
-  The caveat never changes a number. 2026-10 build: 102 counties (68 overstate, 34 understate; incl. New York County
-  +2.5 and Kings County +2.0 at August) and 17 metros.
+- Seasonal-pattern caveat (round 14; round 15: measured at the displayed month): the blend is fit on ratio months
+  ≤ 2024-06, but some series' seasonal swing has changed since (Manhattan's Jan → Aug swing is ≈ +4.8% in 2022–2025 vs
+  +2.3% in its blended pattern). The card shows the change from Jan 2025 to the series' latest (as-of) month, so the
+  bias that matters is at that calendar month: gap = the series' own recent swing (median ratios, ratio months
+  ≥ 2022-01, ≥ 3 in January and in the as-of month) from January to the as-of month minus the blended pattern's. Where
+  |gap| > 1.5 points, `county-rent.json` / `metro-rent.json` rows carry `saCaveat {gap, month}` (month = the as-of
+  month; also `rentSaCav` in `counties.json` and the county shards, `rentM.cav` for a metro stand-in) and every place
+  the rent number appears says so: the card ⓘ, the trace (appended to a stale reason, never replaced), the Rent graph ⓘ,
+  the county map panel ("This August reading may overstate the change by about 2.5 percentage points (≈ $Y/mo): the
+  county's recent seasonal swing differs from the pattern used to adjust it", X = |gap| rounded to 0.5, $Y = the
+  card's $/mo at the shown % minus at the % less X) and the map tooltip / share image (short "†seasonal pattern
+  uncertain" marker; the share image adds the footnote where it fits). The caveat never changes a number. 2026-10
+  build (as of Aug 2026): 79 counties (36 overstate, 43 understate; New York County +2.5, Kings County +2.0, Oswego
+  County NY −2.0, Skagit County WA −2.0, Hawaii County −2.0; Newport County RI none) and 16 metros (3 overstate).
 - `metro-rent.json` (rent ladder's metro rung): county FIPS → CBSA by the **OMB March 2020** delineation — verified
   as Zillow's vintage (all 1,831 Zillow county→metro labels agree with it; the 2023 delineation disagrees for 95
   metros) — and CBSA → Zillow metro by Zillow's own RegionID crosswalk (735 of 749 ZORI metros link; the 14 newer

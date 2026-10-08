@@ -6,7 +6,7 @@
 // every county.
 
 import metroRent from '@/lib/data/metro-rent.json'
-import { RENT_PCT_RANGE } from '@/lib/rent-range'
+import { RENT_PCT_RANGE, hasSeasonalCaveat, type SeasonalCaveat } from '@/lib/rent-range'
 
 interface MetroRow {
   name: string
@@ -15,6 +15,7 @@ interface MetroRow {
   curRent: number
   asOf: string
   flagged?: boolean
+  saCaveat?: SeasonalCaveat
 }
 
 interface MetroRentFile {
@@ -38,6 +39,8 @@ export interface MapMetroRent {
   /** Latest observed typical asking rent, $/mo. */
   cur: number
   asOf: string
+  /** Seasonal-pattern caveat at the displayed month (rent-range.ts), when there is one. */
+  saCaveat?: SeasonalCaveat
 }
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -53,9 +56,9 @@ export function mapMetroRent(fips: string): MapMetroRent | null {
   const row = cbsa ? METRO.metros?.[cbsa] : undefined
   if (!cbsa || !row) return null
   if (row.flagged === true) return null
-  const { pct, baseRent, curRent, asOf, name } = row
+  const { pct, baseRent, curRent, asOf, name, saCaveat } = row
   if (!finite(pct) || pct < PCT_MIN || pct > PCT_MAX) return null
   if (!finite(baseRent) || baseRent <= 0 || !finite(curRent) || curRent <= 0) return null
   if (typeof asOf !== 'string' || !/^\d{4}-\d{2}$/.test(asOf)) return null
-  return { cbsa, name, pct, cur: curRent, asOf }
+  return { cbsa, name, pct, cur: curRent, asOf, ...(hasSeasonalCaveat(saCaveat) ? { saCaveat } : {}) }
 }

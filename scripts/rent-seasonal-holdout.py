@@ -23,8 +23,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("bld", os.path.join(HERE, "build-local-data.py"))
 bld = importlib.util.module_from_spec(spec); spec.loader.exec_module(bld)
 
-# Fully out of sample: the first month-over-month change counted is Dec 2024 -> Jan 2025, after every month a
-# factor is fit on (ratio months <= 2024-06, whose centered windows end by Dec 2024).
+# Out of sample: the first month-over-month change counted is Dec 2024 -> Jan 2025; factors are fit on ratio months
+# <= 2024-06, whose centred 2x12 moving averages reach Dec 2024 only at an end point (Dec 2024 enters one centred
+# average with weight 1/24; no later month is used by any factor).
 WINDOW_START = "2025-01"
 BUCKETS = [("0-1", 0, 1), ("2", 2, 2), ("3", 3, 3), ("4-5", 4, 5), ("6-7", 6, 7), ("8", 8, 99)]
 

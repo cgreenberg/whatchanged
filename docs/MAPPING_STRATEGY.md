@@ -48,7 +48,29 @@ Sources (all public, no key):
    places under 50,000 people whose postal city (all ZCTAs with that USPS city name) is also under 50,000.
    A bigger place's stations keep GeoNames' (USPS) county (30333 CDC "Atlanta" → DeKalb; Portland's
    97281/97291/97298 → Washington; "Littleton" CO 80162 → Jefferson, 80163 → Douglas), unless that county
-   holds a mere boundary sliver of the place (< 100 residents: 87174 Rio Rancho → Sandoval)
+   holds a mere boundary sliver of the place (< 100 residents) AND the zip's own GeoNames point doesn't back that
+   county: no point, a generic/default city point shared by several zips, or a point outside the county (none of the
+   3 nearest housed ZCTAs is in it). 87174 Rio Rancho → Sandoval (Bernalillo holds 6 of 104,046 residents; GeoNames'
+   point is shared by 20 zips); 39298 "Jackson" MS stays in Rankin (Rankin holds 3 of Jackson's 153,701 residents,
+   but GeoNames' own point lies east of the Pearl River in Rankin, with Rankin ZCTAs nearest).
+
+   Every USPS-only zip moved away from GeoNames' county (2026-10 build; pinned in
+   `tests/unit/r12-zip-county-edge.test.ts`):
+
+   | Zip | Place | GeoNames county → assigned | Why |
+   |---|---|---|---|
+   | 21670 | Templeville MD | Caroline → Queen Anne's | place majority (small place) |
+   | 32733 | Goldenrod FL | Seminole → Orange | place majority (small place) |
+   | 53957 | Randolph WI | Columbia → Dodge | place majority (small place) |
+   | 55572 | Rockford MN | Hennepin → Wright | place majority (small place) |
+   | 60011 | Barrington IL | Lake → Cook | place majority: Barrington village is mostly in Cook. The housed ZCTA 60010 ("Barrington", most of its homes in Lake) stays Lake by its own housing units, so the two Barrington zips differ; defensible, as each follows its own evidence |
+   | 62435 | Janesville IL | Cumberland → Coles | place majority (small place) |
+   | 76098 | Azle TX | Parker → Tarrant | place majority (small place) |
+   | 86339 | Sedona AZ | Coconino → Yavapai | place majority (Sedona is 74% Yavapai) |
+   | 87174 | Rio Rancho NM | Bernalillo → Sandoval | big place; Bernalillo holds a 6-resident sliver and GeoNames' point is a shared default |
+
+   Not moved: 39298 "Jackson" MS (Rankin; see above) and the 35 big-place station zips that keep GeoNames' county
+   (build log "kept in their GeoNames county").
 
 Island areas without block data are assigned by land area. The build caches downloads in
 `$GEO_CACHE_DIR` and needs `NODE_OPTIONS=--max-old-space-size=6144`.

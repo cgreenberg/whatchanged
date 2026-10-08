@@ -6,7 +6,7 @@
  * amount (money saved), never a positive one.
  */
 
-import { fmtSignedDollars } from '@/lib/format'
+import { fmtSignedDollars, roundTo } from '@/lib/format'
 
 /** US median gross rent (Census ACS). Used only for display fallbacks, never for local dollar translations. */
 export const NATIONAL_MEDIAN_RENT = 1271
@@ -34,10 +34,15 @@ export function fmtRentDollars(dollars: number, coded?: 'top' | 'bottom' | null)
   return q ? `${amount} ${q}` : amount
 }
 
-/** "or more" / "or more saved" (top-coded rent) / "or less" / "or less saved" (bottom-coded); '' otherwise or for $0. */
+/**
+ * "or more" / "or more saved" (top-coded rent) / "or less" / "or less saved" (bottom-coded); '' otherwise or for an
+ * amount that DISPLAYS as $0 (same whole-dollar rounding as fmtSignedDollars: −0.5 shows "−$1" and gets "saved").
+ */
 export function rentCodedQualifier(dollars: number, coded?: 'top' | 'bottom' | null): string {
-  if (!coded || !Number.isFinite(dollars) || Math.round(dollars) === 0) return ''
-  return `${coded === 'top' ? 'or more' : 'or less'}${dollars < 0 ? ' saved' : ''}`
+  if (!coded || !Number.isFinite(dollars)) return ''
+  const shown = roundTo(dollars, 0)
+  if (shown === 0) return ''
+  return `${coded === 'top' ? 'or more' : 'or less'}${shown < 0 ? ' saved' : ''}`
 }
 
 export interface DollarImpact {

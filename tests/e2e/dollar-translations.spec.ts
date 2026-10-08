@@ -49,7 +49,7 @@ test.describe('Dollar translation accuracy (98683 fixture)', () => {
     const expected = Math.round(((e.current - e.baseline) * e.usageKwh) / 100)
     const card = page.getByTestId('stat-card-electricity')
     await expect(card.getByTestId('stat-value')).toHaveText(`${e.change > 0 ? '+' : e.change < 0 ? '−' : ''}${Math.abs(e.change).toFixed(1)}%`)
-    await expect(card.getByTestId('stat-secondary')).toHaveText(`vs yr centered on Jan '25 · now ${e.current.toFixed(1)}¢/kWh (12-mo avg)`)
+    await expect(card.getByTestId('stat-secondary')).toHaveText(`since Jan 2025 · now ${e.current.toFixed(1)}¢/kWh`)
     await expect(card.getByTestId('stat-inline')).toHaveText(`≈ ${usd(expected)}/mo`)
     await expect(card.getByTestId('stat-source')).toHaveText(/^Washington · EIA · [A-Z][a-z]{2} \d{4}$/)
     await card.getByTestId('stat-info-toggle').click()

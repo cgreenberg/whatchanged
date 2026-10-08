@@ -438,12 +438,44 @@ async function main() {
   // GeoNames' county for them comes from the USPS record (30333 CDC and 39901 IRS Chamblee are "Atlanta" mail filed
   // under DeKalb; Portland's 97281/97291/97298 under Washington), so for big places the GeoNames county stands. "Big"
   // = the Census place OR the postal city (every ZCTA whose USPS city has the same name) has >= PLACE_POP_MAX people:
-  // Littleton CO is a 45,652-person city but "Littleton" mail covers ~200k people in Arapahoe, Jefferson and Douglas,
+  // Littleton CO is a 45,652-person city but "Littleton" mail covers ~322k people in Arapahoe, Jefferson and Douglas,
   // so 80162 (Jefferson) and 80163 (Douglas) keep their USPS county. Exception: a GeoNames county holding only a
   // boundary sliver of the place (< SLIVER_POP residents) isn't the place's county (87174 Rio Rancho NM: 6 of 104,046
   // in Bernalillo → Sandoval); Portland's Clackamas part (843) and Littleton's Douglas part (640) are real.
+  // Round 15: the sliver exception needs the zip's own point to back it. It applies only when GeoNames has no
+  // usable point for the zip, its point is a generic/default city point (shared by more than one zip), or the point
+  // lies outside the GeoNames county (none of the NEAREST_ZCTAS nearest housed ZCTAs with a point of their own is in
+  // that county). A specific point inside the GeoNames county is the post office's real location, so that county
+  // stands: 39298 "Jackson" MS sits east of the Pearl River in Rankin County (nearest ZCTAs all Rankin), stays Rankin.
   const PLACE_POP_MAX = 50_000
   const SLIVER_POP = 100
+  const NEAREST_ZCTAS = 3
+  const ptKey = (lat: number, lng: number) => `${lat.toFixed(4)},${lng.toFixed(4)}`
+  const ptCount = new Map<string, number>()
+  for (const g of Object.values(geonames)) {
+    if (Number.isFinite(g.lat) && Number.isFinite(g.lng)) ptCount.set(ptKey(g.lat, g.lng), (ptCount.get(ptKey(g.lat, g.lng)) ?? 0) + 1)
+  }
+  /** Housed ZCTAs with a GeoNames point of their own (not a shared default point): [lat, lng, county]. */
+  const housedPts: [number, number, string][] = []
+  for (const zcta of housed) {
+    const g = geonames[zcta]
+    if (!g || !Number.isFinite(g.lat) || !Number.isFinite(g.lng) || (ptCount.get(ptKey(g.lat, g.lng)) ?? 0) > 1) continue
+    housedPts.push([g.lat, g.lng, result[zcta].countyFips])
+  }
+  const sliverEvidence: string[] = []
+  /** Why the zip's GeoNames point doesn't back its GeoNames county ('' = it does: a specific point inside it). */
+  function pointDoubt(zip: string, county: string): string {
+    const g = geonames[zip]
+    if (!g || !Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return 'no point'
+    const shared = ptCount.get(ptKey(g.lat, g.lng)) ?? 0
+    if (shared > 1) return `generic point shared by ${shared} zips`
+    const dist = (p: [number, number, string]) => {
+      const x = ((p[1] - g.lng) * Math.PI / 180) * Math.cos(((p[0] + g.lat) / 2) * Math.PI / 180)
+      return Math.hypot(x, ((p[0] - g.lat) * Math.PI) / 180)
+    }
+    const near = housedPts.map((p) => [dist(p), p[2]] as const).sort((a, b) => a[0] - b[0]).slice(0, NEAREST_ZCTAS)
+    return near.some(([, c]) => c === county) ? '' : `point outside it (nearest ZCTAs ${near.map(([, c]) => c).join('/')})`
+  }
   const postalCityPop = new Map<string, number>()
   for (const [zcta, e] of Object.entries(result)) {
     if (!e.cityName) continue
@@ -466,11 +498,17 @@ async function main() {
     if (!top || total <= 0 || top[1] * 2 <= total || !countyNames[top[0]]) return null
     const postal = postalCityPop.get(`${stateAbbr}|${normPlace(city)}`) ?? 0
     const inGeonames = parts.get(geonamesCounty) ?? 0
-    if ((total >= PLACE_POP_MAX || postal >= PLACE_POP_MAX) && inGeonames >= SLIVER_POP) {
-      if (top[0] !== geonamesCounty) {
-        bigPlaceKept.push(`${zip} ${city}, ${stateAbbr}: kept ${countyNames[geonamesCounty] ?? geonamesCounty} (${geonamesCounty}, ${inGeonames.toLocaleString()} of ${total.toLocaleString()} place pop; postal city ${postal.toLocaleString()}); majority ${countyNames[top[0]]} (${top[0]})`)
+    if (total >= PLACE_POP_MAX || postal >= PLACE_POP_MAX) {
+      const doubt = inGeonames < SLIVER_POP && top[0] !== geonamesCounty ? pointDoubt(zip, geonamesCounty) : ''
+      if (inGeonames < SLIVER_POP && top[0] !== geonamesCounty) {
+        sliverEvidence.push(`${zip} ${city}, ${stateAbbr}: ${countyNames[geonamesCounty] ?? geonamesCounty} holds ${inGeonames} of ${total.toLocaleString()}; ${doubt ? `${doubt} → ${countyNames[top[0]]}` : 'specific point inside it → kept'}`)
       }
-      return null
+      if (inGeonames >= SLIVER_POP || !doubt) {
+        if (top[0] !== geonamesCounty) {
+          bigPlaceKept.push(`${zip} ${city}, ${stateAbbr}: kept ${countyNames[geonamesCounty] ?? geonamesCounty} (${geonamesCounty}, ${inGeonames.toLocaleString()} of ${total.toLocaleString()} place pop; postal city ${postal.toLocaleString()}); majority ${countyNames[top[0]]} (${top[0]})`)
+        }
+        return null
+      }
     }
     viaPlaceCount++
     return top[0]
@@ -522,6 +560,7 @@ async function main() {
   console.log(`Mail-only zips moved to their city's county: ${cityFixes.length}\n  ${cityFixes.join('\n  ')}`)
   console.log(`USPS-only zips assigned by their place's majority county: ${viaPlaceCount}; differing from GeoNames: ${placeMoves.length}\n  ${placeMoves.join('\n  ')}`)
   console.log(`USPS-only zips of big places (place or postal city >= ${PLACE_POP_MAX.toLocaleString()} people) kept in their GeoNames county: ${bigPlaceKept.length}\n  ${bigPlaceKept.join('\n  ')}`)
+  console.log(`Big-place zips whose GeoNames county holds a sliver (< ${SLIVER_POP}) of the place: ${sliverEvidence.length}\n  ${sliverEvidence.join('\n  ')}`)
   if (unresolved.length) console.log(`Unresolved USPS-only zips (skipped): ${unresolved.length}\n  ${unresolved.join('\n  ')}`)
 
   // 9. Write
@@ -558,7 +597,8 @@ async function main() {
     ['86339', '04025'], // Sedona PO boxes → Yavapai (74% of Sedona city's population)
     ['30333', '13089'], // CDC, "Atlanta" mail filed under DeKalb (big place: GeoNames county stands)
     ['80163', '08035'], // "Littleton" mail (big postal city) filed under Douglas stays
-    ['87174', '35043'], // Rio Rancho PO boxes: none of Rio Rancho's people live in Bernalillo → Sandoval
+    ['87174', '35043'], // Rio Rancho PO boxes: 6 of Rio Rancho's people live in Bernalillo → Sandoval
+    ['39298', '28121'], // "Jackson" MS PO boxes: specific point east of the Pearl River, in Rankin → stays
     ['25888', '54019'], // Mount Hope WV PO boxes → Fayette
     ['21240', '24003'], // BWI airport ZCTA → Anne Arundel
   ]

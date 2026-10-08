@@ -74,7 +74,7 @@ describe.each([
     expect(within(card('electricity')).queryByTestId('stat-value-note')).toBeNull()
     expect(text(card('electricity'), 'stat-inline')).toBe(`≈ ${fmtSignedDollars(expected, 0)}/mo`)
     expect(text(card('electricity'), 'stat-secondary')).toBe(
-      `vs yr centered on Jan '25 · now ${e.current.toFixed(1)}¢/kWh (12-mo avg)`)
+      `since Jan 2025 · now ${e.current.toFixed(1)}¢/kWh`)
     // the U.S. comparison is one tap away
     expect(text(card('electricity'), 'stat-info')).toContain(`National: ${fmtSignedPct(e.nationalChange!)}`)
     expect(text(card('electricity'), 'stat-source')).toBe(`${e.stateName} · EIA · ${fmtMonthYear(e.latestPeriod)}`)

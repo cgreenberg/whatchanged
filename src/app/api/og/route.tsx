@@ -4,7 +4,7 @@ import { fetchSnapshot } from '@/lib/api/snapshot'
 import { getCachedNationalData } from '@/lib/api/national'
 import { buildHeroCards, imageSourcesLine, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, OUTLIER_FOOTNOTE, isGasStandIn, standInPlace, imageCountyName, GAS_STANDIN_FOOTNOTE, type HeroCardModel } from '@/lib/hero-cards'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthShort, fmtMonthYear, fmtDay } from '@/lib/format'
-import { BASELINE_DAY_LABEL, ELECTRICITY_BASELINE_SHORT, gasBaselineIndex } from '@/lib/baseline'
+import { BASELINE_DAY_LABEL, BASELINE_MONTH_LABEL, gasBaselineIndex } from '@/lib/baseline'
 import type { NationalDataPoint } from '@/lib/api/national'
 import { loadShareFonts } from '@/lib/share-card/fonts'
 import { computeDotX, computeDotY, DOT_PAD } from '@/lib/share-card/og-geometry'
@@ -98,7 +98,8 @@ function ogSublines(c: HeroCardModel): [string, string] {
     case 'gas': return [c.geoTag ?? c.provenance.geography, monthly && c.asOfPeriod ? `${since}, thru ${fmtMonthShort(c.asOfPeriod)}` : since]
     case 'rent': return [c.geoTag ? ogPlace(c.geoTag) : c.provenance.geography, `${since}, seas. adj.`]
     // Statewide EIA price: % change of the 12-month average price (latest 12 months vs the 12 centered on Jan 2025)
-    case 'electricity': return [c.geoTag ? `${c.geoTag} (statewide)` : c.provenance.geography, `12-mo avg vs ${ELECTRICITY_BASELINE_SHORT}`]
+    // Same face as the card ("since Jan 2025"); images have no ⓘ, so "(12-mo avg)" keeps the method visible
+    case 'electricity': return [c.geoTag ? `${c.geoTag} (statewide)` : c.provenance.geography, `since ${BASELINE_MONTH_LABEL} (12-mo avg)`]
     default: return [c.geoTag ?? c.provenance.geography, since]
   }
 }
@@ -529,7 +530,7 @@ export async function GET(req: NextRequest) {
                   }}
                 >
                   {elec
-                    ? `· 12-mo avg vs ${ELECTRICITY_BASELINE_SHORT} · now ${elec.current.toFixed(1)}¢/kWh · EIA, ${fmtMonthYear(elec.latestPeriod)}`
+                    ? `· since ${BASELINE_MONTH_LABEL} (12-mo avg) · now ${elec.current.toFixed(1)}¢/kWh · EIA, ${fmtMonthYear(elec.latestPeriod)}`
                     : '· EIA residential price unavailable right now'}
                 </span>
               </div>

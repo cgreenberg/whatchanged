@@ -170,7 +170,7 @@ def main():
     inv("County metrics within sanity ranges", [(f, k, c[k]) for f, c in counties.items() for k, (lo, hi) in ranges.items()
                                                if k in c and not lo <= c[k] <= hi])
     inv("No percentile-rank fields shipped", [(f, k) for f, c in counties.items() for k in c if re.fullmatch(r"[a-z]+R", k)])
-    ALLOWED = {"n", "z", "hv", "hvCur", "rent", "rentCur", "emp", "approx", "approxFrom", "flags", "note", "hvS", "rentS",
+    ALLOWED = {"n", "z", "hv", "hvCur", "rent", "rentCur", "rentSaCav", "emp", "approx", "approxFrom", "flags", "note", "hvS", "rentS",
                "rentSaPool", "rentSaW"}
     inv("County records carry only fields the site reads", [(f, sorted(set(c) - ALLOWED)) for f, c in counties.items() if set(c) - ALLOWED])
     resolved = set(counties)
@@ -254,13 +254,20 @@ def main():
              if not (isinstance(v.get("saPool"), str) and v["saPool"] and isinstance(v.get("saW"), (int, float)) and 0 <= v["saW"] < 1)])
         inv("Rent meta labels the seasonal method (county pattern blended with the state (or U.S.) pattern)",
             [] if "blended with the state (or U.S.) pattern" in (crj["meta"].get("seasonalMethod") or "") else ["county-rent.json meta.seasonalMethod"])
-        # Seasonal-pattern caveat (round 14): only rows whose own recent swing differs from the blend's by > 1.5 points
+        # Seasonal-pattern caveat (round 15): measured at the DISPLAYED month — month = the row's as-of calendar month,
+        # only rows whose own recent Jan -> as-of swing differs from the blend's by > 1.5 points
         _mr = os.path.join(a.repo, "src/lib/data/metro-rent.json")
         _metros = json.load(open(_mr))["metros"] if os.path.exists(_mr) else {}
-        inv("Every rent seasonal-pattern caveat has |gap| > 1.5 points and a month Feb..Dec",
+        inv("Every rent seasonal-pattern caveat is {gap, month} with |gap| > 1.5 points and month = the row's as-of month (Feb..Dec)",
             [f for f, v in list(crj["counties"].items()) + list(_metros.items()) if "saCaveat" in v
              and not (isinstance(v["saCaveat"].get("gap"), (int, float)) and abs(v["saCaveat"]["gap"]) > 1.5
-                      and v["saCaveat"].get("month") in range(2, 13))])
+                      and set(v["saCaveat"]) == {"gap", "month"}
+                      and v["saCaveat"].get("month") in range(2, 13) and v["saCaveat"]["month"] == int(v["asOf"][5:]))])
+        inv("The map file and county shards carry the same seasonal caveat as county-rent.json (rentSaCav) and metro-rent.json (rentM.cav)",
+            [f for f in set(crj["counties"]) | {f for f, c in counties.items() if "rentSaCav" in c}
+             if f in counties and counties[f].get("rentSaCav") != crj["counties"].get(f, {}).get("saCaveat")]
+            + [f for f, c in shards.items() if c.get("rentSaCav") != crj["counties"].get(f, {}).get("saCaveat")]
+            + [f for f, c in shards.items() if "rentM" in c and c["rentM"].get("cav") != _metros.get(c["rentM"].get("cbsa"), {}).get("saCaveat")])
         record(S, "Rent rows with a seasonal-pattern caveat (own recent swing vs blended, > 1.5 points)", "INFO",
                f'{sum("saCaveat" in v for v in crj["counties"].values())} counties, '
                f'{sum("saCaveat" in v for v in _metros.values())} metros')
