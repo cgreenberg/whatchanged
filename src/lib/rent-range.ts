@@ -79,14 +79,16 @@ export function seasonalCaveatPoints(c: SeasonalCaveat): number {
 }
 
 /**
- * What the worded gap means for the card's $/mo (curRent − curRent / (1 + pct/100)): the change at `pct` minus the
- * change at `pct` ∓ the worded points, whole dollars, ≥ 0. null without a usable rent level and %.
+ * What the worded gap means for the card's $/mo (curRent − curRent / (1 + pct/100)): the change at the SHOWN % (one
+ * decimal) minus the change at the shown % ∓ the worded (one-decimal) points — the same figures the sentence prints,
+ * so the $ matches them — whole dollars, ≥ 0. null without a usable rent level and %.
  */
 export function seasonalCaveatDollars(c: SeasonalCaveat, pct: number | undefined, curRent: number | undefined): number | null {
   if (typeof pct !== 'number' || !Number.isFinite(pct) || typeof curRent !== 'number' || !(curRent > 0)) return null
+  const shown = Math.round(pct * 10) / 10
   const x = seasonalCaveatPoints(c) * Math.sign(c.gap)
   const monthly = (p: number) => curRent - curRent / (1 + p / 100)
-  const v = Math.abs(monthly(pct) - monthly(pct - x))
+  const v = Math.abs(monthly(shown) - monthly(shown - x))
   return Number.isFinite(v) ? Math.round(v) : null
 }
 

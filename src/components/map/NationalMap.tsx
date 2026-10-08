@@ -12,7 +12,7 @@ import {
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { mapRentTier, rentLayer, type MapRentTier } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
-import { gasAreaKind, gasAreaSummary } from '@/lib/map-gas-areas'
+import { gasAreaKind, gasAreaSummary, gasCityDotCounty, GAS_REGION_STRIPE, GAS_REGION_STRIPE_FILL, GAS_REGION_STRIPES_CSS } from '@/lib/map-gas-areas'
 import { rentSeasonalCaveat, hasSeasonalCaveat } from '@/lib/rent-range'
 
 /** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
@@ -25,13 +25,12 @@ const CITY_DOTS_CSS = 'radial-gradient(circle, rgba(241,239,234,0.6) 0 0.9px, tr
 const SURVEY_GRID_ID = 'map-survey-grid'
 const SURVEY_GRID_CSS = 'repeating-linear-gradient(0deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px)'
 /**
- * Gas: a regional average (EIA PADD / sub-PADD, several states share one number) — faint wide stripes over the same
- * value color as any other area (never faded: the fill always encodes the value), running the other way from the
- * HI/AK stand-in's denser light stripes so the two never read alike.
+ * Gas: a regional average (EIA PADD / sub-PADD, several states share one number) — thin dark low-alpha stripes over the
+ * same value color as any other area (never faded or brightened: apparent lightness shifts < 2%, map-gas-areas.ts
+ * GAS_REGION_STRIPE), running the other way from the HI/AK stand-in's denser light stripes so the two never read alike.
  */
 const GAS_REGION_STRIPES_ID = 'map-gas-region-stripes'
-const GAS_REGION_STRIPES_CSS = 'repeating-linear-gradient(-45deg, rgba(241,239,234,0.24) 0 1px, transparent 1px 5px)'
-/** Gas: city / metro areas get a bright outline over a dark halo, and a dot on their principal county. */
+/** Gas: city / metro areas get a bright outline over a dark halo, and a dot on the named city's principal county. */
 const GAS_CITY_OUTLINE = '#F1EFEA'
 const MAP_INK_DARK = '#111316'
 /** A tap / click focuses the map box: keyboard browsing must not start from it (ms after a pointerdown). */
@@ -231,7 +230,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   }, [countyKey, liveData, metric, frame, timeline, data])
   // Rent: a county with no Zillow county series takes the Rent card's next rung — its metro's rent (light stripes),
   // else its most populous city's (dots). Not during the time-lapse (it plays the county series only). A county with
-  // no Zillow market-rent data at all stays gray; HUD's Fair Market Rent (a yearly projected estimate) is only in its tooltip
+  // no usable Zillow rent at all stays gray; HUD's Fair Market Rent (a yearly projected estimate) is only in its tooltip
   // and panel, never a color.
   const rentTiers = useMemo(() => {
     const out = new Map<string, Extract<MapRentTier, { tier: 'metro' | 'city' }>>()
@@ -303,6 +302,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     const areaPaths = new Map<number, string>()
     const regions: { idx: number; d: string }[] = []
     const cities: { idx: number; id: string; d: string; fips: string; c: [number, number] }[] = []
+    /** City / metro areas outlined without a dot (their named city's county is not in them). */
+    const outlines: { idx: number; id: string; d: string }[] = []
     for (const [i, geoms] of groups) {
       const area = liveData.gas[i]
       if (!area) continue
@@ -311,17 +312,16 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       const kind = gasAreaKind(area)
       if (kind === 'region') regions.push({ idx: i, d })
       if (kind === 'city') {
-        // The dot sits on the area's principal county (most jobs), so Cook County etc. are findable at national zoom
-        let best: string | null = null
-        for (const g of geoms) {
-          const f = fipsOf(g)
-          if (!best || (data[f]?.emp ?? 0) > (data[best]?.emp ?? 0)) best = f
-        }
+        // The dot sits on the named city's principal county (Cook County for Chicago), so it is findable at national
+        // zoom; an area that doesn't include it (BLS Minneapolis-St. Paul, used only for two Wisconsin counties) gets
+        // its outline but no dot, so the dot never marks the wrong place
+        const best = gasCityDotCounty(area.id, geoms.map(fipsOf), (f) => data[f]?.emp ?? 0)
         const c = best ? shapeById.get(best)?.c : undefined
         if (best && c && Number.isFinite(c[0])) cities.push({ idx: i, id: area.id, d, fips: best, c })
+        else outlines.push({ idx: i, id: area.id, d })
       }
     }
-    return { borders, areaPaths, regions, cities }
+    return { borders, areaPaths, regions, cities, outlined: [...cities, ...outlines] }
   }, [isGas, shapes, liveData, data, shapeById])
   // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
   // |change| (diverging), or the counties' 2nd–98th percentile range when nearly every county moved the same way (gas).
@@ -485,7 +485,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         return {
           key: d.key, short: d.short,
           text: v ? `${v.text} · ${v.detail}` : liveError ? 'unavailable right now' : liveData ? 'no data' : 'loading…',
-          // Gas: which kind of published area ("Ohio state average (EIA)", "Midwest region average · shared across …")
+          // Gas: which kind of published area ("Ohio state average (EIA)", "Midwest region average · used for counties in …")
           area: v?.kindText ?? v?.area ?? null,
           caveat: null,
         }
@@ -500,7 +500,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         How every county changed
       </h2>
       <p className="text-sm text-ink-2 mt-2 mb-4 max-w-2xl">
-        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}{hudCount > 0 && !playing ? '; gray counties have no Zillow market-rent data (hover or tap for HUD’s Fair Market Rent estimate where available)' : ''}. Tap one to see all five measures.
+        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}{hudCount > 0 && !playing ? '; gray counties have no usable Zillow rent (hover or tap for HUD’s Fair Market Rent estimate where available)' : ''}. Tap one to see all five measures.
       </p>
 
       {/* Controls sit above the map, never on top of it, so every county stays tappable */}
@@ -595,9 +595,9 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               <pattern id={CITY_DOTS_ID} width={4} height={4} patternUnits="userSpaceOnUse">
                 <circle cx={2} cy={2} r={0.9} fill="rgba(241,239,234,0.6)" />
               </pattern>
-              {/* Gas regional average: faint wide stripes, the other diagonal from the stand-in's */}
-              <pattern id={GAS_REGION_STRIPES_ID} width={5} height={5} patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
-                <rect width={1} height={5} fill="rgba(241,239,234,0.24)" />
+              {/* Gas regional average: thin dark low-alpha stripes (never brightens the value color), the other diagonal from the stand-in's */}
+              <pattern id={GAS_REGION_STRIPES_ID} width={GAS_REGION_STRIPE.period} height={GAS_REGION_STRIPE.period} patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+                <rect width={GAS_REGION_STRIPE.width} height={GAS_REGION_STRIPE.period} fill={GAS_REGION_STRIPE_FILL} />
               </pattern>
               {/* Gas on its own window (Alaska survey months): a light grid over the county's color */}
               <pattern id={SURVEY_GRID_ID} width={4} height={4} patternUnits="userSpaceOnUse">
@@ -639,8 +639,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
                 <path d={gasGeo.borders} fill="none" stroke={MAP_INK_DARK} strokeWidth={1.8} strokeLinejoin="round" pointerEvents="none" data-testid="map-gas-area-borders" />
                 {/* City outlines in screen pixels (non-scaling), so they stay crisp and visible on a phone-width map */}
                 <g pointerEvents="none" data-testid="map-gas-city-outlines">
-                  {gasGeo.cities.map(c => <path key={`h${c.idx}`} d={c.d} fill="none" stroke={MAP_INK_DARK} strokeWidth={3.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
-                  {gasGeo.cities.map(c => <path key={c.idx} d={c.d} data-gas-area={c.id} fill="none" stroke={GAS_CITY_OUTLINE} strokeWidth={1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                  {gasGeo.outlined.map(c => <path key={`h${c.idx}`} d={c.d} fill="none" stroke={MAP_INK_DARK} strokeWidth={3.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                  {gasGeo.outlined.map(c => <path key={c.idx} d={c.d} data-gas-area={c.id} fill="none" stroke={GAS_CITY_OUTLINE} strokeWidth={1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
                 </g>
               </>
             ) : (
@@ -764,7 +764,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
                 <span className="relative inline-flex items-center justify-center w-3.5 h-3.5 rounded-[1px]" style={{ background: legendStops[14], boxShadow: `0 0 0 1.5px ${GAS_CITY_OUTLINE}` }} aria-hidden>
                   <span className="block w-1.5 h-1.5 rounded-full" style={{ background: GAS_CITY_OUTLINE, boxShadow: `0 0 0 1px ${MAP_INK_DARK}` }} />
                 </span>
-                <span>City price</span>
+                <span>City / metro price</span>
               </li>
               <li className="flex items-center gap-1.5" data-testid="map-legend-gas-state">
                 <span className="inline-block w-3.5 h-3.5 rounded-[1px] border border-line" style={{ background: legendStops[14] }} aria-hidden />
@@ -814,17 +814,17 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             {metric !== 'rent'
               ? 'no data'
               : playing ? 'no Zillow county series (time-lapse)'
-                : hudCount > 0 ? 'no Zillow market-rent data (hover for HUD estimate where available)' : 'no rent data'}
+                : hudCount > 0 ? 'no usable Zillow rent (hover for HUD estimate where available)' : 'no rent data'}
           </span>
         </div>
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
         Scale {scaleNote}{metric === 'rent' ? ' (Zillow figures only)' : ''} · {footer}
         {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has no usable one for the county, as on the Rent card' : ''}
-        {cityShapes.length > 0 ? ' · dots = city rent: the county’s most populous city with a Zillow series where it has no usable county or metro series, as on the Rent card' : ''}
+        {cityShapes.length > 0 ? ' · dots = city rent: the county’s most populous place with a Zillow series where it has no usable county or metro series, as on the Rent card' : ''}
         {/* Gas: short (scale · source · window · adjustment); its patterns, outlines and gray are in the legend chips */}
         {isGas ? '' : hudCount > 0 && !playing
-          ? ` · solid gray = no Zillow market-rent data; where HUD publishes one, the tooltip and panel show its ${hudLabel}, 2-bedroom (a yearly projected estimate, not a market-rent index; never a map color; not on the Rent card)`
+          ? ` · solid gray = no usable Zillow rent; where HUD publishes one, the tooltip and panel show its ${hudLabel}, 2-bedroom (projected, not a market-rent index; never a map color; not on the Rent card)`
           : ' · solid gray = no data'}
       </p>
       {def.scope === 'live' && (def.scopeNote || liveError) && (

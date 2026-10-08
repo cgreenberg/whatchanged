@@ -218,7 +218,7 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await map.getByRole('button', { name: 'Gas', exact: true }).click()
     await hoverCounty(page, '23003')
     await expect(tip).toContainText(/Gas [+−]\$\d\.\d{2}\/gal/)
-    await expect(tip).toContainText('New England region average · shared across 5 states (EIA PADD 1A)')
+    await expect(tip).toContainText('New England region average · used for counties in 5 states (EIA PADD 1A)')
     // leaving the map hides it; hovering never selects a county
     await page.mouse.move(2, 2)
     await expect(tip).toHaveCount(0)
@@ -278,7 +278,7 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     // Sibley County, MN: no usable Zillow rent → the no-data gray; HUD's estimate only in the tooltip / panel
     await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', '#5f6268')
     await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
-    await expect(map.getByTestId('map-legend-nodata')).toContainText('no Zillow market-rent data (hover for HUD estimate where available)')
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no usable Zillow rent (hover for HUD estimate where available)')
     await hoverCounty(page, '27143')
     await expect(map.getByTestId('map-tooltip')).toContainText('No usable Zillow rent here')
     await expect(map.getByTestId('map-tooltip')).toContainText(/HUD Fair Market Rent \(a yearly projected estimate, not a market-rent index\): [+−]?\d+\.\d%/)
@@ -286,7 +286,7 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await clickCounty(page, '27143')
     await expect(map.getByTestId('map-value-rent')).toContainText('No usable Zillow rent here · HUD Fair Market Rent (a yearly projected estimate, not a market-rent index)')
     await expect(map.getByTestId('map-value-rent')).not.toContainText(/actual rent/i)
-    await expect(map.getByTestId('map-source')).toContainText('solid gray = no Zillow market-rent data')
+    await expect(map.getByTestId('map-source')).toContainText('solid gray = no usable Zillow rent')
     await expect(map.getByTestId('map-source')).not.toContainText(/actual rent/i)
     // other layers: no rent tiers
     await map.getByRole('button', { name: 'Home prices', exact: true }).click()
@@ -343,7 +343,7 @@ test.describe('Round 16: like-for-like gas layer, legend wording, click / tap fo
     await expect(map.locator('[data-testid="map-gas-standin-hatch"] path[data-standin-fips="15001"]')).toBeAttached()
     await expect(map.getByTestId('map-legend-gas-standin')).toContainText('nearest metro')
     // fine print: one short line (scale · source · window · adjustment); patterns are explained by the legend chips
-    await expect(map.getByTestId('map-source')).toHaveText(/^Scale \+\$\d\.\d\d to \+\$\d\.\d\d\/gal \(2nd–98th percentile\) · EIA weekly \/ BLS monthly regular gas, Jan 2025 → Aug 2026 monthly averages · not seasonally adjusted$/)
+    await expect(map.getByTestId('map-source')).toHaveText(/^Scale \+\$\d\.\d\d to \+\$\d\.\d\d\/gal \(2nd–98th percentile\) · EIA weekly \/ BLS monthly regular gas · metro, state or region \(see legend\) · Jan 2025 → Aug 2026 monthly averages · not seasonally adjusted$/)
     // the tooltip always says the window
     const tip = map.getByTestId('map-tooltip')
     { const p = await pointInCounty(page, '13121'); await page.mouse.move(p.x, p.y) }
@@ -440,7 +440,7 @@ test.describe('Gas layer: the published areas behind the colors', () => {
     expect(await bg('map-legend-gas-region')).toContain(stateBg)
     await expect(map.locator('[data-testid="map-gas-region-stripes"] path[data-gas-area="e:STX"]')).toHaveCount(0)
     // key
-    await expect(map.getByTestId('map-legend-gas-city')).toHaveText('City price')
+    await expect(map.getByTestId('map-legend-gas-city')).toHaveText('City / metro price')
     await expect(map.getByTestId('map-legend-gas-state')).toHaveText('State average')
     await expect(map.getByTestId('map-legend-gas-region')).toHaveText('Regional average (several states share one number)')
     await expect(map.getByTestId('map-legend-gas-areas')).toContainText(/Gas prices are published for \d+ areas/)

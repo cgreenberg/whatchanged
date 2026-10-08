@@ -286,7 +286,7 @@ Rent layer colors Zillow county / metro (stripes) / city (dots, labeled "{place}
 CDPs) values only (`rentLayer` / `rentFillValue` in `map-metro-rent.ts`). A county with no usable Zillow rent is the
 no-data gray even when HUD publishes a Fair Market Rent change: HUD's figure (a yearly projected estimate whose median
 ran ~2× Zillow's) never enters the scale or a fill and appears only on hover / tap as "No usable Zillow rent here · HUD
-Fair Market Rent estimate: +x% (not actual rents)". The Rent time-lapse plays county series only and says so
+Fair Market Rent (a yearly projected estimate, not a market-rent index): +x%". The Rent time-lapse plays county series only and says so
 (`map-timelapse-note`). On a sequential (gas) scale the other side of zero is shaded by size (`oppositeColor(scale, v)`).
 Gas common month ignores `:lastgood` (stale) series; an old cached payload without `gasWindow` / `window` is drawn
 plainly (no "own window" grid). The gas layer draws the published areas, not counties (`src/lib/map-gas-areas.ts`

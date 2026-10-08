@@ -4,7 +4,7 @@
 // The map's Gas / Groceries / Electricity layers come from /api/map-metrics (cache reads only).
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
-import { gasAreaKind, gasAreaStateCounts, gasKindText, type GasAreaKind } from '@/lib/map-gas-areas'
+import { gasAreaKind, gasAreaOutside, gasAreaStateCounts, gasKindText, type GasAreaKind } from '@/lib/map-gas-areas'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthYear, fmtDay } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
@@ -304,7 +304,7 @@ export interface LiveCountyValue {
   survey?: true
   /** Gas: the kind of published area (city / state / regional average, …; map-gas-areas.ts), null when unknown. */
   kind?: GasAreaKind | null
-  /** Gas: plain-language area + kind ("Midwest region average · shared across 13 states (EIA PADD 2)"), when known. */
+  /** Gas: plain-language area + kind ("Midwest region average · used for counties in 13 states (EIA PADD 2)"), when known. */
   kindText?: string
 }
 
@@ -346,7 +346,7 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
       ...(g.standIn ? { standIn: true as const } : {}),
       ...(g.source === 'dcra' ? { survey: true as const } : {}),
       kind: gasAreaKind(g),
-      ...((t) => (t ? { kindText: t } : {}))(gasKindText(g, gasAreaStateCounts(m).get(row[0]))),
+      ...((t) => (t ? { kindText: t } : {}))(gasKindText(g, gasAreaStateCounts(m).get(row[0]), gasAreaOutside(m, row[0]))),
     }
     const area = g.standIn ? `${g.label} (no series for this county)` : g.label
     if (g.window !== 'own' && g.asOf && m.gasWindow) {
@@ -397,8 +397,8 @@ export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): 
 }
 
 /**
- * Footer for a live metric: source · geography · window · as-of · adjustment. Gas is short (source · window · as-of ·
- * adjustment): its legend names the published areas, its tooltip the area, source and months of each one, and the About
+ * Footer for a live metric: source · geography · window · as-of · adjustment. Gas is short (source · area kinds · window ·
+ * as-of · adjustment): its legend names the published areas, its tooltip the area, source and months of each one, and the About
  * page's methods the rest (EIA weeklies averaged by month, the Gas card's latest week, HI/AK stand-ins).
  */
 export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined): string {
@@ -406,7 +406,7 @@ export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
   if (key === 'gas') {
     const w = gasWindowText(m)
-    return `EIA weekly / BLS monthly regular gas, ${w ?? `${sinceBaseline(null)} · ${latest}`} · not seasonally adjusted`
+    return `EIA weekly / BLS monthly regular gas · metro, state or region (see legend) · ${w ?? `${sinceBaseline(null)} · ${latest}`} · not seasonally adjusted`
   }
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   return `EIA average residential electricity price · statewide · latest 12-month average price vs ${ELECTRICITY_BASELINE_LABEL} (${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}) · ${latest} · no seasonal adjustment needed`

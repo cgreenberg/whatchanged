@@ -1,7 +1,7 @@
 // Hover / keyboard-focus tooltip text for one county on the national map: county name + state, the metric's
 // value with its sign and units, and the geography + source the number covers ("Zillow county",
 // "Atlanta metro (BLS)", "Georgia statewide (EIA)"). Same values the map colors the county with (rent: county →
-// metro → city, map-metro-rent.ts mapRentTier). A HUD-tier county is gray on the map (no Zillow market-rent data); its
+// metro → city, map-metro-rent.ts mapRentTier). A HUD-tier county is gray on the map (no usable Zillow rent); its
 // tooltip says so and adds HUD's Fair Market Rent figure, labeled as a yearly projected estimate, not a market-rent index.
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
@@ -16,8 +16,8 @@ export interface MapTooltipModel {
   /** "Rent +4.7%", "Gas +$0.87/gal", "Rent: No data". */
   value: string
   /**
-   * "Zillow county", "Georgia statewide (EIA)", gas "Chicago city price (EIA)" / "Ohio state average (EIA)" /
-   * "Midwest region average · shared across 13 states (EIA PADD 2)"; null when there is no data.
+   * "Zillow county", "Georgia statewide (EIA)", gas "Chicago area price (EIA)" / "Ohio state average (EIA)" /
+   * "Midwest region average · used for counties in 13 states (EIA PADD 2)"; null when there is no data.
    */
   geo: string | null
   /** The window / month the value covers ("Jan 2025 → Aug 2026 monthly averages"); null when there is no data. */
@@ -98,8 +98,8 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudWindowTex
   return {
     name,
     value: metric === 'gas' ? `${short} ${fmtSignedDollars(lv.value)}/gal` : `${short} ${fmtPct(lv.value)}`,
-    // Gas: which kind of published area ("Chicago city price (EIA)", "Midwest region average · shared across 13 states
-    // (EIA PADD 2)"); otherwise the area + publisher once ("… (Alaska DCRA)" labels already name it)
+    // Gas: which kind of published area ("Chicago area price (EIA)", "Midwest region average · used for counties in 13
+    // states (EIA PADD 2)"); otherwise the area + publisher once ("… (Alaska DCRA)" labels already name it)
     geo: lv.kindText ?? (lv.area.includes(`(${lv.source})`) ? lv.area : `${lv.area} (${lv.source})`),
     when: lv.when,
     ...(lv.stale ? { note: 'last available copy' } : {}),

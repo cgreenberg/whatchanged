@@ -1,7 +1,7 @@
 /** One rent sanity range for the build (meta.pctRange in both bundles) and the runtime/trace text. */
 import countyRent from '@/lib/data/county-rent.json'
 import metroRent from '@/lib/data/metro-rent.json'
-import { RENT_PCT_RANGE, rentRangeText } from '@/lib/rent-range'
+import { RENT_PCT_RANGE, rentRangeText, seasonalCaveatDollars as usd } from '@/lib/rent-range'
 import { lookupCountyRent, lookupMetroRent } from '@/lib/rent'
 
 test('build and runtime use the same range', () => {
@@ -31,4 +31,11 @@ test('a flagged metro never stands in for a county (CPI shelter instead); counti
   const c = countyRent as unknown as { counties: Record<string, { flagged?: boolean }> }
   const ownFlagged = Object.entries(c.counties).find(([, r]) => r.flagged)
   if (ownFlagged) expect(lookupCountyRent(ownFlagged[0]).data?.flagged).toBe(true)
+})
+
+test('L3: the seasonal-caveat $/mo uses the shown one-decimal % and points, the figures the sentence prints', () => {
+  const monthly = (cur: number, p: number) => cur - cur / (1 + p / 100)
+  // raw 4.96% shows as 5.0%; gap 2.24 is worded as 2.2 points
+  expect(usd({ gap: 2.24, month: 8 }, 4.96, 2000)).toBe(Math.round(Math.abs(monthly(2000, 5.0) - monthly(2000, 2.8))))
+  expect(usd({ gap: 2.24, month: 8 }, 4.96, 2000)).toBe(usd({ gap: 2.2, month: 8 }, 5.0, 2000))
 })
