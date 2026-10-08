@@ -93,7 +93,7 @@ export function seasonalCaveatDollars(c: SeasonalCaveat, pct: number | undefined
  */
 export function rentSeasonalCaveat(
   c: SeasonalCaveat | undefined,
-  level: 'county' | 'metro' = 'county',
+  level: 'county' | 'metro' | 'city' = 'county',
   rent?: { pct?: number; curRent?: number },
 ): string | undefined {
   if (!hasSeasonalCaveat(c)) return undefined

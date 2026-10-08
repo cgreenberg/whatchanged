@@ -55,6 +55,152 @@ def zillow(path, key):
     out.columns = [c[:7] for c in cols]
     return out, d
 
+def _xlsx_without_core_props(path):
+    """HUD's yearly FMR workbooks carry a malformed docProps/core.xml that openpyxl rejects: read them without it."""
+    src = zipfile.ZipFile(path)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as out:
+        for it in src.infolist():
+            if it.filename != "docProps/core.xml":
+                out.writestr(it, src.read(it.filename))
+    buf.seek(0)
+    return pd.read_excel(buf, dtype=str)
+
+
+def _county_letters(name):
+    """Letters-only county name for comparing Zillow's CountyName with Census's (independent of the build's matcher)."""
+    import unicodedata
+    t = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode().lower()
+    t = re.sub(r"\bsaint\b|\bste\b", "st", t)
+    t = re.sub(r"\b(county|parish|borough|city and borough|municipality|census area|municipio)\b", "", t)
+    return re.sub(r"[^a-z]", "", t)
+
+
+def validate_city_and_hud(S, a, R, inv, counties, shards, crj, mrj, series_pct, zip_county):
+    """City rent (Rent card's city rung) and HUD Fair Market Rents (map only): re-derived from the raw files."""
+    lo_, hi_ = RENT_PCT_RANGE
+    cr_path = os.path.join(a.repo, "src/lib/data/city-rent.json")
+    if not os.path.exists(cr_path):
+        record(S, "city-rent.json present", "FAIL", "missing")
+        return
+    cj = json.load(open(cr_path))
+    cities, ccounties = cj["cities"], cj["counties"]
+    metros, mcounties = mrj["metros"], mrj["counties"]
+    metro_ok = lambda f: f in mcounties and not metros.get(mcounties[f], {}).get("flagged") and f not in mrj.get("outOfRangeCounties", {})
+    inv(f"city-rent.json: meta.pctRange = {RENT_PCT_RANGE} (the runtime range)",
+        [] if [float(x) for x in cj["meta"].get("pctRange", [])] == [float(x) for x in RENT_PCT_RANGE] else [cj["meta"].get("pctRange")])
+    inv(f"city-rent.json: pct in {RENT_PCT_RANGE}, levels positive, not flagged",
+        [k for k, v in cities.items() if not (lo_ <= v["pct"] <= hi_ and v["curRent"] > 0 and v["baseRent"] > 0) or v.get("flagged")])
+    inv("city-rent.json: a city stands in only where there is no county rent row and no usable metro",
+        sorted(f for f in ccounties if f in crj["counties"] or metro_ok(f) or f in set(crj.get("outOfRange", []))))
+    inv("city-rent.json: every mapped city has a row, and the row's county is that county", sorted(f for f, k in ccounties.items() if cities.get(k, {}).get("county") != f))
+    # Independent re-read of Zillow's city file: levels, as-of, history start, and Zillow's own county for the city
+    zc = pd.read_csv(R("zori_city.csv"), dtype={"RegionID": str}).set_index("RegionID")
+    ccols = [c for c in zc.columns if re.match(r"\d{4}-\d{2}-\d{2}$", c)]
+    zcv = zc[ccols].apply(pd.to_numeric, errors="coerce"); zcv.columns = [c[:7] for c in ccols]
+    names = {}
+    for line in open(R("county_names.txt"), encoding="utf-8"):
+        p = line.rstrip("\n").split("|")
+        if len(p) >= 5 and p[1].isdigit():
+            names[p[1] + p[2]] = (p[0], p[4])
+    # Census 2020 places and county subdivisions by county (independent parse): letters-only names, with and without
+    # the place-type word, so "Murrells Inlet" finds "Murrells Inlet CDP" and "Clinton Township" "Clinton charter township"
+    in_census = defaultdict(set)
+    for fn in ("place_by_county.txt", "cousub_by_county.txt"):
+        for line in open(R(fn), encoding="utf-8"):
+            p = line.rstrip("\n").split("|")
+            if len(p) >= 7 and p[1].isdigit():
+                full = p[6].lower().replace("charter township", "township")
+                for nm in {full, re.sub(r" (city|town|village|borough|cdp|municipality)$", "", full)}:
+                    in_census[(p[0], re.sub(r"[^a-z]", "", re.sub(r"\bsaint\b", "st", nm)))].add(p[1] + p[2])
+    lvl, geo, zgeo, sz = [], [], [], []
+    for k, v in cities.items():
+        if k not in zcv.index:
+            lvl.append((k, "no Zillow city row")); continue
+        row = zcv.loc[k]
+        if (abs(row["2025-01"] - v["baseRent"]) > 0.51 or not np.isfinite(row.iloc[-1]) or abs(row.iloc[-1] - v["curRent"]) > 0.51
+                or zcv.columns[-1] != v["asOf"] or not row.loc[:"2024-01"].notna().any()):
+            lvl.append(k)
+        st, cn = names.get(v["county"], ("", ""))
+        key = (v["state"], re.sub(r"[^a-z]", "", re.sub(r"\bsaint\b", "st", v["name"].lower())))
+        if zc.loc[k, "RegionName"] != v["name"] or zc.loc[k, "State"] != v["state"] or v["state"] != st \
+                or v["county"] not in in_census.get(key, set()):
+            geo.append((k, v["name"], v["county"], sorted(in_census.get(key, set()))))
+        if _county_letters(zc.loc[k, "CountyName"]) != _county_letters(cn):
+            zgeo.append((v["name"], zc.loc[k, "CountyName"], cn))
+        sz.append(v["pct"] - (row.iloc[-1] / row["2025-01"] - 1) * 100)
+    inv("City rent levels = observed Zillow city ZORI (Jan 2025 and latest, data by Jan 2024)", lvl)
+    inv("Each city lies in its county per the Census 2020 place / county-subdivision files", geo)
+    record(S, "City rung: cities whose Zillow CountyName differs from the Census county used", "INFO", f"{len(zgeo)}: {zgeo[:6]}")
+    if sz:
+        record(S, "City rent seasonal adjustment size (built SA - raw NSA)", "PASS" if np.median(np.abs(sz)) < 3 else "WARN",
+               f"median |adj| {np.median(np.abs(sz)):.2f} pts over {len(sz)} cities")
+    inv("City rentCS series reproduce city-rent.json pct (Rent tab = Rent card)",
+        [(f, cities[k]["pct"], series_pct(shards.get(f, {}).get("rentCS"), cities[k]["asOf"]))
+         for f, k in ccounties.items() if series_pct(shards.get(f, {}).get("rentCS"), cities[k]["asOf"]) != cities[k]["pct"]])
+    # Most populous: no more populous city in the county with a raw Jan 2025 + latest series reaching back to Jan 2024
+    # (one may legitimately be skipped as an outlier or out of range after adjustment: INFO, listed)
+    cnorm = zc.State.fillna("") + "|" + zc.CountyName.map(_county_letters)
+    passed = []
+    for f, k in ccounties.items():
+        cand = zc[(cnorm == cnorm[k]) & (zc.SizeRank < zc.loc[k, "SizeRank"])].index
+        ok_ = [c for c in cand if np.isfinite(zcv.loc[c, "2025-01"]) and np.isfinite(zcv.loc[c].iloc[-1]) and zcv.loc[c, :"2024-01"].notna().any()]
+        passed += [(f, cities[k]["name"], zc.loc[c, "RegionName"]) for c in ok_]
+    record(S, "City rung: more populous cities passed over (outlier or out of range after adjustment)", "INFO", f"{len(passed)}: {passed[:8]}")
+    c_zips = sum(1 for v in zip_county.values() if v["countyFips"] in ccounties)
+    record(S, "Zips that get city rent (no county or metro series)", "INFO",
+           f"{c_zips} zips, {len(ccounties)} counties: " + ", ".join(f"{v['name']}, {v['state']} {v['pct']:+.1f}" for v in cities.values()))
+
+    # ---------------------------------------------------------------- HUD Fair Market Rents (map only)
+    hud = {f: c["rentH"] for f, c in counties.items() if "rentH" in c}
+    inv(f"HUD rentH: pct in {RENT_PCT_RANGE}, levels positive, pct = levels",
+        [f for f, h in hud.items() if not (lo_ <= h["p"] <= hi_ and h["b"] > 0 and h["c"] > 0 and abs(h["p"] - round((h["c"] / h["b"] - 1) * 100, 1)) < 0.051)])
+    inv("HUD rentH only for counties with no Zillow county, usable metro or city rent (the map's last tier)",
+        sorted(f for f, c in counties.items() if "rentH" in c and ("rent" in c or f in crj["counties"] or metro_ok(f) or f in ccounties)))
+    hp = R("hud_fmr_2bed_hist.csv")
+    if not os.path.exists(hp):
+        record(S, "HUD FMR history file present", "FAIL", "missing")
+        return
+    with open(hp, encoding="latin-1", newline="") as fh:
+        hist = list(csv.DictReader(fh))
+    meta = json.load(open(os.path.join(a.data, "meta.json")))["sources"].get("hudFmr", {})
+    fy_b, fy_c = meta.get("base", "FY2025")[-2:], meta.get("latest", "")[-2:]
+    inv("meta.json hudFmr: base FY2025 (in force on Jan 20 2025) and the latest fiscal year in HUD's history file",
+        [] if fy_b == "25" and f"fmr{fy_c}_2" in hist[0] and not any(f"fmr{y:02d}_2" in hist[0] for y in range(int(fy_c or 0) + 1, 80)) else [meta])
+    by = defaultdict(list)
+    for r in hist:
+        key = (r.get("fips2024") or r["fips"])[:5] if r["state"] == "09" else r["fips"][:5]
+        try:
+            by[key].append((int(r[f"fmr{fy_b}_2"]), int(r[f"fmr{fy_c}_2"])))
+        except (ValueError, KeyError):
+            pass
+    bad = []
+    for f, h in hud.items():
+        src = f if f in by else "02063" if f == "02261" else None
+        pairs = by.get(src, [])
+        if not pairs:
+            bad.append((f, "no HUD row")); continue
+        common = max(set(pairs), key=pairs.count)
+        if (h["b"], h["c"]) != common:
+            bad.append((f, h, common))
+    inv("HUD rentH levels = HUD's 2-bedroom FMRs for the county (New England: the pair covering most towns)", bad)
+    # Second source: HUD's yearly county FMR workbooks (FY2025 revised, latest year) agree with the history file
+    for fy, wb in (("25", "hud_FY25_FMRs_revised.xlsx"), (fy_c, f"hud_FY{fy_c}_FMRs.xlsx")):
+        if not os.path.exists(R(wb)):
+            record(S, f"HUD FY20{fy} county workbook vs FMR history file", "WARN", f"{wb} missing")
+            continue
+        w = _xlsx_without_core_props(R(wb)).set_index("fips")
+        hmap = {r["fips"]: r[f"fmr{fy}_2"] for r in hist}
+        hmap24 = {r.get("fips2024"): r[f"fmr{fy}_2"] for r in hist if r.get("fips2024")}
+        diff = [(f, w.loc[f, "fmr_2"], hmap.get(f, hmap24.get(f))) for f in w.index if str(hmap.get(f, hmap24.get(f))) != str(w.loc[f, "fmr_2"])]
+        record(S, f"HUD FY20{fy} county workbook (2-BR) vs FMR history file", "FAIL" if len(diff) > 5 else "WARN" if diff else "PASS",
+               f"{len(diff)} of {len(w)} rows differ {diff[:5]}" if diff else f"all {len(w)} rows agree")
+    h_zips = sum(1 for v in zip_county.values() if v["countyFips"] in hud)
+    record(S, "Counties drawn with HUD Fair Market Rents on the map (no Zillow rent)", "INFO",
+           f"{len(hud)} counties ({h_zips} zips); median {np.median([h['p'] for h in hud.values()]):+.1f}% vs county Zillow median "
+           f"{np.median([c['rent'] for c in counties.values() if 'rent' in c]):+.1f}%; outside the range (not drawn): {meta.get('outOfRange')}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True)
@@ -171,7 +317,7 @@ def main():
                                                if k in c and not lo <= c[k] <= hi])
     inv("No percentile-rank fields shipped", [(f, k) for f, c in counties.items() for k in c if re.fullmatch(r"[a-z]+R", k)])
     ALLOWED = {"n", "z", "hv", "hvCur", "rent", "rentCur", "rentSaCav", "emp", "approx", "approxFrom", "flags", "note", "hvS", "rentS",
-               "rentSaPool", "rentSaW"}
+               "rentSaPool", "rentSaW", "rentH"}
     inv("County records carry only fields the site reads", [(f, sorted(set(c) - ALLOWED)) for f, c in counties.items() if set(c) - ALLOWED])
     resolved = set(counties)
     # No source publishes these: Kalawao HI (15005) and the island territories (AS 60, GU 66, MP 69, VI 78)
@@ -245,9 +391,9 @@ def main():
             [(f, c["hv"], series_pct(c.get("hvS"), hv_latest)) for f, c in shards.items()
              if "hv" in c and series_pct(c.get("hvS"), hv_latest) != c["hv"]])
         inv("counties.json carries no monthly series (kept in the per-state shards)",
-            [f for f, c in counties.items() if "hvS" in c or "rentS" in c or "rentM" in c or "rentMS" in c])
+            [f for f, c in counties.items() if any(k in c for k in ("hvS", "rentS", "rentM", "rentMS", "rentC", "rentCS"))])
         inv("Shard records carry only fields the site reads",
-            [(f, sorted(set(c) - ALLOWED - {"rentM", "rentMS"})) for f, c in shards.items() if set(c) - ALLOWED - {"rentM", "rentMS"}])
+            [(f, sorted(set(c) - ALLOWED - {"rentM", "rentMS", "rentC", "rentCS"})) for f, c in shards.items() if set(c) - ALLOWED - {"rentM", "rentMS", "rentC", "rentCS"}])
         # Seasonal adjustment: own pattern blended with the state's by history length (saW = own weight, n/(n+k))
         inv("Every county rent row names the state / U.S. seasonal pattern it is blended with and its own weight (0..1)",
             [f for f, v in crj["counties"].items()
@@ -340,6 +486,7 @@ def main():
                  for f, cb in mcounties.items() if f in shards and series_pct(shards[f].get("rentMS"), metros[cb]["asOf"]) != metros[cb]["pct"]])
             m_zips = sum(1 for v in zip_county.values() if v["countyFips"] in mcounties)
             record(S, "Zips that get metro rent (no county series)", "INFO", f"{m_zips} zips, {len(mcounties)} counties, {len(metros)} metros")
+            validate_city_and_hud(S, a, R, inv, counties, shards, crj, mrj, series_pct, zip_county)
 
     # ------------------------------------------------------------------ 7. Static gas sources (AK DCRA, PR DACO)
     S = "7. Static gas sources"

@@ -54,12 +54,12 @@ test.describe('National county map', () => {
       await expect(map.getByTestId('map-mover')).toHaveCount(0)
       await expect(map.getByTestId('map-no-movers')).toContainText("isn't published county by county")
     }
-    // Electricity: a whole recorded state is colored; a state not in the fixture is hatched (no data)
+    // Electricity: a whole recorded state is colored; a state not in the fixture is solid gray (no data)
     await map.getByRole('button', { name: 'Electricity', exact: true }).click()
     const fill = (fips: string) => map.locator(`svg path[data-fips="${fips}"]`).getAttribute('fill')
     expect(await fill('23003')).toMatch(/^rgb\(/) // Aroostook ME
     expect(await fill('23005')).toBe(await fill('23003')) // same state, same color
-    expect(await fill('39035')).toMatch(/^url\(#/) // Cuyahoga OH: not in the fixture
+    expect(await fill('39035')).toBe('#5f6268') // Cuyahoga OH: not in the fixture → NO_DATA_COLOR (quiet solid gray)
     await map.getByRole('button', { name: 'Rent', exact: true }).click()
     await expect(map.getByTestId('map-play')).toBeVisible()
     await expect(map.getByTestId('map-scope-note')).toHaveCount(0)
@@ -248,5 +248,30 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await map.getByRole('button', { name: 'Home prices', exact: true }).click()
     await expect(map.getByTestId('map-metro-hatch')).toHaveCount(0)
     await expect(map.getByTestId('map-legend-metro')).toHaveCount(0)
+  })
+
+  test('Rent layer: city rent (dots) and HUD fair market rents (muted, map only) fill the remaining counties', async ({ page }) => {
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Rent', exact: true }).click()
+    // Georgetown County, SC: no usable Zillow county or metro series → Murrells Inlet city rent, dotted
+    await expect(map.locator('svg path[data-fips="45043"]')).toHaveAttribute('fill', /^rgb\(/)
+    await expect(map.locator('[data-testid="map-city-dots"] path[data-city-fips="45043"]')).toBeAttached()
+    await expect(map.getByTestId('map-legend-city')).toContainText('city rent')
+    await hoverCounty(page, '45043')
+    await expect(map.getByTestId('map-tooltip')).toContainText('Murrells Inlet city rent (Zillow; no county or metro series)')
+    // Sibley County, MN: no Zillow rent at all → HUD 2-bedroom fair market rent change, muted, labeled with its fiscal years
+    await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', /^rgb\(/)
+    await expect(map.getByTestId('map-legend-hud')).toContainText('HUD fair market rent')
+    await hoverCounty(page, '27143')
+    await expect(map.getByTestId('map-tooltip')).toContainText(/HUD fair market rent \(yearly estimate, FY2025→FY20\d\d\), HUD area; not since Jan 2025; no Zillow rent/)
+    await clickCounty(page, '27143')
+    await expect(map.getByTestId('map-value-rent')).toContainText('map only; the Rent card uses CPI shelter')
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no rent data')
+    // other layers: no rent tiers
+    await map.getByRole('button', { name: 'Home prices', exact: true }).click()
+    await expect(map.getByTestId('map-city-dots')).toHaveCount(0)
+    await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no data')
   })
 })

@@ -223,7 +223,7 @@ export async function fetchSnapshot(
   // Housing card: county rent on new leases (bundled Zillow data) when the rent ladder's Zillow rung
   // wins; otherwise null and the card falls back to CPI shelter (the ladder's next rung).
   const rentRung = rentWalk.winner?.rung.id
-  const rent: RentData | null = rentRung === 'rent.zillow-county' || rentRung === 'rent.zillow-metro'
+  const rent: RentData | null = rentRung === 'rent.zillow-county' || rentRung === 'rent.zillow-metro' || rentRung === 'rent.zillow-city'
     ? (rentWalk.winner!.outcome.value as RentData)
     : null
 

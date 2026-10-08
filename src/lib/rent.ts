@@ -1,11 +1,13 @@
 // Rent on new leases (Zillow ZORI, seasonally adjusted by whatchanged), bundled by
-// scripts/build-local-data.py: county rows (src/lib/data/county-rent.json) and, for counties Zillow
+// scripts/build-local-data.py: county rows (src/lib/data/county-rent.json); for counties Zillow
 // has no county series for, the county's metro (src/lib/data/metro-rent.json; OMB March 2020 CBSAs,
-// the vintage Zillow's metros use). Server-side only; the snapshot carries the result so the page,
-// share card and OG image agree.
+// the vintage Zillow's metros use); and where neither is usable, the county's most populous city with a
+// Zillow series (src/lib/data/city-rent.json). Server-side only; the snapshot carries the result so the
+// page, share card and OG image agree. (HUD Fair Market Rents fill the map only, never the card.)
 
 import countyRent from '@/lib/data/county-rent.json'
 import metroRent from '@/lib/data/metro-rent.json'
+import cityRent from '@/lib/data/city-rent.json'
 import type { RentData } from '@/types'
 import { RENT_PCT_RANGE, type NotCurrentInfo } from '@/lib/rent-range'
 
@@ -128,7 +130,7 @@ function seasonalFields(saPool: unknown, saW: unknown, saCaveat?: unknown): Pick
   }
 }
 
-function checkRow(row: Omit<CountyRentRow, 'note'>): 'out-of-range' | 'malformed' | null {
+function checkRow(row: Pick<CountyRentRow, 'pct' | 'baseRent' | 'curRent' | 'asOf'>): 'out-of-range' | 'malformed' | null {
   const { pct, baseRent, curRent, asOf } = row
   if (!finite(pct)) return 'malformed'
   if (pct < PCT_MIN || pct > PCT_MAX) return 'out-of-range'
@@ -186,6 +188,75 @@ export function lookupMetroRent(countyFips: string | null | undefined, countyNam
       source: METRO.meta.source,
       sourceUrl: RENT_SOURCE_URL,
       adjustment: METRO.meta.adjustment,
+      ...seasonalFields(saPool, saW, saCaveat),
+    },
+  }
+}
+
+interface CityRentRow extends Omit<CountyRentRow, 'note' | 'name'> {
+  /** Zillow's city name ("Murrells Inlet") and the city's state abbreviation. */
+  name: string
+  state: string
+  /** County FIPS of the city (Census 2020 place / county-subdivision files). */
+  county: string
+}
+
+interface CityRentFile {
+  meta: { source: string; adjustment: string; baseMonth: string; asOf: string; pctRange?: [number, number] }
+  cities: Record<string, CityRentRow>
+  /** County FIPS → Zillow city RegionID, only for counties with no usable county or metro rent. */
+  counties: Record<string, string>
+}
+
+const CITY = cityRent as unknown as CityRentFile
+
+/** "Murrells Inlet city, SC": the city rung's geography (Zillow's city name + state). */
+export function cityGeoName(name: string, state: string): string {
+  return `${name} city, ${state}`
+}
+
+/** Why the county's metro doesn't stand in (the city rung's reason). */
+function metroWhyForCity(countyFips: string): NonNullable<RentData['metroWhy']> {
+  if (METRO.outOfRangeCounties?.[countyFips]) return 'out-of-range'
+  const cbsa = METRO.counties?.[countyFips]
+  return cbsa && METRO.metros?.[cbsa]?.flagged === true ? 'flagged' : 'none'
+}
+
+/**
+ * City rent for a county with no usable county or metro series (the rent ladder's city rung): the county's most
+ * populous city with a usable Zillow series. `geoName` is "{City} city, {ST}"; `countyFips` stays the zip's county.
+ */
+export function lookupCityRent(countyFips: string | null | undefined, countyName?: string): CountyRentLookup {
+  if (!countyFips || !/^\d{5}$/.test(countyFips)) return { data: null, why: 'no-county' }
+  // Same rule as the metro rung: a county whose OWN series is implausible gets no stand-in
+  if (countySeriesWhy(countyFips) === 'out-of-range') return { data: null, why: 'county-out-of-range' }
+  const id = CITY.counties?.[countyFips]
+  const row = id ? CITY.cities?.[id] : undefined
+  if (!id || !row) return { data: null, why: 'no-series' }
+  const bad = checkRow(row)
+  if (bad) return { data: null, why: bad }
+  if (row.flagged === true) return { data: null, why: 'flagged' }
+  const { pct, baseRent, curRent, asOf, name, state, saPool, saW, saCaveat } = row
+  return {
+    data: {
+      level: 'city',
+      cityId: id,
+      cityName: name,
+      metroWhy: metroWhyForCity(countyFips),
+      countyWhy: countyWhyForMetro(countyFips),
+      ...(NOT_CURRENT[countyFips] ? { countyNotCurrent: NOT_CURRENT[countyFips] } : {}),
+      ...(countyName ? { countyName } : {}),
+      pct,
+      baseRent,
+      curRent,
+      monthlyChange: rentMonthlyChange(curRent, pct),
+      baseMonth: CITY.meta.baseMonth,
+      asOf,
+      countyFips,
+      geoName: cityGeoName(name, state),
+      source: CITY.meta.source,
+      sourceUrl: RENT_SOURCE_URL,
+      adjustment: CITY.meta.adjustment,
       ...seasonalFields(saPool, saW, saCaveat),
     },
   }

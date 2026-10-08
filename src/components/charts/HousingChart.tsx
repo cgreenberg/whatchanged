@@ -31,6 +31,8 @@ export const ZORI_SHORT_NOTE = 'Asking rents on new leases (Zillow), same series
 export const ZHVI_SHORT_NOTE = 'Typical home value (Zillow), smoothed and seasonally adjusted.'
 /** Rent tab for a county without a Zillow county series: its metro's series. */
 export const ZORI_METRO_NOTE = (metro: string) => `No usable Zillow county series; asking rents on new leases in the ${metro} (same as the Rent card).`
+/** Rent tab for a county without a usable Zillow county or metro series: its most populous city's series. */
+export const ZORI_CITY_NOTE = (city: string) => `No usable Zillow county or metro series; asking rents on new leases in ${city}, the county's most populous city with one (same as the Rent card).`
 
 type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | null } | { status: 'error' }
 
@@ -40,10 +42,10 @@ type CountyState = { status: 'loading' } | { status: 'ok'; data: CountyRecord | 
  */
 export function zillowTabInput(
   tab: 'rent' | 'homePrices', county: CountyRecord | null, us: UsHousing | null, geoName: string, now: Date = new Date(),
-  opts: { metro?: boolean } = {},
+  opts: { metro?: boolean; city?: boolean } = {},
 ): ChartInput {
   const rent = tab === 'rent'
-  const data = seriesRows(rent ? (opts.metro ? county?.rentMS : county?.rentS) : county?.hvS, rent ? 'rent' : 'hv')
+  const data = seriesRows(rent ? (opts.city ? county?.rentCS : opts.metro ? county?.rentMS : county?.rentS) : county?.hvS, rent ? 'rent' : 'hv')
   const nationalData = seriesRows(rent ? us?.rentS : us?.hvS, rent ? 'rent' : 'hv')
   return {
     data,
@@ -93,10 +95,13 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
   // Metro rent (no Zillow county series): the Rent tab shows the same metro series as the Rent card
   // Only when the server's rent ladder picked the metro, so the tab never graphs a figure the card rejected
   const metroRent = snapshot.rent?.level === 'metro'
-  const rentGeo = metroRent ? snapshot.rent!.geoName : geoName
+  // City rent (no usable county or metro series): same rule, the county's most populous city's series
+  const cityRent = snapshot.rent?.level === 'city'
+  const rentGeo = metroRent || cityRent ? snapshot.rent!.geoName : geoName
+  const rentSeries = cityRent ? c?.rentCS : metroRent ? c?.rentMS : c?.rentS
   const hasRent = county.status === 'loading'
     ? !!snapshot.rent
-    : seriesRows(metroRent ? c?.rentMS : c?.rentS, 'rent').length > 0
+    : seriesRows(rentSeries, 'rent').length > 0
   const hasHv = county.status === 'loading' ? true : seriesRows(c?.hvS, 'hv').length > 0
   const available: Record<HousingTab, boolean> = { rent: hasRent, homePrices: hasHv, shelter: true }
   const fallback: HousingTab = hasRent ? 'rent' : 'shelter'
@@ -161,19 +166,20 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
     }
   } else {
     const metroTab = active === 'rent' && metroRent
-    input = zillowTabInput(active, c, us, active === 'rent' ? rentGeo : geoName, undefined, { metro: metroTab })
+    const cityTab = active === 'rent' && cityRent
+    input = zillowTabInput(active, c, us, active === 'rent' ? rentGeo : geoName, undefined, { metro: metroTab, city: cityTab })
     config = active === 'rent'
-      ? metroTab
-        // Metro stand-in: the ⓘ must not say "your county"
-        ? { ...housingTabConfigs.rent, description: `Zillow Observed Rent Index (ZORI): typical asking rent on new leases in the ${rentGeo} (Zillow publishes no usable series for your county), seasonally adjusted by whatchanged. Same series as the Rent card.` }
+      ? metroTab || cityTab
+        // Metro / city stand-in: the ⓘ must not say "your county"
+        ? { ...housingTabConfigs.rent, description: `Zillow Observed Rent Index (ZORI): typical asking rent on new leases in ${metroTab ? `the ${rentGeo}` : `${rentGeo} (the county's most populous city with a Zillow series)`} (Zillow publishes no usable series for your county${cityTab ? ' or its metro area' : ''}), seasonally adjusted by whatchanged. Same series as the Rent card.` }
         : housingTabConfigs.rent
       : housingTabConfigs.homePrices
-    const series = active === 'rent' ? (metroTab ? c?.rentMS : c?.rentS) : c?.hvS
+    const series = active === 'rent' ? rentSeries : c?.hvS
     const pct = seriesChangeSinceBaseline(series)
-    const level = active === 'rent' ? (metroTab ? c?.rentM?.cur : c?.rentCur) : c?.hvCur
+    const level = active === 'rent' ? (cityTab ? c?.rentC?.cur : metroTab ? c?.rentM?.cur : c?.rentCur) : c?.hvCur
     const last = input.data[input.data.length - 1]?.date
-    // A flagged metro never stands in (the server's ladder skips it), so only the county's own series can carry a caveat
-    const caveat = metroTab ? null : flagNote(c, active === 'rent' ? 'rent' : 'hv')
+    // A flagged metro or city never stands in (the server's ladder skips it), so only the county's own series can carry a caveat
+    const caveat = metroTab || cityTab ? null : flagNote(c, active === 'rent' ? 'rent' : 'hv')
     if (pct != null) {
       headline = (
         <ChartHeadline
@@ -189,13 +195,14 @@ export function HousingChart({ snapshot, shelterConfig }: { snapshot: EconomicSn
       )
     }
     const seasonal = active !== 'rent' ? undefined
-      : metroTab ? rentSeasonalNote(c?.rentM?.saPool, c?.rentM?.saW, 'metro') : rentSeasonalNote(c?.rentSaPool, c?.rentSaW)
+      : cityTab ? rentSeasonalNote(c?.rentC?.saPool, c?.rentC?.saW, 'city')
+        : metroTab ? rentSeasonalNote(c?.rentM?.saPool, c?.rentM?.saW, 'metro') : rentSeasonalNote(c?.rentSaPool, c?.rentSaW)
     // Same seasonal-pattern caveat as the Rent card (measured at the latest month the graph ends on)
     const seasonalCaveat = active !== 'rent' ? undefined
-      : rentSeasonalCaveat(metroTab ? c?.rentM?.cav : c?.rentSaCav, metroTab ? 'metro' : 'county', { pct: pct ?? undefined, curRent: level })
+      : rentSeasonalCaveat(cityTab ? c?.rentC?.cav : metroTab ? c?.rentM?.cav : c?.rentSaCav, cityTab ? 'city' : metroTab ? 'metro' : 'county', { pct: pct ?? undefined, curRent: level })
     input = {
       ...input,
-      note: active === 'rent' ? (metroTab ? ZORI_METRO_NOTE(rentGeo) : ZORI_SHORT_NOTE) : ZHVI_SHORT_NOTE,
+      note: active === 'rent' ? (cityTab ? ZORI_CITY_NOTE(rentGeo) : metroTab ? ZORI_METRO_NOTE(rentGeo) : ZORI_SHORT_NOTE) : ZHVI_SHORT_NOTE,
       info: [HOUSING_NOTE, ...(seasonal ? [seasonal] : []), ...(seasonalCaveat ? [seasonalCaveat] : [])],
     }
   }

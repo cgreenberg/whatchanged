@@ -64,7 +64,8 @@ export default function AboutPage() {
           Enter a zip code to see how local prices changed since January 20, 2025. Four summary cards
           come first: <strong>Gas</strong> (regular gasoline, $/gal),{' '}
           <strong>Rent</strong> (asking rents on new leases, Zillow: your county&apos;s series, else your
-          metro area&apos;s; where Zillow has neither, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
+          metro area&apos;s, else your county&apos;s most populous city with a Zillow series; where Zillow has none of
+          these, the card shows <strong>Shelter (CPI)</strong> instead),{' '}
           <strong>Groceries</strong> (CPI food at home) and{' '}
           <strong>Electricity</strong> (your state&apos;s average residential price per kWh over the last 12
           months). Each card shows the number, a short dollar translation where one applies, the comparison
@@ -80,7 +81,10 @@ export default function AboutPage() {
           map colors every county by the change since January 2025 in gas prices, rent, home prices or grocery
           prices, or by electricity prices (latest 12 months vs the 12 months centered on January 2025); tap a county to see all five with the area each number covers. Rent
           and home prices are county figures, with month-by-month playback and the biggest increases and
-          decreases. Gas, groceries and electricity are published for metro areas, regions or states, not
+          decreases. On the Rent layer, a county with no Zillow county series is drawn from the same stand-ins as the
+          Rent card (light stripes = its metro area, dots = its most populous city); counties with no Zillow rent at all
+          are drawn muted from HUD&apos;s yearly 2-bedroom fair market rents (map only, never on the card), and the
+          few left are solid gray. Gas, groceries and electricity are published for metro areas, regions or states, not
           counties, so neighboring counties share a color and there is no playback or ranking for them.
         </p>
       </Section>
@@ -185,7 +189,7 @@ export default function AboutPage() {
           .
         </p>
         <p data-testid="about-attribution">
-          BLS, EIA and Census data are public domain. Rent and home value data: Zillow Research. Alaska gas
+          BLS, EIA, Census and HUD data are public domain. Rent and home value data: Zillow Research. Alaska gas
           prices: {DCRA_SOURCE}, {DCRA_PUBLISHER} (
           <a href={DCRA_LICENSE_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>CC BY 4.0</a>
           ; whatchanged matches each zip to a surveyed community or region, prices as published). Puerto Rico gas prices: Departamento de Asuntos del Consumidor (DACO). New York heating oil:

@@ -73,6 +73,8 @@ export interface LadderContext {
   countyRent?(countyFips: string): CountyRentLookup
   /** Static metro rent for a county without a county series: src/lib/data/metro-rent.json via lookupMetroRent. */
   metroRent?(countyFips: string, countyName?: string): CountyRentLookup
+  /** Static city rent for a county with no usable county or metro series: src/lib/data/city-rent.json via lookupCityRent. */
+  cityRent?(countyFips: string, countyName?: string): CountyRentLookup
   /** Static Census ACS median gross rent basis for a zip (src/lib/data/census-acs.ts getCensusData). */
   censusRent?(zip: string): CensusData
   /** Static gas: Alaska DCRA community survey by zip / Puerto Rico DACO (src/lib/static-gas.ts). */
@@ -536,6 +538,23 @@ function metroStandInReason(why: RentData['countyWhy'], county: string, notCurre
   return `Zillow publishes no rent series for ${county}; its metro’s series stands in.`
 }
 
+/** Why the city series stands in: the county's and its metro's reasons. */
+function cityStandInReason(r: RentData, county: string): string {
+  const own = r.countyWhy === 'not-current'
+    ? notCurrentText(county, r.countyNotCurrent)
+    : r.countyWhy === 'too-new'
+      ? `Zillow's series for ${county} is too new to measure since Jan 2025`
+      : r.countyWhy === 'no-baseline'
+        ? `Zillow's series for ${county} has no Jan 2025 value`
+        : `Zillow publishes no rent series for ${county}`
+  const metro = r.metroWhy === 'flagged'
+    ? 'its metro’s figure is a statistical outlier'
+    : r.metroWhy === 'out-of-range'
+      ? `its metro’s figure is outside the plausible range (${rentRangeText()})`
+      : 'it isn’t in a metro with a Zillow rent series back to Jan 2025'
+  return `${own}, and ${metro}; the ${r.cityName ?? 'city'} city series (the county’s most populous city with one) stands in.`
+}
+
 const RENT = {
   metric: 'rent',
   title: 'Rent (housing card)',
@@ -547,7 +566,9 @@ const RENT = {
     'calendar month (at most 8, so at most half its own), and the rest is its state\'s typical pattern (U.S. counties ' +
     'where the state has too few long series); a series with no usable history uses the state pattern. ≈ $/mo = today\'s typical rent − ' +
     'today\'s rent ÷ (1 + %). Changes outside −20% to +50% are not shown; a county\'s own unusual figure is tagged ' +
-    '“⚠ unusual”, and an unusual metro figure never stands in for a county.',
+    '“⚠ unusual”, and an unusual metro or city figure never stands in for a county. Where Zillow has no usable county or ' +
+    'metro series, the county\'s most populous city with a Zillow series stands in (same method; ' +
+    'city-to-county by the Census 2020 place and county-subdivision files).',
   rungs: [
     defineRung<L, string, RentData, C>({
       id: 'rent.zillow-county',
@@ -626,6 +647,46 @@ const RENT = {
         }
       },
     }),
+    defineRung<L, string, RentData, C>({
+      id: 'rent.zillow-city',
+      label: 'Zillow city rent (new leases)',
+      source: 'Zillow',
+      sourceName: 'Zillow Observed Rent Index (ZORI), city',
+      level: 'city',
+      frequency: 'monthly',
+      license: ZILLOW_LICENSE,
+      pipeline: 'static',
+      homepage: ZILLOW_HOME,
+      covers: 'Counties with no usable Zillow county or metro series: the county’s most populous city (Zillow’s size rank) whose Zillow series reaches back to January 2025, seasonally adjusted the same way (city pattern blended with the state pattern). City-to-county by the Census 2020 place and county-subdivision files (not Zillow’s own county label); the city’s typical rent level can differ from the rest of the county; a city figure that is a statistical outlier is skipped for the next city.',
+      applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
+      target: (l) => l.countyFips!,
+      // The city's name comes from the data (the used row overrides this); otherwise the county checked
+      geography: (_f, l) => `a city in ${countyLabel(l)}`,
+      place: countyPlace,
+      resolve: (fips, ctx, l) => {
+        const r = ctx.cityRent!(fips, l.countyName)
+        if (r.data) {
+          const stale = monthOlderThan(r.data.asOf, RENT_STALE_DAYS, ctx.now)
+          return {
+            status: stale ? 'stale' : 'used',
+            value: r.data,
+            asOf: r.data.asOf,
+            geography: { name: r.data.geoName, level: 'city' },
+            reason: [stale ? STALE_REASON : cityStandInReason(r.data, countyOnly(l)), rentSeasonalCaveat(r.data.saCaveat, 'city', r.data)].filter(Boolean).join(' '),
+          }
+        }
+        return {
+          status: r.why === 'out-of-range' || r.why === 'flagged' ? 'invalid' : 'not-applicable',
+          reason: r.why === 'out-of-range'
+            ? `Zillow's city figure for ${countyOnly(l)} is outside the plausible range (${rentRangeText()}), so it isn't shown.`
+            : r.why === 'county-out-of-range'
+              ? `Withheld because ${countyOnly(l)}'s own Zillow series is outside the plausible range (${rentRangeText()}); no city series stands in for it.`
+              : r.why === 'flagged'
+                ? `Zillow's city figure for ${countyOnly(l)} is a statistical outlier among U.S. areas, so it doesn't stand in for the county.`
+                : `No city in ${countyOnly(l)} has a Zillow rent series back to Jan 2025.`,
+        }
+      },
+    }),
     defineRung<L, CpiArea, unknown, C>({
       id: 'rent.bls-cpi-shelter',
       label: 'BLS shelter (CPI)',
@@ -637,7 +698,7 @@ const RENT = {
       license: 'Public domain (U.S. government)',
       pipeline: 'live',
       homepage: 'https://www.bls.gov/cpi/',
-      covers: 'Where Zillow has no county or metro rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.).',
+      covers: 'Where Zillow has no county, metro or city rent: the Shelter (CPI) card, resolved by the shelter ladder (metro → division → region → U.S.).',
       applies: () => true,
       // The area the shelter ladder picks when BLS answers (its first applicable rung).
       target: (l) => firstApplicable(SHELTER, l)!.target as CpiArea,

@@ -180,12 +180,20 @@ export interface ElectricityData extends ElectricitySeriesData {
  * county series, the county's metro (src/lib/data/metro-rent.json; OMB March 2020 CBSA, as Zillow uses).
  */
 export interface RentData {
-  /** 'metro' = the county's metro-area series (absent on older payloads = 'county'). */
-  level?: 'county' | 'metro'
+  /**
+   * 'metro' = the county's metro-area series; 'city' = the county's most populous city with a Zillow series, where
+   * Zillow has no usable county or metro series (absent on older payloads = 'county').
+   */
+  level?: 'county' | 'metro' | 'city'
   /** Metro rows: OMB CBSA code and the county the zip is in (the metro series stands in for it). */
   cbsa?: string
   countyName?: string
-  /** Metro rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short;
+  /** City rows: Zillow city RegionID and the city's name ("Murrells Inlet"). */
+  cityId?: string
+  cityName?: string
+  /** City rows: why the county's metro isn't used ('none' = not in a metro with a usable Zillow series). */
+  metroWhy?: 'none' | 'flagged' | 'out-of-range'
+  /** Metro / city rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short;
    * 'no-baseline' = it has no Jan 2025 value; 'not-current' = it stops before Zillow's latest month). */
   countyWhy?: 'none' | 'too-new' | 'no-baseline' | 'not-current'
   /** countyWhy 'not-current': months the county's series has, its first and last month ("one month, Jul 2026"). */
@@ -214,7 +222,7 @@ export interface RentData {
   baseMonth: string // YYYY-MM
   asOf: string // YYYY-MM of curRent
   countyFips: string
-  geoName: string // e.g. "Travis County, TX", or "Portland-South Portland, ME metro"
+  geoName: string // e.g. "Travis County, TX", "Portland-South Portland, ME metro", or "Murrells Inlet city, SC"
   source: string
   sourceUrl: string
   adjustment: string
@@ -239,7 +247,7 @@ export interface EconomicSnapshot {
   census: DataResult<CensusData>
   /** Statewide EIA residential electricity price (data null for territories: EIA publishes none). */
   electricity: DataResult<ElectricityData>
-  /** Zillow rent: county, else metro (null when neither has a seasonally adjusted series back to Jan 2025). */
+  /** Zillow rent: county, else metro, else city (null when none has a seasonally adjusted series back to Jan 2025). */
   rent?: RentData | null
   /**
    * Home heating fuel (Home heating graph; not a hero card): weekly residential heating oil and propane.

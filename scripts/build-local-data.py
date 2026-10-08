@@ -18,6 +18,10 @@ Outputs
   public/data/us-housing.json          U.S. ZHVI / seasonally adjusted ZORI series (Housing graph "Show national")
   public/data/meta.json                as-of dates and source attributions
   src/lib/data/county-rent.json        county rent for the Rent card / share card / OG image
+  src/lib/data/metro-rent.json         metro rent for counties with no county series (Rent card's metro rung, map stripes)
+  src/lib/data/city-rent.json          city rent for counties with no county or metro rent (Rent card's city rung, map dots)
+                                       (HUD Fair Market Rent changes for the remaining counties ride in counties.json `rentH`:
+                                       map only, never on the Rent card)
 
 Methodology notes (details in docs/LOCAL_DATA_SOURCES.md)
   * Baseline is the Jan 2025 monthly value (matches the rest of the site).
@@ -378,6 +382,186 @@ def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fi
     print(f"metro rent: {len(out_of_range)} linked metros outside the {RENT_HERO_MIN:+.0f}..{RENT_HERO_MAX:+.0f}% range "
           f"{dict(sorted(out_of_range.items()))}; {len(oor_counties)} counties would have used one")
     return {cb: metros[cb] for cb in sorted(used)}, county_map, series, mmonths[-1], sorted(out_of_range), oor_counties
+
+
+def rent_outlier_stats(counties):
+    """(median, robust sd) of county rent % among counties with >= OUTLIER_POOL_JOBS jobs (not approximated): the
+    distribution metro and city rent rows are flagged against (|robust z| > OUTLIER_Z), same as county rent."""
+    vals = np.array([c["rent"] for c in counties.values()
+                     if "rent" in c and (c.get("emp") or 0) >= OUTLIER_POOL_JOBS and "approx" not in c], float)
+    med = np.median(vals)
+    return med, (np.median(np.abs(vals - med)) * 1.4826 or 1.0)
+
+
+# ---------- City rent (Zillow city ZORI) ----------
+# For counties with no usable Zillow county or metro rent: the county's most populous city (Zillow SizeRank) with a
+# usable city series. Same method as county / metro rows: seasonal factors shrunk toward the state pool, data by
+# POOL_MAX_START, Jan 2025 + the file's latest month, the RENT_HERO sanity range; a city flagged as a statistical
+# outlier (same distribution and threshold as metros) is skipped for the next city. City -> county: the Census 2020
+# place-by-county and county-subdivision files (national_place_by_county2020.txt, national_cousub2020.txt; Zillow's
+# city name matched to a Census place, with or without its type suffix ("Fernley city", "Murrells Inlet CDP"), or to a
+# county subdivision by its full name ("Clinton Township" = "Clinton charter township"), in the same state): a name
+# that Census puts wholly in one county takes that county; one spanning counties (or several same-named places)
+# takes Zillow's own CountyName only if Census lists the name in it. Zillow's CountyName alone is not trusted (it puts
+# Fernley NV in Churchill County; Census: Lyon County). Names are normalized (accents, "Saint"/"St.", punctuation, the
+# county/parish/borough suffix; independent cities keep "city" apart from same-named counties).
+_COUNTY_SUFFIX = re.compile(r"\s+(county|parish|borough|city and borough|municipality|census area|municipio)$")
+
+
+def norm_county_name(n):
+    import unicodedata
+    n = unicodedata.normalize("NFKD", str(n)).encode("ascii", "ignore").decode().lower().strip()
+    kind = "city" if re.search(r"\scity$", n) and not n.startswith("carson city") else "county"
+    n = re.sub(r"\s+city$", "", n) if kind == "city" else _COUNTY_SUFFIX.sub("", n)
+    n = re.sub(r"\bste?\b", "st", re.sub(r"\bsaint\b", "st", n))
+    return re.sub(r"[^a-z]", "", n), kind
+
+
+def county_name_index(path):
+    """(state abbr, normalized name, kind) -> county FIPS from the Census 2020 county list (UTF-8). Fails on a clash."""
+    idx = {}
+    for line in open(path, encoding="utf-8"):
+        p = line.rstrip("\n").split("|")
+        if len(p) >= 5 and p[1].isdigit():
+            k = (p[0], *norm_county_name(p[4]))
+            assert k not in idx, f"county name key clash: {k} {idx.get(k)} {p[1] + p[2]}"
+            idx[k] = p[1] + p[2]
+    return idx
+
+
+_PLACE_SUFFIX = re.compile(r"\s+(city and borough|consolidated government|metropolitan government|metro government|unified government|"
+                           r"urban county|city|town|village|borough|cdp|municipality|township|plantation|zona urbana|comunidad)$")
+
+
+def norm_place_name(n, strip_type=False):
+    import unicodedata
+    n = unicodedata.normalize("NFKD", str(n)).encode("ascii", "ignore").decode().lower().strip()
+    n = re.sub(r"\s*\(balance\)$", "", n).replace("charter township", "township")
+    if strip_type:
+        n = _PLACE_SUFFIX.sub("", n)
+    return re.sub(r"[^a-z]", "", re.sub(r"\bste?\b", "st", re.sub(r"\bsaint\b", "st", n)))
+
+
+def place_county_index(place_path, cousub_path):
+    """(state abbr, normalized name) -> set of county FIPS: Census 2020 places (full name and without the type
+    suffix) and county subdivisions (full name; MCD townships such as "Clinton charter township")."""
+    idx = defaultdict(set)
+    for path, is_place in ((place_path, True), (cousub_path, False)):
+        for line in open(path, encoding="utf-8"):
+            p = line.rstrip("\n").split("|")
+            if len(p) >= 7 and p[1].isdigit():
+                idx[(p[0], norm_place_name(p[6]))].add(p[1] + p[2])
+                if is_place:
+                    idx[(p[0], norm_place_name(p[6], strip_type=True))].add(p[1] + p[2])
+    return idx
+
+
+def city_county(st, name, zillow_county, places):
+    """County FIPS for a Zillow city (see the rule above), or None. The Zillow name is matched in full (a Zillow
+    "Harrison Township" must not match a Census "Harrison city")."""
+    cand = places.get((st, norm_place_name(name)), set())
+    if len(cand) == 1:
+        return next(iter(cand))
+    return zillow_county if zillow_county in cand else None
+
+
+def build_city_rent(R, counties, rent_pools, pool_name, abbr_to_fips, eligible):
+    """City ZORI rows for the `eligible` counties (no usable county or metro rent). Returns (cities by Zillow RegionID,
+    county FIPS -> RegionID, series by RegionID, latest month)."""
+    idx = county_name_index(R("county_names.txt"))
+    places = place_county_index(R("place_by_county.txt"), R("cousub_by_county.txt"))
+    ck, cm, cmonths, cdf = load_zillow(R("zori_city.csv"), lambda d: d.RegionID.astype(str).tolist())
+    states = cdf.State.astype(str).tolist()
+    zfips = [idx.get((st, *norm_county_name(cn))) if isinstance(cn, str) else None for st, cn in zip(states, cdf.CountyName)]
+    fips = [city_county(st, nm, zf, places) for st, nm, zf in zip(states, cdf.RegionName, zfips)]
+    moved = [(nm, st, zf, f) for st, nm, zf, f in zip(states, cdf.RegionName, zfips, fips) if f and zf and f != zf]
+    no_place = sum(1 for f in fips if not f)
+    csa, cw, cpool, _, ccav = shrink_adjust(cm, cmonths, [abbr_to_fips.get(st, "") for st in states], rent_pools)
+    csa = np.round(csa, 2)  # shipped precision (rentCS reproduces pct exactly)
+    _, _, pct = change_since(csa, cmonths)
+    bi = cmonths.index(BASE)
+    med, mad = rent_outlier_stats(counties)
+    usable, skipped = defaultdict(list), defaultdict(int)
+    for i, f in enumerate(fips):
+        if not (np.isfinite(pct[i]) and np.isfinite(cm[i, bi]) and np.isfinite(cm[i, -1])):
+            continue
+        if not RENT_HERO_MIN <= pct[i] <= RENT_HERO_MAX:
+            skipped["out of range"] += 1
+            continue
+        if abs(pct[i] - med) / mad > OUTLIER_Z:
+            skipped["outlier"] += 1
+            continue
+        if f and pd.notna(pd.to_numeric(cdf.SizeRank.iloc[i], errors="coerce")):
+            usable[f].append((int(float(cdf.SizeRank.iloc[i])), i))
+    cities, county_map, series = {}, {}, {}
+    for f in sorted(eligible):
+        if not usable.get(f):
+            continue
+        i = min(usable[f])[1]
+        rid = ck[i]
+        county_map[f] = rid
+        if rid in cities:
+            continue
+        row = {"name": str(cdf.RegionName.iloc[i]), "state": states[i], "county": f, "pct": round(float(pct[i]), 1),
+               "baseRent": int(round(cm[i, bi])), "curRent": int(round(cm[i, -1])), "asOf": cmonths[-1],
+               "saPool": pool_name(cpool[i]), "saW": round(float(cw[i]), 2)}
+        if ccav[i]:
+            row["saCaveat"] = ccav[i]
+        cities[rid] = row
+        series[rid] = compact_series(csa[i], cmonths, 2)
+    print(f"city rent: {no_place} of {len(ck)} Zillow cities have no Census place-county match (not used); "
+          f"{len(moved)} placed in a different county than Zillow's CountyName (Census place wholly in one county), e.g. {moved[:5]}")
+    print(f"city rent: {sum(len(v) for v in usable.values())} usable "
+          f"({dict(skipped)} skipped); {len(county_map)} of {len(eligible)} counties without county/metro rent get one: "
+          f"{[(f, cities[r]['name'], cities[r]['pct']) for f, r in county_map.items()]}")
+    return cities, county_map, series, cmonths[-1]
+
+
+# ---------- HUD Fair Market Rents (map only) ----------
+# For counties still without Zillow rent: % change of HUD's 2-bedroom Fair Market Rent from FY2025 (effective Oct 1
+# 2024, the year in force on Jan 20 2025) to the latest fiscal year in HUD's FMR history file (FMR_2Bed_1983_YYYY.csv,
+# public domain). A yearly HUD estimate (40th-percentile gross rent of recent movers, projected), not a market index:
+# not seasonally adjusted, map only (never on the Rent card). New England FMRs are by town: a county takes the
+# FY25/FYxx pair that covers most of its towns. Connecticut town rows carry their legacy county in `fips2024`.
+HUD_BASE_FY = 2025
+
+
+def build_hud_fmr(R, eligible, copy_from):
+    path = R("hud_fmr_2bed_hist.csv")
+    if not os.path.exists(path):
+        sys.exit(f"{path} is missing (scripts/fetch-local-data.sh downloads HUD's FMR history file); refusing to build")
+    h = pd.read_csv(path, dtype=str, encoding="latin-1")
+    yrs = sorted(int(m.group(1)) for c in h.columns if (m := re.fullmatch(r"fmr(\d\d)_2", c)) and int(m.group(1)) < 80)
+    base_col, latest_fy = f"fmr{HUD_BASE_FY % 100:02d}_2", 2000 + yrs[-1]
+    assert base_col in h.columns and latest_fy > HUD_BASE_FY, f"HUD FMR file lacks FY{HUD_BASE_FY} or a later year: {yrs}"
+    cur_col = f"fmr{latest_fy % 100:02d}_2"
+    h["b"] = pd.to_numeric(h[base_col], errors="coerce")
+    h["c"] = pd.to_numeric(h[cur_col], errors="coerce")
+    h = h[(h.b > 0) & (h.c > 0)]
+    legacy = h.fips2024.where(h.state == "09", h.fips) if "fips2024" in h.columns else h.fips
+    h = h.assign(key=legacy.fillna(h.fips).str[:5])
+    rows, mixed = {}, 0
+    for f, g in h.groupby("key"):
+        pairs = g.groupby(["b", "c"]).size().sort_values(ascending=False)
+        b, c = pairs.index[0]
+        mixed += len(pairs) > 1
+        rows[f] = {"p": round(float((c / b - 1) * 100), 1), "b": int(b), "c": int(c), **({"areas": len(pairs)} if len(pairs) > 1 else {})}
+    out, oor = {}, {}
+    for f in sorted(eligible):
+        src = f if f in rows else copy_from.get(f) if copy_from.get(f) in rows else None
+        if not src:
+            continue
+        r = dict(rows[src])
+        if src != f:
+            r["from"] = REGION_NAMES.get(src, src)
+        if not RENT_HERO_MIN <= r["p"] <= RENT_HERO_MAX:
+            oor[f] = r["p"]
+            continue
+        out[f] = r
+    print(f"HUD FMR: FY{HUD_BASE_FY} -> FY{latest_fy} 2-BR for {len(rows)} counties ({mixed} New England counties with "
+          f"several HUD areas: most towns' pair used); {len(out)} of {len(eligible)} counties without Zillow rent get one; "
+          f"{len(oor)} outside {RENT_HERO_MIN:+.0f}..{RENT_HERO_MAX:+.0f}%: {oor}")
+    return out, latest_fy, sorted(oor)
 
 
 # ---------- Alaska: DCRA Community Fuel Price Survey (gasoline) ----------
@@ -788,8 +972,38 @@ def main():
                                     "label": "Zillow Observed Rent Index (ZORI), metro", "geography": METRO_DELINEATION,
                                     "url": "https://www.zillow.com/research/data/"}
 
-    # monthly series (and the metro fallback) ship only in the per-state shards (the map file stays small)
-    SERIES_KEYS = ("hvS", "rentS", "rentM", "rentMS")
+    # City rent (Rent card's next rung, map dots) for counties with no county series and no usable metro (none in
+    # range, or the metro is flagged): never for a county whose OWN series is outside the sanity range.
+    no_zillow = lambda f: "rent" not in counties[f] and f not in county_rent and f not in rent_out_of_range
+    metro_ok = lambda f: f in metro_counties and not metro_rows[metro_counties[f]].get("flagged")
+    city_eligible = sorted(f for f in counties if no_zillow(f) and not metro_ok(f))
+    city_rows, city_counties, city_series, city_asof = build_city_rent(R, counties, rent_pools, pool_name, abbr_to_fips, city_eligible)
+    for f, rid in city_counties.items():
+        c = city_rows[rid]
+        counties[f]["rentC"] = {k: v for k, v in {"n": c["name"], "st": c["state"], "id": rid, "rent": c["pct"], "cur": c["curRent"],
+                                                   "saPool": c.get("saPool"), "saW": c.get("saW"), "cav": c.get("saCaveat")}.items() if v is not None}
+        counties[f]["rentCS"] = city_series[rid]
+    meta["sources"]["zoriCity"] = {"latest": city_asof, "short": "Zillow ZORI (city)", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
+                                   "label": "Zillow Observed Rent Index (ZORI), city",
+                                   "geography": "the county's most populous city with a usable Zillow series (city to county by the Census 2020 place and county-subdivision files)",
+                                   "url": "https://www.zillow.com/research/data/"}
+    # HUD Fair Market Rents for the counties still without Zillow rent (map only; `rentH` in counties.json)
+    hud_eligible = sorted(f for f in city_eligible if f not in city_counties)
+    hud_rows, hud_fy, hud_oor = build_hud_fmr(R, hud_eligible, copy_from)
+    for f, r in hud_rows.items():
+        counties[f]["rentH"] = r
+    meta["sources"]["hudFmr"] = {"latest": f"FY{hud_fy}", "base": f"FY{HUD_BASE_FY}", "short": "HUD FMR",
+                                 "label": f"HUD fair market rent (yearly estimate, FY{HUD_BASE_FY}→FY{hud_fy})",
+                                 "detail": f"2-bedroom Fair Market Rent, % change FY{HUD_BASE_FY} (effective Oct 1 {HUD_BASE_FY - 1}) to "
+                                           f"FY{hud_fy} (effective Oct 1 {hud_fy - 1}); HUD's yearly estimate of gross rent "
+                                           "(40th percentile, recent movers), not a market index; not seasonally adjusted; "
+                                           "counties with no Zillow county, metro or city rent only (map only)",
+                                 "adjustment": "not seasonally adjusted (yearly)", "outOfRange": hud_oor,
+                                 "license": "Public domain (U.S. government)",
+                                 "url": "https://www.huduser.gov/portal/datasets/fmr.html"}
+
+    # monthly series (and the metro / city fallbacks) ship only in the per-state shards (the map file stays small)
+    SERIES_KEYS = ("hvS", "rentS", "rentM", "rentMS", "rentC", "rentCS")
     with open(os.path.join(a.out, "counties.json"), "w") as fh:
         json.dump({f: {k: v for k, v in c.items() if k not in SERIES_KEYS} for f, c in counties.items()}, fh,
                   separators=(",", ":"), sort_keys=True)
@@ -852,6 +1066,18 @@ def main():
             m_cov[v["stateAbbr"]] += 1
     print(f"metro-rent.json: {len(metro_rows)} metros for {len(metro_counties)} counties; covers {sum(m_cov.values())} more zips:",
           dict(sorted(m_cov.items(), key=lambda t: -t[1])))
+    # Server-importable city rent (Rent card's city rung): same fields as metro rows plus the city's state and county;
+    # `counties` maps county FIPS -> Zillow city RegionID, only for counties with no usable county or metro rent.
+    with open(os.path.join(a.repo, "src/lib/data/city-rent.json"), "w") as fh:
+        json.dump({"meta": {"source": "Zillow Observed Rent Index (ZORI), city", "adjustment": "seasonally adjusted by whatchanged", **RENT_SA_META,
+                            "baseMonth": BASE, "asOf": city_asof, "pctRange": [RENT_HERO_MIN, RENT_HERO_MAX],
+                            "selection": meta["sources"]["zoriCity"]["geography"],
+                            "levels": "baseRent/curRent are observed (not seasonally adjusted) typical asking rents, $/mo"},
+                   "cities": city_rows, "counties": city_counties}, fh, separators=(",", ":"))
+    c_zips = sum(1 for v in zip_county.values() if v["countyFips"] in city_counties)
+    h_zips = sum(1 for v in zip_county.values() if v["countyFips"] in hud_rows)
+    print(f"city-rent.json: {len(city_rows)} cities for {len(city_counties)} counties ({c_zips} zips); "
+          f"HUD FMR (map only): {len(hud_rows)} counties ({h_zips} zips)")
 
     # Static gas series for places EIA/BLS don't price: Alaska communities (DCRA) and Puerto Rico (DACO)
     for name, built in (("ak-gas.json", build_ak_gas(R, zip_county)), ("pr-gas.json", build_pr_gas(R))):
@@ -868,7 +1094,7 @@ def main():
     with open(os.path.join(a.out, "meta.json"), "w") as fh:
         json.dump(meta, fh, indent=1)
     print(f"counties: {len(counties)}; fields:",
-          {k: sum(k in c for c in counties.values()) for k in ["hv", "rent", "emp", "approx", "flags"]})
+          {k: sum(k in c for c in counties.values()) for k in ["hv", "rent", "rentM", "rentC", "rentH", "emp", "approx", "flags"]})
 
 
 if __name__ == "__main__":

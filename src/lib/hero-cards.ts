@@ -581,6 +581,9 @@ export function buildRentCard(
       ? 'Unusual value: far outside the range most U.S. counties show, so treat it with caution.'
       : undefined
   const metro = r.level === 'metro'
+  const city = r.level === 'city'
+  const level = metro ? 'metro' : city ? 'city' : 'county'
+  // "Murrells Inlet city" (the city rung’s geoName is "Murrells Inlet city, SC")
   const area = metro ? metroShortName(r.geoName) : countyOnly(r.geoName)
   const base = {
     id: 'rent' as const,
@@ -596,10 +599,11 @@ export function buildRentCard(
   // The $ figure is the seasonally adjusted change expressed in dollars, never a raw then-vs-now gap;
   // the raw level is shown only as a level, with its month.
   const dollarNote = `≈ ${fmtSignedDollars(r.monthlyChange, 0)}/mo vs ${fmtMonthYear(r.baseMonth)}, after adjusting for the usual seasonal ${seasonalWord(r.asOf)}`
-  const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
-  const metroNote = metro ? rentMetroNote(r) : undefined
-  const poolNote = rentSeasonalNote(r.saPool, r.saW, metro ? 'metro' : 'county')
-  const seasonalCaveat = rentSeasonalCaveat(r.saCaveat, metro ? 'metro' : 'county', r)
+  // A city figure standing in for a county: the level is that city's, said on the line itself
+  const detail = `Typical asking rent${city ? ` in ${r.cityName ?? area} (not county-wide)` : ''}: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
+  const metroNote = metro ? rentMetroNote(r) : city ? rentCityNote(r) : undefined
+  const poolNote = rentSeasonalNote(r.saPool, r.saW, level)
+  const seasonalCaveat = rentSeasonalCaveat(r.saCaveat, level, r)
   return {
     ...base,
     status: 'ok',
@@ -637,15 +641,33 @@ export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'coun
   return `${why}; this is the ${r.geoName} series (the county's metro area).`
 }
 
+/** Why a city figure is on a county's card. */
+export function rentCityNote(r: Pick<RentData, 'geoName' | 'cityName' | 'countyName' | 'countyWhy' | 'countyNotCurrent' | 'metroWhy'>): string {
+  const county = r.countyName ? countyOnly(r.countyName) : 'this county'
+  const own = r.countyWhy === 'not-current'
+    ? notCurrentText(county, r.countyNotCurrent)
+    : r.countyWhy === 'too-new'
+      ? `Zillow's series for ${county} is too new (it needs data from Jan 2024) to measure since Jan 2025`
+      : r.countyWhy === 'no-baseline'
+        ? `Zillow's series for ${county} has no Jan 2025 value, so its change since Jan 2025 can't be measured`
+        : `Zillow publishes no rent series for ${county}`
+  const metro = r.metroWhy === 'flagged'
+    ? 'its metro area’s figure is a statistical outlier'
+    : r.metroWhy === 'out-of-range'
+      ? 'its metro area’s figure is outside the plausible range'
+      : 'it isn’t in a metro area with a Zillow rent series back to Jan 2025'
+  return `${own}, and ${metro}; this is the ${r.geoName} series (the county's most populous city with a Zillow rent series), which may differ from the rest of the county.`
+}
+
 /** How rent is seasonally adjusted (same label as the data's meta.seasonalMethod). */
 export const RENT_SA_LABEL =
   'seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)'
 
 /** The seasonal adjustment of one rent series, said plainly: how much of its own pattern vs its state's it uses. */
-export function rentSeasonalNote(pool: string | undefined, w: number | undefined, level: 'county' | 'metro' = 'county'): string {
+export function rentSeasonalNote(pool: string | undefined, w: number | undefined, level: 'county' | 'metro' | 'city' = 'county'): string {
   const head = `Seasonally adjusted by whatchanged (${level} pattern blended with the state (or U.S.) pattern based on history length)`
   if (!pool || typeof w !== 'number' || !Number.isFinite(w)) return `${head}.`
-  const own = level === 'metro' ? 'the metro’s own pattern' : 'the county’s own pattern'
+  const own = level === 'metro' ? 'the metro’s own pattern' : level === 'city' ? 'the city’s own pattern' : 'the county’s own pattern'
   if (w <= 0) return `${head}: this series is too short to estimate its own pattern, so it uses the typical pattern of ${pool}.`
   const ownPct = Math.round(w * 100)
   return `${head}: ${ownPct}% ${own}, ${100 - ownPct}% the typical pattern of ${pool}.`

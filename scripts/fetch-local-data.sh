@@ -30,13 +30,29 @@ bg dl zhvi_county.csv $Z/zhvi/County_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month
 bg dl zori_county.csv $Z/zori/County_zori_uc_sfrcondomfr_sm_month.csv
 bg dl zhvi_metro.csv  $Z/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv  # U.S. row for the Housing graph
 bg dl zori_metro.csv  $Z/zori/Metro_zori_uc_sfrcondomfr_sm_month.csv                 # U.S. row for the Housing graph
+bg dl zori_city.csv   $Z/zori/City_zori_uc_sfrcondomfr_sm_month.csv                  # city rent rung (no county/metro series)
 bg dl zhvi_zip.csv    $Z/zhvi/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv    # zip order (SizeRank) only: representative zip per county
 bg dl qcew_$QY.zip    https://data.bls.gov/cew/data/files/$QY/csv/${QY}_qtrly_singlefile.zip
 bg dl county_names.txt https://www2.census.gov/geo/docs/reference/codes2020/national_county2020.txt
+bg dl place_by_county.txt https://www2.census.gov/geo/docs/reference/codes2020/national_place_by_county2020.txt  # city rung: place -> county
+bg dl cousub_by_county.txt https://www2.census.gov/geo/docs/reference/codes2020/national_cousub2020.txt      # city rung: township -> county
 # Metro rent: county -> CBSA (OMB March 2020 delineation, the vintage Zillow's metros use) and Zillow metro
 # RegionID -> CBSA code (Zillow's own crosswalk; IDs only, no name matching)
 bg dl cbsa_list1_2020.xls https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2020/delineation-files/list1_2020.xls
 bg dl zillow_county_crosswalk.csv https://files.zillowstatic.com/research/public/CountyCrossWalk_Zillow.csv
+
+# HUD Fair Market Rents, 2-bedroom history (public domain; map-only rent rung). The file name carries the latest fiscal
+# year (FMR_2Bed_1983_2027.csv): read it from HUD's FMR page. The validator cross-checks it against HUD's yearly
+# county FMR workbooks (FY2025 revised and the latest year), linked from the same page.
+HUD=https://www.huduser.gov/portal/datasets
+HUDP=$(curl -sSfL -A "$UA" $HUD/fmr.html)
+HUDF=$(printf '%s' "$HUDP" | grep -oE 'FMR/FMR_2Bed_1983_[0-9]{4}\.csv' | sort -u | tail -1 || true)
+[ -n "$HUDF" ] || { echo "ERROR: HUD FMR history link not found on $HUD/fmr.html" >&2; exit 1; }
+HUDY=$(printf '%s' "$HUDF" | grep -oE '[0-9]{4}' | tail -1)
+dl hud_fmr_2bed_hist.csv "$HUD/$HUDF"
+HUDX=$(printf '%s' "$HUDP" | grep -oE "/portal/datasets/fmr/fmr$HUDY/FY${HUDY:2:2}_FMRs[a-z_]*\.xlsx" | head -1 || true)
+[ -n "$HUDX" ] && dl hud_FY${HUDY:2:2}_FMRs.xlsx "https://www.huduser.gov$HUDX" || echo "WARN: HUD FY$HUDY county FMR workbook not found (validation-only)" >&2
+dl hud_FY25_FMRs_revised.xlsx $HUD/fmr/fmr2025/FY25_FMRs_revised.xlsx || echo "WARN: HUD FY2025 county FMR workbook download failed (validation-only)" >&2
 
 # --- validation-only sources (required: the validator reads them) ---
 bg dl fhfa_county.xlsx https://www.fhfa.gov/hpi/download/annual/hpi_at_county.xlsx

@@ -414,6 +414,132 @@
   "metrics": {}
  },
  {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: meta.pctRange = [-20, 50] (the runtime range)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: pct in [-20, 50], levels positive, not flagged",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: a city stands in only where there is no county rent row and no usable metro",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "city-rent.json: every mapped city has a row, and the row's county is that county",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rent levels = observed Zillow city ZORI (Jan 2025 and latest, data by Jan 2024)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Each city lies in its county per the Census 2020 place / county-subdivision files",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rung: cities whose Zillow CountyName differs from the Census county used",
+  "status": "INFO",
+  "detail": "0: []",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rent seasonal adjustment size (built SA - raw NSA)",
+  "status": "PASS",
+  "detail": "median |adj| 1.50 pts over 1 cities",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rentCS series reproduce city-rent.json pct (Rent tab = Rent card)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "City rung: more populous cities passed over (outlier or out of range after adjustment)",
+  "status": "INFO",
+  "detail": "0: []",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Zips that get city rent (no county or metro series)",
+  "status": "INFO",
+  "detail": "4 zips, 1 counties: Murrells Inlet, SC +5.4",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH: pct in [-20, 50], levels positive, pct = levels",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH only for counties with no Zillow county, usable metro or city rent (the map's last tier)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "meta.json hudFmr: base FY2025 (in force on Jan 20 2025) and the latest fiscal year in HUD's history file",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD rentH levels = HUD's 2-bedroom FMRs for the county (New England: the pair covering most towns)",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD FY2025 county workbook (2-BR) vs FMR history file",
+  "status": "WARN",
+  "detail": "1 of 4764 rows differ [('2301742835', '1096', None)]",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "HUD FY2027 county workbook (2-BR) vs FMR history file",
+  "status": "PASS",
+  "detail": "all 4764 rows agree",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Counties drawn with HUD Fair Market Rents on the map (no Zillow rent)",
+  "status": "INFO",
+  "detail": "1889 counties (14284 zips); median +9.3% vs county Zillow median +4.5%; outside the range (not drawn): ['08057']",
+  "metrics": {}
+ },
+ {
   "section": "7. Static gas sources",
   "check": "ak-gas.json: CC BY 4.0 attribution present",
   "status": "PASS",

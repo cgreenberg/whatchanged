@@ -3,7 +3,7 @@
 // series read by several ladders (CPI for groceries + shelter + the rent card's fallback, the U.S. gas
 // average as both comparison and last rung) is fetched once.
 //
-// Static-pipeline rungs (Zillow county/metro rent, Alaska DCRA survey, Puerto Rico DACO) read bundled JSON
+// Static-pipeline rungs (Zillow county/metro/city rent, Alaska DCRA survey, Puerto Rico DACO) read bundled JSON
 // through small lookup modules exposed here as context accessors; the rung in ladders.ts calls them.
 
 import type { CachedResult } from '@/lib/cache/kv'
@@ -15,7 +15,7 @@ import type { GasLookupResult, GasSeriesData } from '@/lib/api/eia'
 import type { ElectricitySeriesData } from '@/lib/api/eia-electricity'
 import type { HeatingProduct, HeatingSeriesData } from '@/lib/api/eia-heating'
 import type { NyserdaHeatingOil } from '@/lib/api/nyserda'
-import { lookupCountyRent, lookupMetroRent } from '@/lib/rent'
+import { lookupCityRent, lookupCountyRent, lookupMetroRent } from '@/lib/rent'
 import { lookupAkGas, lookupPrGas } from '@/lib/static-gas'
 import { getCensusData } from '@/lib/data/census-acs'
 import { resolveLadder, type Ladder, type LadderResult } from './resolve'
@@ -58,6 +58,7 @@ export function serverLadderContext(loc: LadderLocation, now: Date, opts: FetchO
     nyserda: () => memo(ny, 'all', 'nyserda', () => getNyserdaCached(opts)),
     countyRent: lookupCountyRent,
     metroRent: lookupMetroRent,
+    cityRent: lookupCityRent,
     akGas: lookupAkGas,
     prGas: lookupPrGas,
     censusRent: getCensusData,

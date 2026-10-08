@@ -49,6 +49,19 @@ export interface CountyRecord {
    */
   rentM?: { n: string; cbsa: string; rent: number; cur: number; flag?: boolean; saPool?: string; saW?: number; cav?: SeasonalCaveat }
   rentMS?: CompactSeries
+  /**
+   * County shards only, for counties with no usable county or metro rent: the county's most populous city with a
+   * Zillow series (`n` city, `st` state, `id` Zillow RegionID) — the Rent card's city rung and the Rent tab — with
+   * its seasonally adjusted monthly levels in `rentCS`.
+   */
+  rentC?: { n: string; st: string; id: string; rent: number; cur: number; saPool?: string; saW?: number; cav?: SeasonalCaveat }
+  rentCS?: CompactSeries
+  /**
+   * Map only, for counties with no Zillow rent at all: HUD 2-bedroom Fair Market Rent, % change (`p`) from the base
+   * fiscal year (`b`, $/mo) to the latest (`c`); fiscal years in meta.sources.hudFmr. `from` = copied from another
+   * area; `areas` = New England towns in several HUD areas (the most common one used).
+   */
+  rentH?: { p: number; b: number; c: number; from?: string; areas?: number }
 }
 
 export type CountyMap = Record<string, CountyRecord>
@@ -384,12 +397,49 @@ const NEG = [74, 144, 217]
 const MID = [36, 40, 46]
 const POS = [236, 146, 58]
 /**
- * No-data fill: a hatch of mid-gray on near-black (map SVG pattern NO_DATA_PATTERN_ID), so a missing
- * county never reads as a ~0% change (the scale's midpoint is near-black). NO_DATA_COLOR is the
- * solid stand-in where a pattern can't be used (it is lighter than any near-zero color).
+ * No-data fill (every map layer): a quiet solid neutral gray, hueless and lighter than any near-zero color (the scale's
+ * midpoint is near-black), so a missing county never reads as a ~0% change.
  */
-export const NO_DATA_COLOR = '#71717a'
-export const NO_DATA_PATTERN_ID = 'map-nodata-hatch'
+export const NO_DATA_COLOR = '#5f6268'
+
+/**
+ * Muted version of a scale color (map tier for HUD Fair Market Rents, a yearly estimate rather than a market index):
+ * mostly desaturated toward its own gray and slightly darker, so the hue (rose / fell) still reads but the tier stands
+ * apart from Zillow's colors.
+ */
+export function mutedColor(color: string, keep = 0.25): string {
+  const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(color.replace(/\s+/g, ''))
+  if (!m) return color
+  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const gray = 0.299 * r + 0.587 * g + 0.114 * b
+  const c = [r, g, b].map(v => Math.round((gray + (v - gray) * keep) * 0.9))
+  return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
+/** "HUD fair market rent (yearly estimate, FY2025→FY2027)" from the build's meta (fiscal years come from the data). */
+export function hudRentLabel(meta: LocalMeta | null | undefined): string {
+  return meta?.sources?.hudFmr?.label ?? 'HUD fair market rent (yearly estimate)'
+}
+
+/** HUD fiscal-year window from the build's meta: "FY2025→FY2027", and when the latest year starts ("Oct 2026"). */
+export function hudWindow(meta: LocalMeta | null | undefined): { window: string; latestStarts: string | null } {
+  const s = meta?.sources?.hudFmr as (SourceMeta & { base?: string }) | undefined
+  const y = Number(/^FY(\d{4})$/.exec(s?.latest ?? '')?.[1])
+  return {
+    window: s?.base && s?.latest ? `${s.base}→${s.latest}` : 'between fiscal years',
+    // a federal fiscal year starts in October of the previous calendar year
+    latestStarts: Number.isFinite(y) ? fmtMonthYear(`${y - 1}-10`) : null,
+  }
+}
+
+/** The map panel's provenance for a HUD-tier county (geography, window, projection, adjustment), from meta. */
+export function hudPanelArea(meta: LocalMeta | null | undefined): string {
+  const { window, latestStarts } = hudWindow(meta)
+  const latest = window.split('→')[1]
+  return `${hudRentLabel(meta)} · HUD fair market rent area covering this county (its metro FMR area, or the county itself if non-metro) · ` +
+    `${window}, not since ${fmtMonthYear(BASELINE_MONTH)}; both years are HUD projections from older survey data${latest && latestStarts ? ` (${latest} starts ${latestStarts})` : ''} · ` +
+    'yearly, not seasonally adjusted · no Zillow rent for this county (map only; the Rent card uses CPI shelter)'
+}
 export function divergingColor(v: number | undefined, clamp: number): string {
   if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
   const t = Math.max(-1, Math.min(1, v / clamp))
@@ -483,7 +533,7 @@ export function timelineMonths(t: { months: string[]; rentMonths?: string[] }, m
 /**
  * The selected zip's own county in the map panel shows the card's figure where the card uses something the
  * county-wide map value can't: Alaska's per-zip DCRA survey community (the map colors a borough by the median
- * of its surveyed communities) and a metro rent series standing in for a county with no Zillow county series.
+ * of its surveyed communities) and a metro or city rent series standing in for a county with no Zillow county series.
  */
 export interface ZipPanelOverrides {
   gas?: { text: string; area: string; detail: string }
@@ -511,6 +561,14 @@ export function zipPanelOverrides(s: EconomicSnapshot | null | undefined): ZipPa
     }
   }
   const r = s.rent
+  if (r && r.level === 'city' && Number.isFinite(r.pct)) {
+    out.rent = {
+      text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,
+      area: `${r.cityName ?? r.geoName} city rent (Zillow) · ${metroStandInWhy(r)}, and there is no usable metro series; the county’s most populous city with a Zillow series is used`,
+    }
+    const seasonal = rentSeasonalCaveat(r.saCaveat, 'city', r)
+    if (seasonal) out.rent.seasonal = seasonal
+  }
   if (r && r.level === 'metro' && Number.isFinite(r.pct)) {
     out.rent = {
       text: `${fmtPct(r.pct)} ${sinceBaseline(null)} · typical asking rent $${Math.round(r.curRent).toLocaleString('en-US')}/mo`,

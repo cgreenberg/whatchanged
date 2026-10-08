@@ -5,17 +5,20 @@ import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, NO_DATA_COLOR, mapScaleFor, scaleColor, scaleText, fmtScaleValue,
-  NO_DATA_PATTERN_ID, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
+  mutedColor, hudRentLabel, hudWindow, hudPanelArea, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
-import { mapMetroRent } from '@/lib/map-metro-rent'
+import { mapRentTier, type MapRentTier } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
 import { rentSeasonalCaveat } from '@/lib/rent-range'
 
 /** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
 const METRO_HATCH_ID = 'map-metro-hatch'
 const METRO_HATCH_CSS = 'repeating-linear-gradient(45deg, rgba(241,239,234,0.5) 0 1.2px, transparent 1.2px 4px)'
+/** Light dots over a county colored by a city's rent (no usable Zillow county or metro series). */
+const CITY_DOTS_ID = 'map-city-dots'
+const CITY_DOTS_CSS = 'radial-gradient(circle, rgba(241,239,234,0.6) 0 0.9px, transparent 1.1px) 0 0 / 4px 4px'
 const VIEW_W = 975
 const VIEW_H = 610
 
@@ -38,7 +41,7 @@ const CountyLayer = memo(function CountyLayer({ shapes, fills, onPick }: {
           key={s.id}
           d={s.d}
           data-fips={s.id}
-          fill={fills.get(s.id) ?? `url(#${NO_DATA_PATTERN_ID})`}
+          fill={fills.get(s.id) ?? NO_DATA_COLOR}
           stroke="#111316"
           strokeWidth={0.3}
           style={{ transition: 'fill 300ms linear', cursor: 'pointer' }}
@@ -189,26 +192,30 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     if (frame != null && timeline) return timeline[countyKey][fips]?.[frame]
     return data[fips]?.[countyKey]
   }, [countyKey, liveData, metric, frame, timeline, data])
-  // Rent: a county with no Zillow county series takes its metro's rent (the Rent card's metro rung), drawn hatched.
-  // Not during the time-lapse (it plays the county series only).
-  const metroRent = useMemo(() => {
-    const out = new Map<string, number>()
+  // Rent: a county with no Zillow county series takes the Rent card's next rung — its metro's rent (light stripes),
+  // else its most populous city's (dots) — and, map only, HUD's Fair Market Rent change (muted). Not during the
+  // time-lapse (it plays the county series only).
+  const rentTiers = useMemo(() => {
+    const out = new Map<string, Exclude<MapRentTier, { tier: 'county' }>>()
     if (metric !== 'rent' || playing || !shapes) return out
     for (const s of shapes.counties) {
-      if (data[s.id]?.rent != null) continue
-      const m = mapMetroRent(s.id)
-      if (m) out.set(s.id, m.pct)
+      const t = mapRentTier(s.id, data[s.id])
+      if (t && t.tier !== 'county') out.set(s.id, t)
     }
     return out
   }, [metric, playing, shapes, data])
   // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
-  // |change| (diverging), or the counties' 2nd–98th percentile range when every county moved the same way (gas)
+  // |change| (diverging), or the counties' 2nd–98th percentile range when every county moved the same way (gas).
+  // Rent: Zillow values only (county, metro, city); HUD's yearly estimates are drawn on that scale, muted.
   const unit: 'usd' | 'pct' = def.scope === 'live' ? def.unit : 'pct'
   const scale = useMemo(() => {
     const vals: (number | undefined)[] = []
     for (const s of shapes?.counties ?? []) {
-      vals.push(countyKey ? data[s.id]?.[countyKey] ?? (countyKey === 'rent' ? mapMetroRent(s.id)?.pct : undefined)
-        : liveValue(liveData, s.id, metric as Exclude<MetricKey, CountyMetricKey>)?.value)
+      if (!countyKey) { vals.push(liveValue(liveData, s.id, metric as Exclude<MetricKey, CountyMetricKey>)?.value); continue }
+      const own = data[s.id]?.[countyKey]
+      if (own != null || countyKey !== 'rent') { vals.push(own); continue }
+      const t = mapRentTier(s.id, data[s.id])
+      vals.push(t && t.tier !== 'hud' ? t.pct : undefined)
     }
     return mapScaleFor(vals, unit, def.clamp, def.scope === 'live' && !!def.sequential)
   }, [shapes, countyKey, data, liveData, metric, unit, def])
@@ -216,12 +223,17 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     const out = new Map<string, string>()
     if (!shapes) return out
     for (const s of shapes.counties) {
-      const v = value(s.id) ?? metroRent.get(s.id)
-      if (Number.isFinite(v)) out.set(s.id, scaleColor(v, scale))
+      const v = value(s.id)
+      if (Number.isFinite(v)) { out.set(s.id, scaleColor(v, scale)); continue }
+      const t = rentTiers.get(s.id)
+      if (t) out.set(s.id, t.tier === 'hud' ? mutedColor(scaleColor(t.pct, scale)) : scaleColor(t.pct, scale))
     }
     return out
-  }, [shapes, value, metroRent, scale])
-  const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => metroRent.has(s.id)) : []), [shapes, metroRent])
+  }, [shapes, value, rentTiers, scale])
+  const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'metro') : []), [shapes, rentTiers])
+  const cityShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'city') : []), [shapes, rentTiers])
+  const hudCount = useMemo(() => [...rentTiers.values()].filter(t => t.tier === 'hud').length, [rentTiers])
+  const hudLabel = hudRentLabel(meta)
   const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
   /** Keyboard browsing starts at the selected county, else the one nearest the map's center. */
   const centerFips = useMemo(() => {
@@ -246,7 +258,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const tipFips = hover?.fips ?? kbd
   const tipFor = (fips: string | null) => (fips
     ? mapTooltip({
-        fips, metric, county: data[fips], liveData,
+        fips, metric, county: data[fips], liveData, hudLabel,
         ...(playing && countyKey ? { frame: { value: value(fips), month: timelineMonths(timeline!, countyKey)[frame!] } } : {}),
       })
     : null)
@@ -288,8 +300,9 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           if (!text && d.key === 'rent' && own?.rent) {
             return { key: d.key, short: d.short, text: own.rent.text, area: own.rent.area, caveat: null, seasonal: own.rent.seasonal }
           }
-          const m = !text && d.key === 'rent' ? mapMetroRent(selected) : null
-          if (m) {
+          const t = !text && d.key === 'rent' ? mapRentTier(selected, sel) : null
+          if (t?.tier === 'metro') {
+            const m = t.metro
             return {
               key: d.key, short: d.short,
               text: `${fmtPct(m.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(m.cur)}/mo`,
@@ -298,12 +311,31 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               seasonal: rentSeasonalCaveat(m.saCaveat, 'metro', { pct: m.pct, curRent: m.cur }),
             }
           }
+          if (t?.tier === 'city') {
+            const c = t.city
+            return {
+              key: d.key, short: d.short,
+              text: `${fmtPct(c.pct)} ${sinceBaseline(meta)} · typical asking rent ${fmtMoney(c.cur)}/mo`,
+              area: `${c.name} city rent (Zillow): the county’s most populous city with a Zillow series (no usable county or metro series)`,
+              caveat: null,
+              seasonal: rentSeasonalCaveat(c.saCaveat, 'city', { pct: c.pct, curRent: c.cur }),
+            }
+          }
+          if (t?.tier === 'hud') {
+            const h = t.hud
+            return {
+              key: d.key, short: d.short,
+              text: `${fmtPct(h.pct)} · 2-bedroom fair market rent ${fmtMoney(h.base)} → ${fmtMoney(h.cur)}/mo`,
+              area: `${hudPanelArea(meta)}${h.from ? `; ${h.from} figure` : ''}${h.areas ? `; the HUD area covering most of its towns` : ''}`,
+              caveat: null,
+            }
+          }
           return {
             key: d.key, short: d.short,
             // The rent number carries its seasonal-pattern caveat wherever it appears (card, graph, map)
             seasonal: text && d.key === 'rent' ? rentSeasonalCaveat(sel.rentSaCav, 'county', { pct: sel.rent, curRent: sel.rentCur }) : undefined,
             text: text ?? (d.key === 'rent'
-              ? 'No Zillow county rent series (the Rent card uses the county’s metro series where Zillow has one)'
+              ? 'No rent data for this county (no Zillow county, metro or city series and no HUD fair market rent change)'
               : `No Zillow ${d.short.toLowerCase()} data for this county`),
             area: text ? 'county' : null,
             caveat: flagNote(sel, d.key),
@@ -330,7 +362,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         How every county changed
       </h2>
       <p className="text-sm text-ink-2 mt-2 mb-4 max-w-2xl">
-        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}. Tap one to see all five measures.
+        Each county colored by {def.label.toLowerCase()}{window_ ? `, ${window_}` : ''}{hudCount > 0 ? `; muted counties have no Zillow rent and show HUD’s fair market rent change instead (${hudWindow(meta).window}, a different, yearly measure)` : ''}. Tap one to see all five measures.
       </p>
 
       {/* Controls sit above the map, never on top of it, so every county stays tappable */}
@@ -413,13 +445,13 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             onPointerLeave={() => setHover(null)}
           >
             <defs>
-              <pattern id={NO_DATA_PATTERN_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width={4} height={4} fill="#171A1E" />
-                <rect width={1.6} height={4} fill={NO_DATA_COLOR} />
-              </pattern>
               {/* Metro rent: light stripes over the county's color (lighter + hatched, unlike the gray no-data hatch) */}
               <pattern id={METRO_HATCH_ID} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                 <rect width={1.2} height={4} fill="rgba(241,239,234,0.5)" />
+              </pattern>
+              {/* City rent: light dots over the county's color */}
+              <pattern id={CITY_DOTS_ID} width={4} height={4} patternUnits="userSpaceOnUse">
+                <circle cx={2} cy={2} r={0.9} fill="rgba(241,239,234,0.6)" />
               </pattern>
             </defs>
             <CountyLayer shapes={shapes.counties} fills={fills} onPick={pick} />
@@ -427,6 +459,11 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             {metroShapes.length > 0 && (
               <g pointerEvents="none" data-testid="map-metro-hatch">
                 {metroShapes.map(s => <path key={s.id} d={s.d} data-metro-fips={s.id} fill={`url(#${METRO_HATCH_ID})`} />)}
+              </g>
+            )}
+            {cityShapes.length > 0 && (
+              <g pointerEvents="none" data-testid="map-city-dots">
+                {cityShapes.map(s => <path key={s.id} d={s.d} data-city-fips={s.id} fill={`url(#${CITY_DOTS_ID})`} />)}
               </g>
             )}
             <path d={shapes.states} fill="none" stroke="#111316" strokeWidth={1.3} strokeLinejoin="round" pointerEvents="none" />
@@ -473,7 +510,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
         <div className="w-full max-w-xs">
           <p className="kicker !text-[10px] text-ink-3 mb-1" data-testid="map-legend-title">
-            Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}
+            Change since {meta ? fmtMonth(meta.baseline) : 'baseline'}{hudCount > 0 ? ` · muted: HUD ${hudWindow(meta).window}` : ''}
             {scale.kind === 'sequential' && ` · every county ${scale.hi > 0 ? 'rose' : 'fell'}; darker = ${scale.hi > 0 ? 'rose' : 'fell'} more`}
           </p>
           <div className="relative h-2.5 rounded-[1px]" aria-hidden style={{ background: `linear-gradient(90deg, ${legendStops.join(',')})` }}>
@@ -494,14 +531,12 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4">
-          <span
-            className="inline-block w-3 h-3 rounded-[1px] border border-line"
-            style={{ background: `repeating-linear-gradient(45deg, ${NO_DATA_COLOR} 0 1.5px, #171A1E 1.5px 4px)` }}
-            aria-hidden
-          />
-          <span>no data</span>
-        </div>
+        {metric === 'rent' && !playing && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-county">
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: legendStops[16] }} aria-hidden />
+            <span>county rent (Zillow)</span>
+          </div>
+        )}
         {metroShapes.length > 0 && (
           <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-metro">
             <span
@@ -512,9 +547,33 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             <span>metro rent (no Zillow county series)</span>
           </div>
         )}
+        {cityShapes.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-city">
+            <span
+              className="inline-block w-3 h-3 rounded-[1px] border border-line"
+              style={{ background: `${CITY_DOTS_CSS}, ${legendStops[16]}` }}
+              aria-hidden
+            />
+            <span>city rent (no county or metro series)</span>
+          </div>
+        )}
+        {hudCount > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-hud">
+            <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: mutedColor(legendStops[16]) }} aria-hidden />
+            <span>muted = HUD fair market rent (yearly estimate, no Zillow rent)</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-nodata">
+          <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: NO_DATA_COLOR }} aria-hidden />
+          <span>{metric === 'rent' ? 'no rent data' : 'no data'}</span>
+        </div>
       </div>
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
-        Scale {scaleNote} · {footer}{metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''} · gray hatching = no data
+        Scale {scaleNote}{hudCount > 0 ? ' (Zillow figures only)' : ''} · {footer}
+        {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has none for the county, as on the Rent card' : ''}
+        {cityShapes.length > 0 ? ' · dots = city rent: the county’s most populous city with a Zillow series where it has no usable county or metro series, as on the Rent card' : ''}
+        {hudCount > 0 ? ` · muted = ${hudLabel}, 2-bedroom, for counties with no Zillow rent (map only; a yearly HUD estimate, not a market index; not on the Rent card)` : ''}
+        {' · solid gray = no data'}
       </p>
       {def.scope === 'live' && (
         <p className="text-[12px] text-ink-2 mt-1" data-testid="map-scope-note">
