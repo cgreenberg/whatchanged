@@ -6,7 +6,7 @@
 import fs from 'fs'
 import path from 'path'
 import { gasAreaKind, gasKindText, gasAreaStateCounts, gasAreaSummary } from '@/lib/map-gas-areas'
-import { liveValue, mapScaleFor, scaleColor, fadeFill, parseColor, NO_DATA_COLOR, SEQ_RISE_RAMP, type CountyMap } from '@/lib/county-data'
+import { liveValue, mapScaleFor, scaleColor, parseColor, NO_DATA_COLOR, SEQ_RISE_RAMP, type CountyMap } from '@/lib/county-data'
 import { mapTooltip } from '@/lib/map-tooltip'
 import { DESK } from '@/lib/theme'
 import type { MapGasArea, MapMetrics } from '@/lib/api/map-metrics'
@@ -107,18 +107,18 @@ describe('gas color scale: low end stands out', () => {
     expect(s.kind).toBe('sequential')
     expect(parseColor(low)).toEqual([...SEQ_RISE_RAMP[0]])
   })
-  test.each([['plain', (c: string) => c], ['regional (faded)', (c: string) => fadeFill(c)]] as const)('%s low end vs background and no-data gray', (_, f) => {
-    expect(contrast(f(low), DESK.bg)).toBeGreaterThanOrEqual(3)
-    expect(dist(f(low), NO_DATA_COLOR)).toBeGreaterThanOrEqual(80)
+  test('low end vs background and no-data gray (regional averages use the same fill, only striped)', () => {
+    expect(contrast(low, DESK.bg)).toBeGreaterThanOrEqual(3)
+    expect(dist(low, NO_DATA_COLOR)).toBeGreaterThanOrEqual(80)
   })
   test('brighter = rose more: luminance rises along the ramp', () => {
     const steps = Array.from({ length: 11 }, (_, i) => scaleColor((s as { lo: number }).lo + (i / 10) * ((s as { hi: number }).hi - (s as { lo: number }).lo), s))
     for (let i = 1; i < steps.length; i++) expect(lum(parseColor(steps[i])!)).toBeGreaterThan(lum(parseColor(steps[i - 1])!))
     expect(contrast(high, low)).toBeGreaterThan(2.5)
   })
-  test('fadeFill moves toward the background and parses both color forms', () => {
-    expect(fadeFill('#ffffff', 1)).toBe('rgb(17,19,22)')
-    expect(fadeFill('rgb(100,100,100)', 0)).toBe('rgb(100,100,100)')
-    expect(fadeFill('not a color')).toBe('not a color')
+  test('parseColor reads both color forms', () => {
+    expect(parseColor('#ffffff')).toEqual([255, 255, 255])
+    expect(parseColor('rgb(100, 100,100)')).toEqual([100, 100, 100])
+    expect(parseColor('not a color')).toBeNull()
   })
 })

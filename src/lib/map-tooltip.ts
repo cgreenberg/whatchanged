@@ -1,8 +1,8 @@
 // Hover / keyboard-focus tooltip text for one county on the national map: county name + state, the metric's
 // value with its sign and units, and the geography + source the number covers ("Zillow county",
 // "Atlanta metro (BLS)", "Georgia statewide (EIA)"). Same values the map colors the county with (rent: county →
-// metro → city, map-metro-rent.ts mapRentTier). A HUD-tier county is gray on the map (no usable Zillow rent); its
-// tooltip says so and adds HUD's Fair Market Rent figure, labeled as an estimate, not actual rents.
+// metro → city, map-metro-rent.ts mapRentTier). A HUD-tier county is gray on the map (no Zillow market-rent data); its
+// tooltip says so and adds HUD's Fair Market Rent figure, labeled as a yearly projected estimate, not a market-rent index.
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { fmtPct, fmtMonth, flagNote, liveValue, BASELINE_MONTH, type CountyRecord, type MetricKey } from '@/lib/county-data'
@@ -83,11 +83,11 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudWindowTex
       }
     }
     if (t?.tier === 'hud') {
-      // Gray on the map (never colored): HUD's yearly estimate is not actual rents
+      // Gray on the map (never colored): HUD's figure is a yearly projected estimate, not a market-rent index
       const h = t.hud
       return {
         name, value: `${short}: No usable Zillow rent here`, tier: 'hud', noData: true,
-        geo: `HUD Fair Market Rent estimate: ${fmtPct(h.pct)} (not actual rents) · 2-bedroom, HUD area, ` +
+        geo: `HUD Fair Market Rent (a yearly projected estimate, not a market-rent index): ${fmtPct(h.pct)} · 2-bedroom, HUD area, ` +
           `${hudWindowText ?? 'between fiscal years'}, not since ${fmtMonth(BASELINE_MONTH)}${h.from ? `; ${h.from} figure` : ''}`,
       }
     }

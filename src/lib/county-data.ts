@@ -231,7 +231,7 @@ export const METRICS: MetricDef[] = [
     window: sinceBaseline,
   },
   {
-    key: 'rent', label: 'Rent (new leases)', short: 'Rent', clamp: 10, sourceKey: 'zori',
+    key: 'rent', label: 'Rent (new listings)', short: 'Rent', clamp: 10, sourceKey: 'zori',
     describe: c => (c.rent == null ? null : `${fmtPct(c.rent)}${c.rentCur ? ` · typical asking rent ${fmtMoney(c.rentCur)}/mo` : ''}`),
     window: sinceBaseline,
   },
@@ -250,14 +250,13 @@ export interface LiveMetricDef {
    */
   sequential?: true
   unit: 'usd' | 'pct'
-  /** Why blocks of counties share one color. */
-  scopeNote: string
+  /** Why blocks of counties share one color (gas: none here, the legend's "published for N areas" line says it). */
+  scopeNote?: string
 }
 
 export const LIVE_METRICS: LiveMetricDef[] = [
   {
     key: 'gas', label: 'Gas prices ($/gal change)', short: 'Gas', clamp: 0.5, unit: 'usd', sequential: true,
-    scopeNote: 'Gas prices are reported by metro area, state or region, not by county, so neighboring counties share one color.',
   },
   {
     key: 'groceries', label: 'Grocery prices (CPI)', short: 'Groceries', clamp: 5, unit: 'pct',
@@ -397,17 +396,17 @@ export function liveAsOf(m: MapMetrics | null | undefined, key: LiveMetricKey): 
   return dates.filter((d): d is string => !!d).sort().pop() ?? null
 }
 
-/** Footer for a live metric: source · geography · window · as-of · adjustment. */
+/**
+ * Footer for a live metric: source · geography · window · as-of · adjustment. Gas is short (source · window · as-of ·
+ * adjustment): its legend names the published areas, its tooltip the area, source and months of each one, and the About
+ * page's methods the rest (EIA weeklies averaged by month, the Gas card's latest week, HI/AK stand-ins).
+ */
 export function liveFooter(key: LiveMetricKey, m: MapMetrics | null | undefined): string {
   const asOf = liveAsOf(m, key)
   const latest = asOf ? `latest ${asOf.length > 7 ? fmtDay(asOf) : fmtMonthYear(asOf)}` : 'not loaded'
   if (key === 'gas') {
     const w = gasWindowText(m)
-    const dcra = (m?.gas ?? []).filter(g => g.source === 'dcra' && g.asOf).map(g => g.asOf!).sort().pop()
-    return `EIA weekly / BLS monthly regular gasoline (Alaska outside Anchorage: DCRA community survey, twice yearly) · metro, state, region or Alaska borough · ` +
-      `$ change, ${w ? `${w} (EIA weeklies averaged by month), so areas compare fairly` : sinceBaseline(null)}` +
-      `${dcra ? `; Alaska survey ${fmtMonthYear(BASELINE_MONTH)} → ${fmtMonthYear(dcra)} surveys` : ''} · ` +
-      `${w ? 'the Gas card shows the latest week or month' : latest} · not seasonally adjusted`
+    return `EIA weekly / BLS monthly regular gas, ${w ?? `${sinceBaseline(null)} · ${latest}`} · not seasonally adjusted`
   }
   if (key === 'groceries') return `BLS CPI food at home · metro area or Census division · ${sinceBaseline(null)} · ${latest} · not seasonally adjusted`
   return `EIA average residential electricity price · statewide · latest 12-month average price vs ${ELECTRICITY_BASELINE_LABEL} (${fmtMonthYear(ELECTRICITY_BASELINE_FROM)}–${fmtMonthYear(ELECTRICITY_BASELINE_TO)}) · ${latest} · no seasonal adjustment needed`
@@ -477,14 +476,14 @@ export function hudWindow(meta: LocalMeta | null | undefined): { window: string;
 
 /**
  * The map panel's provenance for a HUD-tier county (geography, window, projection, adjustment), from meta. HUD's
- * figure is shown here and in the tooltip only, never as a map color: it is an estimate, not actual rents.
+ * figure is shown here and in the tooltip only, never as a map color: a yearly projected estimate, not a market-rent index.
  */
 export function hudPanelArea(meta: LocalMeta | null | undefined): string {
   const { window, latestStarts } = hudWindow(meta)
   const latest = window.split('→')[1]
   return `${hudRentLabel(meta)} · HUD fair market rent area covering this county (its metro FMR area, or the county itself if non-metro) · ` +
     `${window}, not since ${fmtMonthYear(BASELINE_MONTH)}; both years are HUD projections from older survey data${latest && latestStarts ? ` (${latest} starts ${latestStarts})` : ''} · ` +
-    'yearly, not seasonally adjusted · an estimate, not actual rents; no usable Zillow rent for this county, so it is gray on the map (the Rent card uses CPI shelter)'
+    'yearly, not seasonally adjusted · a yearly projected estimate, not a market-rent index; no usable Zillow rent for this county, so it is gray on the map (the Rent card uses CPI shelter)'
 }
 export function divergingColor(v: number | undefined, clamp: number): string {
   if (v == null || !Number.isFinite(v)) return NO_DATA_COLOR
@@ -597,19 +596,6 @@ function rampColor(ramp: ReadonlyArray<readonly [number, number, number]>, t: nu
   return `rgb(${c[0]},${c[1]},${c[2]})`
 }
 
-/** Page background the map sits on (theme DESK.bg). */
-const MAP_BG = [17, 19, 22]
-/** How far a gas regional-average fill is faded toward the background (several states share one number). */
-export const GAS_REGION_FADE = 0.14
-
-/** A fill faded toward the map background by `amount` (0..1): `rgb(…)` or `#rrggbb` in, `rgb(…)` out. */
-export function fadeFill(color: string, amount = GAS_REGION_FADE): string {
-  const rgb = parseColor(color)
-  if (!rgb) return color
-  const c = rgb.map((v, i) => Math.round(v + (MAP_BG[i] - v) * amount))
-  return `rgb(${c[0]},${c[1]},${c[2]})`
-}
-
 /** [r, g, b] from `rgb(r,g,b)` or `#rrggbb`; null otherwise. */
 export function parseColor(color: string): [number, number, number] | null {
   const m = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(color)
@@ -636,13 +622,13 @@ export function fmtScaleValue(v: number, unit: 'usd' | 'pct'): string {
   return unit === 'usd' ? `${sign}$${Math.abs(v).toFixed(2)}` : `${sign}${Math.abs(v)}%`
 }
 
-/** The legend's scale text: "±10% (≥ 95% of counties inside)" / "+$0.85 to +$1.35/gal (2nd–98th percentile of counties)". */
+/** The legend's scale text: "±10%, set so 95% of counties fall inside; …" / "+$0.85 to +$1.35/gal (2nd–98th percentile)". */
 export function scaleText(scale: MapScale, unit: 'usd' | 'pct'): string {
   const u = unit === 'usd' ? '/gal' : ''
   if (scale.kind === 'diverging') {
     return `±${unit === 'usd' ? `$${scale.clamp.toFixed(2)}` : `${scale.clamp}%`}${u}, set so 95% of counties fall inside; larger changes take the end color`
   }
-  return `${fmtScaleValue(scale.lo, unit)} to ${fmtScaleValue(scale.hi, unit)}${u} (2nd–98th percentile of counties; changes beyond take the end color)`
+  return `${fmtScaleValue(scale.lo, unit)} to ${fmtScaleValue(scale.hi, unit)}${u} (2nd–98th percentile)`
 }
 
 /** Months the county time-lapse rows for `metric` are aligned to (rent may cover different months). */

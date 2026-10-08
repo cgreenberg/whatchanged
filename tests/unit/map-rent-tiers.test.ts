@@ -76,7 +76,9 @@ test('tooltips name the tier and its source; a HUD-tier county says "no usable Z
   const hud = mapTooltip({ fips: hudFips, metric: 'rent', county: COUNTIES[hudFips], liveData: null, hudWindowText: win })
   const pct = (mapRentTier(hudFips, COUNTIES[hudFips]) as { pct: number }).pct
   expect(hud).toMatchObject({ tier: 'hud', noData: true, value: 'Rent: No usable Zillow rent here' })
-  expect(hud.geo).toBe(`HUD Fair Market Rent estimate: ${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(1)}% (not actual rents) · 2-bedroom, HUD area, ${win}, not since Jan 2025`)
+  expect(hud.geo).toBe(`HUD Fair Market Rent (a yearly projected estimate, not a market-rent index): ${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(1)}% · 2-bedroom, HUD area, ${win}, not since Jan 2025`)
+  // Census ACS is actual rent paid and Zillow is asking rents: HUD is never contrasted with "actual rents"
+  expect(hud.geo).not.toMatch(/actual rent/i)
   // home prices never use the rent tiers
   expect(mapTooltip({ fips: hudFips, metric: 'hv', county: { n: 'x' }, liveData: null }).noData).toBe(true)
 })
@@ -88,7 +90,8 @@ test('Etowah County AL (a too-new Zillow series, HUD tier): "no usable Zillow re
   expect(tip.value).toBe('Rent: No usable Zillow rent here')
   expect(`${tip.value} ${tip.geo}`).not.toMatch(/\bno Zillow rent\b/i)
   expect(hudPanelArea(META)).toContain('no usable Zillow rent for this county')
-  expect(hudPanelArea(META)).toContain('an estimate, not actual rents')
+  expect(hudPanelArea(META)).toContain('a yearly projected estimate, not a market-rent index')
+  expect(hudPanelArea(META)).not.toMatch(/actual rent/i)
 })
 
 test('no-data fill is a quiet solid neutral gray', () => {

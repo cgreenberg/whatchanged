@@ -5,7 +5,7 @@
 //   city   — no county or usable metro series: the county's most populous city with a Zillow series
 //            (src/lib/data/city-rent.json), the card's city rung (lookupCityRent), dots;
 //   hud    — none of those: HUD's 2-bedroom Fair Market Rent change between fiscal years (counties.json `rentH`),
-//            MAP ONLY (never on the card) and NEVER COLORED: a yearly HUD estimate, not actual rents (its median ran
+//            MAP ONLY (never on the card) and NEVER COLORED: a yearly HUD projected estimate, not a market-rent index (its median ran
 //            about twice Zillow's), so the county is drawn in the no-data gray and HUD's figure appears only in the
 //            tooltip / panel, labeled as an estimate. HUD values never enter the color scale (rentFillValue).
 // Same rules as the card: a metro or city flagged as a statistical outlier, or outside the plausible range, never

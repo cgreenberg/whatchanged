@@ -209,9 +209,9 @@ describe('client metric definitions', () => {
     expect(MAP_METRIC_ORDER.filter(isCountyMetric)).toEqual(['rent', 'hv'])
   })
 
-  test('each regional metric explains why counties share a color', () => {
+  test('each regional metric explains why counties share a color (gas: once, in its legend, not a second note)', () => {
     const note = Object.fromEntries(LIVE_METRICS.map((d) => [d.key, d.scopeNote]))
-    expect(note.gas).toMatch(/not by county/)
+    expect(note.gas).toBeUndefined()
     expect(note.groceries).toMatch(/not by county/)
     expect(note.elec).toMatch(/statewide/)
     expect(LIVE_METRICS.find((d) => d.key === 'gas')!.unit).toBe('usd')
@@ -219,7 +219,10 @@ describe('client metric definitions', () => {
 
   test('footers carry source · geography · window · as-of · adjustment', () => {
     expect(liveFooter('elec', null)).toBe('EIA average residential electricity price · statewide · latest 12-month average price vs the 12 months centered on Jan 2025 (Aug 2024–Jul 2025) · not loaded · no seasonal adjustment needed')
-    expect(liveFooter('gas', null)).toMatch(/not seasonally adjusted$/)
+    expect(liveFooter('gas', null)).toBe('EIA weekly / BLS monthly regular gas, since Jan 2025 · not loaded · not seasonally adjusted')
+    // gas: one short line (source · window · adjustment); the window, as-of included, comes from the data
+    const m = { gasWindow: { from: '2025-01', to: '2026-08' } } as Parameters<typeof liveFooter>[1]
+    expect(liveFooter('gas', m)).toBe('EIA weekly / BLS monthly regular gas, Jan 2025 → Aug 2026 monthly averages · not seasonally adjusted')
   })
 })
 

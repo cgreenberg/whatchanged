@@ -79,7 +79,7 @@ describe('data-driven map scales', () => {
     gas.push(2.08, -0.1) // outliers (an Alaska village, a lone drop) take the end colors
     const s = mapScaleFor(gas, 'usd', 0.5, true)
     expect(s).toEqual({ kind: 'sequential', lo: 0.6, hi: 1.4 })
-    expect(scaleText(s, 'usd')).toBe('+$0.60 to +$1.40/gal (2nd–98th percentile of counties; changes beyond take the end color)')
+    expect(scaleText(s, 'usd')).toBe('+$0.60 to +$1.40/gal (2nd–98th percentile)')
     const colors = new Set(gas.map((g) => scaleColor(g, s)))
     expect(colors.size).toBeGreaterThan(50)
     // the old fixed ±$0.50 diverging scale painted all of these the same saturated color

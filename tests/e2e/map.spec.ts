@@ -44,11 +44,15 @@ test.describe('National county map', () => {
     await expect(map.getByTestId('map-mover').first()).toBeVisible()
     for (const [name, note, source] of [
       ['Electricity', 'statewide averages', 'EIA average residential electricity price · statewide'],
-      ['Gas', 'not by county', 'EIA weekly / BLS monthly regular gasoline'],
+      ['Gas', 'not by county', 'EIA weekly / BLS monthly regular gas'],
       ['Groceries', 'not by county', 'BLS CPI food at home'],
     ] as const) {
       await map.getByRole('button', { name, exact: true }).click()
-      await expect(map.getByTestId('map-scope-note')).toContainText(note)
+      // gas says it once, in its legend (no second scope note)
+      if (name === 'Gas') {
+        await expect(map.getByTestId('map-legend-gas-areas')).toContainText(note)
+        await expect(map.getByTestId('map-scope-note')).toHaveCount(0)
+      } else await expect(map.getByTestId('map-scope-note')).toContainText(note)
       await expect(map.getByTestId('map-source')).toContainText(source)
       await expect(map.getByTestId('map-play')).toHaveCount(0)
       await expect(map.getByTestId('map-mover')).toHaveCount(0)
@@ -274,13 +278,16 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     // Sibley County, MN: no usable Zillow rent → the no-data gray; HUD's estimate only in the tooltip / panel
     await expect(map.locator('svg path[data-fips="27143"]')).toHaveAttribute('fill', '#5f6268')
     await expect(map.getByTestId('map-legend-hud')).toHaveCount(0)
-    await expect(map.getByTestId('map-legend-nodata')).toContainText('no actual-rent data (hover for HUD estimate where available)')
+    await expect(map.getByTestId('map-legend-nodata')).toContainText('no Zillow market-rent data (hover for HUD estimate where available)')
     await hoverCounty(page, '27143')
     await expect(map.getByTestId('map-tooltip')).toContainText('No usable Zillow rent here')
-    await expect(map.getByTestId('map-tooltip')).toContainText(/HUD Fair Market Rent estimate: [+−]?\d+\.\d% \(not actual rents\)/)
+    await expect(map.getByTestId('map-tooltip')).toContainText(/HUD Fair Market Rent \(a yearly projected estimate, not a market-rent index\): [+−]?\d+\.\d%/)
+    await expect(map.getByTestId('map-tooltip')).not.toContainText(/actual rent/i)
     await clickCounty(page, '27143')
-    await expect(map.getByTestId('map-value-rent')).toContainText('No usable Zillow rent here · HUD Fair Market Rent estimate')
-    await expect(map.getByTestId('map-value-rent')).toContainText('an estimate, not actual rents')
+    await expect(map.getByTestId('map-value-rent')).toContainText('No usable Zillow rent here · HUD Fair Market Rent (a yearly projected estimate, not a market-rent index)')
+    await expect(map.getByTestId('map-value-rent')).not.toContainText(/actual rent/i)
+    await expect(map.getByTestId('map-source')).toContainText('solid gray = no Zillow market-rent data')
+    await expect(map.getByTestId('map-source')).not.toContainText(/actual rent/i)
     // other layers: no rent tiers
     await map.getByRole('button', { name: 'Home prices', exact: true }).click()
     await expect(map.getByTestId('map-city-dots')).toHaveCount(0)
@@ -335,7 +342,8 @@ test.describe('Round 16: like-for-like gas layer, legend wording, click / tap fo
     await expect(map.getByTestId('map-legend-gas-own')).toContainText('Alaska survey, Jan 2025 → Jul 2026 surveys (different window)')
     await expect(map.locator('[data-testid="map-gas-standin-hatch"] path[data-standin-fips="15001"]')).toBeAttached()
     await expect(map.getByTestId('map-legend-gas-standin')).toContainText('nearest metro')
-    await expect(map.getByTestId('map-source')).toContainText('Jan 2025 → Aug 2026 monthly averages (EIA weeklies averaged by month)')
+    // fine print: one short line (scale · source · window · adjustment); patterns are explained by the legend chips
+    await expect(map.getByTestId('map-source')).toHaveText(/^Scale \+\$\d\.\d\d to \+\$\d\.\d\d\/gal \(2nd–98th percentile\) · EIA weekly \/ BLS monthly regular gas, Jan 2025 → Aug 2026 monthly averages · not seasonally adjusted$/)
     // the tooltip always says the window
     const tip = map.getByTestId('map-tooltip')
     { const p = await pointInCounty(page, '13121'); await page.mouse.move(p.x, p.y) }
@@ -420,6 +428,16 @@ test.describe('Gas layer: the published areas behind the colors', () => {
     await expect(map.locator('[data-testid="map-gas-city-dots"] circle[data-gas-area="b:S35C"]')).toHaveAttribute('data-fips', '13121')
     // regional averages striped (Midwest PADD 2); state averages and stand-ins are not
     await expect(map.locator('[data-testid="map-gas-region-stripes"] path[data-gas-area="e:R20"]')).toBeAttached()
+    // ...but never faded: the fill encodes the value exactly as for any area. New England's regional average (+$1.347)
+    // is at least as bright as New York City's city price (+$1.336) on the brighter-is-more scale
+    const lum = (c: string | null) => { const [r, g, bl] = c!.match(/\d+/g)!.map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * bl }
+    expect(lum(await map.locator('svg path[data-fips="23003"]').getAttribute('fill')))
+      .toBeGreaterThanOrEqual(lum(await map.locator('svg path[data-fips="36061"]').getAttribute('fill')))
+    // legend: the regional swatch is the state swatch's color, plus stripes
+    const bg = (id: string) => map.getByTestId(id).locator('span[aria-hidden]').first().evaluate(el => (el as HTMLElement).style.background)
+    const stateBg = await bg('map-legend-gas-state')
+    expect(stateBg).toMatch(/^rgb\(/)
+    expect(await bg('map-legend-gas-region')).toContain(stateBg)
     await expect(map.locator('[data-testid="map-gas-region-stripes"] path[data-gas-area="e:STX"]')).toHaveCount(0)
     // key
     await expect(map.getByTestId('map-legend-gas-city')).toHaveText('City price')

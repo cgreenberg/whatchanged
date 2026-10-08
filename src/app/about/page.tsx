@@ -83,10 +83,15 @@ export default function AboutPage() {
           and home prices are county figures, with month-by-month playback and the biggest increases and
           decreases. On the Rent layer, a county with no Zillow county series is drawn from the same stand-ins as the
           Rent card (light stripes = its metro area, dots = its most populous place with a Zillow city series); counties
-          with no usable Zillow rent are solid gray. Where HUD publishes one, tapping such a county shows HUD&apos;s yearly
-          2-bedroom Fair Market Rent change, labeled as an estimate rather than actual rents (never a map color, never on
-          the card). Gas, groceries and electricity are published for metro areas, regions or states, not
-          counties, so neighboring counties share a color and there is no playback or ranking for them.
+          with no usable Zillow rent are solid gray. Where HUD publishes one, tapping such a county shows HUD&apos;s
+          2-bedroom Fair Market Rent change, labeled as a yearly projected estimate, not a market-rent index (never a map
+          color, never on the card). Gas, groceries and electricity are published for metro areas, regions or states, not
+          counties, so neighboring counties share a color and there is no playback or ranking for them. On the Gas layer,
+          outlines mark the area each published price covers, and colors compare monthly averages (EIA weekly prices
+          averaged by month) from January 2025 to the latest month every series has, so areas compare fairly (the Gas card
+          shows the latest week or month); the color scale spans the 2nd–98th percentile of counties, with larger changes
+          in the end color, and a Hawaii or Alaska county with no gas series of its own takes the nearest metro&apos;s
+          price, though local prices are often higher.
         </p>
       </Section>
 
