@@ -15,7 +15,10 @@ export interface MapTooltipModel {
   name: string
   /** "Rent +4.7%", "Gas +$0.87/gal", "Rent: No data". */
   value: string
-  /** "Zillow county", "Atlanta metro (BLS)", "Georgia statewide (EIA)"; null when there is no data. */
+  /**
+   * "Zillow county", "Georgia statewide (EIA)", gas "Chicago city price (EIA)" / "Ohio state average (EIA)" /
+   * "Midwest region average · shared across 13 states (EIA PADD 2)"; null when there is no data.
+   */
   geo: string | null
   /** The window / month the value covers ("Jan 2025 → Aug 2026 monthly averages"); null when there is no data. */
   when?: string
@@ -95,8 +98,9 @@ export function mapTooltip({ fips, metric, county, liveData, frame, hudWindowTex
   return {
     name,
     value: metric === 'gas' ? `${short} ${fmtSignedDollars(lv.value)}/gal` : `${short} ${fmtPct(lv.value)}`,
-    // the publisher once ("… (Alaska DCRA)" labels already name it)
-    geo: lv.area.includes(`(${lv.source})`) ? lv.area : `${lv.area} (${lv.source})`,
+    // Gas: which kind of published area ("Chicago city price (EIA)", "Midwest region average · shared across 13 states
+    // (EIA PADD 2)"); otherwise the area + publisher once ("… (Alaska DCRA)" labels already name it)
+    geo: lv.kindText ?? (lv.area.includes(`(${lv.source})`) ? lv.area : `${lv.area} (${lv.source})`),
     when: lv.when,
     ...(lv.stale ? { note: 'last available copy' } : {}),
     noData: false,

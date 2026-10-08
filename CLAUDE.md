@@ -286,7 +286,12 @@ ran ~2× Zillow's) never enters the scale or a fill and appears only on hover / 
 Fair Market Rent estimate: +x% (not actual rents)". The Rent time-lapse plays county series only and says so
 (`map-timelapse-note`). On a sequential (gas) scale the other side of zero is shaded by size (`oppositeColor(scale, v)`).
 Gas common month ignores `:lastgood` (stale) series; an old cached payload without `gasWindow` / `window` is drawn
-plainly (no "own window" grid).
+plainly (no "own window" grid). The gas layer draws the published areas, not counties (`src/lib/map-gas-areas.ts`
+`gasAreaKind` from the payload's area ids, client-side): no county lines, dark outlines between gas areas (topojson
+mesh/merge once per payload), city / metro areas with a white outline + a dot on the principal county (most jobs),
+regional (PADD) averages faded + faint stripes, a City / State / Regional key, and tooltip / panel text naming the
+kind ("Midwest region average · shared across 13 states (EIA PADD 2)", state count from the data). Its sequential
+ramp (`SEQ_RISE_RAMP`) starts at a clear amber, ≥ 3:1 against the page background.
 Rent and Home prices are county metrics (static pipeline): movers and time-lapse (`counties-timeline.json`). Gas ($
 change, scale ±$0.50), Groceries and Electricity (%) come from `/api/map-metrics` (metro / region / state series):
 a note says why blocks of counties share a color, and there are no movers or Play for them (`NO_MOVERS_NOTE`).

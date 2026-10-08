@@ -66,7 +66,8 @@ test('tooltip: live layers carry the sign, units and the area + publisher (same 
   expect(elec.geo).toBe('Maine statewide (EIA)')
   const gas = mapTooltip({ fips: '23003', metric: 'gas', county: COUNTIES['23003'], liveData: m })
   expect(gas.value).toMatch(/^Gas [+−]\$\d\.\d{2}\/gal$/)
-  expect(gas.geo).toMatch(/\((EIA|BLS)\)$/)
+  // gas names the kind of published area (map-gas-areas.ts): New England's sub-PADD, shared by several states
+  expect(gas.geo).toBe('New England region average · shared across 5 states (EIA PADD 1A)')
   const none = mapTooltip({ fips: '39035', metric: 'elec', county: COUNTIES['39035'], liveData: m })
   expect(none).toMatchObject({ value: 'Electricity: No data', geo: null, noData: true })
 })

@@ -1,17 +1,18 @@
 'use client'
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent } from 'react'
 import { geoPath } from 'd3-geo'
-import { feature, mesh } from 'topojson-client'
+import { feature, merge, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import {
   fetchCounties, fetchLocalMeta, fetchMapMetrics, METRICS, LIVE_METRICS, MAP_METRIC_ORDER, NO_MOVERS_NOTE, NO_DATA_COLOR, mapScaleFor, scaleColor, scaleText, fmtScaleValue,
-  oppositeColor, isOppositeSide, sequentialClaim, gasWindowText, elecWindowText, BASELINE_MONTH,
+  oppositeColor, isOppositeSide, sequentialClaim, gasWindowText, elecWindowText, BASELINE_MONTH, fadeFill,
   hudRentLabel, hudWindow, hudPanelArea, type ZipPanelOverrides, fmtMonth, fmtPct, fmtMoney, sinceBaseline, metricFooter, liveFooter, liveValue, moversFor, flagNote, isCountyMetric, MOVERS_MIN_JOBS, timelineMonths,
   type CountyMap, type MetricKey, type CountyMetricKey, type LocalMeta, type MetricDef, type LiveMetricDef,
 } from '@/lib/county-data'
 import type { MapMetrics } from '@/lib/api/map-metrics'
 import { mapRentTier, rentLayer, type MapRentTier } from '@/lib/map-metro-rent'
 import { mapTooltip } from '@/lib/map-tooltip'
+import { gasAreaKind, gasAreaSummary } from '@/lib/map-gas-areas'
 import { rentSeasonalCaveat, hasSeasonalCaveat } from '@/lib/rent-range'
 
 /** Light diagonal stripes over a county colored by its metro's rent (no Zillow county series). */
@@ -23,6 +24,15 @@ const CITY_DOTS_CSS = 'radial-gradient(circle, rgba(241,239,234,0.6) 0 0.9px, tr
 /** Gas: a light grid over a county priced on its own window (Alaska DCRA survey months), not the layer's monthly averages. */
 const SURVEY_GRID_ID = 'map-survey-grid'
 const SURVEY_GRID_CSS = 'repeating-linear-gradient(0deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, rgba(241,239,234,0.55) 0 1px, transparent 1px 4px)'
+/**
+ * Gas: a regional average (EIA PADD / sub-PADD, several states share one number) — faded fill + faint wide stripes,
+ * running the other way from the HI/AK stand-in's denser light stripes so the two never read alike.
+ */
+const GAS_REGION_STRIPES_ID = 'map-gas-region-stripes'
+const GAS_REGION_STRIPES_CSS = 'repeating-linear-gradient(-45deg, rgba(241,239,234,0.24) 0 1px, transparent 1px 5px)'
+/** Gas: city / metro areas get a bright outline over a dark halo, and a dot on their principal county. */
+const GAS_CITY_OUTLINE = '#F1EFEA'
+const MAP_INK_DARK = '#111316'
 /** A tap / click focuses the map box: keyboard browsing must not start from it (ms after a pointerdown). */
 const POINTER_FOCUS_MS = 1500
 const VIEW_W = 975
@@ -32,27 +42,35 @@ const VIEW_H = 610
  * The county shapes, memoized so hover / focus changes (tooltip only) never re-render 3,000+ paths.
  * Clicks are delegated: the county's FIPS is on its path.
  */
-const CountyLayer = memo(function CountyLayer({ shapes, fills, onPick }: {
+const CountyLayer = memo(function CountyLayer({ shapes, fills, onPick, seamless = false }: {
   shapes: Shape[]
   fills: Map<string, string>
   onPick: (fips: string) => void
+  /**
+   * No county lines (gas: prices aren’t published by county): each county stroked in its own fill, wide enough that
+   * antialiased edges of same-colored neighbors never let the dark background through (area borders cover the rest).
+   */
+  seamless?: boolean
 }) {
   return (
     <g onClick={(e) => {
       const f = (e.target as Element).getAttribute?.('data-fips')
       if (f) onPick(f)
     }}>
-      {shapes.map(s => (
-        <path
-          key={s.id}
-          d={s.d}
-          data-fips={s.id}
-          fill={fills.get(s.id) ?? NO_DATA_COLOR}
-          stroke="#111316"
-          strokeWidth={0.3}
-          style={{ transition: 'fill 300ms linear', cursor: 'pointer' }}
-        />
-      ))}
+      {shapes.map(s => {
+        const fill = fills.get(s.id) ?? NO_DATA_COLOR
+        return (
+          <path
+            key={s.id}
+            d={s.d}
+            data-fips={s.id}
+            fill={fill}
+            stroke={seamless ? fill : '#111316'}
+            strokeWidth={seamless ? 1.2 : 0.3}
+            style={{ transition: 'fill 300ms linear, stroke 300ms linear', cursor: 'pointer' }}
+          />
+        )
+      })}
     </g>
   )
 })
@@ -114,7 +132,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const [kbdAt, setKbdAt] = useState<{ fips: string; x: number; y: number; w: number; h: number } | null>(null)
   const kbd = kbdAt?.fips ?? null
   const [visible, setVisible] = useState(false)
-  const [shapes, setShapes] = useState<{ counties: Shape[]; states: string } | null>(null)
+  const [shapes, setShapes] = useState<{ counties: Shape[]; states: string; topo: Topology } | null>(null)
   const [data, setData] = useState<CountyMap>({})
   const [meta, setMeta] = useState<LocalMeta | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -132,6 +150,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const [timeline, setTimeline] = useState<Timeline | null>(null)
   const [timelineError, setTimelineError] = useState(false)
   const [frame, setFrame] = useState<number | null>(null)
+  // Rendered map width (px): gas city dots grow on narrow screens so they stay findable on a phone
+  const [boxW, setBoxW] = useState(VIEW_W)
 
   useEffect(() => {
     if (!ref.current) return
@@ -154,7 +174,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
           c: path.centroid(f) as [number, number],
         }))
         const states = path(mesh(topo, topo.objects.states as GeometryCollection, (a, b) => a !== b)) ?? ''
-        setShapes({ counties: shapesList, states })
+        setShapes({ counties: shapesList, states, topo })
         setData(counties)
         setError(null)
       })
@@ -173,6 +193,14 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     const t = setTimeout(() => setFrame(frame + 1), 380)
     return () => clearTimeout(t)
   }, [frame, timeline, metric])
+
+  useEffect(() => {
+    const el = mapBoxRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(([e]) => { if (e.contentRect.width > 0) setBoxW(e.contentRect.width) })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [shapes])
 
   // A pick from the movers list (below the panel) brings the panel back into view.
   useEffect(() => {
@@ -225,6 +253,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     for (const s of shapes.counties) if (mapRentTier(s.id, data[s.id])?.tier === 'hud') n++
     return n
   }, [metric, shapes, data])
+  const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
   // Gas: HI/AK counties with no series (the nearest metro's price: stripes) and areas on their own window (Alaska's
   // DCRA survey months, a lagging series: grid), each patterned and in the legend
   const gasTiers = useMemo(() => {
@@ -250,6 +279,50 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     }
     return { standIn, own, onlySurvey: survey === own.length, surveyFrom, surveyTo }
   }, [metric, shapes, liveData])
+  // Gas: the published areas behind the county colors, dissolved once per payload (never per hover): outlines between
+  // areas (county lines dropped), city / metro areas outlined brightly with a dot on their principal county, regional
+  // averages faded + striped, and each area's merged outline for the hover ring
+  const isGas = metric === 'gas'
+  const gasGeo = useMemo(() => {
+    if (!isGas || !shapes || !liveData?.gas || !liveData.counties) return null
+    const { topo } = shapes
+    const obj = topo.objects.counties as GeometryCollection
+    const path = geoPath()
+    const fipsOf = (g: { id?: string | number }) => String(g.id).padStart(5, '0')
+    const idxOf = (g: { id?: string | number }) => liveData.counties[fipsOf(g)]?.[0] ?? -1
+    const groups = new Map<number, GeometryCollection['geometries']>()
+    for (const g of obj.geometries) {
+      const i = idxOf(g)
+      if (i < 0) continue
+      let list = groups.get(i)
+      if (!list) groups.set(i, (list = []))
+      list.push(g)
+    }
+    const borders = path(mesh(topo, obj, (a, b) => a !== b && idxOf(a) !== idxOf(b))) ?? ''
+    const areaPaths = new Map<number, string>()
+    const regions: { idx: number; d: string }[] = []
+    const cities: { idx: number; id: string; d: string; fips: string; c: [number, number] }[] = []
+    const regionIdx = new Set<number>()
+    for (const [i, geoms] of groups) {
+      const area = liveData.gas[i]
+      if (!area) continue
+      const d = path(merge(topo, geoms as Parameters<typeof merge>[1])) ?? ''
+      areaPaths.set(i, d)
+      const kind = gasAreaKind(area)
+      if (kind === 'region') { regions.push({ idx: i, d }); regionIdx.add(i) }
+      if (kind === 'city') {
+        // The dot sits on the area's principal county (most jobs), so Cook County etc. are findable at national zoom
+        let best: string | null = null
+        for (const g of geoms) {
+          const f = fipsOf(g)
+          if (!best || (data[f]?.emp ?? 0) > (data[best]?.emp ?? 0)) best = f
+        }
+        const c = best ? shapeById.get(best)?.c : undefined
+        if (best && c && Number.isFinite(c[0])) cities.push({ idx: i, id: area.id, d, fips: best, c })
+      }
+    }
+    return { borders, areaPaths, regions, cities, regionIdx }
+  }, [isGas, shapes, liveData, data, shapeById])
   // Color scale from the LATEST values (fixed through the time-lapse so frames are comparable): ±95th percentile of
   // |change| (diverging), or the counties' 2nd–98th percentile range when nearly every county moved the same way (gas).
   // Rent: Zillow values only (county, metro, city: rentLayer); HUD's estimates never enter the scale. Gas: the common
@@ -272,12 +345,16 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
     if (rentLatest && !playing) return rentLatest.fills
     const out = new Map<string, string>()
     if (!shapes) return out
+    const region = gasGeo?.regionIdx
     for (const s of shapes.counties) {
       const v = value(s.id)
-      if (Number.isFinite(v)) out.set(s.id, scaleColor(v, scale))
+      if (!Number.isFinite(v)) continue
+      const c = scaleColor(v, scale)
+      // Gas regional averages (several states share one number): a lighter touch of the same color, plus stripes
+      out.set(s.id, region?.has(liveData?.counties?.[s.id]?.[0] ?? -1) ? fadeFill(c) : c)
     }
     return out
-  }, [rentLatest, playing, shapes, value, scale])
+  }, [rentLatest, playing, shapes, value, scale, gasGeo, liveData])
   // Sequential scale: "every county rose" only when no drawn county fell (else "nearly every"); falls get their own color
   const drawnValues = useMemo(() => (shapes?.counties ?? []).map(s => value(s.id)), [shapes, value])
   const claim = sequentialClaim(drawnValues, scale)
@@ -285,7 +362,6 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
   const metroShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'metro') : []), [shapes, rentTiers])
   const cityShapes = useMemo(() => (shapes ? shapes.counties.filter(s => rentTiers.get(s.id)?.tier === 'city') : []), [shapes, rentTiers])
   const hudLabel = hudRentLabel(meta)
-  const shapeById = useMemo(() => new Map((shapes?.counties ?? []).map(s => [s.id, s])), [shapes])
   /** Keyboard browsing starts at the selected county, else the one nearest the map's center. */
   const centerFips = useMemo(() => {
     let best: string | null = null
@@ -335,6 +411,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
 
   const movers = useMemo(() => (countyKey ? moversFor(data, countyKey) : { top: [], bottom: [] }), [data, countyKey])
   const gasWindow = gasWindowText(liveData)
+  const gasAreas = gasAreaSummary(liveData)
   const elecAsOf = Object.values(liveData?.electricity ?? {}).map(e => e.asOf).sort().pop()
   const window_ = def.scope === 'county'
     ? def.window(meta)
@@ -412,7 +489,8 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
         return {
           key: d.key, short: d.short,
           text: v ? `${v.text} · ${v.detail}` : liveError ? 'unavailable right now' : liveData ? 'no data' : 'loading…',
-          area: v?.area ?? null,
+          // Gas: which kind of published area ("Ohio state average (EIA)", "Midwest region average · shared across …")
+          area: v?.kindText ?? v?.area ?? null,
           caveat: null,
         }
       })
@@ -521,13 +599,22 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               <pattern id={CITY_DOTS_ID} width={4} height={4} patternUnits="userSpaceOnUse">
                 <circle cx={2} cy={2} r={0.9} fill="rgba(241,239,234,0.6)" />
               </pattern>
+              {/* Gas regional average: faint wide stripes, the other diagonal from the stand-in's */}
+              <pattern id={GAS_REGION_STRIPES_ID} width={5} height={5} patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+                <rect width={1} height={5} fill="rgba(241,239,234,0.24)" />
+              </pattern>
               {/* Gas on its own window (Alaska survey months): a light grid over the county's color */}
               <pattern id={SURVEY_GRID_ID} width={4} height={4} patternUnits="userSpaceOnUse">
                 <rect width={4} height={0.9} fill="rgba(241,239,234,0.55)" />
                 <rect width={0.9} height={4} fill="rgba(241,239,234,0.55)" />
               </pattern>
             </defs>
-            <CountyLayer shapes={shapes.counties} fills={fills} onPick={pick} />
+            <CountyLayer shapes={shapes.counties} fills={fills} onPick={pick} seamless={!!gasGeo} />
+            {gasGeo && gasGeo.regions.length > 0 && (
+              <g pointerEvents="none" data-testid="map-gas-region-stripes">
+                {gasGeo.regions.map(r => <path key={r.idx} d={r.d} data-gas-area={liveData?.gas[r.idx]?.id} fill={`url(#${GAS_REGION_STRIPES_ID})`} />)}
+              </g>
+            )}
             {/* Decorations never take clicks: they must not shadow the counties under them */}
             {metroShapes.length > 0 && (
               <g pointerEvents="none" data-testid="map-metro-hatch">
@@ -549,7 +636,34 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
                 {cityShapes.map(s => <path key={s.id} d={s.d} data-city-fips={s.id} fill={`url(#${CITY_DOTS_ID})`} />)}
               </g>
             )}
-            <path d={shapes.states} fill="none" stroke="#111316" strokeWidth={1.3} strokeLinejoin="round" pointerEvents="none" />
+            {gasGeo ? (
+              <>
+                {/* Gas: state lines thin and quiet; the published areas carry the clear outlines */}
+                <path d={shapes.states} fill="none" stroke={MAP_INK_DARK} strokeOpacity={0.6} strokeWidth={0.5} strokeLinejoin="round" pointerEvents="none" />
+                <path d={gasGeo.borders} fill="none" stroke={MAP_INK_DARK} strokeWidth={1.8} strokeLinejoin="round" pointerEvents="none" data-testid="map-gas-area-borders" />
+                {/* City outlines in screen pixels (non-scaling), so they stay crisp and visible on a phone-width map */}
+                <g pointerEvents="none" data-testid="map-gas-city-outlines">
+                  {gasGeo.cities.map(c => <path key={`h${c.idx}`} d={c.d} fill="none" stroke={MAP_INK_DARK} strokeWidth={3.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                  {gasGeo.cities.map(c => <path key={c.idx} d={c.d} data-gas-area={c.id} fill="none" stroke={GAS_CITY_OUTLINE} strokeWidth={1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                </g>
+              </>
+            ) : (
+              <path d={shapes.states} fill="none" stroke="#111316" strokeWidth={1.3} strokeLinejoin="round" pointerEvents="none" />
+            )}
+            {gasGeo && gasGeo.cities.length > 0 && (
+              // City / metro dots: hover / tap behave like their principal county (same data-fips; clicks delegated)
+              <g
+                data-testid="map-gas-city-dots"
+                onClick={(e) => { const f = (e.target as Element).getAttribute?.('data-fips'); if (f) pick(f) }}
+              >
+                {gasGeo.cities.map(c => (
+                  <circle
+                    key={c.idx} cx={c.c[0]} cy={c.c[1]} r={3.6 * Math.sqrt(Math.max(1, VIEW_W / boxW))} data-fips={c.fips} data-gas-area={c.id}
+                    fill={GAS_CITY_OUTLINE} stroke={MAP_INK_DARK} strokeWidth={1.2} vectorEffect="non-scaling-stroke" style={{ cursor: 'pointer' }}
+                  />
+                ))}
+              </g>
+            )}
             {selShape && (
               <g pointerEvents="none" data-testid="map-highlight">
                 <path d={selShape.d} fill="none" stroke="#111316" strokeWidth={4} strokeLinejoin="round" />
@@ -559,7 +673,11 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
               </g>
             )}
             {tipShape && tipShape.id !== selShape?.id && (
-              <path d={tipShape.d} fill="none" stroke="#F1EFEA" strokeWidth={1.1} strokeLinejoin="round" pointerEvents="none" data-testid="map-hover-outline" />
+              // Gas: ring the whole published area the hovered county shares (the Midwest region, the Chicago area)
+              <path
+                d={(gasGeo && gasGeo.areaPaths.get(liveData?.counties?.[tipShape.id]?.[0] ?? -1)) || tipShape.d}
+                fill="none" stroke="#F1EFEA" strokeWidth={1.1} strokeLinejoin="round" pointerEvents="none" data-testid="map-hover-outline"
+              />
             )}
           </svg>
         )}
@@ -642,6 +760,32 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
             </span>
           </div>
         )}
+        {gasGeo && (
+          // What each kind of gas area looks like: prices are published for a few dozen areas, not by county
+          <div className="w-full sm:w-auto text-[11px] text-ink-3 pb-2" data-testid="map-legend-gas-kinds">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1">
+              <li className="flex items-center gap-1.5" data-testid="map-legend-gas-city">
+                <span className="relative inline-flex items-center justify-center w-3.5 h-3.5 rounded-[1px]" style={{ background: legendStops[14], boxShadow: `0 0 0 1.5px ${GAS_CITY_OUTLINE}` }} aria-hidden>
+                  <span className="block w-1.5 h-1.5 rounded-full" style={{ background: GAS_CITY_OUTLINE, boxShadow: `0 0 0 1px ${MAP_INK_DARK}` }} />
+                </span>
+                <span>City price</span>
+              </li>
+              <li className="flex items-center gap-1.5" data-testid="map-legend-gas-state">
+                <span className="inline-block w-3.5 h-3.5 rounded-[1px] border border-line" style={{ background: legendStops[14] }} aria-hidden />
+                <span>State average</span>
+              </li>
+              <li className="flex items-center gap-1.5" data-testid="map-legend-gas-region">
+                <span className="inline-block w-3.5 h-3.5 rounded-[1px] border border-line" style={{ background: `${GAS_REGION_STRIPES_CSS}, ${fadeFill(legendStops[14])}` }} aria-hidden />
+                <span>Regional average (several states share one number)</span>
+              </li>
+            </ul>
+            {gasAreas.areas > 0 && (
+              <p className="mt-1 text-ink-2" data-testid="map-legend-gas-areas">
+                Gas prices are published for {gasAreas.areas} areas{gasAreas.survey ? ' (plus Alaska’s community fuel survey)' : ''}, not by county.
+              </p>
+            )}
+          </div>
+        )}
         {metric === 'rent' && !playing && (
           <div className="flex items-center gap-1.5 text-[11px] text-ink-3 pb-4" data-testid="map-legend-county">
             <span className="inline-block w-3 h-3 rounded-[1px] border border-line" style={{ background: legendStops[16] }} aria-hidden />
@@ -681,6 +825,7 @@ export function NationalMap({ countyFips, onZipSelect, zipOverrides }: {
       <p className="tnum font-mono text-[10.5px] leading-relaxed text-ink-3 mt-1" data-testid="map-source">
         Scale {scaleNote}{metric === 'rent' ? ' (Zillow figures only)' : ''} · {footer}
         {metroShapes.length > 0 ? ' · light stripes = metro rent: the county’s metro series where Zillow has no usable one for the county, as on the Rent card' : ''}
+        {gasGeo ? ' · outlines = the area each gas price covers (no county lines: gas isn’t published by county); white outline + dot = city or metro price; faded with faint stripes = regional average several states share' : ''}
         {gasTiers.standIn.length > 0 ? ' · light stripes = a Hawaii / Alaska county with no gas series of its own, colored by the nearest metro’s price (local prices often higher)' : ''}
         {gasTiers.own.length > 0 ? ' · grid = priced on its own window, not the monthly averages: Alaska’s twice-yearly DCRA community survey (or a series behind the common month); months in the tooltip' : ''}
         {oppositeCount > 0 && scale.kind === 'sequential' ? ` · ${scale.hi > 0 ? 'blue = fell' : 'orange = rose'} (the other side of zero)` : ''}

@@ -75,7 +75,7 @@ test.describe('National county map', () => {
     await expect(sel.getByTestId('map-value-hv')).toContainText('typical home')
     await expect(sel.getByTestId('map-value-rent')).toContainText('typical asking rent')
     await expect(sel.getByTestId('map-value-gas')).toContainText('/gal, Jan 2025 → ')
-    await expect(sel.getByTestId('map-value-gas')).toContainText('Washington state avg')
+    await expect(sel.getByTestId('map-value-gas')).toContainText('Washington state average (EIA)')
     await expect(sel.getByTestId('map-value-groceries')).toContainText('Pacific div.')
     await expect(sel.getByTestId('map-value-elec')).toContainText('Washington statewide')
     await expect(sel.getByTestId('map-value-elec')).toContainText('¢/kWh')
@@ -214,7 +214,7 @@ test.describe('County map: hover tooltips, keyboard browsing, metro rent', () =>
     await map.getByRole('button', { name: 'Gas', exact: true }).click()
     await hoverCounty(page, '23003')
     await expect(tip).toContainText(/Gas [+−]\$\d\.\d{2}\/gal/)
-    await expect(tip).toContainText('(EIA)')
+    await expect(tip).toContainText('New England region average · shared across 5 states (EIA PADD 1A)')
     // leaving the map hides it; hovering never selects a county
     await page.mouse.move(2, 2)
     await expect(tip).toHaveCount(0)
@@ -401,5 +401,53 @@ test.describe('Round 16: touch tap', () => {
       await expect(map.getByTestId('map-hover-outline')).toHaveCount(0)
       await expect(map.getByTestId('map-kbd-status')).toHaveText('')
     }
+  })
+})
+
+test.describe('Gas layer: the published areas behind the colors', () => {
+  test('area outlines instead of county lines, city outlines + dots, striped regional averages, 3-row key', async ({ page }) => {
+    await mockMapMetrics(page)
+    await page.goto('/')
+    const map = await mapReady(page)
+    await map.getByRole('button', { name: 'Gas', exact: true }).click()
+    await expect(map.getByTestId('map-gas-area-borders')).toBeAttached()
+    // no county lines: each county is stroked in its own fill
+    const cook = map.locator('svg path[data-fips="17031"]')
+    expect(await cook.getAttribute('stroke')).toBe(await cook.getAttribute('fill'))
+    // city areas: bright outline + a dot on the principal county (Cook County for Chicago; Fulton for Atlanta)
+    await expect(map.locator('[data-testid="map-gas-city-outlines"] path[data-gas-area="e:YORD"]')).toBeAttached()
+    await expect(map.locator('[data-testid="map-gas-city-dots"] circle[data-gas-area="e:YORD"]')).toHaveAttribute('data-fips', '17031')
+    await expect(map.locator('[data-testid="map-gas-city-dots"] circle[data-gas-area="b:S35C"]')).toHaveAttribute('data-fips', '13121')
+    // regional averages striped (Midwest PADD 2); state averages and stand-ins are not
+    await expect(map.locator('[data-testid="map-gas-region-stripes"] path[data-gas-area="e:R20"]')).toBeAttached()
+    await expect(map.locator('[data-testid="map-gas-region-stripes"] path[data-gas-area="e:STX"]')).toHaveCount(0)
+    // key
+    await expect(map.getByTestId('map-legend-gas-city')).toHaveText('City price')
+    await expect(map.getByTestId('map-legend-gas-state')).toHaveText('State average')
+    await expect(map.getByTestId('map-legend-gas-region')).toHaveText('Regional average (several states share one number)')
+    await expect(map.getByTestId('map-legend-gas-areas')).toContainText(/Gas prices are published for \d+ areas/)
+    await expect(map.getByTestId('map-legend-gas-areas')).toContainText('not by county')
+    // hovering the dot behaves like its county; tooltip names the kind
+    const dot = map.locator('[data-testid="map-gas-city-dots"] circle[data-gas-area="b:S35C"]')
+    const b = (await dot.boundingBox())!
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
+    const tip = map.getByTestId('map-tooltip')
+    await expect(tip).toHaveAttribute('data-fips', '13121')
+    await expect(tip).toContainText('Atlanta-Sandy Springs-Roswell metro price (BLS)')
+    // hovering a regional county rings its whole area
+    { const p = await pointInCounty(page, '23003'); await page.mouse.move(p.x, p.y) }
+    await expect(tip).toContainText('New England region average')
+    const ring = (await map.getByTestId('map-hover-outline').getAttribute('d'))!
+    expect(ring.length).toBeGreaterThan((await map.locator('svg path[data-fips="23003"]').getAttribute('d'))!.length)
+    // tapping / clicking the dot selects its county; the panel names the kind
+    await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2)
+    await expect(map.getByTestId('map-selection')).toHaveAttribute('data-fips', '13121')
+    await expect(map.getByTestId('map-value-gas')).toContainText('Atlanta-Sandy Springs-Roswell metro price (BLS)')
+    // other layers: none of it, county lines back
+    await map.getByRole('button', { name: 'Groceries', exact: true }).click()
+    for (const id of ['map-gas-area-borders', 'map-gas-city-dots', 'map-gas-region-stripes', 'map-legend-gas-kinds']) {
+      await expect(map.getByTestId(id)).toHaveCount(0)
+    }
+    await expect(cook).toHaveAttribute('stroke', '#111316')
   })
 })

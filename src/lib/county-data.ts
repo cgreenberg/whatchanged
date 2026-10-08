@@ -4,6 +4,7 @@
 // The map's Gas / Groceries / Electricity layers come from /api/map-metrics (cache reads only).
 
 import type { MapMetrics } from '@/lib/api/map-metrics'
+import { gasAreaKind, gasAreaStateCounts, gasKindText, type GasAreaKind } from '@/lib/map-gas-areas'
 import { STATE_FIPS_MAP } from '@/lib/mappings/state-fips'
 import { fmtSignedDollars, fmtSignedPct, fmtMonthYear, fmtDay } from '@/lib/format'
 import type { EconomicSnapshot } from '@/types'
@@ -302,6 +303,10 @@ export interface LiveCountyValue {
   standIn?: true
   /** Gas: Alaska DCRA community survey. */
   survey?: true
+  /** Gas: the kind of published area (city / state / regional average, …; map-gas-areas.ts), null when unknown. */
+  kind?: GasAreaKind | null
+  /** Gas: plain-language area + kind ("Midwest region average · shared across 13 states (EIA PADD 2)"), when known. */
+  kindText?: string
 }
 
 /** "Jan 2025 → Aug 2026 monthly averages" — the gas layer's common window (map-metrics gasWindow). */
@@ -341,6 +346,8 @@ export function liveValue(m: MapMetrics | null | undefined, fips: string, key: L
       ...(g.stale ? { stale: true as const } : {}),
       ...(g.standIn ? { standIn: true as const } : {}),
       ...(g.source === 'dcra' ? { survey: true as const } : {}),
+      kind: gasAreaKind(g),
+      ...((t) => (t ? { kindText: t } : {}))(gasKindText(g, gasAreaStateCounts(m).get(row[0]))),
     }
     const area = g.standIn ? `${g.label} (no series for this county)` : g.label
     if (g.window !== 'own' && g.asOf && m.gasWindow) {
@@ -569,12 +576,46 @@ export function scaleColor(v: number | undefined, scale: MapScale): string {
   if (isOppositeSide(v, scale)) return oppositeColor(scale, v)!
   const rose = scale.hi > 0
   const span = scale.hi - scale.lo || 1
-  // Rising: lo dim (near the charcoal midpoint) → hi bright; falling: hi (smallest drop) dim → lo (biggest drop) bright
+  // Rising: lo dim → hi bright; falling: hi (smallest drop) dim → lo (biggest drop) bright
   const t = Math.max(0, Math.min(1, rose ? (v - scale.lo) / span : (scale.hi - v) / span))
-  const a = 0.18 + 0.82 * t
-  const end = rose ? POS : NEG
-  const c = MID.map((m, i) => Math.round(m + (end[i] - m) * a))
+  return rampColor(rose ? SEQ_RISE_RAMP : SEQ_FALL_RAMP, t)
+}
+
+/**
+ * Sequential ramps (gas): three stops, luminance rising with the change ("brighter = rose more"). The low end is a
+ * clear amber, well off the page background and hue-distinct from the gray no-data fill (it used to start a fifth of
+ * the way from the charcoal midpoint, so the smallest rises nearly vanished into the background).
+ */
+export const SEQ_RISE_RAMP: ReadonlyArray<readonly [number, number, number]> = [[186, 110, 44], [240, 146, 48], [255, 214, 128]]
+const SEQ_FALL_RAMP: ReadonlyArray<readonly [number, number, number]> = [[60, 110, 175], [74, 144, 217], [170, 205, 245]]
+
+function rampColor(ramp: ReadonlyArray<readonly [number, number, number]>, t: number): string {
+  const x = Math.max(0, Math.min(1, t)) * (ramp.length - 1)
+  const i = Math.min(ramp.length - 2, Math.floor(x))
+  const f = x - i
+  const c = ramp[i].map((a, k) => Math.round(a + (ramp[i + 1][k] - a) * f))
   return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
+/** Page background the map sits on (theme DESK.bg). */
+const MAP_BG = [17, 19, 22]
+/** How far a gas regional-average fill is faded toward the background (several states share one number). */
+export const GAS_REGION_FADE = 0.14
+
+/** A fill faded toward the map background by `amount` (0..1): `rgb(…)` or `#rrggbb` in, `rgb(…)` out. */
+export function fadeFill(color: string, amount = GAS_REGION_FADE): string {
+  const rgb = parseColor(color)
+  if (!rgb) return color
+  const c = rgb.map((v, i) => Math.round(v + (MAP_BG[i] - v) * amount))
+  return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
+/** [r, g, b] from `rgb(r,g,b)` or `#rrggbb`; null otherwise. */
+export function parseColor(color: string): [number, number, number] | null {
+  const m = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(color)
+  if (m) return [Number(m[1]), Number(m[2]), Number(m[3])]
+  const h = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color)
+  return h ? [parseInt(h[1], 16), parseInt(h[2], 16), parseInt(h[3], 16)] : null
 }
 
 /**
