@@ -252,8 +252,18 @@ def main():
         inv("Every county rent row names the state / U.S. seasonal pattern it is blended with and its own weight (0..1)",
             [f for f, v in crj["counties"].items()
              if not (isinstance(v.get("saPool"), str) and v["saPool"] and isinstance(v.get("saW"), (int, float)) and 0 <= v["saW"] < 1)])
-        inv("Rent meta labels the seasonal method (county pattern blended with the state pattern)",
-            [] if "blended with the state pattern" in (crj["meta"].get("seasonalMethod") or "") else ["county-rent.json meta.seasonalMethod"])
+        inv("Rent meta labels the seasonal method (county pattern blended with the state (or U.S.) pattern)",
+            [] if "blended with the state (or U.S.) pattern" in (crj["meta"].get("seasonalMethod") or "") else ["county-rent.json meta.seasonalMethod"])
+        # Seasonal-pattern caveat (round 14): only rows whose own recent swing differs from the blend's by > 1.5 points
+        _mr = os.path.join(a.repo, "src/lib/data/metro-rent.json")
+        _metros = json.load(open(_mr))["metros"] if os.path.exists(_mr) else {}
+        inv("Every rent seasonal-pattern caveat has |gap| > 1.5 points and a month Feb..Dec",
+            [f for f, v in list(crj["counties"].items()) + list(_metros.items()) if "saCaveat" in v
+             and not (isinstance(v["saCaveat"].get("gap"), (int, float)) and abs(v["saCaveat"]["gap"]) > 1.5
+                      and v["saCaveat"].get("month") in range(2, 13))])
+        record(S, "Rent rows with a seasonal-pattern caveat (own recent swing vs blended, > 1.5 points)", "INFO",
+               f'{sum("saCaveat" in v for v in crj["counties"].values())} counties, '
+               f'{sum("saCaveat" in v for v in _metros.values())} metros')
         w_hist = defaultdict(int)
         for v in crj["counties"].values():
             w_hist[v.get("saW")] += 1

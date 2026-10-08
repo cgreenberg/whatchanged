@@ -25843,8 +25843,8 @@
     "cityName": "Bethlehem"
   },
   "18025": {
-    "countyFips": "42095",
-    "countyName": "Northampton County",
+    "countyFips": "42077",
+    "countyName": "Lehigh County",
     "stateName": "Pennsylvania",
     "stateAbbr": "PA",
     "cityName": "Bethlehem",
@@ -50006,8 +50006,8 @@
     "zcta": false
   },
   "25709": {
-    "countyFips": "54011",
-    "countyName": "Cabell County",
+    "countyFips": "54099",
+    "countyName": "Wayne County",
     "stateName": "West Virginia",
     "stateAbbr": "WV",
     "cityName": "Huntington",
@@ -55426,8 +55426,8 @@
     "cityName": "Rocky Mount"
   },
   "27802": {
-    "countyFips": "37127",
-    "countyName": "Nash County",
+    "countyFips": "37065",
+    "countyName": "Edgecombe County",
     "stateName": "North Carolina",
     "stateAbbr": "NC",
     "cityName": "Rocky Mount",
@@ -61754,8 +61754,8 @@
     "zcta": false
   },
   "29228": {
-    "countyFips": "45079",
-    "countyName": "Richland County",
+    "countyFips": "45063",
+    "countyName": "Lexington County",
     "stateName": "South Carolina",
     "stateAbbr": "SC",
     "cityName": "Columbia",
@@ -66543,8 +66543,8 @@
     "cityName": "Atlanta"
   },
   "30333": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -66681,8 +66681,8 @@
     "zcta": false
   },
   "30356": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -66705,8 +66705,8 @@
     "zcta": false
   },
   "30359": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -66728,8 +66728,8 @@
     "zcta": false
   },
   "30362": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -66751,8 +66751,8 @@
     "zcta": false
   },
   "30366": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -69296,8 +69296,8 @@
     "zcta": false
   },
   "31119": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -69336,8 +69336,8 @@
     "zcta": false
   },
   "31141": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -69352,16 +69352,16 @@
     "zcta": false
   },
   "31145": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
     "zcta": false
   },
   "31146": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -97579,8 +97579,8 @@
     "cityName": "Whigham"
   },
   "39901": {
-    "countyFips": "13121",
-    "countyName": "Fulton County",
+    "countyFips": "13089",
+    "countyName": "DeKalb County",
     "stateName": "Georgia",
     "stateAbbr": "GA",
     "cityName": "Atlanta",
@@ -125488,8 +125488,8 @@
     "cityName": "Lansing"
   },
   "48908": {
-    "countyFips": "26065",
-    "countyName": "Ingham County",
+    "countyFips": "26045",
+    "countyName": "Eaton County",
     "stateName": "Michigan",
     "stateAbbr": "MI",
     "cityName": "Lansing",
@@ -161403,16 +161403,16 @@
     "zcta": false
   },
   "60569": {
-    "countyFips": "17089",
-    "countyName": "Kane County",
+    "countyFips": "17043",
+    "countyName": "DuPage County",
     "stateName": "Illinois",
     "stateAbbr": "IL",
     "cityName": "Aurora",
     "zcta": false
   },
   "60572": {
-    "countyFips": "17089",
-    "countyName": "Kane County",
+    "countyFips": "17043",
+    "countyName": "DuPage County",
     "stateName": "Illinois",
     "stateAbbr": "IL",
     "cityName": "Aurora",
@@ -161433,8 +161433,8 @@
     "cityName": "Plainfield"
   },
   "60598": {
-    "countyFips": "17089",
-    "countyName": "Kane County",
+    "countyFips": "17043",
+    "countyName": "DuPage County",
     "stateName": "Illinois",
     "stateAbbr": "IL",
     "cityName": "Aurora",
@@ -173976,8 +173976,8 @@
     "zcta": false
   },
   "64144": {
-    "countyFips": "29095",
-    "countyName": "Jackson County",
+    "countyFips": "29047",
+    "countyName": "Clay County",
     "stateName": "Missouri",
     "stateAbbr": "MO",
     "cityName": "Kansas City",
@@ -174090,8 +174090,8 @@
     "cityName": "Kansas City"
   },
   "64162": {
-    "countyFips": "29095",
-    "countyName": "Jackson County",
+    "countyFips": "29047",
+    "countyName": "Clay County",
     "stateName": "Missouri",
     "stateAbbr": "MO",
     "cityName": "Kansas City",
@@ -174133,8 +174133,8 @@
     "cityName": "Kansas City"
   },
   "64168": {
-    "countyFips": "29095",
-    "countyName": "Jackson County",
+    "countyFips": "29165",
+    "countyName": "Platte County",
     "stateName": "Missouri",
     "stateAbbr": "MO",
     "cityName": "Kansas City",
@@ -174197,8 +174197,8 @@
     "zcta": false
   },
   "64190": {
-    "countyFips": "29095",
-    "countyName": "Jackson County",
+    "countyFips": "29165",
+    "countyName": "Platte County",
     "stateName": "Missouri",
     "stateAbbr": "MO",
     "cityName": "Kansas City",
@@ -174213,8 +174213,8 @@
     "zcta": false
   },
   "64195": {
-    "countyFips": "29095",
-    "countyName": "Jackson County",
+    "countyFips": "29165",
+    "countyName": "Platte County",
     "stateName": "Missouri",
     "stateAbbr": "MO",
     "cityName": "Kansas City",
@@ -203927,8 +203927,8 @@
     "cityName": "Carrollton"
   },
   "75011": {
-    "countyFips": "48121",
-    "countyName": "Denton County",
+    "countyFips": "48113",
+    "countyName": "Dallas County",
     "stateName": "Texas",
     "stateAbbr": "TX",
     "cityName": "Carrollton",
@@ -219695,8 +219695,8 @@
     "cityName": "Amarillo"
   },
   "79114": {
-    "countyFips": "48375",
-    "countyName": "Potter County",
+    "countyFips": "48381",
+    "countyName": "Randall County",
     "stateName": "Texas",
     "stateAbbr": "TX",
     "cityName": "Amarillo",
@@ -222302,8 +222302,8 @@
     "zcta": false
   },
   "80040": {
-    "countyFips": "08005",
-    "countyName": "Arapahoe County",
+    "countyFips": "08001",
+    "countyName": "Adams County",
     "stateName": "Colorado",
     "stateAbbr": "CO",
     "cityName": "Aurora",
@@ -222318,8 +222318,8 @@
     "zcta": false
   },
   "80042": {
-    "countyFips": "08005",
-    "countyName": "Arapahoe County",
+    "countyFips": "08001",
+    "countyName": "Adams County",
     "stateName": "Colorado",
     "stateAbbr": "CO",
     "cityName": "Aurora",
@@ -222642,16 +222642,16 @@
     "zcta": false
   },
   "80162": {
-    "countyFips": "08005",
-    "countyName": "Arapahoe County",
+    "countyFips": "08059",
+    "countyName": "Jefferson County",
     "stateName": "Colorado",
     "stateAbbr": "CO",
     "cityName": "Littleton",
     "zcta": false
   },
   "80163": {
-    "countyFips": "08005",
-    "countyName": "Arapahoe County",
+    "countyFips": "08035",
+    "countyName": "Douglas County",
     "stateName": "Colorado",
     "stateAbbr": "CO",
     "cityName": "Littleton",
@@ -263420,16 +263420,16 @@
     "cityName": "Portland"
   },
   "97268": {
-    "countyFips": "41051",
-    "countyName": "Multnomah County",
+    "countyFips": "41005",
+    "countyName": "Clackamas County",
     "stateName": "Oregon",
     "stateAbbr": "OR",
     "cityName": "Portland",
     "zcta": false
   },
   "97269": {
-    "countyFips": "41051",
-    "countyName": "Multnomah County",
+    "countyFips": "41005",
+    "countyName": "Clackamas County",
     "stateName": "Oregon",
     "stateAbbr": "OR",
     "cityName": "Portland",
@@ -263444,8 +263444,8 @@
     "zcta": false
   },
   "97281": {
-    "countyFips": "41051",
-    "countyName": "Multnomah County",
+    "countyFips": "41067",
+    "countyName": "Washington County",
     "stateName": "Oregon",
     "stateAbbr": "OR",
     "cityName": "Portland",
@@ -263484,8 +263484,8 @@
     "zcta": false
   },
   "97291": {
-    "countyFips": "41051",
-    "countyName": "Multnomah County",
+    "countyFips": "41067",
+    "countyName": "Washington County",
     "stateName": "Oregon",
     "stateAbbr": "OR",
     "cityName": "Portland",
@@ -263524,8 +263524,8 @@
     "zcta": false
   },
   "97298": {
-    "countyFips": "41051",
-    "countyName": "Multnomah County",
+    "countyFips": "41067",
+    "countyName": "Washington County",
     "stateName": "Oregon",
     "stateAbbr": "OR",
     "cityName": "Portland",

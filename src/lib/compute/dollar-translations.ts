@@ -25,12 +25,19 @@ export function fmtRentFigure(rent: number, coded?: 'top' | 'bottom' | null): st
 
 /**
  * The shelter "$/yr in rent" amount: "≈ +$1,230/yr". When the rent base is the zip's own top-coded median ($3,500+)
- * the true amount is at least this big (either sign: "at least ≈ −$420/yr" for a decrease); bottom-coded (under $100)
- * → "at most".
+ * the true amount is this big or bigger, said as a magnitude: "≈ +$1,230/yr or more" for an increase, "≈ −$420/yr or
+ * more saved" for a decrease; bottom-coded (under $100) → "or less" / "or less saved". A $0 amount stays "≈ $0/yr".
  */
 export function fmtRentDollars(dollars: number, coded?: 'top' | 'bottom' | null): string {
   const amount = `≈ ${fmtSignedDollars(dollars, 0)}/yr`
-  return coded === 'top' ? `at least ${amount}` : coded === 'bottom' ? `at most ${amount}` : amount
+  const q = rentCodedQualifier(dollars, coded)
+  return q ? `${amount} ${q}` : amount
+}
+
+/** "or more" / "or more saved" (top-coded rent) / "or less" / "or less saved" (bottom-coded); '' otherwise or for $0. */
+export function rentCodedQualifier(dollars: number, coded?: 'top' | 'bottom' | null): string {
+  if (!coded || !Number.isFinite(dollars) || Math.round(dollars) === 0) return ''
+  return `${coded === 'top' ? 'or more' : 'or less'}${dollars < 0 ? ' saved' : ''}`
 }
 
 export interface DollarImpact {

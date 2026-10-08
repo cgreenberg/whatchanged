@@ -214,20 +214,26 @@ describe('share-card text slots stay within their line budgets', () => {
       for (const coded of [undefined, 'top', 'bottom'] as const) {
         for (const d of [8358, -8358]) {
           const pill = `≈ ${fmtSignedDollars(d, 0)}/yr`
-          const sub = shelterPillSub({ basis: 'zip', rentCoded: coded })
+          const sub = shelterPillSub({ basis: 'zip', rentCoded: coded }, d)
           // two-line pill: the wider of Barlow 40 text / Barlow 24 sub + 2×18 padding + 2×1.5 border + 12 margin
           const row = bebas(pct, FS.big) + Math.max(barlow(pill, 40), barlow(sub, 24)) + 2 * 18 + 2 * 1.5 + 12
           expect([pct, pill, sub, row <= CELL_TEXT_WIDTH]).toEqual([pct, pill, sub, true])
         }
       }
     }
-    expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' })).toBe('in rent, at least')
-    expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' })).toBe('in rent, at most')
-    expect(shelterPillSub({ basis: 'county' })).toBe('in rent')
-    // Website card face: "at least ≈ +$X/yr" / "at least ≈ −$X/yr" (sign-aware), "at most" for bottom-coded
-    expect(fmtRentDollars(1234, 'top')).toBe('at least ≈ +$1,234/yr')
-    expect(fmtRentDollars(-1234, 'top')).toBe('at least ≈ −$1,234/yr')
-    expect(fmtRentDollars(12, 'bottom')).toBe('at most ≈ +$12/yr')
+    // Magnitude wording, sign-aware: a coded base bounds the SIZE of the amount (a decrease is money saved)
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' }, 1234)).toBe('or more in rent')
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'top' }, -420)).toBe('or more saved in rent')
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' }, 12)).toBe('or less in rent')
+    expect(shelterPillSub({ basis: 'zip', rentCoded: 'bottom' }, -12)).toBe('or less saved in rent')
+    expect(shelterPillSub({ basis: 'county' }, -420)).toBe('in rent')
+    expect(shelterPillSub({ basis: 'county', rentCoded: 'top' }, 1234)).toBe('in rent')
+    // Website card face: the same qualifier after the amount
+    expect(fmtRentDollars(1234, 'top')).toBe('≈ +$1,234/yr or more')
+    expect(fmtRentDollars(-420, 'top')).toBe('≈ −$420/yr or more saved')
+    expect(fmtRentDollars(12, 'bottom')).toBe('≈ +$12/yr or less')
+    expect(fmtRentDollars(-12, 'bottom')).toBe('≈ −$12/yr or less saved')
+    expect(fmtRentDollars(0, 'top')).toBe('≈ $0/yr')
     expect(fmtRentDollars(1234)).toBe('≈ +$1,234/yr')
   })
 

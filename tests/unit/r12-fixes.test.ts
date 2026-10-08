@@ -52,11 +52,22 @@ describe('Zillow county series that is not current (New Kent County VA)', () => 
       .toBe("Zillow's series for New Kent County is too new to use (only one month, Jul 2026)")
     expect(notCurrentText('X County', { n: 3, last: '2026-07' }))
       .toBe("Zillow's series for X County is too new to use (only three months, from May 2026)")
+    // 14 months ending Mar 2026 counts back to Feb 2025 (no first month in the data): after the baseline → too new
     expect(notCurrentText('X County', { n: 14, last: '2026-03' }))
       .toBe("Zillow's series for X County is too new to use (only 14 months, from Feb 2025)")
+    // A series that started before Jan 2025 and stopped isn't "too new": it isn't current
+    expect(notCurrentText('X County', { n: 40, first: '2022-12', last: '2026-03' }))
+      .toBe("Zillow's series for X County isn't current (through Mar 2026)")
+    expect(notCurrentText('X County', { n: 30, last: '2026-03' }))
+      .toBe("Zillow's series for X County isn't current (through Mar 2026)")
+    // Gaps: n counts the months with a value; the first month is the real first one, not counted back
+    expect(notCurrentText('X County', { n: 4, first: '2025-11', last: '2026-07' }))
+      .toBe("Zillow's series for X County is too new to use (only four months, from Nov 2025)")
+    expect(notCurrentText('X County', { n: 1, first: '2026-07', last: '2026-07' }))
+      .toBe("Zillow's series for X County is too new to use (only one month, Jul 2026)")
   })
   test('county lookup and the metro stand-in say why (card + map panel)', () => {
-    expect(countyNotCurrent('51127')).toEqual({ n: 1, last: '2026-07' })
+    expect(countyNotCurrent('51127')).toEqual({ n: 1, first: '2026-07', last: '2026-07' })
     const c = lookupCountyRent('51127')
     expect(c.data).toBeNull()
     if (!c.data) expect(c.why).toBe('not-current')

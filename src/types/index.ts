@@ -188,8 +188,8 @@ export interface RentData {
   /** Metro rows: why the county's own series isn't used ('none' = Zillow publishes none; 'too-new' = too short;
    * 'no-baseline' = it has no Jan 2025 value; 'not-current' = it stops before Zillow's latest month). */
   countyWhy?: 'none' | 'too-new' | 'no-baseline' | 'not-current'
-  /** countyWhy 'not-current': months the county's series has and its last month ("one month, Jul 2026"). */
-  countyNotCurrent?: { n: number; last: string }
+  /** countyWhy 'not-current': months the county's series has, its first and last month ("one month, Jul 2026"). */
+  countyNotCurrent?: { n: number; last: string; first?: string }
   /**
    * Seasonal adjustment: the series' own pattern is blended with this pool's typical pattern based on history
    * length ("Maine counties", "U.S. counties" where the state has too few long series).
@@ -197,6 +197,12 @@ export interface RentData {
   saPool?: string
   /** Weight on the series' own seasonal pattern (0..1; 0 = too short for its own, the pool's pattern only). */
   saW?: number
+  /**
+   * Present only when the series' own recent seasonal swing (Jan → `month`, ratio months since 2022) differs from the
+   * blended pattern's by more than 1.5 points: gap = own − blended (points; > 0 → readings near that month overstate
+   * the change), low = that month is the series' seasonal low rather than its peak.
+   */
+  saCaveat?: { gap: number; month: number; low?: boolean }
   /** % change since the baseline month, seasonally adjusted by whatchanged. */
   pct: number
   /** Observed (not seasonally adjusted) typical asking rent in the baseline month, $/mo. */

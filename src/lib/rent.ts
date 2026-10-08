@@ -19,6 +19,7 @@ interface CountyRentRow {
   note?: string
   saPool?: string
   saW?: number
+  saCaveat?: { gap: number; month: number; low?: boolean }
 }
 
 interface CountyRentFile {
@@ -91,7 +92,7 @@ export function lookupCountyRent(countyFips: string | null | undefined): CountyR
   }
   const bad = checkRow(row)
   if (bad) return { data: null, why: bad }
-  const { pct, baseRent, curRent, asOf, name, flagged, note, saPool, saW } = row
+  const { pct, baseRent, curRent, asOf, name, flagged, note, saPool, saW, saCaveat } = row
   return {
     data: {
       level: 'county',
@@ -108,16 +109,22 @@ export function lookupCountyRent(countyFips: string | null | undefined): CountyR
       adjustment: FILE.meta.adjustment,
       ...(flagged === true ? { flagged: true } : {}),
       ...(typeof note === 'string' && note ? { note } : {}),
-      ...seasonalFields(saPool, saW),
+      ...seasonalFields(saPool, saW, saCaveat),
     },
   }
 }
 
-/** The state (or U.S.) seasonal pattern the series was shrunk toward and the weight on its own pattern (0..1). */
-function seasonalFields(saPool: unknown, saW: unknown): { saPool?: string; saW?: number } {
+/**
+ * The state (or U.S.) seasonal pattern the series was shrunk toward, the weight on its own pattern (0..1), and the
+ * seasonal-pattern caveat when the build flagged one (validated: finite gap, month 1–12).
+ */
+function seasonalFields(saPool: unknown, saW: unknown, saCaveat?: unknown): Pick<RentData, 'saPool' | 'saW' | 'saCaveat'> {
+  const c = saCaveat as { gap?: unknown; month?: unknown; low?: unknown } | undefined
+  const caveatOk = !!c && finite(c.gap) && Number.isInteger(c.month) && (c.month as number) >= 1 && (c.month as number) <= 12
   return {
     ...(typeof saPool === 'string' && saPool ? { saPool } : {}),
     ...(typeof saW === 'number' && saW >= 0 && saW <= 1 ? { saW } : {}),
+    ...(caveatOk ? { saCaveat: { gap: c!.gap as number, month: c!.month as number, ...(c!.low === true ? { low: true } : {}) } } : {}),
   }
 }
 
@@ -160,7 +167,7 @@ export function lookupMetroRent(countyFips: string | null | undefined, countyNam
   // A metro figure flagged as a statistical outlier never stands in for a county (often a change in the mix of
   // listings, not in rents): the card falls back to CPI shelter. A county's OWN flagged series is still shown, with ⚠.
   if (row.flagged === true) return { data: null, why: 'flagged' }
-  const { pct, baseRent, curRent, asOf, name, saPool, saW } = row
+  const { pct, baseRent, curRent, asOf, name, saPool, saW, saCaveat } = row
   return {
     data: {
       level: 'metro',
@@ -179,7 +186,7 @@ export function lookupMetroRent(countyFips: string | null | undefined, countyNam
       source: METRO.meta.source,
       sourceUrl: RENT_SOURCE_URL,
       adjustment: METRO.meta.adjustment,
-      ...seasonalFields(saPool, saW),
+      ...seasonalFields(saPool, saW, saCaveat),
     },
   }
 }

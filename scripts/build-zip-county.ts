@@ -434,9 +434,28 @@ async function main() {
   // county GeoNames files the zip under (so a same-named place elsewhere in the state — Glasgow borough, Beaver County
   // PA, for 16644 Glasgow in Cambria County — never matches). No such place, or no county above half the place's
   // population (New York city: Kings holds 31%) → the GeoNames county and the city rule below.
+  // Round 14: only for places under PLACE_POP_MAX people. A big city's stations are spread across its suburbs, and
+  // GeoNames' county for them comes from the USPS record (30333 CDC and 39901 IRS Chamblee are "Atlanta" mail filed
+  // under DeKalb; Portland's 97281/97291/97298 under Washington), so for big places the GeoNames county stands. "Big"
+  // = the Census place OR the postal city (every ZCTA whose USPS city has the same name) has >= PLACE_POP_MAX people:
+  // Littleton CO is a 45,652-person city but "Littleton" mail covers ~200k people in Arapahoe, Jefferson and Douglas,
+  // so 80162 (Jefferson) and 80163 (Douglas) keep their USPS county. Exception: a GeoNames county holding only a
+  // boundary sliver of the place (< SLIVER_POP residents) isn't the place's county (87174 Rio Rancho NM: 6 of 104,046
+  // in Bernalillo → Sandoval); Portland's Clackamas part (843) and Littleton's Douglas part (640) are real.
+  const PLACE_POP_MAX = 50_000
+  const SLIVER_POP = 100
+  const postalCityPop = new Map<string, number>()
+  for (const [zcta, e] of Object.entries(result)) {
+    if (!e.cityName) continue
+    const k = `${e.stateAbbr}|${normPlace(e.cityName)}`
+    let pop = 0
+    for (const w of zctaCounty.get(zcta)?.values() ?? []) pop += w[1]
+    postalCityPop.set(k, (postalCityPop.get(k) ?? 0) + pop)
+  }
   const placeMoves: string[] = []
+  const bigPlaceKept: string[] = []
   let viaPlaceCount = 0
-  function placeMajorityCounty(city: string, stateAbbr: string, geonamesCounty: string): string | null {
+  function placeMajorityCounty(city: string, stateAbbr: string, geonamesCounty: string, zip: string): string | null {
     if (!city) return null
     const keys = (placeByName.get(`${stateAbbr}|${normPlace(city)}`) ?? []).filter((k) => placeCountyPop.get(k)?.has(geonamesCounty))
     if (keys.length !== 1) return null
@@ -445,6 +464,14 @@ async function main() {
     const total = [...parts.values()].reduce((a, b) => a + b, 0)
     const top = [...parts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
     if (!top || total <= 0 || top[1] * 2 <= total || !countyNames[top[0]]) return null
+    const postal = postalCityPop.get(`${stateAbbr}|${normPlace(city)}`) ?? 0
+    const inGeonames = parts.get(geonamesCounty) ?? 0
+    if ((total >= PLACE_POP_MAX || postal >= PLACE_POP_MAX) && inGeonames >= SLIVER_POP) {
+      if (top[0] !== geonamesCounty) {
+        bigPlaceKept.push(`${zip} ${city}, ${stateAbbr}: kept ${countyNames[geonamesCounty] ?? geonamesCounty} (${geonamesCounty}, ${inGeonames.toLocaleString()} of ${total.toLocaleString()} place pop; postal city ${postal.toLocaleString()}); majority ${countyNames[top[0]]} (${top[0]})`)
+      }
+      return null
+    }
     viaPlaceCount++
     return top[0]
   }
@@ -458,7 +485,7 @@ async function main() {
     let ctRegion: string | undefined
     if (g.state === 'CT' && /^091[1-9]0$/.test(countyFips)) ctRegion = countyFips
     // The named place's majority county (round 13) — else the GeoNames county, corrected by the city rule
-    const viaPlace = placeMajorityCounty(cityFor(g.zip, g.state) || g.city, g.state, countyFips)
+    const viaPlace = placeMajorityCounty(cityFor(g.zip, g.state) || g.city, g.state, countyFips, g.zip)
     if (viaPlace) {
       if (viaPlace !== countyFips) {
         placeMoves.push(`${g.zip} ${cityFor(g.zip, g.state) || g.city}, ${g.state}: ${countyNames[countyFips] ?? countyFips} (${countyFips}) → ${countyNames[viaPlace]} (${viaPlace})`)
@@ -494,6 +521,7 @@ async function main() {
   console.log(`ZCTA zips: ${zctaCount.toLocaleString()}, USPS-only zips added: ${added.toLocaleString()}`)
   console.log(`Mail-only zips moved to their city's county: ${cityFixes.length}\n  ${cityFixes.join('\n  ')}`)
   console.log(`USPS-only zips assigned by their place's majority county: ${viaPlaceCount}; differing from GeoNames: ${placeMoves.length}\n  ${placeMoves.join('\n  ')}`)
+  console.log(`USPS-only zips of big places (place or postal city >= ${PLACE_POP_MAX.toLocaleString()} people) kept in their GeoNames county: ${bigPlaceKept.length}\n  ${bigPlaceKept.join('\n  ')}`)
   if (unresolved.length) console.log(`Unresolved USPS-only zips (skipped): ${unresolved.length}\n  ${unresolved.join('\n  ')}`)
 
   // 9. Write
@@ -528,6 +556,9 @@ async function main() {
     ['10001', '36061'],
     ['20500', '11001'], // White House (USPS unique zip)
     ['86339', '04025'], // Sedona PO boxes → Yavapai (74% of Sedona city's population)
+    ['30333', '13089'], // CDC, "Atlanta" mail filed under DeKalb (big place: GeoNames county stands)
+    ['80163', '08035'], // "Littleton" mail (big postal city) filed under Douglas stays
+    ['87174', '35043'], // Rio Rancho PO boxes: none of Rio Rancho's people live in Bernalillo → Sandoval
     ['25888', '54019'], // Mount Hope WV PO boxes → Fayette
     ['21240', '24003'], // BWI airport ZCTA → Anne Arundel
   ]

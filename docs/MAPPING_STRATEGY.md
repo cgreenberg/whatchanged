@@ -44,7 +44,11 @@ Sources (all public, no key):
 5. GeoNames US postal codes (CC BY 4.0): adds USPS zips that are not ZCTAs (PO boxes, unique zips
    such as 20500) with their county, flagged `zcta: false`, and is a fallback for city names. A
    USPS-only zip whose named Census place touches that county takes the county holding the majority of
-   the place's population (2020 PL 94-171 place-by-county parts; 86339 Sedona AZ → Yavapai)
+   the place's population (2020 PL 94-171 place-by-county parts; 86339 Sedona AZ → Yavapai) — only for
+   places under 50,000 people whose postal city (all ZCTAs with that USPS city name) is also under 50,000.
+   A bigger place's stations keep GeoNames' (USPS) county (30333 CDC "Atlanta" → DeKalb; Portland's
+   97281/97291/97298 → Washington; "Littleton" CO 80162 → Jefferson, 80163 → Douglas), unless that county
+   holds a mere boundary sliver of the place (< 100 residents: 87174 Rio Rancho → Sandoval)
 
 Island areas without block data are assigned by land area. The build caches downloads in
 `$GEO_CACHE_DIR` and needs `NODE_OPTIONS=--max-old-space-size=6144`.

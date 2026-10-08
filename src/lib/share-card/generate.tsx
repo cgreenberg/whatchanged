@@ -8,7 +8,7 @@ import {
 } from '@/lib/baseline'
 import { buildHeroCards, imageSourcesLine, nationalChangeMatching, usesNationalFallback, dataThroughLabel, OUTLIER_MARK, isMonthDatedGas, isGasStandIn, standInPlace, GAS_STANDIN_MARK, electricityPlace } from '@/lib/hero-cards'
 import { cpiTierOf } from '@/lib/provenance'
-import { ANNUAL_GROCERY_BASE, fmtRentFigure } from '@/lib/compute/dollar-translations'
+import { ANNUAL_GROCERY_BASE, fmtRentFigure, rentCodedQualifier } from '@/lib/compute/dollar-translations'
 import { cpiMetroShortName, hiAkCpiOfficialName } from '@/lib/mappings/county-metro-cpi'
 import type { CpiData } from '@/types'
 import { loadShareFonts } from '@/lib/share-card/fonts'
@@ -166,14 +166,15 @@ export function shelterBasisNote(
 }
 
 /**
- * Second line of the shelter "$/yr" pill. The zip's own top-coded median ($3,500+) makes the amount a floor (either
- * sign: a decrease is at least that big) → "in rent, at least"; bottom-coded (under $100) → "in rent, at most". The
- * qualifier sits on this line because "at least ≈ +$8,358/yr" at the pill's 40px doesn't fit beside the big number
- * (tests/unit/share-card-fit.test.ts); the website card face says "at least ≈ +$X/yr in rent" (fmtRentDollars).
+ * Second line of the shelter "$/yr" pill. The zip's own top-coded median ($3,500+) makes the amount a floor on its
+ * size → "or more in rent" ("or more saved in rent" for a decrease); bottom-coded (under $100) → "or less in rent" /
+ * "or less saved in rent". The qualifier sits on this line because "≈ +$8,358/yr or more" at the pill's 40px doesn't
+ * fit beside the big number (tests/unit/share-card-fit.test.ts); the website card face says the same
+ * ("≈ +$X/yr or more in rent", fmtRentDollars).
  */
-export function shelterPillSub(c?: { basis?: string; rentCoded?: 'top' | 'bottom' } | null): string {
-  const coded = c?.basis === 'zip' ? c.rentCoded : undefined
-  return coded === 'top' ? 'in rent, at least' : coded === 'bottom' ? 'in rent, at most' : 'in rent'
+export function shelterPillSub(c?: { basis?: string; rentCoded?: 'top' | 'bottom' } | null, dollars?: number | null): string {
+  const q = rentCodedQualifier(typeof dollars === 'number' ? dollars : 1, c?.basis === 'zip' ? c.rentCoded : undefined)
+  return q ? `${q} in rent` : 'in rent'
 }
 
 // ── Main Export ───────────────────────────────────────────────────
@@ -829,7 +830,7 @@ export async function generateShareCard(zip: string): Promise<Response> {
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }}>
                   {bigNumber(shelterOk ? fmtSignedPct(cpiData!.shelterChange!) : 'N/A')}
                   {shelterDollars != null
-                    ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, shelterPillSub(snapshot.census.data))
+                    ? changePill(`≈ ${fmtSignedDollars(shelterDollars, 0)}/yr`, BLUE, shelterPillSub(snapshot.census.data, shelterDollars))
                     : changePill('—', BLUE)}
                 </div>
                 {metaRow(sinceLabel(cpiData?.shelterBaselinePeriod), shelterNat)}

@@ -71,6 +71,16 @@ def add_months(m, k):
     return f"{y + mo // 12:04d}-{mo % 12 + 1:02d}"
 
 
+def seasonal_ratios(mat):
+    """Value / centered 2x12 moving average (NaN where the 13-month window is incomplete)."""
+    T = mat.shape[1]
+    w = np.r_[0.5, np.ones(11), 0.5] / 12.0
+    cma = np.full_like(mat, np.nan)
+    for t in range(6, T - 6):
+        cma[:, t] = (mat[:, t - 6:t + 7] * w).sum(axis=1)  # NaN propagates if any missing
+    return mat / cma
+
+
 def seasonal_factors(mat, months, fit_end="2024-12"):
     """Classical-decomposition multiplicative seasonal factors, leak-free.
     mat: (n_series, n_months) float array with NaNs, months contiguous. A ratio month t needs the centered
@@ -79,12 +89,8 @@ def seasonal_factors(mat, months, fit_end="2024-12"):
     Returns (factors (n_series, 12), each row normalized to average 1 (NaN where a calendar month has no ratio),
     n (n_series,) = the MINIMUM number of in-sample ratios over the 12 calendar months)."""
     assert months == month_range(months[0], months[-1]), "seasonal factors need contiguous months"
-    n, T = mat.shape
-    w = np.r_[0.5, np.ones(11), 0.5] / 12.0  # centered 2x12 moving average
-    cma = np.full_like(mat, np.nan)
-    for t in range(6, T - 6):
-        cma[:, t] = (mat[:, t - 6:t + 7] * w).sum(axis=1)  # NaN propagates if any missing
-    ratio = mat / cma
+    n = mat.shape[0]
+    ratio = seasonal_ratios(mat)
     cal = np.array([int(m[5:]) for m in months])
     ratio_end = add_months(fit_end, -6)  # full centered window ends <= fit_end
     fit = np.array([(SERIES_START <= m <= ratio_end) for m in months])
@@ -124,7 +130,7 @@ POOL_MIN_RATIOS = 6  # only series with >= this many ratios in every calendar mo
 MIN_POOL_SERIES = 5  # a state's pool needs at least this many such series; otherwise the U.S. pool is used
 # Full label of the rent adjustment (data meta "seasonalMethod"; the card ⓘ / trace / About say the same). The short
 # "adjustment" label stays "seasonally adjusted by whatchanged" for the compact provenance line.
-RENT_SA_LABEL = "seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)"
+RENT_SA_LABEL = "seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)"
 RENT_SA_META = {"seasonalMethod": RENT_SA_LABEL,
                 "seasonalDetail": f"log seasonal factors = w * own + (1 - w) * state pool, w = n / (n + {SHRINK_K}), n = fewest "
                                   "leak-free ratios (ratio months <= 2024-06) in any calendar month; pools from series with "
@@ -173,7 +179,7 @@ def shrunk_factors(factors, n, groups, pools, k=None):
 def shrink_adjust(mat, months, groups, pools=None, k=None):
     """Seasonally adjust every row with its own pattern shrunk toward its state's pool (pools are built from these
     rows when not given). Rows whose data start after POOL_MAX_START stay unpublished (NaN). Returns
-    (SA matrix, own weight w per row, pool key per row: state FIPS or '' = U.S., pools)."""
+    (SA matrix, own weight w per row, pool key per row: state FIPS or '' = U.S., pools, seasonal caveat per row)."""
     factors, n = seasonal_factors(mat, months)
     if pools is None:
         pools = pool_factors(factors, n, groups)
@@ -182,7 +188,53 @@ def shrink_adjust(mat, months, groups, pools=None, k=None):
     first_ok = months.index(POOL_MAX_START) if POOL_MAX_START in months else 0
     early = np.isfinite(mat[:, :first_ok + 1]).any(axis=1)
     sa[~early] = np.nan  # too new (thin early Zillow coverage): not published
-    return sa, w, keys, pools
+    return sa, w, keys, pools, seasonal_caveats(mat, months, f)
+
+
+# Seasonal-pattern caveat (round 14). The blend above is fit on leak-free months only (<= 2024-06), but some series'
+# seasonal swing has grown since (Manhattan: Jan -> Aug ~ +4.8% in 2022-2025 vs +2.3% in the blended pattern), so a
+# reading near the seasonal peak can overstate the change. Where the series' OWN RECENT swing (median ratios, ratio
+# months >= RECENT_SEASON_START, any data incl. 2025+, since this only words a caveat and never adjusts a number)
+# from January to its peak (or low) month differs from the blended pattern's by > SEASON_GAP_MIN points, the row
+# carries saCaveat {gap: own - blended (points; > 0 -> overstates near that month), month, low} and the card ⓘ /
+# trace say so. Series with < RECENT_SEASON_MIN_RATIOS recent ratios in any calendar month get none (no recent
+# pattern to compare).
+RECENT_SEASON_START = "2022-01"
+RECENT_SEASON_MIN_RATIOS = 3
+SEASON_GAP_MIN = 1.5
+
+
+def seasonal_caveats(mat, months, blended):
+    """Per row: None, or {"gap", "month"[, "low"]} when the recent own Jan -> peak swing differs from the blended
+    factors' by more than SEASON_GAP_MIN points."""
+    ratio = seasonal_ratios(mat)
+    cal = np.array([int(m[5:]) for m in months])
+    sel = np.array([m >= RECENT_SEASON_START for m in months])
+    rf = np.full((mat.shape[0], 12), np.nan)
+    rn = np.zeros((mat.shape[0], 12))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        for k in range(1, 13):
+            s = sel & (cal == k)
+            rf[:, k - 1] = np.nanmedian(ratio[:, s], axis=1)
+            rn[:, k - 1] = np.isfinite(ratio[:, s]).sum(axis=1)
+    out = []
+    for i in range(mat.shape[0]):
+        if rn[i].min() < RECENT_SEASON_MIN_RATIOS or not np.isfinite(rf[i]).all() or not np.isfinite(blended[i]).all():
+            out.append(None)
+            continue
+        own = rf[i] / rf[i, 0] - 1
+        bl = blended[i] / blended[i, 0] - 1
+        m = int(np.argmax(np.abs(own[1:]))) + 1  # the month farthest from January in the series' own recent pattern
+        gap = round(float((own[m] - bl[m]) * 100), 1)  # the shipped value is what the threshold applies to
+        if abs(gap) <= SEASON_GAP_MIN:
+            out.append(None)
+            continue
+        c = {"gap": gap, "month": m + 1}
+        if own[m] < 0:
+            c["low"] = True
+        out.append(c)
+    return out
 
 
 def load_zillow(path, key_fn):
@@ -287,7 +339,7 @@ def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fi
     cbsa_of = [links.get(k) for k in mk]
     # state pattern the metro is shrunk toward: the state of the metro's first principal city (e.g. "Bluefield, WV-VA" -> WV)
     groups = [abbr_to_fips.get((titles.get(c) or ", ").rsplit(", ", 1)[1][:2], "") if c else "" for c in cbsa_of]
-    msa, mw, mpool, _ = shrink_adjust(mm, mmonths, groups, rent_pools)
+    msa, mw, mpool, _, mcav = shrink_adjust(mm, mmonths, groups, rent_pools)
     msa = np.round(msa, 2)  # shipped precision (rentMS reproduces pct exactly)
     _, _, pct = change_since(msa, mmonths)
     bi = mmonths.index(BASE)
@@ -308,6 +360,8 @@ def build_metro_rent(R, counties, county_rent, rent_pools, pool_name, abbr_to_fi
         row = {"name": titles[cb], "pct": round(float(pct[i]), 1), "baseRent": int(round(mm[i, bi])),
                "curRent": int(round(mm[i, -1])), "asOf": mmonths[-1]}
         row["saPool"] = pool_name(mpool[i]); row["saW"] = round(float(mw[i]), 2)
+        if mcav[i]:
+            row["saCaveat"] = mcav[i]
         if abs(pct[i] - med) / mad > OUTLIER_Z:
             row["flagged"] = True
         metros[cb] = row
@@ -613,13 +667,15 @@ def main():
     zori_rows = {f for i, f in enumerate(ck) if _current(i) and not _early(i)}
     zori_nobase = {f for i, f in enumerate(ck) if _current(i) and _early(i) and not np.isfinite(cr[i, _bi])}
     # Rows Zillow publishes but that stop before the file's latest month (e.g. New Kent VA: one month, Jul 2026):
-    # {fips: {"n": months with a value, "last": last month with a value}} so the card can say "isn't current".
-    zori_stale = {f: {"n": int(np.isfinite(cr[i]).sum()), "last": crm[int(np.flatnonzero(np.isfinite(cr[i]))[-1])]}
+    # {fips: {"n": months with a value, "first"/"last": first/last month with a value}} so the card can say "isn't
+    # current (through …)" for a series that started before Jan 2025, or "too new to use (only n months, from …)".
+    zori_stale = {f: {"n": int(np.isfinite(cr[i]).sum()), "first": crm[int(np.flatnonzero(np.isfinite(cr[i]))[0])],
+                      "last": crm[int(np.flatnonzero(np.isfinite(cr[i]))[-1])]}
                   for i, f in enumerate(ck) if np.isfinite(cr[i]).any() and not np.isfinite(cr[i, -1])}
     # Every series: its own seasonal pattern shrunk toward its state's (weight n/(n+SHRINK_K), n = fewest leak-free
     # ratios in any calendar month); a short series (e.g. Androscoggin ME, from late 2022) gets mostly or only the
     # state pattern. Pool and own weight ship with each row (rentSaPool / rentSaW, saPool / saW).
-    cr_sa, cr_w, cr_pool, rent_pools = shrink_adjust(cr, crm, [f[:2] for f in ck])
+    cr_sa, cr_w, cr_pool, rent_pools, cr_cav = shrink_adjust(cr, crm, [f[:2] for f in ck])
     _n_by = defaultdict(int)
     for v in cr_w[np.isfinite(cr_sa[:, -1])]:
         _n_by[round(float(v), 2)] += 1
@@ -658,6 +714,8 @@ def main():
                 county_rent[f] = {"pct": round(float(pct[i]), 1), "baseRent": int(round(cr[i, bi])),
                                   "curRent": int(round(cr[i, -1])), "asOf": crm[-1],
                                   "saPool": pool_name(cr_pool[i]), "saW": round(float(cr_w[i]), 2)}
+                if cr_cav[i]:
+                    county_rent[f]["saCaveat"] = cr_cav[i]
 
     # QCEW (latest quarter only): county jobs. Used for ONE thing: the "biggest movers" lists only rank counties with
     # >= 75,000 jobs, and the outlier pool is counties with >= 20,000 jobs. Not displayed.

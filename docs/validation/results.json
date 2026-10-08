@@ -35,7 +35,7 @@
   "section": "2. Coverage and geography",
   "check": "Site zips whose county has published rent (SA since Jan 2025)",
   "status": "INFO",
-  "detail": "23428/41195 (57%)",
+  "detail": "23427/41195 (57%)",
   "metrics": {}
  },
  {
@@ -275,9 +275,23 @@
  },
  {
   "section": "6. Shipped data invariants",
-  "check": "Rent meta labels the seasonal method (county pattern blended with the state pattern)",
+  "check": "Rent meta labels the seasonal method (county pattern blended with the state (or U.S.) pattern)",
   "status": "PASS",
   "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Every rent seasonal-pattern caveat has |gap| > 1.5 points and a month Feb..Dec",
+  "status": "PASS",
+  "detail": "none",
+  "metrics": {}
+ },
+ {
+  "section": "6. Shipped data invariants",
+  "check": "Rent rows with a seasonal-pattern caveat (own recent swing vs blended, > 1.5 points)",
+  "status": "INFO",
+  "detail": "102 counties, 17 metros",
   "metrics": {}
  },
  {
@@ -389,7 +403,7 @@
   "section": "6. Shipped data invariants",
   "check": "Zips that get metro rent (no county series)",
   "status": "INFO",
-  "detail": "3476 zips, 461 counties, 205 metros",
+  "detail": "3477 zips, 461 counties, 205 metros",
   "metrics": {}
  },
  {

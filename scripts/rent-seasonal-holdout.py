@@ -4,7 +4,8 @@ rent-seasonal-holdout.py — holdout check of the county rent seasonal adjustmen
 
 Seasonal factors are fit only on leak-free ratios (ratio months <= 2024-06). This measures how much seasonality is
 LEFT in each adjusted county series after that: residual seasonality = the spread (max - min) across the 12 calendar
-months of the average month-over-month % change of the adjusted series over Jul 2024 .. the latest month. A perfectly
+months of the average month-over-month % change of the adjusted series over Jan 2025 .. the latest month (fully
+out of sample). A perfectly
 adjusted series has the same expected change in every calendar month (spread -> noise only).
 
 Compares, per county, by n = fewest leak-free ratios in any calendar month:
@@ -22,7 +23,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("bld", os.path.join(HERE, "build-local-data.py"))
 bld = importlib.util.module_from_spec(spec); spec.loader.exec_module(bld)
 
-WINDOW_START = "2024-07"
+# Fully out of sample: the first month-over-month change counted is Dec 2024 -> Jan 2025, after every month a
+# factor is fit on (ratio months <= 2024-06, whose centered windows end by Dec 2024).
+WINDOW_START = "2025-01"
 BUCKETS = [("0-1", 0, 1), ("2", 2, 2), ("3", 3, 3), ("4-5", 4, 5), ("6-7", 6, 7), ("8", 8, 99)]
 
 

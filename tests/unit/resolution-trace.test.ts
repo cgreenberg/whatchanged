@@ -132,7 +132,7 @@ describe('trace semantics', () => {
     const lewiston = (await fetchSnapshot('04240'))!
     expect(lewiston.rent).toMatchObject({ level: 'county', countyFips: '23001', saPool: expect.stringMatching(/counties$/), saW: 0 })
     expect(buildHeroCards(lewiston)[1].info.join(' ')).toMatch(
-      /Seasonally adjusted by whatchanged \(county pattern blended with the state pattern based on history length\): this series is too short to estimate its own pattern, so it uses the typical pattern of .* counties/)
+      /Seasonally adjusted by whatchanged \(county pattern blended with the state \(or U\.S\.\) pattern based on history length\): this series is too short to estimate its own pattern, so it uses the typical pattern of .* counties/)
     // A county with a full 2016-2024 history: half its own pattern, half its state's (n / (n + 8), n = 8)
     const austin = (await fetchSnapshot('78701'))!
     expect(austin.rent).toMatchObject({ level: 'county', saPool: 'Texas counties', saW: 0.5 })

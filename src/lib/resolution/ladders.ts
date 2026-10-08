@@ -30,7 +30,7 @@ import { hasElectricitySeries, electricitySeriesId, type ElectricitySeriesData }
 import { CPI_CHANGE_RANGE } from '@/lib/api/validate'
 import { isBlsPeriodStale, isElectricityPeriodStale, monthOlderThan, RENT_STALE_DAYS } from '@/lib/staleness'
 import type { CountyRentLookup } from '@/lib/rent'
-import { rentRangeText, notCurrentText } from '@/lib/rent-range'
+import { rentRangeText, notCurrentText, rentSeasonalCaveat } from '@/lib/rent-range'
 import { fmtRentFigure } from '@/lib/compute/dollar-translations'
 import type { StaticGasLookup } from '@/lib/static-gas'
 import {
@@ -541,7 +541,7 @@ const RENT = {
   title: 'Rent (housing card)',
   method:
     '% change of Zillow\'s typical asking rent on new leases since January 2025, seasonally adjusted by whatchanged ' +
-    '(county pattern blended with the state pattern based on history length): classical decomposition whose seasonal ' +
+    '(county pattern blended with the state (or U.S.) pattern based on history length): classical decomposition whose seasonal ' +
     'factors use only months whose full 13-month window ends by December 2024, so nothing after the baseline shapes ' +
     'them; each county\'s (or metro\'s) own pattern gets weight n ÷ (n + 8), n = its fewest years of history for any ' +
     'calendar month (at most 8, so at most half its own), and the rest is its state\'s typical pattern (U.S. counties ' +
@@ -559,7 +559,7 @@ const RENT = {
       license: ZILLOW_LICENSE,
       pipeline: 'static',
       homepage: ZILLOW_HOME,
-      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonally adjusted by whatchanged: county pattern blended with the state pattern based on history length; the ⓘ says how much of each).',
+      covers: 'Counties where Zillow’s rent series reaches back to January 2025 (seasonally adjusted by whatchanged: county pattern blended with the state (or U.S.) pattern based on history length; the ⓘ says how much of each).',
       applies: (l) => (!!l.countyFips && /^\d{5}$/.test(l.countyFips)) || 'No county is known for this zip.',
       target: (l) => l.countyFips!,
       geography: (_f, l) => countyLabel(l),
@@ -568,7 +568,8 @@ const RENT = {
         const r = ctx.countyRent!(fips)
         if (r.data) {
           const stale = monthOlderThan(r.data.asOf, RENT_STALE_DAYS, ctx.now)
-          return { status: stale ? 'stale' : 'used', value: r.data, asOf: r.data.asOf, ...(stale ? { reason: STALE_REASON } : {}) }
+          const caveat = rentSeasonalCaveat(r.data.saCaveat, 'county')
+          return { status: stale ? 'stale' : 'used', value: r.data, asOf: r.data.asOf, ...(stale ? { reason: STALE_REASON } : caveat ? { reason: caveat } : {}) }
         }
         return {
           status: r.why === 'out-of-range' ? 'invalid' : 'not-applicable',
@@ -609,7 +610,7 @@ const RENT = {
             value: r.data,
             asOf: r.data.asOf,
             geography: { name: r.data.geoName, level: 'metro' },
-            reason: stale ? STALE_REASON : metroStandInReason(r.data.countyWhy, countyOnly(l), r.data.countyNotCurrent),
+            reason: stale ? STALE_REASON : [metroStandInReason(r.data.countyWhy, countyOnly(l), r.data.countyNotCurrent), rentSeasonalCaveat(r.data.saCaveat, 'metro')].filter(Boolean).join(' '),
           }
         }
         return {

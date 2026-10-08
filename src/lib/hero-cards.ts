@@ -10,7 +10,7 @@ import { cpiGeoLabel, cpiTierOf } from '@/lib/provenance'
 import { ANNUAL_GROCERY_BASE, fmtRentFigure, fmtRentDollars } from '@/lib/compute/dollar-translations'
 import { STATE_TO_PAD } from '@/lib/mappings/eia-gas'
 import { cpiMetroShortName } from '@/lib/mappings/county-metro-cpi'
-import { notCurrentText } from '@/lib/rent-range'
+import { notCurrentText, rentSeasonalCaveat } from '@/lib/rent-range'
 import {
   DCRA_SOURCE, DCRA_LICENSE, DCRA_DATA_URL, DCRA_ATTRIBUTION, DACO_SOURCE, DACO_DATA_URL, dcraStationsText,
 } from '@/lib/static-gas-meta'
@@ -594,6 +594,7 @@ export function buildRentCard(
   const detail = `Typical asking rent: ${fmtDollars(r.curRent)}/mo (${fmtMonthYear(r.asOf)})`
   const metroNote = metro ? rentMetroNote(r) : undefined
   const poolNote = rentSeasonalNote(r.saPool, r.saW, metro ? 'metro' : 'county')
+  const seasonalCaveat = rentSeasonalCaveat(r.saCaveat, metro ? 'metro' : 'county')
   return {
     ...base,
     status: 'ok',
@@ -605,7 +606,7 @@ export function buildRentCard(
     dollarNote,
     detail,
     caveat,
-    info: compact([`${dollarNote}.`, detail, metroNote, poolNote, caveat, SHELTER_VS_RENT_NOTE]),
+    info: compact([`${dollarNote}.`, detail, metroNote, poolNote, seasonalCaveat, caveat, SHELTER_VS_RENT_NOTE]),
     asOfPeriod: r.asOf,
     // Long metro titles ("Nashville-Davidson--Murfreesboro--Franklin") shorten to the first city for images/meta
     geoTag: metro ? (area.length > 32 ? `${area.split(/-+/)[0]} metro` : area) : shortCountyName(r.geoName),
@@ -633,11 +634,11 @@ export function rentMetroNote(r: Pick<RentData, 'geoName' | 'countyName' | 'coun
 
 /** How rent is seasonally adjusted (same label as the data's meta.seasonalMethod). */
 export const RENT_SA_LABEL =
-  'seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)'
+  'seasonally adjusted by whatchanged (county pattern blended with the state (or U.S.) pattern based on history length)'
 
 /** The seasonal adjustment of one rent series, said plainly: how much of its own pattern vs its state's it uses. */
 export function rentSeasonalNote(pool: string | undefined, w: number | undefined, level: 'county' | 'metro' = 'county'): string {
-  const head = `Seasonally adjusted by whatchanged (county pattern blended with the state pattern based on history length)`
+  const head = `Seasonally adjusted by whatchanged (${level} pattern blended with the state (or U.S.) pattern based on history length)`
   if (!pool || typeof w !== 'number' || !Number.isFinite(w)) return `${head}.`
   const own = level === 'metro' ? 'the metro’s own pattern' : 'the county’s own pattern'
   if (w <= 0) return `${head}: this series is too short to estimate its own pattern, so it uses the typical pattern of ${pool}.`
@@ -701,7 +702,7 @@ export function buildShelterCard(s: EconomicSnapshot): HeroCardModel {
       : !hasLocalRent
         ? 'No local rent figure for a dollar estimate.'
         : 'No dollar estimate: the BLS rent-of-primary-residence index for this area is unavailable right now.'
-  // The zip's own top-/bottom-coded median ($3,500+ / under $100) bounds the $ figure: "at least" / "at most"
+  // The zip's own top-/bottom-coded median ($3,500+ / under $100) bounds the $ figure: "or more" / "or less" ("… saved" for a decrease)
   const rentDollars = dollars !== null ? fmtRentDollars(dollars, census!.basis === 'zip' ? census!.rentCoded : undefined) : null
   const dollarNote = rentDollars !== null ? `${rentDollars} in rent: ${SHELTER_DOLLAR_BASIS}` : undefined
   const nationalValue = natOk ? `National: ${fmtSignedPct(nat!.pct)} (U.S. city avg, BLS CPI shelter)` : undefined
